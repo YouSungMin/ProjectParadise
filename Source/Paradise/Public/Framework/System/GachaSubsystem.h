@@ -35,7 +35,6 @@ public:
 	 * @param PullCount 뽑기 횟수 (1연차, 10연차 등)
 	 * @param RarityRates 등급별 기본 확률표
 	 * @param OwnedItems 유저가 현재 보유 중인 캐릭터 ID 목록 (중복 검사용)
-	 * @param PityThreshold 전설 확정 천장 횟수 (예: 50)
 	 * @return TArray<FGachaResult> UI 연출 및 인벤토리 처리에 필요한 완벽한 결과 리스트
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha")
