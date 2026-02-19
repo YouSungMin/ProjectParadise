@@ -193,3 +193,11 @@ void AUnitBase::PlayRangeAttack()
 	// 공격 몽타주 실행 또는 발사체 생성 로직
 	UE_LOG(LogTemp, Log, TEXT("%s 유닛이 원거리 공격을 수행합니다."), *GetName());
 }
+
+void AUnitBase::SetAvoidanceEnabled(bool bEnable)
+{
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bUseRVOAvoidance = bEnable;
+	}
+}

@@ -64,4 +64,7 @@ protected:
 
 	/** @brief 스킬 어빌리티 핸들 목록 (보스/패밀리어 용) */
 	TArray<FGameplayAbilitySpecHandle> SkillAbilityHandles;
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
+	void SetAvoidanceEnabled(bool bEnable);
 };
