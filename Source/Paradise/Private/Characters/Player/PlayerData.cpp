@@ -192,6 +192,8 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
 }
 
+
+
 void APlayerData::InitPlayerData(FName HeroID)
 {
 	

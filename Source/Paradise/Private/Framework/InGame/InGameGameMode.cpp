@@ -78,18 +78,17 @@ void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
 
 	if (PS && SquadSys)
 	{
-		// 1. 서브시스템에서 로비에서 편성한 3인 스쿼드 배열 가져오기
+		//서브시스템에서 로비에서 편성한 3인 스쿼드 배열 가져오기
 		TArray<FName> MyPlayerIDs = SquadSys->GetPlayerSquad();
 
 		// [방어 코드] 만약 테스트 중이라 편성을 하나도 안 하고 맵에 들어왔다면?
-		// (배열이 비어있거나, 3칸 다 Name_None일 경우)
+		// 배열이 비어있거나, 3칸 다 Name_None일 경우
 		if (MyPlayerIDs.Num() == 0 || (MyPlayerIDs.IsValidIndex(0) && MyPlayerIDs[0].IsNone() && MyPlayerIDs[1].IsNone() && MyPlayerIDs[2].IsNone()))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("⚠️ 편성된 플레이어가 없습니다! 기본 캐릭터(테스트용)를 강제 스폰합니다."));
 
 			MyPlayerIDs.Init(NAME_None, 3);
-			// ※ 주의: "Hero_Knight" 부분은 작성자님의 데이터 테이블에 실제 존재하는 캐릭터 ID로 꼭 바꿔주세요!
-			MyPlayerIDs[0] = TEXT("Hero_Knight");
+			MyPlayerIDs[0] = TEXT("test1");
 		}
 
 		//(PlayerData) 3개 스폰 및 인벤토리(장비) Init
