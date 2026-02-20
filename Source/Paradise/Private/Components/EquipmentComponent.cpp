@@ -4,6 +4,7 @@
 #include "Components/EquipmentComponent.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "GAS/Attributes/BaseAttributeSet.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Animation/SkeletalMeshActor.h"
@@ -139,6 +140,7 @@ void UEquipmentComponent::TestEquippedItem(EEquipmentSlot Slot, FName ItemID)
 	}
 }
 
+
 void UEquipmentComponent::InitializeEquipment(const TMap<EEquipmentSlot, FGuid>& InEquipmentMap)
 {
 	UInventorySystem* InvSys = GetInventorySystem();
@@ -162,7 +164,63 @@ void UEquipmentComponent::InitializeEquipment(const TMap<EEquipmentSlot, FGuid>&
 			}
 		}
 	}
+	ApplyEquipmentStats();
 }
+
+void UEquipmentComponent::ApplyEquipmentStats()
+{
+	APlayerData* Soul = Cast<APlayerData>(GetOwner());
+	if (!Soul) return;
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
+	if (!GI) return;
+
+	UBaseAttributeSet* AttrSet = Soul->GetAttributeSet();
+	if (!AttrSet) return;
+
+	// 인게임 장비 교체가 없으므로, 초기화(리셋) 로직은 필요 없습니다!
+	// 영혼(PlayerData)이 생성되면서 방금 세팅된 기본 스탯 위에 장비 스탯을 그대로 얹어주기만 합니다.
+
+	for (const auto& Pair : EquippedItems)
+	{
+		FName ItemID = GetEquippedItemID(Pair.Key);
+		if (ItemID.IsNone()) continue;
+
+		//무기
+		if (Pair.Key == EEquipmentSlot::Weapon)
+		{
+			if (FWeaponStats* WStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, ItemID))
+			{
+				// 기본 스탯 + 무기 스탯
+				AttrSet->SetAttackPower(AttrSet->GetAttackPower() + WStat->AttackPower);
+				AttrSet->SetAttackRange(AttrSet->GetAttackRange() + WStat->AttackRange);
+				AttrSet->SetAttackSpeed(AttrSet->GetAttackSpeed() + WStat->AttackSpeed);
+				AttrSet->SetCooldown(AttrSet->GetCooldown() + WStat->Cooldown);
+				AttrSet->SetCritDamage(AttrSet->GetCritDamage() + WStat->CritDamage);
+				AttrSet->SetCritRate(AttrSet->GetCritRate() + WStat->CritRate);
+			}
+		}
+		//방어구
+		else
+		{
+			if (FArmorStats* AStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, ItemID))
+			{
+				// 기본 스탯 + 방어구 스탯
+				AttrSet->SetMaxMana(AttrSet->GetMaxMana()+AStat->MaxMana);
+				AttrSet->SetDefense(AttrSet->GetDefense() + AStat->DefensePower); 
+				AttrSet->SetMaxHealth(AttrSet->GetMaxHealth() + AStat->MaxHP);
+			}
+		}
+	}
+
+	// 장비로 인해 최대 체력(MaxHP)이 늘어났으므로, 현재 체력(HP)도 꽉 채워서 전투를 시작하도록 보정
+	AttrSet->SetHealth(AttrSet->GetMaxHealth());
+
+	UE_LOG(LogTemp, Log, TEXT("💪 [Equipment] 장비 스탯 최종 세팅 완료 (Attack: %.1f, Defense: %.1f, HP: %.1f)"),
+		AttrSet->GetAttackPower(), AttrSet->GetDefense(), AttrSet->GetMaxHealth());
+}
+
+
 
 FName UEquipmentComponent::GetEquippedItemID(EEquipmentSlot Slot) const
 {
