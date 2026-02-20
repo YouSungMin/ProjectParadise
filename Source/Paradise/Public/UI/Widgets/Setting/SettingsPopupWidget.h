@@ -104,12 +104,18 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USlider> Slider_SFX = nullptr;
 
-	/** @brief 게임으로 돌아가는 버튼 */
+	/**
+	 * @brief 닫기 (또는 게임으로 돌아가기) 버튼
+	 * @note 모든 팝업에 필수이므로 BindWidget 유지
+	 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseCommonButton> Btn_ResumeGame = nullptr;
 
-	/** @brief 로비로 돌아가는 버튼 */
-	UPROPERTY(meta = (BindWidget))
+	/**
+	 * @brief 로비로 돌아가는 버튼
+	 * @note BindWidgetOptional로 변경
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UParadiseCommonButton> Btn_ReturnToLobby = nullptr;
 #pragma endregion 위젯 바인딩
 
@@ -149,6 +155,13 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Level", meta = (DisplayName = "로딩 맵 이름"))
 	FName LoadingMapName = FName("L_Loading");
+
+	/**
+	 * @brief 팝업이 열릴 때 게임 시간을 정지할지 여부입니다.
+	 * @details 인게임에서는 true, 타이틀/로비에서는 false로 에디터에서 설정합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Config", meta = (DisplayName = "열릴 때 게임 일시정지"))
+	bool bPauseGameOnOpen = true;
 #pragma endregion 데이터 드리븐 설정
 
 #pragma region 런타임 상태

@@ -13,6 +13,7 @@
 
 #include "UI/Widgets/Ingame/Popup/VictoryPopupWidget.h"
 #include "UI/Widgets/Ingame/Popup/DefeatPopupWidget.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,6 +45,17 @@ void UInGameHUDWidget::NativeConstruct()
 	if (VirtualJoystick)
 	{
 		VirtualJoystick->OnJoystickInput.AddDynamic(this, &UInGameHUDWidget::OnJoystickInput);
+	}
+
+	/** @section 설정 팝업 사전 생성 (캐싱) */
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100);
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 
 	// 4. GameState 연결 및 델리게이트 구독 (핵심)
@@ -192,6 +204,12 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 void UInGameHUDWidget::OnSettingButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("Setting Button Clicked"));
+
+	/** @section 팝업 열기 (인게임은 열릴 때 시간이 멈춥니다!) */
+	if (SettingsPopupInstance)
+	{
+		SettingsPopupInstance->OpenSettings();
+	}
 }
 
 void UInGameHUDWidget::OnAutoModeButtonClicked()

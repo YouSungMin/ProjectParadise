@@ -2,6 +2,7 @@
 
 
 #include "UI/HUD/Title/ParadiseTitleHUDWidget.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
@@ -35,6 +36,17 @@ void UParadiseTitleHUDWidget::NativeConstruct()
 	if (Anim_BlinkText)
 	{
 		PlayAnimation(Anim_BlinkText, 0.0f, 0);
+	}
+
+	/** @section 설정 팝업 사전 생성 (캐싱) */
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100); // 팝업이 최상단에 뜨도록 ZOrder 100 부여
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
+		}
 	}
 }
 
@@ -73,5 +85,9 @@ void UParadiseTitleHUDWidget::OnQuitButtonClicked()
 void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
-	// TODO: WBP_Settings 같은 설정 팝업 위젯을 CreateWidget 하거나 CommonActivatableWidget 스택에 Push 할 예정.
+
+	if (SettingsPopupInstance)
+	{
+		SettingsPopupInstance->OpenSettings();
+	}
 }

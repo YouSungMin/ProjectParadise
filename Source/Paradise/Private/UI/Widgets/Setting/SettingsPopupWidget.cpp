@@ -62,7 +62,11 @@ void USettingsPopupWidget::OpenSettings()
 	/** @section 2. 게임 일시정지 및 조작 권한 탈취 */
 	if (APlayerController* PC = GetOwningPlayer())
 	{
-		PC->SetPause(true);
+		// 기획자가 true로 체크했을 때만 시간을 멈춥니다!
+		if (bPauseGameOnOpen)
+		{
+			PC->SetPause(true);
+		}
 
 		FInputModeUIOnly InputMode;
 		InputMode.SetWidgetToFocus(TakeWidget());
@@ -86,7 +90,11 @@ void USettingsPopupWidget::CloseSettings()
 	/** @section 3. 게임 시간 복구 및 입력 모드 반환 */
 	if (APlayerController* PC = GetOwningPlayer())
 	{
-		PC->SetPause(false);
+		// 기획자가 true로 체크했을 때만 시간을 다시 풉니다!
+		if (bPauseGameOnOpen)
+		{
+			PC->SetPause(false);
+		}
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
@@ -169,7 +177,7 @@ void USettingsPopupWidget::OnSFXVolumeChanged(float Value)
 
 void USettingsPopupWidget::OnResumeGameClicked()
 {
-	RemoveFromParent();
+	CloseSettings();
 }
 
 void USettingsPopupWidget::OnReturnToLobbyClicked()
