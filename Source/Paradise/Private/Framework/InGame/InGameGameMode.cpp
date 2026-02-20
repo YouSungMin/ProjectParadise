@@ -4,6 +4,7 @@
 #include "Framework/InGame/InGameGameState.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+
 AInGameGameMode::AInGameGameMode()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -24,6 +25,7 @@ void AInGameGameMode::BeginPlay()
 
 	//게임 시작 상태 Ready로 설정
 	SetGamePhase(EGamePhase::Combat);
+
 }
 
 void AInGameGameMode::OnStageTimerElapsed()

@@ -58,6 +58,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
 	AActor* SpawnPooledActor(UClass* Class, FVector location, FRotator rotation, AActor* Owner, APawn* Instigator);
 
+	/**
+	 * @brief 전투 전 렉(GC) 방지를 위해 지정된 개수만큼 액터를 미리 생성하여 풀에 보관합니다.
+	 * @param Class 생성할 대상 액터의 클래스 (TSubclassOf)
+	 * @param World 스폰을 수행할 월드 컨텍스트
+	 * @param Count 미리 만들어둘 액터의 개수
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
+	void PreSpawnPool(UClass* Class, UWorld* World, int32 Count);
 
 	/**
 	 * @brief 사용이 끝난 액터를 풀로 반납(비활성화)하는 함수
