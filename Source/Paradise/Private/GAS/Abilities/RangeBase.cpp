@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
+#include "Objects/ProjectileBase.h"
 
 URangeBase::URangeBase()
 {
@@ -93,11 +94,9 @@ void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 			CombatData.DamageMultiplier
 		);
 
-		// TODO: 나중에 만드실 AProjectileBase에 "이 스펙(데미지 상자)을 가져가서 맞춘 놈한테 적용해!" 라고 전달해야 합니다.
-		// 예시 코드:
-		// if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
-		// {
-		//     Proj->SetDamageSpecHandle(SpecHandle);
-		// }
+		if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
+		{
+			Proj->SetDamageSpecHandle(SpecHandle);
+		}
 	}
 }
