@@ -3,6 +3,8 @@
 #include "Framework/InGame/InGameGameMode.h"
 #include "Framework/InGame/InGameGameState.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/ObjectPoolSubsystem.h"
+#include "Framework/InGame/Actors/DamageTextActor.h"
 
 AInGameGameMode::AInGameGameMode()
 {
@@ -19,11 +21,21 @@ void AInGameGameMode::BeginPlay()
 	//임시로 1-1 스테이지 정보로 초기화 -> (나중에 GameInstance 연동)
 	InitializeStageData(FName("Stage1_1"));
 
+	//전투 시작 전, 데미지 텍스트 미리 넣기
+	if (DamageTextClass)
+	{
+		if (UObjectPoolSubsystem* PoolSystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
+		{
+			//PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
+		}
+	}
+
 	//초기 상태 설정
 	CurrentPhase = EGamePhase::Result;
 
 	//게임 시작 상태 Ready로 설정
 	SetGamePhase(EGamePhase::Combat);
+
 }
 
 void AInGameGameMode::OnStageTimerElapsed()
