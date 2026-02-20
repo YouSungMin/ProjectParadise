@@ -18,16 +18,12 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 	OwnedFamiliars.Empty();
 	OwnedItems.Empty();
 
-	// 1. 영웅(Character) 로드
+	//영웅(Character) 로드
 	if (InHeroes.Num() > 0)
 	{
 		for (int i = 0; i < InHeroes.Num(); i++)
 		{
-			// [유효성 검사] Assets 테이블과 Stats 테이블 모두 존재해야 함
-			bool bHasAsset = (GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, InHeroes[i].CharacterID) != nullptr);
-			bool bHasStat = (GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InHeroes[i].CharacterID) != nullptr);
-
-			if (bHasAsset && bHasStat)
+			if (GI->IsValidPlayerID(InHeroes[i].CharacterID))
 			{
 				OwnedCharacters.Add(InHeroes[i]);
 			}
@@ -38,16 +34,12 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 		}
 	}
 
-	// 2. 퍼밀리어(Familiar) 로드
+	//퍼밀리어(Familiar) 로드
 	if (InFamiliars.Num() > 0)
 	{
 		for (int i = 0; i < InFamiliars.Num(); i++)
 		{
-			// [유효성 검사] Assets 테이블과 Stats 테이블 모두 존재해야 함
-			bool bHasAsset = (GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, InFamiliars[i].FamiliarID) != nullptr);
-			bool bHasStat = (GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, InFamiliars[i].FamiliarID) != nullptr);
-
-			if (bHasAsset && bHasStat)
+			if (GI->IsValidFamiliarID(InFamiliars[i].FamiliarID))
 			{
 				OwnedFamiliars.Add(InFamiliars[i]);
 			}
@@ -58,23 +50,14 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 		}
 	}
 
-	// 3. 아이템(Item) 로드 (무기 or 방어구)
+	//아이템(Item) 로드 (무기 or 방어구)
 	if (InItems.Num() > 0)
 	{
 		for (int i = 0; i < InItems.Num(); i++)
 		{
 			FName ID = InItems[i].ItemID;
 
-			// A. 무기(Weapon) 검증: Assets & Stats 모두 존재
-			bool bIsValidWeapon = (GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ID) != nullptr)
-				&& (GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, ID) != nullptr);
-
-			// B. 방어구(Armor) 검증: Assets & Stats 모두 존재
-			bool bIsValidArmor = (GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ID) != nullptr)
-				&& (GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, ID) != nullptr);
-
-			// 둘 중 하나라도 완벽하게 존재하면 추가
-			if (bIsValidWeapon || bIsValidArmor)
+			if (GI->IsValidItemID(ID))
 			{
 				OwnedItems.Add(InItems[i]);
 			}
@@ -100,16 +83,10 @@ void UInventorySystem::AddItem(FName ItemID, int32 Count, int32 EnhancementLvl)
 	if (!GI) return;
 	if (ItemID.IsNone() || Count <= 0) return;
 
-	// 1. 무기(Weapon) 유효성 검사 (Assets && Stats)
-	bool bIsValidWeapon = (GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ItemID) != nullptr)
-		&& (GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, ItemID) != nullptr);
-
-	// 2. 방어구(Armor) 유효성 검사 (Assets && Stats)
-	bool bIsValidArmor = (GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ItemID) != nullptr)
-		&& (GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, ItemID) != nullptr);
+	bool bExist = GI->IsValidItemID(ItemID);
 
 	// 둘 다 아니면 실패
-	if (!bIsValidWeapon && !bIsValidArmor)
+	if (!bExist)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[AddItem] 실패: ID(%s)가 무기/방어구 테이블(Assets & Stats) 쌍에 존재하지 않습니다."), *ItemID.ToString());
 		return;
@@ -138,11 +115,8 @@ void UInventorySystem::AddCharacter(FName CharacterID)
 	if (!GI) return;
 	if (CharacterID.IsNone()) return;
 
-	// [유효성 검사] CharacterAssets와 CharacterStats 모두 조회
-	bool bHasAsset = (GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID) != nullptr);
-	bool bHasStat = (GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, CharacterID) != nullptr);
-
-	if (!bHasAsset || !bHasStat)
+	bool bExist = GI->IsValidPlayerID(CharacterID);
+	if (!bExist)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[AddCharacter] 실패: ID(%s)가 캐릭터 Assets 혹은 Stats 테이블에 없습니다."), *CharacterID.ToString());
 		return;
@@ -177,11 +151,8 @@ void UInventorySystem::AddFamiliar(FName FamiliarID)
 	if (!GI) return;
 	if (FamiliarID.IsNone()) return;
 
-	// [유효성 검사] FamiliarAssets와 FamiliarStats 모두 조회
-	bool bHasAsset = (GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, FamiliarID) != nullptr);
-	bool bHasStat = (GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, FamiliarID) != nullptr);
-
-	if (!bHasAsset || !bHasStat)
+	bool bExist = GI->IsValidFamiliarID(FamiliarID);
+	if (!bExist)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[AddFamiliar] 실패: ID(%s)가 퍼밀리어 Assets 혹은 Stats 테이블에 없습니다."), *FamiliarID.ToString());
 		return;
