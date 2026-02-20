@@ -9,6 +9,7 @@
 #pragma region 전방 선언
 class UTextBlock;
 class UButton;
+class USettingsPopupWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -59,4 +60,18 @@ private:
 	UFUNCTION()
 	void OnQuitGameClicked();
 #pragma endregion 내부 로직
+
+protected:
+#pragma region 데이터 드리븐 설정
+	/** @brief 기획자가 에디터에서 할당할 로비용 설정 팝업 위젯 클래스 (WBP_Settings_OutGame) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI")
+	TSubclassOf<USettingsPopupWidget> SettingsPopupClass;
+#pragma endregion 데이터 드리븐 설정
+
+#pragma region 런타임 상태
+private:
+	/** @brief 화면에 미리 생성해둘 설정 팝업 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<USettingsPopupWidget> SettingsPopupInstance = nullptr;
+#pragma endregion 런타임 상태
 };

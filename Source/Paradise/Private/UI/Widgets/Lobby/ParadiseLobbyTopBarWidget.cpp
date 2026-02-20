@@ -2,6 +2,7 @@
 
 
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Kismet/KismetSystemLibrary.h" // 종료 기능을 위해 필요
@@ -27,6 +28,17 @@ void UParadiseLobbyTopBarWidget::NativeConstruct()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[TopBar] Btn_QuitGame이 바인딩되지 않았습니다."));
+	}
+
+	/** @section 설정 팝업 사전 생성 (캐싱) */
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100);
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 
 	// 2. 초기화 시 임시 데이터로 갱신 (테스트용)
@@ -58,8 +70,11 @@ void UParadiseLobbyTopBarWidget::OnSettingsClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("[TopBar] 설정 버튼 클릭됨 (기능 구현 예정)"));
 
-	// TODO: WBP_SettingsPopup을 띄우는 로직 추가
-	// 예: GetOwningPlayer()->GetHUD()->ShowSettings();
+	/** @section 팝업 열기 */
+	if (SettingsPopupInstance)
+	{
+		SettingsPopupInstance->OpenSettings();
+	}
 }
 
 void UParadiseLobbyTopBarWidget::OnQuitGameClicked()

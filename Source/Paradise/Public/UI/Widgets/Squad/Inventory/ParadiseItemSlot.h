@@ -60,6 +60,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Level = nullptr;
 
+	/** @brief 수량 표시 텍스트 (무기/장비용) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_Quantity = nullptr;
+
 	/** @brief 장착 중 표시 아이콘 (선택 사항) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> Img_EquippedMark = nullptr;
@@ -68,6 +72,17 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Select = nullptr;
 #pragma endregion UI 바인딩
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 등급 태그에 따른 테두리 색상 맵 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI", meta = (DisplayName = "등급별 색상 맵"))
+	TMap<FGameplayTag, FLinearColor> RankColorMap;
+
+	/** @brief 매칭되는 태그가 없을 때 사용할 기본 색상 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI", meta = (DisplayName = "기본 테두리 색상"))
+	FLinearColor DefaultRankColor = FLinearColor::White;
+#pragma endregion 데이터 드리븐 설정
 
 #pragma region 내부 상태
 private:

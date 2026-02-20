@@ -38,7 +38,14 @@ struct FSquadItemUIData
 {
 	GENERATED_BODY()
 
-	/** @brief 아이템/캐릭터 ID */
+	/**
+	 * @brief [핵심] 인벤토리에 존재하는 고유 인스턴스 ID (FGuid)
+	 * @details 장착, 강화, 판매 등 시스템에 실제 명령을 내릴 때 반드시 필요한 식별자입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly)
+	FGuid InstanceUID;
+
+	/** @brief 아이템/캐릭터 원본 데이터 테이블 ID */
 	UPROPERTY(BlueprintReadOnly)
 	FName ID = NAME_None;
 
@@ -57,6 +64,10 @@ struct FSquadItemUIData
 	/** @brief 레벨 */
 	UPROPERTY(BlueprintReadOnly)
 	int32 Level = 0;
+
+	/** @brief 보유 수량 (무기나 장비 등 겹칠 수 있는 아이템용) */
+	UPROPERTY(BlueprintReadOnly)
+	int32 Quantity = 1;
 
 	/** @brief 현재 편성에 장착 중인지 여부 (인벤토리 테두리 표시용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

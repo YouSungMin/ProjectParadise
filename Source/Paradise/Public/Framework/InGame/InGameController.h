@@ -8,6 +8,7 @@
 
 
 class APlayerBase;
+class APlayerData;
 class AAIController;
 class UInputMappingContext;
 class UInputAction;
@@ -78,6 +79,13 @@ private:
 	 * @brief 현재 조종하지 않는 캐릭터에게 AI 컨트롤러를 빙의시키는 함수
 	 */
 	void PossessAI(APlayerBase* TargetCharacter);
+
+	/**
+	 * @brief [단일 책임 원칙(SRP) 핵심] 생성된 캐릭터(데이터)를 UI와 연동합니다.
+	 * @param PlayerIndex 파티 내 인덱스 (0~2)
+	 * @param InPlayerData 연동할 데이터(영혼) 객체
+	 */
+	void BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData);
 
 #pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
 public:

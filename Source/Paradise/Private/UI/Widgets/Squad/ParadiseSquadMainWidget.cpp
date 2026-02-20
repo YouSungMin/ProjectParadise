@@ -8,10 +8,25 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/SquadSubsystem.h"
 #include "Components/Button.h"
 #include "Engine/DataTable.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
+
+#pragma region 헬퍼 함수
+/** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
+FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
+{
+	switch (Rarity)
+	{
+	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
+	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
+	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
+	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
+	}
+}
+#pragma endregion 헬퍼 함수
 
 #pragma region 생명주기
 void UParadiseSquadMainWidget::NativeConstruct()
@@ -25,8 +40,19 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		UE_LOG(LogTemp, Error, TEXT("[SquadMain] GameInstance is invalid! Data loading will fail."));
 	}
 
-	//0212 김성현 - 인벤토리 게임인스턴스 시스템으로 베이스 변경에 따라 인벤토리 캐싱 로직 삭제했습니다
+	// 2. 인벤토리 변경 시 자동 갱신 델리게이트 바인딩
+	if (UInventorySystem* InvSys = GetInventorySystem())
+	{
+		InvSys->OnInventoryUpdated.AddDynamic(this, &UParadiseSquadMainWidget::RefreshInventoryUI);
+		UE_LOG(LogTemp, Log, TEXT("[SquadMain] 인벤토리 델리게이트 바인딩 완료"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SquadMain] InventorySystem을 찾을 수 없습니다!"));
+	}
 
+	// 편성이 확정되는 순간 FormationWidget을 즉시 갱신할 수 있도록 구독합니다.
+	BindSquadSubsystemDelegates();
 
 	// 3. 탭 버튼 바인딩
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSquadMainWidget::OnClickCharTab);
@@ -56,23 +82,23 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// 로비에서 이미 편성해 둔 캐릭터/유닛 아이콘이 진입 즉시 보이도록 합니다.
+	InitFormationFromSubsystem();
+
 	// 5. 초기 상태 설정 
 	ResetPanelState();
-}
-
-//인스턴스에서 인벤토리 서브시스템 Getter함수
-UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
-{
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		return GI->GetSubsystem<UInventorySystem>();
-	}
-	return nullptr;
 }
 
 void UParadiseSquadMainWidget::NativeDestruct()
 {
 	// 델리게이트 안전 해제
+	UnbindSquadSubsystemDelegates();
+
+	if (UInventorySystem* InvSys = GetInventorySystem())
+	{
+		InvSys->OnInventoryUpdated.RemoveAll(this);
+	}
+
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Weapon) Btn_Tab_Weapon->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Armor) Btn_Tab_Armor->OnClicked.RemoveAll(this);
@@ -93,6 +119,137 @@ void UParadiseSquadMainWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 #pragma endregion 생명주기
+
+#pragma region 데이터 소스 Getter
+UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		return GI->GetSubsystem<UInventorySystem>();
+	}
+	return nullptr;
+}
+
+USquadSubsystem* UParadiseSquadMainWidget::GetSquadSubsystem() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		return GI->GetSubsystem<USquadSubsystem>();
+	}
+	return nullptr;
+}
+#pragma endregion 데이터 소스 Getter
+
+#pragma region SquadSubsystem 연동
+void UParadiseSquadMainWidget::BindSquadSubsystemDelegates()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SquadMain] SquadSubsystem을 찾을 수 없어 델리게이트 바인딩을 생략합니다."));
+		return;
+	}
+
+	// 플레이어 슬롯(0~2) 변경 이벤트 구독
+	if (!SquadSys->OnPlayerSlotChanged.IsAlreadyBound(this, &UParadiseSquadMainWidget::OnPlayerSlotUpdated))
+	{
+		SquadSys->OnPlayerSlotChanged.AddDynamic(this, &UParadiseSquadMainWidget::OnPlayerSlotUpdated);
+	}
+
+	// 퍼밀리어 슬롯(0~4) 변경 이벤트 구독
+	if (!SquadSys->OnFamiliarSlotChanged.IsAlreadyBound(this, &UParadiseSquadMainWidget::OnFamiliarSlotUpdated))
+	{
+		SquadSys->OnFamiliarSlotChanged.AddDynamic(this, &UParadiseSquadMainWidget::OnFamiliarSlotUpdated);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] SquadSubsystem 델리게이트 바인딩 완료"));
+}
+
+void UParadiseSquadMainWidget::UnbindSquadSubsystemDelegates()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys) return;
+
+	SquadSys->OnPlayerSlotChanged.RemoveAll(this);
+	SquadSys->OnFamiliarSlotChanged.RemoveAll(this);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] SquadSubsystem 델리게이트 해제 완료"));
+}
+
+void UParadiseSquadMainWidget::InitFormationFromSubsystem()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys || !WBP_FormationPanel)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SquadMain] InitFormationFromSubsystem 실패: SquadSubsystem 또는 FormationPanel 없음"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 편성 서브시스템 → FormationWidget 초기화 시작"));
+
+	// --- 플레이어 캐릭터 슬롯 (0~2) 동기화 ---
+	const TArray<FName>& PlayerIDs = SquadSys->GetPlayerSquad();
+	for (int32 i = 0; i < PlayerIDs.Num(); ++i)
+	{
+		FName PlayerID = PlayerIDs[i];
+		// NAME_None이면 빈 슬롯으로 처리 (ID가 없는 FSquadItemUIData 전달)
+		FSquadItemUIData UIData = PlayerID.IsNone()
+			? FSquadItemUIData()
+			: MakeUIData(PlayerID, 1, SquadTabs::Character, true);
+
+		WBP_FormationPanel->UpdateSlot(i, UIData);
+	}
+
+	// --- 퍼밀리어 슬롯 (SquadSubsystem 0~4 → FormationWidget 3~7) 동기화 ---
+	const TArray<FName>& FamiliarIDs = SquadSys->GetFamiliarSquad();
+	for (int32 i = 0; i < FamiliarIDs.Num(); ++i)
+	{
+		FName FamiliarID = FamiliarIDs[i];
+		// 퍼밀리어 서브시스템 인덱스(0~4)를 FormationWidget 인덱스(3~7)로 변환
+		const int32 FormationIndex = i + 3;
+		FSquadItemUIData UIData = FamiliarID.IsNone()
+			? FSquadItemUIData()
+			: MakeUIData(FamiliarID, 1, SquadTabs::Unit);
+
+		WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] FormationWidget 초기화 완료 (캐릭터 %d슬롯, 유닛 %d슬롯)"),
+		PlayerIDs.Num(), FamiliarIDs.Num());
+}
+
+void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID)
+{
+	if (!WBP_FormationPanel) return;
+
+	// SquadSubsystem 플레이어 슬롯(0~2)은 FormationWidget과 인덱스가 동일합니다.
+	FSquadItemUIData UIData = NewPlayerID.IsNone()
+		? FSquadItemUIData()
+		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, true);
+
+	WBP_FormationPanel->UpdateSlot(SlotIndex, UIData);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 플레이어 슬롯[%d] 업데이트: %s"),
+		SlotIndex, *NewPlayerID.ToString());
+}
+
+void UParadiseSquadMainWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID)
+{
+	if (!WBP_FormationPanel) return;
+
+	// 퍼밀리어 서브시스템 인덱스(0~4) → FormationWidget 인덱스(3~7) 변환
+	const int32 FormationIndex = SlotIndex + 3;
+
+	FSquadItemUIData UIData = NewFamiliarID.IsNone()
+		? FSquadItemUIData()
+		: MakeUIData(NewFamiliarID, 1, SquadTabs::Unit);
+
+	WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 퍼밀리어 슬롯[%d](Formation[%d]) 업데이트: %s"),
+		SlotIndex, FormationIndex, *NewFamiliarID.ToString());
+}
+#pragma endregion SquadSubsystem 연동
 
 #pragma region 로직 - 탭 및 상태 제어
 void UParadiseSquadMainWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
@@ -207,7 +364,10 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 		for (const auto& Data : InvSys->GetOwnedCharacters())
 		{
 			// GameInstance의 테이블 조회 로직 활용
-			ListData.Add(MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true));
+			FSquadItemUIData UIData = MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true);
+			// [수정] 시스템 제어용 고유 식별자(GUID) 주입
+			UIData.InstanceUID = Data.CharacterUID;
+			ListData.Add(UIData);
 		}
 		break;
 
@@ -217,7 +377,11 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			// 무기 테이블에 존재하는 ID만 필터링하여 리스트에 추가
 			if (CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, Data.ItemID))
 			{
-				ListData.Add(MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Weapon));
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Weapon);
+				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
 			}
 		}
 		break;
@@ -228,7 +392,11 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			// 방어구 테이블에 존재하는 ID만 필터링
 			if (CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, Data.ItemID))
 			{
-				ListData.Add(MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Armor));
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Armor);
+				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
 			}
 		}
 		break;
@@ -236,22 +404,27 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 	case SquadTabs::Unit:
 		for (const auto& Data : InvSys->GetOwnedFamiliars())
 		{
-			ListData.Add(MakeUIData(Data.FamiliarID, Data.Level, SquadTabs::Unit));
+			FSquadItemUIData UIData = MakeUIData(Data.FamiliarID, Data.Level, SquadTabs::Unit);
+			// [수정] 시스템 제어용 고유 식별자(GUID)주입
+			UIData.InstanceUID = Data.FamiliarUID;
+			ListData.Add(UIData);
 		}
 		break;
 	}
-	//  데이터 후처리 (장착 여부 및 선택 상태 표시)
+
+	/** @section 데이터 후처리 (장착 여부 및 선택 상태 표시) */
 	for (auto& Item : ListData)
 	{
 		// TODO: CurrentEquippedIDs에 포함되어 있으면 테두리 표시
 		// if (CurrentEquippedIDs.Contains(Item.ID)) Item.bIsEquipped = true;
 
-		// 교체 모드에서 선택한 아이템이면 하이라이트
-		if (Item.ID == PendingSelection.ID)
+		// [수정] 동일한 아이템이 여러 개일 수 있으므로, 단순 ID(RowName)가 아닌 고유 GUID로 비교합니다.
+		if (Item.InstanceUID.IsValid() && Item.InstanceUID == PendingSelection.InstanceUID)
 		{
 			Item.bIsSelected = true;
 		}
 	}
+
 	// 가공된 데이터를 뷰(Inventory Panel)에 전달
 	WBP_InventoryPanel->UpdateList(CurrentTabIndex, ListData);
 }
@@ -291,9 +464,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
 		{
-			// 실제 변수명(예: Rarity)을 확인하여 태그로 변환하거나, 변수명을 맞추세요.
-			// 일단 컴파일을 위해 빈 태그로 둡니다.
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 캐릭터에 Rarity 변수가 있다면 ConvertRarityToTag를 호출. 없다면 임시 태그 적용.
+			Result.RankTag = FGameplayTag::RequestGameplayTag(TEXT("Unit.Rank.A"));
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
@@ -306,8 +478,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 		if (auto* Stat = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			// 여기도 마찬가지
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 부모 구조체(FItemBaseStats)의 Rarity를 태그로 변환
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FWeaponAssets>(CachedGI->WeaponAssetsDataTable, ID))
 		{
@@ -319,7 +491,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 		if (auto* Stat = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 부모 구조체(FItemBaseStats)의 Rarity를 태그로 변환
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FArmorAssets>(CachedGI->ArmorAssetsDataTable, ID))
 		{
@@ -330,7 +503,7 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FFamiliarStats>(CachedGI->FamiliarStatsDataTable, ID))
 		{
-			// 퍼밀리어는 구조체에 RankTypeTag가 있다면 주석 해제
+			// 퍼밀리어는 구조체에 RankTypeTag가 있다면 주석 해제 (기존 코드 존중)
 			// Result.RankTag = Stat->RankTypeTag;
 			Result.RankTag = FGameplayTag::EmptyTag;
 		}

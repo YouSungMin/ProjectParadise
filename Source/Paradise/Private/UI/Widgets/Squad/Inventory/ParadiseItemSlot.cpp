@@ -58,11 +58,24 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
+	// 3. 수량 텍스트 설정 (추가됨)
+	if (Text_Quantity)
+	{
+		if (InData.Quantity > 1)
+		{
+			Text_Quantity->SetText(FText::Format(FText::FromString(TEXT("x{0}")), InData.Quantity));
+			Text_Quantity->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else
+		{
+			Text_Quantity->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 
-	// 3. 등급 테두리 색상
+	// 4. 등급 테두리 색상
 	UpdateRankColor(InData.RankTag);
 
-	// 4. 장착 표시
+	// 5. 장착 표시
 	if (Img_EquippedMark)
 	{
 		Img_EquippedMark->SetVisibility(InData.bIsEquipped ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -79,18 +92,9 @@ void UParadiseItemSlot::UpdateRankColor(FGameplayTag RankTag)
 {
 	if (!Img_RankBorder) return;
 
-	FLinearColor BorderColor = FLinearColor::White; // 기본값
+	// 하드코딩을 제거하고 맵(RankColorMap)을 조회하여 색상을 결정합니다.
+	FLinearColor* FoundColor = RankColorMap.Find(RankTag);
+	FLinearColor FinalColor = FoundColor ? *FoundColor : DefaultRankColor;
 
-	// 태그 매칭 로직 (프로젝트 규칙에 맞게 수정)
-	if (RankTag.MatchesTag(FGameplayTag::RequestGameplayTag("Unit.Rank.S")))
-	{
-		BorderColor = FLinearColor(1.0f, 0.8f, 0.0f); // Gold
-	}
-	else if (RankTag.MatchesTag(FGameplayTag::RequestGameplayTag("Unit.Rank.A")))
-	{
-		BorderColor = FLinearColor(0.8f, 0.0f, 1.0f); // Purple
-	}
-	// ... 기타 등급 처리
-
-	Img_RankBorder->SetColorAndOpacity(BorderColor);
+	Img_RankBorder->SetColorAndOpacity(FinalColor);
 }

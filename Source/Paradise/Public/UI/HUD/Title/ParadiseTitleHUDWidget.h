@@ -9,6 +9,7 @@
 #pragma region 전방 선언
 class UButton;
 class UWidgetAnimation;
+class USettingsPopupWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -78,4 +79,18 @@ private:
 	/** @brief 중복 로딩 방지용 플래그 */
 	bool bIsLoadingStarted = false;
 #pragma endregion 내부 로직
+protected:
+
+#pragma region 데이터 드리븐 설정
+	/** @brief 기획자가 에디터에서 할당할 타이틀용 설정 팝업 위젯 클래스 (WBP_Settings_OutGame) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI")
+	TSubclassOf<USettingsPopupWidget> SettingsPopupClass;
+#pragma endregion 데이터 드리븐 설정
+
+#pragma region 런타임 상태
+private:
+	/** @brief 화면에 미리 생성해둘 설정 팝업 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<USettingsPopupWidget> SettingsPopupInstance = nullptr;
+#pragma endregion 런타임 상태
 };

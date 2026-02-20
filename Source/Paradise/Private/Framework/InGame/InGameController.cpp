@@ -13,6 +13,7 @@
 #include "Characters/Player/PlayerData.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
+#include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "Blueprint/UserWidget.h"
 
 void AInGameController::BeginPlay()
@@ -382,6 +383,8 @@ void AInGameController::InitializeSquadPawns()
                 NewBody->InitializePlayer(Soul);
                 ActiveSquadPawns.Add(NewBody);
                 DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
+
+                BindPlayerToUI(i, Soul);
             }
         }
     }
@@ -430,6 +433,22 @@ void AInGameController::PossessAI(APlayerBase* TargetCharacter)
         //빙의 (OnPossess가 호출되면서 비헤이비어 트리가 실행됨)
         NewAI->Possess(TargetCharacter);
         UE_LOG(LogTemp, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
+    }
+}
+
+void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData)
+{
+    if (!InGameHUDInstance || !InPlayerData) return;
+
+    if (UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel())
+    {
+        // 1. ASC(심장)를 UI에 연동하여 체력/마나가 실시간으로 움직이게 합니다.
+        PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
+
+        // 2. 캐릭터 ID를 넘겨주어 데이터 테이블에서 초상화 이미지를 가져오게 합니다.
+        PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
+
+        UE_LOG(LogTemp, Log, TEXT("[Controller] %d번 파티원 UI(초상화 및 ASC) 연동 완료!"), PlayerIndex);
     }
 }
 
