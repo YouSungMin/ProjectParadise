@@ -28,6 +28,8 @@ public:
 	UParadiseGameInstance();
 	virtual void Init() override;
 
+	virtual void Shutdown() override;
+
 #pragma region 게임 데이터 저장 및 로드
 
 public:

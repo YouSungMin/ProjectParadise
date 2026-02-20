@@ -92,7 +92,7 @@ void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
 		//서브시스템에서 로비에서 편성한 3인 스쿼드 배열 가져오기
 		TArray<FName> MyPlayerIDs = SquadSys->GetPlayerSquad();
 
-		// [방어 코드] 만약 테스트 중이라 편성을 하나도 안 하고 맵에 들어왔다면?
+		// [방어 코드]
 		// 배열이 비어있거나, 3칸 다 Name_None일 경우
 		if (MyPlayerIDs.Num() == 0 || (MyPlayerIDs.IsValidIndex(0) && MyPlayerIDs[0].IsNone() && MyPlayerIDs[1].IsNone() && MyPlayerIDs[2].IsNone()))
 		{
@@ -165,7 +165,7 @@ void AInGameGameMode::EndStage(bool bIsVictory)
 
 void AInGameGameMode::InitializeStageData(FName StageID)
 {
-	//0. GameInstance 가져오기
+	//GameInstance 가져오기
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
@@ -173,16 +173,19 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 		return;
 	}
 
-	//1.GameInstance에 있는 스테이지 테이블 가져오기
-	UDataTable* StageTable = GI->StatgeStatsDataTable; 
-	if (!StageTable)
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] 스테이지 데이터 테이블이 없습니다."));
-		return;
-	}
+	////1.GameInstance에 있는 스테이지 테이블 가져오기
+	//UDataTable* StageTable = GI->StatgeStatsDataTable; 
+	//if (!StageTable)
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] 스테이지 데이터 테이블이 없습니다."));
+	//	return;
+	//}
 
-	//2. 데이터 테이블에서 정보 찾기
-	FStageStats* Row = StageTable->FindRow<FStageStats>(StageID, TEXT("StageInfoContext"));
+	////2. 데이터 테이블에서 정보 찾기
+	//FStageStats* Row = StageTable->FindRow<FStageStats>(StageID, TEXT("StageInfoContext"));
+
+	//0220 김성현 - GI 데이터 테이블 검색 템플릿 함수 이용 로직 변경
+	FStageStats* Row = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, StageID);
 	if (Row)
 	{
 		CurrentStageData = *Row;	//데이터를 개별변수가 아닌 구조체에 한번에 복사
@@ -268,6 +271,12 @@ void AInGameGameMode::OnPhaseVictory()
 	// TODO: GameInstance->AddGold(CurrentStageData.ClearGold);
 	// TODO: GameInstance->UnlockStage(CurrentStageData.NextStageID);
 
+	//GI로 세이브 데이터 저장
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		GI->SaveGameData();
+	}
+
 
 	//3. 3초 후 결과 단계(Result)로 전환
 	FTimerHandle ResultTimer;
@@ -284,6 +293,12 @@ void AInGameGameMode::OnPhaseDefeat()
 	UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
 
 	//패배시 보상 없음
+	
+	//GI로 세이브 데이터 저장
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		GI->SaveGameData();
+	}
 	
 	//3초 후 결과 단계(Result)로 전환
 	FTimerHandle ResultTimer;

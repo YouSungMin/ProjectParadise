@@ -108,10 +108,22 @@ private:
 #pragma endregion 플레이어 캐릭터 편성
 
 public:
-	// [Save / Load] 세이브 연동
+
+
+#pragma region 세이브 데이터 
+
 	/**
-	 * @brief 현재 편성된 플레이어 데이터를 SaveGame에 저장합니다.
+	 * @brief 세이브 게임 객체에서 편성 데이터를 읽어와 복구합니다. (게임 실행 시 1회 호출)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Squad|Save")
-	void SaveSquadData();
+	void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj);
+
+
+	/**
+	 * @brief 현재 서브시스템의 편성 상태를 세이브 게임 객체에 기록합니다. (게임 저장 시 호출)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Squad|Save")
+	void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const;
+
+#pragma endregion 세이브 데이터 
 };

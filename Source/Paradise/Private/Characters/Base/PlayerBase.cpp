@@ -141,8 +141,8 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
     InPlayerData->CurrentAvatar = this;
 
     // GAS 연결
-    // Owner(APlayerData): HeroDataActor (데이터/로직의 주체)
-    // Avatar(APlayerBase): This Character (애니메이션/물리의 주체)
+    // Owner(APlayerData): 데이터/로직의 주체
+    // Avatar(APlayerBase): 애니메이션/물리의 주체
     AbilitySystemComponent = InPlayerData->GetAbilitySystemComponent();
     AttributeSet = InPlayerData->GetAttributeSet();
 
@@ -160,30 +160,13 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
         Mymesh->SetAnimInstanceClass(LinkedPlayerData->CachedAnimBP);
     }
 
-     // 외형 업데이트, 혹시 모를 데이터 동기화도 다시 (장비 동기화)
+     // 데이터 동기화(장비 동기화)
     if (UEquipmentComponent* EquipComp = InPlayerData->GetEquipmentComponent())
     {
-
         EquipComp->UpdateVisuals(this);
-        //UGameInstance* GI = GetGameInstance();
-        //if (GI)
-        //{
-        //    //서브시스템 가져오기
-        //    if (UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>())
-        //    {
-        //        //데이터 검색
-        //        if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(InPlayerData->CharacterID))
-        //        {
-        //            //장비 외형 변경 진행
-        //            EquipComp->InitializeEquipment(CharData->EquipmentMap);
-
-        //            UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 장비 데이터 연동 및 UpdateVisuals 완료!"));
-        //        }
-        //    }
-        //}
     }
 
-    // 소속 태그 내 몸에 적용
+    // 소속 태그 적용
     this->FactionTag = InPlayerData->FactionTag;
 
     UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 육체 초기화 완료!"));
