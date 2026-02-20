@@ -6,7 +6,9 @@
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Framework/InGame/Actors/DamageTextActor.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Interfaces/ObjectPoolInterface.h"
 #include "AttributeSet.h"
 
 ACharacterBase::ACharacterBase()
@@ -212,24 +214,34 @@ void ACharacterBase::ResetHitFlash()
 	}
 }
 
-void ACharacterBase::SpawnDamagePopup(float DamageAmount)
+void ACharacterBase::SpawnDamagePopup(float DamageAmount, bool bIsCritical)
 {
-	if (DamageAmount <= 0.0f) return;
+	// 클래스가 비어있으면 안전하게 리턴
+	if (!DamageTextClass) return;
 
-	UWorld* world = GetWorld();
-
-	if (!world) return;
-
-	UObjectPoolSubsystem* subsystem = world->GetSubsystem<UObjectPoolSubsystem>();
-
-	if (subsystem && DamageTextActorClass)
+	if (UWorld* World = GetWorld())
 	{
-		//스폰 및 데미지 수치 전달 로직 
-		//subsystem->SpawnPoolActor<>();
+		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
+		{
+			// 타겟 머리 위 위치 계산 (캐릭터 Z축 위로 80cm 정도 띄움)
+			UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
+			FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+
+			ADamageTextActor* DmgText = PoolSubsystem->SpawnPoolActor<ADamageTextActor>(
+				DamageTextClass,        // 스폰할 클래스
+				SpawnLoc,               // 위치
+				FRotator::ZeroRotator,  // 회전
+				this,                   // Owner
+				this                    // Instigator
+			);
+
+			// 데미지 수치 초기화
+			if (DmgText)
+			{
+				DmgText->InitializeDamageText(DamageAmount, bIsCritical, SpawnLoc);
+			}
+		}
 	}
-
-
-
 }
 
 void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

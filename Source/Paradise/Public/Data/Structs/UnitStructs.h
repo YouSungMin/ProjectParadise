@@ -102,7 +102,7 @@ struct FCharacterStats : public FUnitBaseStats
 public:
 
 	/**
-	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Character'로 설정함
+	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Player'로 설정함
 	*/
 	FCharacterStats()
 	{
@@ -147,19 +147,11 @@ public:
 	// =========================================================
 
 	/**
-	 * @brief 궁극기 재사용 대기시간 (Ultimate Cooldown)
-	 * @details 궁극기 (어빌리티) 의 재사용 대기시간의 값입니다.
+	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Ultimate", meta = (ClampMin = "0.0"))
-	float UltimateCooldown;
-
-	/**
-	 * @brief 궁극기 데미지 배율 (Ultimate Damage Rate)
-	 * @details 공격력의 몇 퍼센트로 피해를 입힐지 결정합니다.
-	 * 예: 1.5 = 150% 데미지 (기본 100 + 추가 50). 2.0 = 200% 데미지.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Ultimate", meta = (ClampMin = "1.0"))
-	float UltimateDamageRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName SkillActionID;
 };
 
 /**
@@ -213,20 +205,18 @@ struct FAIUnitStats : public FUnitBaseStats
 	float AttackSpeed;
 
 	/**
-	 * @brief 사거리 (Attack Range)
-	 * @details 이 거리 안에 타겟이 들어오면 이동을 멈추고 공격을 시도합니다.
-	 * @note 근거리는 보통 100~150, 원거리는 600~1000 정도를 사용합니다.
+	 * @brief AI 기본 공격 액션 ID
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.0"))
-	float AttackRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName BasicAttackActionID;
 
 	/**
-	 * @brief 스킬 재사용 대기시간 (Cooldown)
-	 * @details 단위: 초 (Seconds).
-	 * GAS의 Cooldown GameplayEffect(GE_Cooldown)에 적용될 지속 시간(Duration)입니다.
+	 * @brief AI 스킬 액션 ID 목록
+	 * @details FAIUnitAssets의 SkillAbilities 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
+	 * 예: 인덱스 0 = 돌진 스킬, 인덱스 1 = 브레스 스킬
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.0"))
-	float Cooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	TArray<FName> SkillActionIDs;
 };
 
 /**
@@ -462,6 +452,14 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
+
+	/**
+	 * @brief 투사체 클래스 (Projectile Class)
+	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
+	 * @note 근거리 무기일 경우 비워둡니다 (None).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	TSubclassOf<AActor> ProjectileClass;
 
 	/**
 	 * @brief 평타 연출 태그

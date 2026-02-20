@@ -42,6 +42,11 @@ public:
 	bool IsEnemy(AUnitBase* OtherUnit);
 
 	void PlayRangeAttack();
+
+	/** @brief 캐싱된 기본 공격 사거리 반환 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	float GetAttackRange() const { return CachedAttackRange; }
+
 protected:
 	/** @brief 데이터 테이블 조회를 위한 RowName 저장 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
@@ -54,6 +59,26 @@ protected:
 	/** @brief 기본 공격 몽타주 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cache")
 	TObjectPtr<UAnimMontage> CachedAttackMontage;
+
+	/** @brief 캐싱된 원거리 투사체 클래스 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TSubclassOf<AActor> CachedProjectileClass;
+
+	/** @brief 캐싱된 기본 공격 사거리 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	float CachedAttackRange;
+
+	/** @brief 캐싱된 기본 공격 데미지 배율 (추가!) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	float CachedDamageMultiplier = 1.0f;
+
+	/** @brief 캐싱된 기본 공격 Action ID */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	FName CachedBasicAttackActionID;
+
+	/** @brief 캐싱된 스킬 Action ID (단일 스킬 기준) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	FName CachedSkillActionID;
 
 	// =========================================================
 	// GAS Handles (어빌리티 관리)

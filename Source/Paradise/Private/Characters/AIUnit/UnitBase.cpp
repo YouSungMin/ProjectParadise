@@ -7,6 +7,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 
 AUnitBase::AUnitBase()
@@ -59,13 +60,16 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 	{
 		Result.MontageToPlay = CachedAttackMontage;
 		Result.DamageEffectClass = CachedDamageEffectClass;
-		Result.DamageMultiplier = 1.0f; // 기본 데미지 배율
+		Result.ProjectileClass = CachedProjectileClass;
+		Result.AttackRange = CachedAttackRange;
+		Result.DamageMultiplier = CachedDamageMultiplier;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
 		// 몬스터 전용 스킬 로직이 필요하다면 여기서 분기 처리
 		// 예: Result.MontageToPlay = CachedSkillMontage;
 	}
+
 
 	return Result;
 }
@@ -79,14 +83,30 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 
 	if (InStats)
 	{
-		// ✅ [Status] AttributeSet 초기화 (HP, MP, 공격력 등)
+		CachedBasicAttackActionID = InStats->BasicAttackActionID;
 		if (UBaseAttributeSet* BaseSet = Cast<UBaseAttributeSet>(AttributeSet))
 		{
 			BaseSet->InitMaxHealth(InStats->BaseMaxHP);
 			BaseSet->InitHealth(BaseSet->GetMaxHealth());
 			BaseSet->InitAttackPower(InStats->BaseAttackPower);
 			BaseSet->InitDefense(InStats->BaseDefense);
-			// ... 나머지 스탯 초기화
+			if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance()))
+			{
+				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->BasicAttackActionID))
+				{
+					// 액션 테이블에 정의된 평타 사거리로 AttributeSet을 초기화합니다.
+					BaseSet->InitAttackRange(ActionRow->AttackRange);
+					CachedAttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
+					CachedDamageMultiplier = ActionRow->DamageMultiplier;
+				}
+				else
+				{
+					// 만약 데이터를 찾지 못했을 경우의 안전 장치
+					BaseSet->InitAttackRange(150.0f);
+					CachedAttackRange = 150.0f;
+					CachedDamageMultiplier = 1.0f;
+				}
+			}
 		}
 
 		// ✅ [Tag] 소속 태그 적용 (데이터 테이블 -> 멤버 변수)
@@ -129,6 +149,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		// 전투 데이터 캐싱 (멤버 변수에 저장)
 		CachedDamageEffectClass = InAssets->BasicAttackEffect;
 		CachedAttackMontage = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
+		CachedProjectileClass = InAssets->ProjectileClass;
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)

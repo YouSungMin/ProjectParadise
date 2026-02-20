@@ -5,6 +5,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "GAS/System/ParadiseGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "Characters/Base/CharacterBase.h"
 #include "GameplayEffectTypes.h"
 
 struct FParadiseDamageStatics
@@ -136,5 +137,13 @@ void UExecCalcCombat::Execute_Implementation(const FGameplayEffectCustomExecutio
 				CurrentDamage
 			)
 		);
+
+		if (AActor* TargetActor = TargetASC->GetAvatarActor())
+		{
+			if (ACharacterBase* TargetChar = Cast<ACharacterBase>(TargetActor))
+			{
+				TargetChar->SpawnDamagePopup(CurrentDamage, bIsCritical);
+			}
+		}
 	}
 }

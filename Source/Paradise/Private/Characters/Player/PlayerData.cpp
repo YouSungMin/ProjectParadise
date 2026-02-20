@@ -103,7 +103,11 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 		if (CharAssets)
 		{
 			Result.MontageToPlay = CharAssets->UltimateMontage.LoadSynchronous(); // 구조체에 이 필드가 있다고 가정
-			Result.DamageMultiplier = CharStats->UltimateDamageRate;
+			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CharStats->SkillActionID))
+			{
+				Result.DamageMultiplier = ActionRow->DamageMultiplier;
+				Result.AttackRange = ActionRow->AttackRange;
+			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
 			Result.DamageEffectClass = CharAssets->UltimateDamageEffect;
@@ -132,18 +136,29 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	{
 		// 공통: 무기 전용 데미지 이펙트 (독, 화염 등)
 		Result.DamageEffectClass = WeaponAssets->DamageEffectClass;
+		Result.ProjectileClass = WeaponAssets->ProjectileClass;
+		FName TargetActionID = NAME_None;
 
 		switch (ActionType)
 		{
 		case ECombatActionType::BasicAttack:
 			Result.MontageToPlay = WeaponAssets->BasicAttackMontage.LoadSynchronous();
-			Result.DamageMultiplier = 1.0f;
+			TargetActionID = WeaponStats->BasicAttackActionID;
 			break;
 
 		case ECombatActionType::WeaponSkill:
 			Result.MontageToPlay = WeaponAssets->SkillMontage.LoadSynchronous();
-			Result.DamageMultiplier = WeaponStats->SkillDamageRate;
+			TargetActionID = WeaponStats->SkillActionID;
 			break;
+		}
+
+		if (!TargetActionID.IsNone())
+		{
+			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+			{
+				Result.DamageMultiplier = ActionRow->DamageMultiplier;
+				Result.AttackRange = ActionRow->AttackRange;
+			}
 		}
 	}
 
