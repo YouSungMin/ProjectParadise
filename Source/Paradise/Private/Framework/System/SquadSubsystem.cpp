@@ -37,7 +37,18 @@ void USquadSubsystem::SetPlayerToSlot(int32 SlotIndex, FName NewPlayerID)
 		return;
 	}
 
+	if (!NewPlayerID.IsNone())
+	{
+		UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+		if (!GI) return;
 
+		//GI 에서 데이터 유효성 검사 
+		if (!GI->IsValidPlayerID(NewPlayerID))
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ [SquadSubsystem] 편성 실패! '%s'는 유효하지 않은 캐릭터 ID입니다."), *NewPlayerID.ToString());
+			return;
+		}
+	}
 
 	//중복 편성 시
 	if (!NewPlayerID.IsNone() && IsPlayerAlreadyAssigned(NewPlayerID))
