@@ -13,6 +13,20 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 
+#pragma region 헬퍼 함수
+/** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
+FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
+{
+	switch (Rarity)
+	{
+	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
+	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
+	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
+	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
+	}
+}
+#pragma endregion 헬퍼 함수
+
 #pragma region 생명주기
 void UParadiseSquadMainWidget::NativeConstruct()
 {
@@ -25,7 +39,16 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		UE_LOG(LogTemp, Error, TEXT("[SquadMain] GameInstance is invalid! Data loading will fail."));
 	}
 
-	//0212 김성현 - 인벤토리 게임인스턴스 시스템으로 베이스 변경에 따라 인벤토리 캐싱 로직 삭제했습니다
+	// 2. 인벤토리 변경 시 자동 갱신 델리게이트 바인딩
+	if (UInventorySystem* InvSys = GetInventorySystem())
+	{
+		InvSys->OnInventoryUpdated.AddDynamic(this, &UParadiseSquadMainWidget::RefreshInventoryUI);
+		UE_LOG(LogTemp, Log, TEXT("[SquadMain] 인벤토리 델리게이트 바인딩 완료"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SquadMain] InventorySystem을 찾을 수 없습니다!"));
+	}
 
 
 	// 3. 탭 버튼 바인딩
@@ -73,6 +96,11 @@ UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
 void UParadiseSquadMainWidget::NativeDestruct()
 {
 	// 델리게이트 안전 해제
+	if (UInventorySystem* InvSys = GetInventorySystem())
+	{
+		InvSys->OnInventoryUpdated.RemoveAll(this);
+	}
+
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Weapon) Btn_Tab_Weapon->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Armor) Btn_Tab_Armor->OnClicked.RemoveAll(this);
@@ -207,7 +235,10 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 		for (const auto& Data : InvSys->GetOwnedCharacters())
 		{
 			// GameInstance의 테이블 조회 로직 활용
-			ListData.Add(MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true));
+			FSquadItemUIData UIData = MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true);
+			// [수정] 시스템 제어용 고유 식별자(GUID) 주입
+			UIData.InstanceUID = Data.CharacterUID;
+			ListData.Add(UIData);
 		}
 		break;
 
@@ -217,7 +248,11 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			// 무기 테이블에 존재하는 ID만 필터링하여 리스트에 추가
 			if (CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, Data.ItemID))
 			{
-				ListData.Add(MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Weapon));
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Weapon);
+				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
 			}
 		}
 		break;
@@ -228,7 +263,11 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			// 방어구 테이블에 존재하는 ID만 필터링
 			if (CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, Data.ItemID))
 			{
-				ListData.Add(MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Armor));
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Armor);
+				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
 			}
 		}
 		break;
@@ -236,22 +275,27 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 	case SquadTabs::Unit:
 		for (const auto& Data : InvSys->GetOwnedFamiliars())
 		{
-			ListData.Add(MakeUIData(Data.FamiliarID, Data.Level, SquadTabs::Unit));
+			FSquadItemUIData UIData = MakeUIData(Data.FamiliarID, Data.Level, SquadTabs::Unit);
+			// [수정] 시스템 제어용 고유 식별자(GUID)주입
+			UIData.InstanceUID = Data.FamiliarUID;
+			ListData.Add(UIData);
 		}
 		break;
 	}
-	//  데이터 후처리 (장착 여부 및 선택 상태 표시)
+
+	/** @section 데이터 후처리 (장착 여부 및 선택 상태 표시) */
 	for (auto& Item : ListData)
 	{
 		// TODO: CurrentEquippedIDs에 포함되어 있으면 테두리 표시
 		// if (CurrentEquippedIDs.Contains(Item.ID)) Item.bIsEquipped = true;
 
-		// 교체 모드에서 선택한 아이템이면 하이라이트
-		if (Item.ID == PendingSelection.ID)
+		// [수정] 동일한 아이템이 여러 개일 수 있으므로, 단순 ID(RowName)가 아닌 고유 GUID로 비교합니다.
+		if (Item.InstanceUID.IsValid() && Item.InstanceUID == PendingSelection.InstanceUID)
 		{
 			Item.bIsSelected = true;
 		}
 	}
+
 	// 가공된 데이터를 뷰(Inventory Panel)에 전달
 	WBP_InventoryPanel->UpdateList(CurrentTabIndex, ListData);
 }
@@ -291,9 +335,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
 		{
-			// 실제 변수명(예: Rarity)을 확인하여 태그로 변환하거나, 변수명을 맞추세요.
-			// 일단 컴파일을 위해 빈 태그로 둡니다.
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 캐릭터에 Rarity 변수가 있다면 ConvertRarityToTag를 호출. 없다면 임시 태그 적용.
+			Result.RankTag = FGameplayTag::RequestGameplayTag(TEXT("Unit.Rank.A"));
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
@@ -306,8 +349,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 		if (auto* Stat = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			// 여기도 마찬가지
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 부모 구조체(FItemBaseStats)의 Rarity를 태그로 변환
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FWeaponAssets>(CachedGI->WeaponAssetsDataTable, ID))
 		{
@@ -319,7 +362,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 		if (auto* Stat = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			Result.RankTag = FGameplayTag::EmptyTag;
+			// ★ [수정] 부모 구조체(FItemBaseStats)의 Rarity를 태그로 변환
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FArmorAssets>(CachedGI->ArmorAssetsDataTable, ID))
 		{
@@ -330,7 +374,7 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FFamiliarStats>(CachedGI->FamiliarStatsDataTable, ID))
 		{
-			// 퍼밀리어는 구조체에 RankTypeTag가 있다면 주석 해제
+			// 퍼밀리어는 구조체에 RankTypeTag가 있다면 주석 해제 (기존 코드 존중)
 			// Result.RankTag = Stat->RankTypeTag;
 			Result.RankTag = FGameplayTag::EmptyTag;
 		}
