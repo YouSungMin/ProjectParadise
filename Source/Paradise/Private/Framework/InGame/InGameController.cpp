@@ -3,6 +3,8 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/Core/ParadiseGameInstance.h" //디버그함수때문에 추가 이후 삭제
+#include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
@@ -50,7 +52,6 @@ void AInGameController::BeginPlay()
     }
 
 }
-
 void AInGameController::InitializeOverviewCamera()
 {
     TArray<AActor*> FoundActors;

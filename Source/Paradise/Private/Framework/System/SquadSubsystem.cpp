@@ -12,7 +12,11 @@ void USquadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	// 3인 플레이어 스쿼드 배열을 NAME_None으로 초기화 (크기 3 고정)
 	SelectedPlayerSquadIDs.Init(NAME_None, 3);
+	/*SetPlayerToSlot(0, "test1");
+	SetPlayerToSlot(1, "test2");
+	SetPlayerToSlot(2, "test3");*/
 
+	UE_LOG(LogTemp, Warning, TEXT("❌ [SquadSubsystem] Initialize 실행"));
 	// TODO: 게임 시작 시 저장된 스쿼드 정보가 있다면 여기서 불러옵니다.
 	// LoadSquadData();
 }

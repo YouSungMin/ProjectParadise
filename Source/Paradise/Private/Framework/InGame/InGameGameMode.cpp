@@ -27,6 +27,8 @@ void AInGameGameMode::BeginPlay()
 
 	//게임 시작 상태 Ready로 설정
 	SetGamePhase(EGamePhase::Combat);
+
+	
 }
 
 void AInGameGameMode::PostLogin(APlayerController* NewPlayer)
