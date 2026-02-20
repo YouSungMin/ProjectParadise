@@ -78,4 +78,14 @@ protected:
 	/** @brief [타이머] 스테이지 진행을 위한 타이머 핸들 */
 	UPROPERTY()
 	FTimerHandle StageTimerHandle;
+
+protected:
+	/** @brief 전투 전 미리 생성해둘 데미지 텍스트 블루프린트 클래스 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Pool")
+	TSubclassOf<class ADamageTextActor> DamageTextClass;
+
+	/** @brief 사전 생성 개수 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Pool", meta = (ClampMin = "10"))
+	int32 PreSpawnDamageTextCount = 30;
+
 };
