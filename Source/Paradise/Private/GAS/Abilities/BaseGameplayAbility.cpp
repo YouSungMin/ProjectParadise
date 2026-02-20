@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/GameplayStatics.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
@@ -59,6 +60,29 @@ void UBaseGameplayAbility::ApplySpecHandleToTarget(AActor* TargetActor, const FG
 	}
 }
 
+UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName)
+{
+	if (!MontageToPlay) return nullptr;
+
+	// 몽타주 재생 태스크 생성
+	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+		this, TaskInstanceName, MontageToPlay, 1.0f, NAME_None, false
+	);
+
+	if (MontageTask)
+	{
+		// 몽타주의 모든 종료 상황에 대해 공용 종료 함수(OnMontageCompleted) 연결
+		MontageTask->OnCompleted.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
+		MontageTask->OnInterrupted.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
+		MontageTask->OnBlendOut.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
+		MontageTask->OnCancelled.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
+
+		MontageTask->ReadyForActivation();
+	}
+
+	return MontageTask;
+}
+
 const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 {
 	if (bIsDataCached)
@@ -83,4 +107,13 @@ const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 	}
 
 	return CachedCombatData;
+}
+
+void UBaseGameplayAbility::OnMontageCompleted()
+{
+	// [디버깅] 몽타주가 왜 끝났는지 확인
+	//UE_LOG(LogTemp, Warning, TEXT("🛑 [MeleeBase] 몽타주 종료됨! 어빌리티 End."));
+
+	// 몽타주가 끝나면 어빌리티 종료
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

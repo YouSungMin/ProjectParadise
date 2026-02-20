@@ -83,6 +83,15 @@ public:
 
 protected:
 	/**
+	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수
+	 * @param MontageToPlay 재생할 몽타주
+	 * @param TaskInstanceName 태스크 이름 (보통 NAME_None)
+	 * @return 생성된 Montage Task (추가적인 바인딩이 필요할 경우 사용)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Animation")
+	class UAbilityTask_PlayMontageAndWait* PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName = NAME_None);
+
+	/**
 	 * @brief 이 어빌리티의 정체성 (평타 vs 스킬)
 	 * @details 블루프린트에서 설정합니다. (기본값: BasicAttack)
 	 * - GA_Attack_Normal (평타) -> BasicAttack
@@ -96,7 +105,14 @@ protected:
 	 * @details "무기가 바뀌지 않는다"는 전제 하에, 최초 1회만 검색하고 이후엔 저장된 값을 씁니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	const FCombatActionData& GetCombatDataFromActor(); // const 제거 & 참조 반환
+	const FCombatActionData& GetCombatDataFromActor();
+
+	/**
+	 * @brief 몽타주 재생이 끝났거나, 중단되었을 때 호출됩니다.
+	 * 어빌리티를 종료(EndAbility)시킵니다.
+	 */
+	UFUNCTION()
+	virtual void OnMontageCompleted();
 private:
 	/** @brief 데이터를 이미 가져왔는지 확인하는 플래그 */
 	bool bIsDataCached = false;

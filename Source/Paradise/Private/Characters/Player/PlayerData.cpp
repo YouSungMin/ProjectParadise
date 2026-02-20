@@ -132,6 +132,8 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	{
 		// 공통: 무기 전용 데미지 이펙트 (독, 화염 등)
 		Result.DamageEffectClass = WeaponAssets->DamageEffectClass;
+		Result.ProjectileClass = WeaponAssets->ProjectileClass;
+		Result.AttackRange = WeaponStats->AttackRange;
 
 		switch (ActionType)
 		{

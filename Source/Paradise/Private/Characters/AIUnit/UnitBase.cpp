@@ -60,6 +60,9 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 		Result.MontageToPlay = CachedAttackMontage;
 		Result.DamageEffectClass = CachedDamageEffectClass;
 		Result.DamageMultiplier = 1.0f; // 기본 데미지 배율
+
+		Result.ProjectileClass = CachedProjectileClass;
+		Result.AttackRange = CachedAttackRange;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
@@ -86,6 +89,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 			BaseSet->InitHealth(BaseSet->GetMaxHealth());
 			BaseSet->InitAttackPower(InStats->BaseAttackPower);
 			BaseSet->InitDefense(InStats->BaseDefense);
+			BaseSet->InitAttackRange(InStats->AttackRange);
 			// ... 나머지 스탯 초기화
 		}
 
@@ -129,6 +133,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		// 전투 데이터 캐싱 (멤버 변수에 저장)
 		CachedDamageEffectClass = InAssets->BasicAttackEffect;
 		CachedAttackMontage = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
+		CachedProjectileClass = InAssets->ProjectileClass;
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)

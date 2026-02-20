@@ -13,7 +13,11 @@ struct FCombatActionData
 
 public:
 	FCombatActionData()
-		: MontageToPlay(nullptr), DamageEffectClass(nullptr), DamageMultiplier(1.0f)
+		: MontageToPlay(nullptr)
+		, DamageEffectClass(nullptr)
+		, DamageMultiplier(1.0f)
+		, ProjectileClass(nullptr)
+		, AttackRange(150.0f)
 	{
 	}
 
@@ -36,4 +40,19 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
 	float DamageMultiplier;
+
+	// =====================================
+	//  원거리 전용 (Ranged)
+	// =====================================
+	/** * @brief 발사할 투사체 클래스
+	 * @details 이 값이 비어있으면(None) '근거리(Melee)'로 간주하고, 값이 있으면 '원거리(Ranged)'로 간주합니다.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
+	TSubclassOf<AActor> ProjectileClass;
+
+	/** * @brief 공격 사거리
+	 * @details AI가 공격을 시작할 거리 또는 투사체의 사거리 등을 결정합니다.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
+	float AttackRange;
 };

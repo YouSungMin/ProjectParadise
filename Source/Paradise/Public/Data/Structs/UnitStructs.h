@@ -464,6 +464,14 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
 
 	/**
+	 * @brief 투사체 클래스 (Projectile Class)
+	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
+	 * @note 근거리 무기일 경우 비워둡니다 (None).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	TSubclassOf<AActor> ProjectileClass;
+
+	/**
 	 * @brief 평타 연출 태그
 	 * @details 몬스터가 평타를 칠 때 재생할 이펙트/사운드 (예: Effect.Attack.Claw)
 	 */

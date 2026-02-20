@@ -55,6 +55,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cache")
 	TObjectPtr<UAnimMontage> CachedAttackMontage;
 
+	/** @brief 캐싱된 원거리 투사체 클래스 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TSubclassOf<AActor> CachedProjectileClass;
+
+	/** @brief 캐싱된 공격 사거리 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	float CachedAttackRange = 150.0f;
+
 	// =========================================================
 	// GAS Handles (어빌리티 관리)
 	// =========================================================

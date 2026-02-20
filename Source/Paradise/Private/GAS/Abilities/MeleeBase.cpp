@@ -26,41 +26,18 @@ void UMeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// BaseGameplayAbility에서 만든 함수가 캐싱된 데이터를 줍니다.
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
-	UAnimMontage* MontageToPlay = CombatData.MontageToPlay;
-
-	// 유효성 검사
-	if (!MontageToPlay)
+	if (!CombatData.MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [MeleeBase] 재생할 몽타주가 없습니다. (ID 확인 필요)"));
+		UE_LOG(LogTemp, Warning, TEXT("❌ [MeleeBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	// 몽타주 재생
-	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this,
-		NAME_None,
-		MontageToPlay, // 가져온 몽타주
-		1.0f,
-		NAME_None,
-		false
-	);
-
-	// 종료 이벤트 연결
-	MontageTask->OnCompleted.AddDynamic(this, &UMeleeBase::OnMontageCompleted);
-	MontageTask->OnInterrupted.AddDynamic(this, &UMeleeBase::OnMontageCompleted);
-	MontageTask->OnBlendOut.AddDynamic(this, &UMeleeBase::OnMontageCompleted);
-	MontageTask->OnCancelled.AddDynamic(this, &UMeleeBase::OnMontageCompleted);
-
-	MontageTask->ReadyForActivation();
+	PlayMontageAndWaitCallback(CombatData.MontageToPlay);
 
 	// 타격 이벤트 대기 (WaitGameplayEvent)
 	UAbilityTask_WaitGameplayEvent* EventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		HitEventTag, // "Event.Montage.Hit"
-		nullptr,
-		false,
-		false
+		this, HitEventTag, nullptr, false, false
 	);
 
 	EventTask->EventReceived.AddDynamic(this, &UMeleeBase::OnGameplayEventReceived);
@@ -100,13 +77,4 @@ void UMeleeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		// 5. 적용 (Apply)
 		ApplySpecHandleToTarget(TargetActor, SpecHandle);
 	}
-}
-
-void UMeleeBase::OnMontageCompleted()
-{
-	// [디버깅] 몽타주가 왜 끝났는지 확인
-	//UE_LOG(LogTemp, Warning, TEXT("🛑 [MeleeBase] 몽타주 종료됨! 어빌리티 End."));
-
-	// 몽타주가 끝나면 어빌리티 종료
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

@@ -87,6 +87,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	bool IsHostile(ACharacterBase* Target) const;
+
+	/*
+	 * @brief ExecCalc에서 호출되어 데미지 텍스트를 풀에서 꺼내 띄우는 함수
+	 * @param DamageAmount 데미지수치, bIsCritical 크리티컬 여부
+	 */
+	UFUNCTION(BlueprintCallable)
+	void SpawnDamagePopup(float DamageAmount, bool bIsCritical);
 protected:
 	virtual void BeginPlay() override;
 
@@ -104,12 +111,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ResetHitFlash();
 
-	/* 
-	 * @brief DamagePopup(데미지위젯)을 스폰(오브젝트 풀링)시키는 함수  
-	 * @param DamageAmount 위젯에 설정할 데미지수치
-	 */
-	UFUNCTION(BlueprintCallable)
-	void SpawnDamagePopup(float DamageAmount);
+
 
 
 public:
@@ -156,6 +158,10 @@ protected:
 	 */
 	UPROPERTY()
 	TArray<AActor*> HitActors;
+
+	// 에디터에서 할당할 데미지 텍스트 블루프린트 클래스 (BP_DamageTextActor)
+	UPROPERTY(EditAnywhere, Category = "Combat|UI")
+	TSubclassOf<class ADamageTextActor> DamageTextClass;
 private:
 		
 	/*
