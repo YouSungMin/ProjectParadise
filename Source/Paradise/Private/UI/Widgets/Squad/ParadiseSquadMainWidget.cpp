@@ -8,6 +8,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/SquadSubsystem.h"
 #include "Components/Button.h"
 #include "Engine/DataTable.h"
 #include "Data/Structs/UnitStructs.h"
@@ -50,6 +51,8 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		UE_LOG(LogTemp, Error, TEXT("[SquadMain] InventorySystem을 찾을 수 없습니다!"));
 	}
 
+	// 편성이 확정되는 순간 FormationWidget을 즉시 갱신할 수 있도록 구독합니다.
+	BindSquadSubsystemDelegates();
 
 	// 3. 탭 버튼 바인딩
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSquadMainWidget::OnClickCharTab);
@@ -79,23 +82,18 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// 로비에서 이미 편성해 둔 캐릭터/유닛 아이콘이 진입 즉시 보이도록 합니다.
+	InitFormationFromSubsystem();
+
 	// 5. 초기 상태 설정 
 	ResetPanelState();
-}
-
-//인스턴스에서 인벤토리 서브시스템 Getter함수
-UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
-{
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		return GI->GetSubsystem<UInventorySystem>();
-	}
-	return nullptr;
 }
 
 void UParadiseSquadMainWidget::NativeDestruct()
 {
 	// 델리게이트 안전 해제
+	UnbindSquadSubsystemDelegates();
+
 	if (UInventorySystem* InvSys = GetInventorySystem())
 	{
 		InvSys->OnInventoryUpdated.RemoveAll(this);
@@ -121,6 +119,137 @@ void UParadiseSquadMainWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 #pragma endregion 생명주기
+
+#pragma region 데이터 소스 Getter
+UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		return GI->GetSubsystem<UInventorySystem>();
+	}
+	return nullptr;
+}
+
+USquadSubsystem* UParadiseSquadMainWidget::GetSquadSubsystem() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		return GI->GetSubsystem<USquadSubsystem>();
+	}
+	return nullptr;
+}
+#pragma endregion 데이터 소스 Getter
+
+#pragma region SquadSubsystem 연동
+void UParadiseSquadMainWidget::BindSquadSubsystemDelegates()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SquadMain] SquadSubsystem을 찾을 수 없어 델리게이트 바인딩을 생략합니다."));
+		return;
+	}
+
+	// 플레이어 슬롯(0~2) 변경 이벤트 구독
+	if (!SquadSys->OnPlayerSlotChanged.IsAlreadyBound(this, &UParadiseSquadMainWidget::OnPlayerSlotUpdated))
+	{
+		SquadSys->OnPlayerSlotChanged.AddDynamic(this, &UParadiseSquadMainWidget::OnPlayerSlotUpdated);
+	}
+
+	// 퍼밀리어 슬롯(0~4) 변경 이벤트 구독
+	if (!SquadSys->OnFamiliarSlotChanged.IsAlreadyBound(this, &UParadiseSquadMainWidget::OnFamiliarSlotUpdated))
+	{
+		SquadSys->OnFamiliarSlotChanged.AddDynamic(this, &UParadiseSquadMainWidget::OnFamiliarSlotUpdated);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] SquadSubsystem 델리게이트 바인딩 완료"));
+}
+
+void UParadiseSquadMainWidget::UnbindSquadSubsystemDelegates()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys) return;
+
+	SquadSys->OnPlayerSlotChanged.RemoveAll(this);
+	SquadSys->OnFamiliarSlotChanged.RemoveAll(this);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] SquadSubsystem 델리게이트 해제 완료"));
+}
+
+void UParadiseSquadMainWidget::InitFormationFromSubsystem()
+{
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!SquadSys || !WBP_FormationPanel)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SquadMain] InitFormationFromSubsystem 실패: SquadSubsystem 또는 FormationPanel 없음"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 편성 서브시스템 → FormationWidget 초기화 시작"));
+
+	// --- 플레이어 캐릭터 슬롯 (0~2) 동기화 ---
+	const TArray<FName>& PlayerIDs = SquadSys->GetPlayerSquad();
+	for (int32 i = 0; i < PlayerIDs.Num(); ++i)
+	{
+		FName PlayerID = PlayerIDs[i];
+		// NAME_None이면 빈 슬롯으로 처리 (ID가 없는 FSquadItemUIData 전달)
+		FSquadItemUIData UIData = PlayerID.IsNone()
+			? FSquadItemUIData()
+			: MakeUIData(PlayerID, 1, SquadTabs::Character, true);
+
+		WBP_FormationPanel->UpdateSlot(i, UIData);
+	}
+
+	// --- 퍼밀리어 슬롯 (SquadSubsystem 0~4 → FormationWidget 3~7) 동기화 ---
+	const TArray<FName>& FamiliarIDs = SquadSys->GetFamiliarSquad();
+	for (int32 i = 0; i < FamiliarIDs.Num(); ++i)
+	{
+		FName FamiliarID = FamiliarIDs[i];
+		// 퍼밀리어 서브시스템 인덱스(0~4)를 FormationWidget 인덱스(3~7)로 변환
+		const int32 FormationIndex = i + 3;
+		FSquadItemUIData UIData = FamiliarID.IsNone()
+			? FSquadItemUIData()
+			: MakeUIData(FamiliarID, 1, SquadTabs::Unit);
+
+		WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] FormationWidget 초기화 완료 (캐릭터 %d슬롯, 유닛 %d슬롯)"),
+		PlayerIDs.Num(), FamiliarIDs.Num());
+}
+
+void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID)
+{
+	if (!WBP_FormationPanel) return;
+
+	// SquadSubsystem 플레이어 슬롯(0~2)은 FormationWidget과 인덱스가 동일합니다.
+	FSquadItemUIData UIData = NewPlayerID.IsNone()
+		? FSquadItemUIData()
+		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, true);
+
+	WBP_FormationPanel->UpdateSlot(SlotIndex, UIData);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 플레이어 슬롯[%d] 업데이트: %s"),
+		SlotIndex, *NewPlayerID.ToString());
+}
+
+void UParadiseSquadMainWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID)
+{
+	if (!WBP_FormationPanel) return;
+
+	// 퍼밀리어 서브시스템 인덱스(0~4) → FormationWidget 인덱스(3~7) 변환
+	const int32 FormationIndex = SlotIndex + 3;
+
+	FSquadItemUIData UIData = NewFamiliarID.IsNone()
+		? FSquadItemUIData()
+		: MakeUIData(NewFamiliarID, 1, SquadTabs::Unit);
+
+	WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
+
+	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 퍼밀리어 슬롯[%d](Formation[%d]) 업데이트: %s"),
+		SlotIndex, FormationIndex, *NewFamiliarID.ToString());
+}
+#pragma endregion SquadSubsystem 연동
 
 #pragma region 로직 - 탭 및 상태 제어
 void UParadiseSquadMainWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
