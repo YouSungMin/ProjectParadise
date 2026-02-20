@@ -46,11 +46,11 @@ void UMeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 void UMeleeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
-	// 1. 맞은 대상(Target) 확인
+	// 맞은 대상(Target) 확인
 	AActor* TargetActor = const_cast<AActor*>(Payload.Target.Get());
 	if (!TargetActor) return;
 
-	// 2. 데이터 다시 조회 (Base 클래스에서 캐싱해주므로 비용 걱정 없음)
+	// 데이터 다시 조회 (Base 클래스에서 캐싱해주므로 비용 걱정 없음)
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
 	// GE 클래스가 없으면 데미지 못 줌
