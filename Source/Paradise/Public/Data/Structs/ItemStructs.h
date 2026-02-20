@@ -110,29 +110,18 @@ public:
 	float CritDamage;
 
 	/**
-	 * @brief 공격 사거리 (Attack Range)
-	 * @details 단위: cm (Unreal Unit).
-	 * 근거리 무기의 경우 충돌(Trace) 검사 길이로 사용됩니다.
+	 * @brief 평타 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float AttackRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName BasicAttackActionID; // 예: "Sword_BasicCombo"
 
 	/**
-	 * @brief 무기 스킬 데미지 계수 (Skill Damage Multiplier)
-	 * @details 무기 고유 스킬(WeaponSkillAbility) 사용 시 적용될 데미지 배율입니다.
-	 * 예: 1.5 = 공격력의 150% 데미지.
-	 * 평타(1.0)와 달리 스킬은 더 강해야 하므로 이 값으로 조절합니다.
+	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float SkillDamageRate = 1.5f;
-
-	/**
-	 * @brief 스킬 재사용 대기시간 (Cooldown)
-	 * @details 단위: 초 (Seconds).
-	 * GAS의 Cooldown GameplayEffect(GE_Cooldown)에 적용될 지속 시간(Duration)입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float Cooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName SkillActionID;
 };
 
 /**

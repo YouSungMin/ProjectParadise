@@ -47,16 +47,10 @@ void AMyAIController::OnPossess(APawn* InPawn)
     {
         Blackboard = BBComp;
         AUnitBase* SelfUnit = Cast<AUnitBase>(InPawn);
-        UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-
-        if (SelfUnit && GI)
+        if (SelfUnit)
         {
             // 1. 사거리 데이터 로드 (기존 동일)
-            FEnemyStats* MyStats = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, SelfUnit->GetUnitID());
-            if (MyStats)
-            {
-                Blackboard->SetValueAsFloat(TEXT("TargetAttackRange"), MyStats->AttackRange);
-            }
+            Blackboard->SetValueAsFloat(TEXT("TargetAttackRange"), SelfUnit->GetAttackRange());
 
             // 2. 적대적인 기지 찾기 (로그 강화)
             TArray<AActor*> FoundBases;
