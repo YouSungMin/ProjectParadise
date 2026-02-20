@@ -6,6 +6,7 @@
 #include "Framework/System/ParadiseSaveGame.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/SquadSubsystem.h"
 #include "Components/EquipmentComponent.h"
 #include "Characters/Player/PlayerData.h"
 #include "Kismet/GameplayStatics.h"
@@ -34,6 +35,15 @@ void UParadiseGameInstance::Init()
 	UE_LOG(LogTemp, Log, TEXT("[ParadiseGameInstance] 초기화 및 로딩 서브시스템 설정 완료."));
 }
 
+void UParadiseGameInstance::Shutdown()
+{
+	SaveGameData();
+	UE_LOG(LogTemp, Warning, TEXT("🛑 [GameInstance] 게임 종료 전 자동 저장을 완료했습니다."));
+
+
+	Super::Shutdown();
+}
+
 void UParadiseGameInstance::SaveGameData()
 {
 	UInventorySystem* MainInventory = GetMainInventory();
@@ -44,9 +54,15 @@ void UParadiseGameInstance::SaveGameData()
 	if (!SaveObj) return;
 
 	//현재 메모리에 있는 인벤토리 데이터를 세이브 객체로 복사 (깊은 복사)
-	SaveObj->SavedCharacters = MainInventory->GetOwnedCharacters();
-	SaveObj->SavedFamiliars = MainInventory->GetOwnedFamiliars();
-	SaveObj->SavedInventoryItems = MainInventory->GetOwnedItems();
+	SaveObj->SavedOwnedCharacters = MainInventory->GetOwnedCharacters();
+	SaveObj->SavedOwnedFamiliars = MainInventory->GetOwnedFamiliars();
+	SaveObj->SavedOwnedInventoryItems = MainInventory->GetOwnedItems();
+
+	//스쿼드 편성 정보 저장
+	if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
+	{
+		SquadSys->SaveToSaveGame(SaveObj);
+	}
 
 	//플레이어 전체 재화 (뽑기재화 , 레벨업등에 사용하는 재화) 추가예정
 
@@ -73,13 +89,19 @@ void UParadiseGameInstance::LoadGameData()
 		UParadiseSaveGame* LoadObj = Cast<UParadiseSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveGameSlotName, 0));
 		if (LoadObj)
 		{
-			// 3. 세이브 객체에 들어있는 배열들을 인벤토리의 InitInventory 함수에 주입!
-			// (InitInventory 함수 내부에서 자동으로 유효성 검사 후 인벤토리가 세팅됩니다)
+			//세이브 객체에 들어있는 배열들을 인벤토리의 InitInventory 함수에 호출
+			//InitInventory 함수 내부에서 자동으로 유효성 검사 후 인벤토리 초기화
 			MainInventory->InitInventory(
-				LoadObj->SavedCharacters,
-				LoadObj->SavedFamiliars,
-				LoadObj->SavedInventoryItems
+				LoadObj->SavedOwnedCharacters,
+				LoadObj->SavedOwnedFamiliars,
+				LoadObj->SavedOwnedInventoryItems
 			);
+
+			//스쿼드 편성 정보 로드
+			if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
+			{
+				SquadSys->LoadFromSaveGame(LoadObj);
+			}
 
 			UE_LOG(LogTemp, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 		}

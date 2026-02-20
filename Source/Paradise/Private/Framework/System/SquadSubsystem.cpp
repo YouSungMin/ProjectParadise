@@ -2,9 +2,10 @@
 
 
 #include "Framework/System/SquadSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/ParadiseSaveGame.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
-#include "Framework/Core/ParadiseGameInstance.h"
 
 void USquadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -185,7 +186,32 @@ bool USquadSubsystem::IsPlayerAlreadyAssigned(FName PlayerID) const
 	return SelectedPlayerSquadIDs.Contains(PlayerID);
 }
 
-void USquadSubsystem::SaveSquadData()
+void USquadSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 {
-	
+	if (!SaveGameObj) return;
+
+	// 영웅 데이터 복구 (기존 세이브 데이터가 3칸일 때만 안전하게 가져옴)
+	if (SaveGameObj->SavedPlayerSquadIDs.Num() == 3)
+	{
+		SelectedPlayerSquadIDs = SaveGameObj->SavedPlayerSquadIDs;
+	}
+
+	// 퍼밀리어 데이터 복구 (기존 세이브 데이터가 5칸일 때만)
+	if (SaveGameObj->SavedFamiliarSquadIDs.Num() == 5)
+	{
+		SelectedFamiliarSquadIDs = SaveGameObj->SavedFamiliarSquadIDs;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("✅ [SquadSubsystem] 세이브 파일에서 편성 정보를 성공적으로 불러왔습니다."));
+}
+
+void USquadSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
+{
+	if (!SaveGameObj) return;
+
+	// 서브시스템이 들고 있던 배열을 세이브 객체로 그대로 복사(전달)
+	SaveGameObj->SavedPlayerSquadIDs = SelectedPlayerSquadIDs;
+	SaveGameObj->SavedFamiliarSquadIDs = SelectedFamiliarSquadIDs;
+
+	UE_LOG(LogTemp, Log, TEXT("💾 [SquadSubsystem] 세이브 객체에 편성 정보를 기록했습니다."));
 }

@@ -26,6 +26,8 @@ private:
 
 
 public:
+
+#pragma region 저장 데이터 Default
 	//세이브 슬롯 이름 (기본: "SaveSlot_01")
 	UPROPERTY(VisibleAnywhere, Category = "Basic")
 	FString SaveSlotName;
@@ -36,19 +38,37 @@ public:
 	//유저 인덱스 (기본: 0)
 	UPROPERTY(VisibleAnywhere, Category = "Basic")
 	uint32 UserIndex;
+#pragma endregion 저장 데이터 Default
+
+#pragma region 보유한 캐릭터 , 퍼밀리어 , 장비 데이터
 
 	//인벤토리 데이터 (보유 아이템 목록)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TArray<FOwnedItemData> SavedInventoryItems;
+	TArray<FOwnedItemData> SavedOwnedInventoryItems;
 
 	//보유 영웅 목록 (성장 정보 포함)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TArray<FOwnedCharacterData> SavedCharacters;
+	TArray<FOwnedCharacterData> SavedOwnedCharacters;
 
 	//보유 패밀리어 목록
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TArray<FOwnedFamiliarData> SavedFamiliars;
+	TArray<FOwnedFamiliarData> SavedOwnedFamiliars;
 
+#pragma endregion 보유한 캐릭터 , 퍼밀리어 , 장비 데이터
+
+
+#pragma region 스쿼드 편성 데이터 
+
+	// 🌟 스쿼드(편성) 저장 데이터
+	// 영웅 편성 데이터 (3칸)
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Squad")
+	TArray<FName> SavedPlayerSquadIDs;
+
+	// 퍼밀리어 편성 데이터 (5칸)
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Squad")
+	TArray<FName> SavedFamiliarSquadIDs;
+
+#pragma endregion 스쿼드 편성 데이터
 	//추가 예정 : 플레이어 재화류 , 클리어한 스테이지 정보 등등 
 
 };
