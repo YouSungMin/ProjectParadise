@@ -63,6 +63,32 @@ protected:
 public:
 
 	/**
+	 * @brief 데이터 테이블을 조회하여 해당 플레이어 ID가 존재하는지 확인하는 헬퍼 함수
+	 * @param PlayerID 검사할 플레이어의 데이터 테이블 Row Name
+	 * @return 데이터가 존재하면 true, 없으면 false
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidPlayerID(FName PlayerID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 퍼밀리어 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidFamiliarID(FName FamiliarID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 아이템 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidItemID(FName ItemID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 적/유닛 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidUnitID(FName UnitID) const;
+
+	/**
 	 * @brief [템플릿] 특정 테이블에서 ID로 데이터를 찾아 해당 구조체로 반환하는 함수
 	 * @tparam T : 찾고자 하는 구조체 타입 (예: FCharacterStats)
 	 * @param Table : 검색할 데이터 테이블 포인터
@@ -70,7 +96,7 @@ public:
 	 * @return 찾은 데이터 포인터 (없으면 nullptr)
 	 */
 	template <typename T>
-	T* GetDataTableRow(UDataTable* Table, FName RowName)
+	T* GetDataTableRow(UDataTable* Table, FName RowName) const
 	{
 		if (!Table)
 		{

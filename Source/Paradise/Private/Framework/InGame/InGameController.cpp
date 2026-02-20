@@ -3,6 +3,8 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/Core/ParadiseGameInstance.h" //디버그함수때문에 추가 이후 삭제
+#include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
@@ -49,23 +51,7 @@ void AInGameController::BeginPlay()
         }
     }
 
-    //[더미 테스트] 스쿼드 초기화 요청
-    // 실제로는 GameMode나 로비에서 넘겨받은 데이터로 호출해야 함
-    AInGamePlayerState* PS = GetPlayerState<AInGamePlayerState>();
-    if (PS)
-    {
-        TArray<FName> TestHeroIDs;
-        TestHeroIDs.Add(TEXT("Test1"));
-        TestHeroIDs.Add(TEXT("Test2"));
-        TestHeroIDs.Add(TEXT("Test3"));
-        PS->InitSquad(TestHeroIDs); 
-
-        //육체 소환
-        InitializeSquadPawns();
-    }
-
 }
-
 void AInGameController::InitializeOverviewCamera()
 {
     TArray<AActor*> FoundActors;
@@ -374,7 +360,7 @@ void AInGameController::InitializeSquadPawns()
             FVector SpawnLoc = FVector(0, i * 200.0f, 100.0f);
             FRotator SpawnRot = FRotator::ZeroRotator;
 
-            // [수정됨] 에디터에서 지정한 TestPlayerClass가 있으면 그걸 쓰고, 없으면 기본 C++ 클래스 사용
+            //에디터에서 지정한 TestPlayerClass가 있으면 그걸 쓰고, 없으면 기본 C++ 클래스 사용
             UClass* SpawnClass = nullptr;
 
             if (TestPlayerClass) {

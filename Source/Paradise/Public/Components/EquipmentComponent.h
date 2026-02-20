@@ -83,6 +83,12 @@ public:
 private:
 
 	/**
+	 * @brief 현재 장착 중인 장비들의 스탯을 긁어와서 플레이어의 Base 스탯에 더해줍니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Equipment|Stats")
+	void ApplyEquipmentStats();
+
+	/**
 	 * @brief (내부함수) 캐릭터의 스켈레탈 메시(방어구)를 교체합니다.
 	 * @details 투구, 갑옷, 신발 등 부위별로 메시를 SetSkeletalMesh 합니다.
 	 */

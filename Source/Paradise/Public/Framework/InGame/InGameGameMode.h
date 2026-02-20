@@ -23,13 +23,25 @@ public:
 	AInGameGameMode();
 
 	virtual void BeginPlay() override;
-	
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 	/** 
 	* @brief 스테이지 타이머가 1초 경과할 때마다 호출되는 함수
 	*/
 	void OnStageTimerElapsed();
 	
 public:
+
+#pragma region PlayerSquad 셋업
+
+	//0220 김성현 - 스쿼드 시스템 셋업 함수 추가
+private:
+	/** * @brief 접속한 플레이어의 편성(Squad) 데이터를 읽어와 인게임 육체와 영혼을 스폰합니다.
+	 * @param NewPlayer 방금 접속을 완료한 플레이어 컨트롤러
+	 */
+	void SetupPlayerSquad(APlayerController* NewPlayer);
+
+#pragma endregion PlayerSquad 셋업
 
 	/**
 	 * @brief 게임 페이즈를 변경하고 관련 이벤트를 트리거합니다.

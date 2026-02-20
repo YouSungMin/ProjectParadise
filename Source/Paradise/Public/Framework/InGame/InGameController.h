@@ -28,9 +28,7 @@ public:
 	virtual void SetupInputComponent() override;
 
 	//  스쿼드 제어 (Squad Control)
-
 public:
-
 
 	/**
 	 * @brief OverViewCamera를 찾아서 초기화해두는 함수
@@ -67,13 +65,15 @@ public:
 	 */
 	void UpdateCameraSystem();
 
-private:
 	/*
 	 * @brief 게임 시작 시 스쿼드 3명을 월드에 스폰하고 초기화하는 함수
 	 * @details PlayerState의 데이터를 기반으로 실제 육체(Pawn)를 생성합니다.
 	 */
 	void InitializeSquadPawns();
 
+
+private:
+	
 	/*
 	 * @brief 현재 조종하지 않는 캐릭터에게 AI 컨트롤러를 빙의시키는 함수
 	 */
