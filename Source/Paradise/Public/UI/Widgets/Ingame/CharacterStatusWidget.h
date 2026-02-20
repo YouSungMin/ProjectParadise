@@ -31,7 +31,15 @@ public:
      * @brief 캐릭터의 초상화 이미지를 동적으로 설정합니다. (Data-Driven)
      * @param NewPortrait 적용할 텍스처 데이터 포인터
      */
+    UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
     void SetCharacterPortrait(UTexture2D* NewPortrait);
+
+    /**
+     * @brief ASC가 완벽히 초기화된 직후 외부에서 호출하여 UI와 GAS를 연결합니다.
+     * @param InASC 대상 캐릭터의 Ability System Component
+     */
+    UFUNCTION(BlueprintCallable, Category = "Paradise|GAS")
+    void BindToASC(UAbilitySystemComponent* InASC);
 #pragma endregion 외부 인터페이스
 
 protected:
