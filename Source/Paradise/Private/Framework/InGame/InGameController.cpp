@@ -397,6 +397,8 @@ void AInGameController::InitializeSquadPawns()
                 NewBody->InitializePlayer(Soul);
                 ActiveSquadPawns.Add(NewBody);
                 DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
+
+                BindPlayerToUI(i, Soul);
             }
         }
     }
