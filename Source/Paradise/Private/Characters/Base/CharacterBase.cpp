@@ -88,7 +88,10 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			if (!HitActor) continue;
 
 			// 중복 타격 방지
-			if (HitActors.Contains(HitActor)) continue;
+			if (HitActors.Contains(HitActor))
+			{
+				continue;
+			}
 			HitActors.Add(HitActor);
 
 			// 태그 기반 피아 식별
