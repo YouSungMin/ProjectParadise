@@ -38,7 +38,7 @@ public:
 
 	/** 사거리(비행 거리)와 반경(판정 크기)을 적용합니다. */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void ApplyCombatData(float InAttackRange, float InAttackRadius);
+	void ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed);
 
 protected:
 	// =========================================================================

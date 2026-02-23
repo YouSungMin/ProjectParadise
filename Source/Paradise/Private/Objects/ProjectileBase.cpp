@@ -70,7 +70,7 @@ void AProjectileBase::SetDamageSpecHandle(const FGameplayEffectSpecHandle& InSpe
 	DamageSpecHandle = InSpecHandle;
 }
 
-void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius)
+void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed)
 {
 	// 투사체 판정 크기(두께) 변경
 	if (SphereComp)
@@ -81,6 +81,15 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius)
 	// 시각적 메쉬 크기 조절
 	float ScaleRatio = InAttackRadius / 15.0f;
 	SetActorScale3D(FVector(ScaleRatio));
+
+	if (InSpeed > 0.0f)
+	{
+		ProjectileMovementComp->InitialSpeed = InSpeed;
+		ProjectileMovementComp->MaxSpeed = InSpeed;
+
+		// [중요] 풀링에서 꺼내진 상태이므로 Velocity를 직접 갱신해 줘야 바로 적용됩니다!
+		ProjectileMovementComp->Velocity = GetActorForwardVector() * InSpeed;
+	}
 
 	// 사거리(거리)를 기반으로 생존 시간(LifeTime) 계산 (시간 = 거리 / 속력)
 	float CurrentSpeed = ProjectileMovementComp->InitialSpeed;

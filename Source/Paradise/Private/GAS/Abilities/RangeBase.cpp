@@ -54,7 +54,7 @@ void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
-	//UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 사거리: %.1f"), CombatData.AttackRange);
+	UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.ProjectileSpeed);
 
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
@@ -106,7 +106,7 @@ void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 			}
 
 			// 사거리(길이)와 반경(두께) 전달하여 투사체 갱신
-			Proj->ApplyCombatData(CombatData.AttackRange, CombatData.AttackRadius);
+			Proj->ApplyCombatData(CombatData.AttackRange, CombatData.AttackRadius, CombatData.ProjectileSpeed);
 		}
 	}
 }

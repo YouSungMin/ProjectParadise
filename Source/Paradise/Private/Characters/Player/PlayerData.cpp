@@ -109,6 +109,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				Result.AttackRange = ActionRow->AttackRange;
 				Result.AttackRadius = ActionRow->AttackRadius;
 				Result.ForwardOffset = ActionRow->ForwardOffset;
+				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
@@ -163,6 +164,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				Result.AttackRadius = ActionRow->AttackRadius;
 				Result.ForwardOffset = ActionRow->ForwardOffset;
 				Result.Cooldown = ActionRow->Cooldown;
+				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
 			}
 			else
 			{

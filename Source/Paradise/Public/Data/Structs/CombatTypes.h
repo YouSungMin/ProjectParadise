@@ -45,6 +45,12 @@ struct FActionStats : public FTableRowBase
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
 	float Cooldown;
+
+	/** * @brief 투사체 비행 속도
+	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	float ProjectileSpeed;
 };
 
 USTRUCT(BlueprintType)
@@ -58,7 +64,6 @@ public:
 		, DamageEffectClass(nullptr)
 		, DamageMultiplier(1.0f)
 		, ProjectileClass(nullptr)
-		, AttackRange(150.0f)
 	{
 	}
 
@@ -81,15 +86,6 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
 	float DamageMultiplier;
-
-	// =====================================
-	//  원거리 전용 (Ranged)
-	// =====================================
-	/** * @brief 발사할 투사체 클래스
-	 * @details 이 값이 비어있으면(None) '근거리(Melee)'로 간주하고, 값이 있으면 '원거리(Ranged)'로 간주합니다.
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
-	TSubclassOf<AActor> ProjectileClass;
 
 	// =====================================
 	//  타격 판정 공용 스탯 (Hit Check)
@@ -121,4 +117,21 @@ public:
 	/** @brief 엑셀에서 읽어온 스킬 쿨타임 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float Cooldown = 0.0f;
+
+	// =====================================
+	//  원거리 전용 (Ranged)
+	// =====================================
+	/** * @brief 발사할 투사체 클래스
+	 * @details 이 값이 비어있으면(None) '근거리(Melee)'로 간주하고, 값이 있으면 '원거리(Ranged)'로 간주합니다.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
+	TSubclassOf<AActor> ProjectileClass;
+
+	/** * @brief 투사체 비행 속도 
+	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	float ProjectileSpeed = 0.0f;
 };
+
+
