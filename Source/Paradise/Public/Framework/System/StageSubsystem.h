@@ -7,14 +7,7 @@
 #include "StageSubsystem.generated.h"
 
 /**
- * @class UStageSubsystem
- * @brief 스테이지 진행도(해금, 별점) 및 레벨 이동 간의 데이터 전달을 중앙에서 관리하는 게임 인스턴스 서브시스템입니다.
- * * @details
- * GameInstance의 수명주기를 따르므로 맵(레벨)이 전환되어도 데이터가 소멸하지 않고 안전하게 유지됩니다.
- * 다음과 같은 3가지 핵심 역할을 수행합니다:
- * * 1. [진행도 관리] : 유저가 입장할 수 있는 스테이지 목록과 각 스테이지의 최고 클리어 랭크(별점)를 관리합니다.
- * 2. [데이터 브릿지] : 로비(UI)에서 유저가 선택한 타겟 스테이지 ID를 임시로 기억하고, 인게임 로딩 완료 후 GameMode에게 전달합니다.
- * 3. [세이브/로드] : 메모리에 유지되던 진행도 데이터를 `UParadiseSaveGame` 객체와 연동하여 영구적으로 보존 및 복구합니다.
+ * 
  */
 UCLASS()
 class PARADISE_API UStageSubsystem : public UGameInstanceSubsystem
