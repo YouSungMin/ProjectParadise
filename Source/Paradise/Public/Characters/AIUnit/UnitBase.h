@@ -39,7 +39,7 @@ public:
 	virtual void Die()override;
 
 	UFUNCTION(BlueprintCallable, Category = "Unit|Logic")
-	bool IsEnemy(AUnitBase* OtherUnit);
+	virtual bool IsEnemy(AActor* OtherActor);
 
 	void PlayRangeAttack();
 
