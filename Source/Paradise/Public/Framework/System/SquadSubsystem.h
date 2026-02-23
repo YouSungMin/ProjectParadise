@@ -6,7 +6,7 @@
 
 // 3개의 슬롯 중 특정 슬롯의 플레이어가 변경되었을 때 UI에 알리는 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerSlotChangedSignature, int32, SlotIndex, FName, NewPlayerID);
-// 3개의 슬롯 중 특정 슬롯의 퍼밀리어가 변경되었을 때 UI에 알리는 델리게이트
+// 5개의 슬롯 중 특정 슬롯의 퍼밀리어가 변경되었을 때 UI에 알리는 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFamiliarSlotChangedSignature, int32, SlotIndex, FName, NewFamiliarID);
 /**
  * @class USquadSubsystem

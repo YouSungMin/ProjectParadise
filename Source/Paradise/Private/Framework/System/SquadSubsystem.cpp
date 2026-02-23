@@ -7,6 +7,7 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 
+
 void USquadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);

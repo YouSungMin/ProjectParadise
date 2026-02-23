@@ -69,6 +69,27 @@ public:
 	TArray<FName> SavedFamiliarSquadIDs;
 
 #pragma endregion 스쿼드 편성 데이터
-	//추가 예정 : 플레이어 재화류 , 클리어한 스테이지 정보 등등 
 
+#pragma region 플레이어 재화
+
+	UPROPERTY()
+	TMap<ECurrencyType, int32> SavedWallet;
+
+
+#pragma endregion 플레이어 재화
+
+#pragma region 스테이지 해금 , 클리어 목록
+
+	/** @brief 유저가 현재까지 입장 가능한(해금된) 스테이지 ID 목록 */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Stage")
+	TArray<FName> SavedUnlockedStages;
+
+	/** @brief 스테이지별 클리어 랭크(별 갯수). Key: 스테이지 ID, Value: 획득한 별(1~3) */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Stage")
+	TMap<FName, int32> SavedStageClearStars;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Stage")
+	int32 SavedMaxClearedStageIndex = 0;
+
+#pragma endregion 스테이지 해금 , 클리어 목록
 };
