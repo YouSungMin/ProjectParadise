@@ -89,4 +89,11 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable, Category = "Economy|Event")
 	FOnCurrencyChangedSignature OnCurrencyChanged;
+
+private:
+	/** * @brief 핵심 데이터: 플레이어의 재화 지갑 (TMap)
+	* @details 재화 종류(Key)와 보유량(Value)을 매핑하여 저장합니다.
+	*/
+	UPROPERTY()
+	TMap<ECurrencyType, int32> Wallet;
 };

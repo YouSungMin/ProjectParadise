@@ -5,6 +5,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
@@ -260,20 +261,19 @@ void AInGameGameMode::OnPhaseVictory()
 		CachedGameState->NextStageID = CurrentStageData.NextStageID;
 	}
 
-	// [로그 추가] 보상 및 다음 스테이지 정보 출력
-	//UE_LOG(LogTemp, Warning, TEXT("============= [VICTORY] ============="));
-	//UE_LOG(LogTemp, Log, TEXT(" $$$ Reward Gold : %d G"), CurrentStageData.ClearGold);
-	//UE_LOG(LogTemp, Log, TEXT(" +++ Reward Exp  : %d XP"), CurrentStageData.ClearExp);
-	//UE_LOG(LogTemp, Log, TEXT(" >>> Next Stage  : %s"), *CurrentStageData.NextStageID.ToString());
-	//UE_LOG(LogTemp, Warning, TEXT("====================================="));
 
-	//2. 데이터 저장 (GameInstance 연동 필요)
-	// TODO: GameInstance->AddGold(CurrentStageData.ClearGold);
-	// TODO: GameInstance->UnlockStage(CurrentStageData.NextStageID);
-
-	//GI로 세이브 데이터 저장
+	//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장
 	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 	{
+		if (UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>()) 
+		{
+			EconomySys->AddCurrency(ECurrencyType::Gold, CachedGameState->AcquiredGold);
+			//Gem 뽑기재화류 //1회성 클리어보상? //계속?
+			//나머지 재화 추가
+		}
+
+
+
 		GI->SaveGameData();
 	}
 
