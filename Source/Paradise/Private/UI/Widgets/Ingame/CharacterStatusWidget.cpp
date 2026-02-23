@@ -46,6 +46,8 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 	/** @section 3. 바인딩 직후 현재 스탯으로 UI 즉시 동기화 */
 	const float CurrentHP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetHealthAttribute());
 	const float MaxHP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
+
+
 	if (PB_HealthBar && MaxHP > 0.f)
 	{
 		PB_HealthBar->SetPercent(CurrentHP / MaxHP);

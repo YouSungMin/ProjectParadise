@@ -32,26 +32,8 @@ void AInGameController::BeginPlay()
     InitializeOverviewCamera();
 
     // [추가] 26/02/04, 담당자: 최지원, [UI 생성] 로컬 플레이어인 경우에만 HUD 생성 (서버/AI 제외)
-    if (IsLocalController() && InGameHUDClass)
-    {
-        // 위젯 생성
-        InGameHUDInstance = CreateWidget<UInGameHUDWidget>(this, InGameHUDClass);
-        if (InGameHUDInstance)
-        {
-            // 화면에 부착
-            InGameHUDInstance->AddToViewport();
-
-            // HUD 내부 초기화 함수 호출 (연결 고리)
-            InGameHUDInstance->InitializeHUD();
-
-            UE_LOG(LogTemp, Log, TEXT("✅ [Controller] InGameHUD 생성 및 초기화 완료"));
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("❌ [Controller] InGameHUD 생성 실패!"));
-        }
-    }
-
+    
+    GetOrCreateInGameHUD();
 }
 void AInGameController::InitializeOverviewCamera()
 {
@@ -438,18 +420,81 @@ void AInGameController::PossessAI(APlayerBase* TargetCharacter)
 
 void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData)
 {
-    if (!InGameHUDInstance || !InPlayerData) return;
+    UE_LOG(LogTemp, Error, TEXT("================ [UI 연동 추적 시작: %d번 슬롯] ================"), PlayerIndex);
 
-    if (UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel())
+    UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
+
+    // 1. HUD 인스턴스가 있는지 확인
+    if (!InGameHUDInstance)
     {
-        // 1. ASC(심장)를 UI에 연동하여 체력/마나가 실시간으로 움직이게 합니다.
-        PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
-
-        // 2. 캐릭터 ID를 넘겨주어 데이터 테이블에서 초상화 이미지를 가져오게 합니다.
-        PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
-
-        UE_LOG(LogTemp, Log, TEXT("[Controller] %d번 파티원 UI(초상화 및 ASC) 연동 완료!"), PlayerIndex);
+        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InGameHUDInstance가 NULL입니다!"));
+        UE_LOG(LogTemp, Error, TEXT("   -> 원인: BP_InGameController의 'InGameHUDClass'에 위젯이 안 채워져 있거나, 생성에 실패했습니다."));
+        return;
     }
+
+    // 2. 플레이어 데이터가 있는지 확인
+    if (!InPlayerData)
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InPlayerData가 NULL입니다!"));
+        return;
+    }
+
+    // 3. 파티 패널이 있는지 확인
+    UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel();
+    if (!PartyPanel)
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: PartyStatusPanel이 NULL입니다!"));
+        UE_LOG(LogTemp, Error, TEXT("   -> 원인: WBP_InGameHUD 안에 파티 패널이 없거나, 변수 이름(BindWidget)이 틀렸습니다."));
+        return;
+    }
+
+    // 4. 통과 완료! 
+    UE_LOG(LogTemp, Warning, TEXT("✅ 추적 통과: 모든 패널이 정상! PartyPanel에게 바인딩을 명령합니다."));
+
+    PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
+    PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
+
+    UE_LOG(LogTemp, Error, TEXT("=================================================================="));
+
+    //if (!InGameHUDInstance || !InPlayerData) return;
+
+    //if (UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel())
+    //{
+    //    // 1. ASC(심장)를 UI에 연동하여 체력/마나가 실시간으로 움직이게 합니다.
+    //    PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
+
+    //    // 2. 캐릭터 ID를 넘겨주어 데이터 테이블에서 초상화 이미지를 가져오게 합니다.
+    //    PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
+
+    //    UE_LOG(LogTemp, Log, TEXT("[Controller] %d번 파티원 UI(초상화 및 ASC) 연동 완료!"), PlayerIndex);
+    //}
+}
+
+UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
+{
+    // 1. 이미 존재한다면 그대로 반환
+    if (InGameHUDInstance)
+    {
+        return InGameHUDInstance;
+    }
+
+    // 2. 타이밍 이슈로 아직 없다면 즉시 생성(Lazy Init)
+    if (IsLocalController() && InGameHUDClass)
+    {
+        InGameHUDInstance = CreateWidget<UInGameHUDWidget>(this, InGameHUDClass);
+        if (InGameHUDInstance)
+        {
+            InGameHUDInstance->AddToViewport();
+            InGameHUDInstance->InitializeHUD();
+            UE_LOG(LogTemp, Warning, TEXT("⚡ [Controller] UI 지연 생성(Lazy Init) 발동! InGameHUD를 즉시 띄웠습니다."));
+        }
+    }
+    else if (!InGameHUDClass && IsLocalController())
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ [Controller] InGameHUDClass가 비어있습니다. BP_InGameController에서 클래스를 할당하세요."));
+    }
+
+    return InGameHUDInstance;
 }
 
 void AInGameController::OnInputSwitchHero1(const FInputActionValue& Value)

@@ -89,12 +89,13 @@ private:
 
 #pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
 public:
-	/** 
+	/**
 	 * @brief 생성된 HUD 위젯 인스턴스를 반환합니다.
-	 * @return UInGameHUDWidget* 
+	 * @details 초기화 타이밍이 꼬여서 HUD가 없다면, 지연 초기화(Lazy Init)를 통해 즉시 생성합니다.
+	 * @return UInGameHUDWidget 포인터
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	UInGameHUDWidget* GetInGameHUD() const { return InGameHUDInstance; }
+	UInGameHUDWidget* GetOrCreateInGameHUD();
 
 protected:
 	/** 
