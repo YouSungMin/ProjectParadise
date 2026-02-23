@@ -6,10 +6,16 @@
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
+#include "Framework/System/StageSubsystem.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
+
+void AInGameGameMode::ForceVictory()
+{
+	SetGamePhase(EGamePhase::Victory);
+}
 
 AInGameGameMode::AInGameGameMode()
 {
@@ -23,8 +29,38 @@ void AInGameGameMode::BeginPlay()
 	//GameState 캐싱
 	CachedGameState = GetGameState<AInGameGameState>();
 
-	//임시로 1-1 스테이지 정보로 초기화 -> (나중에 GameInstance 연동)
-	InitializeStageData(FName("Stage1_1"));
+
+	FName TargetStageToPlay = NAME_None;
+
+
+	//0223 김성현 - 스테이지 연결 초기화 로직 연결
+	//서브시스템에서 아까 골랐던 스테이지 ID Get 
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+		{
+			TargetStageToPlay = StageSys->GetSelectedStageID();
+		}
+	}
+
+	//ID 전달
+	if (!TargetStageToPlay.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("🚀 [GameMode] 전달받은 스테이지 데이터(%s)로 게임을 세팅합니다!"), *TargetStageToPlay.ToString());
+		FString DebugMsg = FString::Printf(TEXT("🎯 [인게임] 전달받기 성공! 현재 플레이할 스테이지: %s"), *TargetStageToPlay.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, DebugMsg);
+		InitializeStageData(TargetStageToPlay); 
+	}
+	else
+	{
+		// 에러 방지용 비상 코드
+		UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
+		InitializeStageData(FName("Stage_1_1"));
+		FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
+		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
+	}
 
 	//전투 시작 전, 데미지 텍스트 미리 넣기
 	if (DamageTextClass)
@@ -280,6 +316,15 @@ void AInGameGameMode::OnPhaseVictory()
 						InvSys->AddCharacterExp(HeroID, CurrentStageData.ClearExp);
 					}
 				}
+			}
+
+			if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+			{
+				// 1. 다음 스테이지 해금
+				StageSys->UnlockStage(CurrentStageData.NextStageID);
+				
+				// 2. 현재 스테이지 별점 기록 (임시로 3별 달성이라 가정, 추후 기획에 맞춰 수정)
+				//StageSys->RecordStageClearStar(CurrentStageData., 3);
 			}
 
 
