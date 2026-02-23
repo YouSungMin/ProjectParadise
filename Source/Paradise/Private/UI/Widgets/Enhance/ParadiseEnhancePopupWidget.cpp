@@ -23,7 +23,7 @@ void UParadiseEnhancePopupWidget::NativeConstruct()
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::OnClickCharTab);
 	if (Btn_Tab_Weapon) Btn_Tab_Weapon->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::OnClickWpnTab);
 	if (Btn_Tab_Armor) Btn_Tab_Armor->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::OnClickArmTab);
-	if (Btn_Tab_Unit) Btn_Tab_Unit->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::OnClickUnitTab);
+	//if (Btn_Tab_Unit) Btn_Tab_Unit->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::OnClickUnitTab);
 	if (Btn_Close) Btn_Close->OnClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::HandleClose);
 
 	// 자식 위젯 이벤트 바인딩
@@ -46,7 +46,7 @@ void UParadiseEnhancePopupWidget::NativeDestruct()
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Weapon) Btn_Tab_Weapon->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Armor) Btn_Tab_Armor->OnClicked.RemoveAll(this);
-	if (Btn_Tab_Unit) Btn_Tab_Unit->OnClicked.RemoveAll(this);
+	//if (Btn_Tab_Unit) Btn_Tab_Unit->OnClicked.RemoveAll(this);
 	if (Btn_Close) Btn_Close->OnClicked.RemoveAll(this);
 
 	if (Panel_Inventory) Panel_Inventory->OnItemClicked.RemoveAll(this);
@@ -134,6 +134,6 @@ void UParadiseEnhancePopupWidget::RequestBreakthrough()
 void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }
 void UParadiseEnhancePopupWidget::OnClickArmTab() { SwitchTab(SquadTabs::Armor); }
-void UParadiseEnhancePopupWidget::OnClickUnitTab() { SwitchTab(SquadTabs::Unit); }
+//void UParadiseEnhancePopupWidget::OnClickUnitTab() { SwitchTab(SquadTabs::Unit); }
 void UParadiseEnhancePopupWidget::HandleClose() { SetVisibility(ESlateVisibility::Collapsed); }
 #pragma endregion 중재 로직

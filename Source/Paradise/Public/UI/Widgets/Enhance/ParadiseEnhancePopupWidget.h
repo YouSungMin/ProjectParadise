@@ -15,6 +15,9 @@ class UInventorySystem;
 class UParadiseGameInstance;
 #pragma endregion 전방 선언
 
+/** @brief 팝업 닫기 요청을 처리하기 위한 델리게이트 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnhanceBackRequested);
+
 /**
  * @class UParadiseEnhancePopupWidget
  * @brief 강화/돌파 시스템의 최상위 중재자 위젯
@@ -25,6 +28,17 @@ class PARADISE_API UParadiseEnhancePopupWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+#pragma region 외부 인터페이스
+public:
+	/** @brief 닫기(X) 버튼 클릭 시 상위 위젯(HUD)으로 알리는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnEnhanceBackRequested OnBackRequested;
+
+	/** @brief 현재 탭에 맞는 데이터를 InventorySystem에서 가져와 우측 패널을 갱신합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void RefreshInventory();
+#pragma endregion 외부 인터페이스
+
 #pragma region 생명주기
 protected:
 	virtual void NativeConstruct() override;
@@ -57,9 +71,6 @@ private:
 	UFUNCTION() 
 	void HandleClose();
 
-	/** @brief 현재 탭에 맞는 데이터를 InventorySystem에서 가져와 우측 패널을 갱신합니다. */
-	void RefreshInventory();
-
 	/** @brief 강화/돌파 후 화면을 최신 상태로 갱신합니다. */
 	void RefreshAfterEnhancement();
 #pragma endregion 시스템 연동 및 이벤트
@@ -77,7 +88,7 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Character = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Weapon = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Armor = nullptr;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Unit = nullptr;
+	//UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Unit = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Close = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
 
