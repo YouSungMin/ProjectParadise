@@ -24,7 +24,6 @@ class PARADISE_API UParadiseLobbyMenuPanelWidget : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 
 #pragma region UI 컴포넌트
 protected:

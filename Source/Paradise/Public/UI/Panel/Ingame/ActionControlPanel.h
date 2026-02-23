@@ -25,17 +25,9 @@ class PARADISE_API UActionControlPanel : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+
 public:
 #pragma region 외부 인터페이스
-	/**
-	 * @brief 데이터 테이블(Data-Driven)을 기반으로 스킬/궁극기 UI를 초기화합니다.
-	 * @param WeaponActionID 무기 데이터의 SkillActionID (액티브 스킬)
-	 * @param UltimateActionID 캐릭터 데이터의 SkillActionID (궁극기)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void InitActionPanel(FName WeaponActionID, FName UltimateActionID);
-
 	/**
 	 * @brief 특정 스킬 슬롯의 쿨타임 데이터를 갱신합니다. (Optimization: 가상함수 방지)
 	 * @param SkillIndex 0: 일반 기술, 1: 필살기

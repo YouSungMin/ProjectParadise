@@ -3,28 +3,21 @@
 
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
-#include "Framework/Core/ParadiseGameInstance.h"
 #include "Components/WidgetSwitcher.h"
 
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
-#include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
 
 void UParadiseLobbyHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 생성될 때 딱 한 번만 무거운 탐색 연산을 수행하여 캐싱합니다!
-	CachedController = GetOwningPlayer<ALobbyPlayerController>();
-
-	if (CachedController.IsValid())
+	// 컨트롤러에 HUD 등록
+	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
 	{
-		CachedController->SetLobbyHUD(this);
+		PC->SetLobbyHUD(this);
 	}
-
-	// 게임 인스턴스 캐싱 (최적화)
-	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
 
 	// 초기화 시 None(메인 로비) 상태로 시작
 	UpdateMenuStats(EParadiseLobbyMenu::None);
@@ -105,34 +98,40 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 
 	if (TargetWidget)
 	{
+		// 1. 강제 가시성 확보 (내부적으로 Collapsed 되었을 가능성 배제)
 		TargetWidget->SetVisibility(ESlateVisibility::Visible);
 
-		// [편성창 특수 처리]
+		// 2. 편성(Squad) 위젯 특수 처리: 델리게이트 재연결 및 데이터 갱신
 		if (UParadiseSquadMainWidget* SquadWidget = Cast<UParadiseSquadMainWidget>(TargetWidget))
 		{
-			// [최적화] 통합된 핸들러(HandleBackToMainLobby)로 연결
-			if (!SquadWidget->OnBackRequested.IsAlreadyBound(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby))
+			// 델리게이트 바인딩 확인 (중복 바인딩 방지)
+			if (!SquadWidget->OnBackRequested.IsAlreadyBound(this, &UParadiseLobbyHUDWidget::HandleSquadBackRequest))
 			{
-				SquadWidget->OnBackRequested.AddDynamic(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby);
+				SquadWidget->OnBackRequested.AddDynamic(this, &UParadiseLobbyHUDWidget::HandleSquadBackRequest);
 			}
+
+			// ★ [핵심] 캐시된 위젯은 NativeConstruct가 다시 호출되지 않으므로, 수동으로 갱신 함수를 호출해야 함.
+			// 이 호출이 없으면 두 번째 진입 시 빈 화면이거나 갱신되지 않은 상태가 됨.
 			SquadWidget->RefreshInventoryUI();
 		}
-		// [강화창 특수 처리]
-		else if (UParadiseEnhancePopupWidget* EnhanceWidget = Cast<UParadiseEnhancePopupWidget>(TargetWidget))
-		{
-			// [최적화] 통합된 핸들러(HandleBackToMainLobby)로 연결
-			if (!EnhanceWidget->OnBackRequested.IsAlreadyBound(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby))
-			{
-				EnhanceWidget->OnBackRequested.AddDynamic(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby);
-			}
-			EnhanceWidget->RefreshInventory();
-		}
 
+		// 3. 스위처의 활성 위젯 변경 (화면 전환)
 		Switcher_Content->SetActiveWidget(TargetWidget);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[HUD] 위젯 생성 실패! 메뉴: %d"), (int32)InCurrentMenu);
+	}
+}
+
+void UParadiseLobbyHUDWidget::HandleSquadBackRequest()
+{
+    // 편성 화면에서 뒤로가기를 누르면 메인 로비(None)로 상태를 변경합니다.
+	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
+	{
+		// 컨트롤러의 CurrentMenu 변수를 'None(0)'으로 갱신시킵니다.
+		// 컨트롤러가 내부적으로 다시 HUD->UpdateMenuStats(None)을 호출해주므로 화면도 정상적으로 바뀝니다.
+		PC->SetLobbyMenu(EParadiseLobbyMenu::None);
 	}
 }
 
@@ -144,18 +143,4 @@ void UParadiseLobbyHUDWidget::OnStartCameraMove()
 	if (Switcher_Content) Switcher_Content->SetVisibility(ESlateVisibility::Collapsed);
 
 	// 팁: 애니메이션(Fade Out)을 재생하면 더 고급스럽습니다.
-}
-
-void UParadiseLobbyHUDWidget::HandleBackToMainLobby()
-{
-	if (CachedController.IsValid())
-	{
-		CachedController->SetLobbyMenu(EParadiseLobbyMenu::None);
-	}
-
-	// 로비로 돌아갈 때(팝업이 닫힐 때) 게임 데이터 자동 저장!
-	if (CachedGI.IsValid())
-	{
-		CachedGI->SaveGameData();
-	}
 }

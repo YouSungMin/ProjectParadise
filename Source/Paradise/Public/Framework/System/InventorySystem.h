@@ -41,18 +41,7 @@ class PARADISE_API UInventorySystem : public UGameInstanceSubsystem
 public:	
 	UInventorySystem();
 
-#pragma region 캐릭터 경험치 추가
-	/**
-	 * @brief 특정 캐릭터에게 경험치를 부여하고, 조건 충족 시 레벨업을 처리합니다.
-	 * @param CharacterID 경험치를 받을 캐릭터의 고유 식별자 (ID)
-	 * @param ExpAmount 획득할 경험치량
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Growth")
-	void AddCharacterExp(FName CharacterID, int32 ExpAmount);
-
-#pragma endregion 캐릭터 경험치 추가
-
-#pragma region 장비 관련 함수 선언
+	#pragma region 장비 관련 함수 선언
 	/**
 	 * @brief 특정 캐릭터(UID 기반)에게 장비를 장착시킵니다.
 	 * @param CharacterUID : 장비를 착용할 캐릭터의 고유 ID (FGuid)

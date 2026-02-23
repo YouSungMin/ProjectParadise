@@ -24,18 +24,6 @@ void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 	if (Btn_Codex) Btn_Codex->OnClicked.AddDynamic(this, &UParadiseLobbyMenuPanelWidget::OnClickCodex);
 }
 
-void UParadiseLobbyMenuPanelWidget::NativeDestruct()
-{
-	// 안전하게 버튼 델리게이트 해제
-	if (Btn_Battle) Btn_Battle->OnClicked.RemoveAll(this);
-	if (Btn_Summon) Btn_Summon->OnClicked.RemoveAll(this);
-	if (Btn_Squad) Btn_Squad->OnClicked.RemoveAll(this);
-	if (Btn_Enhance) Btn_Enhance->OnClicked.RemoveAll(this);
-	if (Btn_Codex) Btn_Codex->OnClicked.RemoveAll(this);
-
-	Super::NativeDestruct();
-}
-
 #pragma region 로직 구현 (Logic Implementation)
 
 void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)

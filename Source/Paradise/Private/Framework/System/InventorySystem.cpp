@@ -9,70 +9,6 @@ UInventorySystem::UInventorySystem()
 {
 }
 
-void UInventorySystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
-{
-	//CharacterID가 None(빈칸)이면 그냥 무시
-	if (CharacterID.IsNone()) return;
-
-	//내 인벤토리에서 캐릭터 데이터 찾기
-	FOwnedCharacterData* TargetCharacterData = nullptr;
-	for (FOwnedCharacterData& CharData : OwnedCharacters)
-	{
-		if (CharData.CharacterID == CharacterID)
-		{
-			TargetCharacterData = &CharData;
-			break;
-		}
-	}
-
-	//0223 김성현 - 아래 로직은 데이터 테이블 추가후 변경예정
-
-	// [테스트용 강제 추가 로직] 캐릭터가 인벤토리에 없으면 새로 생성
-	if (!TargetCharacterData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("🛠️ [Test] 인벤토리에 '%s'가 없어서 강제로 1레벨로 생성합니다!"), *CharacterID.ToString());
-
-		FOwnedCharacterData NewTestCharacter;
-		NewTestCharacter.CharacterID = CharacterID;
-		NewTestCharacter.Level = 1;
-		NewTestCharacter.CurrentExp = 0;
-
-		OwnedCharacters.Add(NewTestCharacter);
-
-		// 방금 배열의 맨 마지막에 추가한 캐릭터의 주소값을 가져옵니다.
-		TargetCharacterData = &OwnedCharacters.Last();
-	}
-
-	//획득한 경험치를 전부 더함
-	TargetCharacterData->CurrentExp += ExpAmount;
-	UE_LOG(LogTemp, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, TargetCharacterData->CurrentExp);
-
-	//임시 레벨업 루프 (임시 50레벨 제한 + (레벨*100) 공식 적용)
-	while (true)
-	{
-		if (TargetCharacterData->Level >= 50)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 최대 레벨 도달!"), *CharacterID.ToString());
-			TargetCharacterData->CurrentExp = 0;
-			break;
-		}
-
-		int32 RequiredExp = TargetCharacterData->Level * 100;
-
-		if (TargetCharacterData->CurrentExp >= RequiredExp)
-		{
-			TargetCharacterData->CurrentExp -= RequiredExp;
-			TargetCharacterData->Level++;
-
-			UE_LOG(LogTemp, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d)"), *CharacterID.ToString(), TargetCharacterData->Level);
-		}
-		else
-		{
-			break;
-		}
-	}
-}
-
 void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes, const TArray<FOwnedFamiliarData>& InFamiliars, const TArray<FOwnedItemData>& InItems)
 {
 	UParadiseGameInstance* GI = GetParadiseGI();
@@ -190,25 +126,7 @@ void UInventorySystem::AddCharacter(FName CharacterID)
 	{
 		if (OwnedCharacters[i].CharacterID == CharacterID)
 		{
-			//중복 캐릭터 획득시 //돌파 재화추가
-			if (OwnedCharacters[i].AwakeningPieces < 6)
-			{
-				OwnedCharacters[i].AwakeningPieces++;
-
-				UE_LOG(LogTemp, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 6)"), *CharacterID.ToString(), OwnedCharacters[i].AwakeningPieces);
-
-				// UI 갱신
-				if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
-			}
-			else
-			{
-				// 🌟 이미 최대 돌파(6돌) 재화를 다 모았는데 또 뽑았을 때의 처리
-				UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 이미 최대 돌파 조각을 보유 중입니다!"), *CharacterID.ToString());
-
-				// [TODO/기획] 마일리지나 범용 재화로 환급해주는 로직을 넣으면 좋습니다.
-				// 예시: EconomySys->AddCurrency(ECurrencyType::Mileage, 50);
-			}
-
+			// 이미 보유 중
 			return;
 		}
 	}
