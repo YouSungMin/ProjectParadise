@@ -5,6 +5,7 @@
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/Core/ParadiseGameInstance.h" //디버그함수때문에 추가 이후 삭제
 #include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
+#include "Components/EquipmentComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
@@ -14,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
+#include "UI/Panel/Ingame/ActionControlPanel.h"
 #include "Blueprint/UserWidget.h"
 
 void AInGameController::BeginPlay()
@@ -28,6 +30,9 @@ void AInGameController::BeginPlay()
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
+
+    CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
+    CachedPlayerState = GetPlayerState<AInGamePlayerState>();
 
     InitializeOverviewCamera();
 
@@ -128,6 +133,8 @@ void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
         *NewPlayer->GetName());
         
     UpdateCameraSystem();
+
+    UpdateActionPanelUI(PlayerIndex);
 }
 
 void AInGameController::RespawnSquadPlayer(int32 PlayerIndex)
@@ -513,6 +520,56 @@ void AInGameController::OnInputSwitchHero3(const FInputActionValue& Value)
 {
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     RequestSwitchPlayer(2);
+}
+
+void AInGameController::UpdateActionPanelUI(int32 PlayerIndex)
+{
+    // 🚨 [최적화] 호출 시점에 유효하지 않은 포인터만 선별적으로 캐싱하여 연산 비용 최소화
+    if (!CachedGameInstance.IsValid()) CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
+    if (!CachedPlayerState.IsValid()) CachedPlayerState = GetPlayerState<AInGamePlayerState>();
+    if (!InGameHUDInstance) GetOrCreateInGameHUD();
+
+    // 방어 코드: 핵심 시스템 포인터 누락 시 즉시 반환
+    if (!CachedGameInstance.IsValid() || !CachedPlayerState.IsValid() || !InGameHUDInstance) return;
+
+    // HUD로부터 액션 제어 패널 획득
+    UActionControlPanel* ActionPanel = InGameHUDInstance->GetActionControlPanel();
+    if (!ActionPanel) return;
+
+    FName CurrentWeaponSkillID = NAME_None;
+    FName CurrentUltimateID = NAME_None;
+
+    // [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
+    if (APlayerData* Soul = CachedPlayerState->GetSquadMemberData(PlayerIndex))
+    {
+        // 1. 캐릭터 스탯 테이블로부터 궁극기(Ultimate) ID 획득
+        if (const FCharacterStats* CharStats = CachedGameInstance->GetDataTableRow<FCharacterStats>(CachedGameInstance->CharacterStatsDataTable, Soul->CharacterID))
+        {
+            CurrentUltimateID = CharStats->SkillActionID;
+        }
+
+        // 2. 장비 컴포넌트로부터 무기 스킬(Weapon Skill) ID 획득
+        if (UEquipmentComponent* EquipComp = Soul->GetEquipmentComponent())
+        {
+            // 무기 슬롯(Weapon)에 장착된 아이템의 RowName을 가져옵니다.
+            const FName EquippedWeaponID = EquipComp->GetEquippedItemID(EEquipmentSlot::Weapon);
+
+            if (EquippedWeaponID != NAME_None)
+            {
+                // 무기 스탯 테이블(DT_WeaponStats)로부터 해당 무기가 가진 스킬 ID 획득
+                if (const FWeaponStats* WeaponStats = CachedGameInstance->GetDataTableRow<FWeaponStats>(CachedGameInstance->WeaponStatsDataTable, EquippedWeaponID))
+                {
+                    CurrentWeaponSkillID = WeaponStats->SkillActionID;
+                }
+            }
+        }
+    }
+
+    // 3. UI 객체에 추출된 데이터 주입 (UI는 데이터의 출처를 알 필요 없음 - SRP 준수)
+    ActionPanel->InitActionPanel(CurrentWeaponSkillID, CurrentUltimateID);
+    ActionPanel->UpdateTagButtons(PlayerIndex);
+
+    UE_LOG(LogTemp, Log, TEXT("⚔️ [ActionPanel] UI 갱신 성공 (Index: %d)"), PlayerIndex);
 }
 
 

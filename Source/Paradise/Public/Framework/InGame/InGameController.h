@@ -10,6 +10,8 @@
 class APlayerBase;
 class APlayerData;
 class AAIController;
+class UParadiseGameInstance;
+class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -117,6 +119,16 @@ private:
 	void OnInputSwitchHero2(const FInputActionValue& Value);
 	void OnInputSwitchHero3(const FInputActionValue& Value);
 
+#pragma region 내부 헬퍼 함수
+private:
+	/**
+	 * @brief 캐릭터 교체 후 스킬 및 궁극기 UI를 갱신합니다.
+	 * @details 준수를 위해 RequestSwitchPlayer에서 UI 데이터 추출 및 갱신 로직
+	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
+	 */
+	void UpdateActionPanelUI(int32 PlayerIndex);
+#pragma endregion 내부 헬퍼 함수
+
 protected:
 	//  데이터 및 설정 (Data & Config)
 	/*
@@ -182,4 +194,16 @@ protected:
 
 	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
 	FRotator LastDeathRotation = FRotator::ZeroRotator;
+
+private:
+	/**
+	 * @brief 게임 인스턴스 캐싱
+	 * @details BeginPlay에서 1회만 초기화합니다.
+	 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGameInstance = nullptr;
+
+	/** 
+	 * @brief 플레이어 스테이트 캐싱
+	 */
+	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
 };
