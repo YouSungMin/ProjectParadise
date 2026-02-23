@@ -27,7 +27,7 @@ AProjectileBase::AProjectileBase()
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComp"));
-	ProjectileMovementComp->InitialSpeed = 2000.0f;
+	ProjectileMovementComp->InitialSpeed = 1000.0f;
 	ProjectileMovementComp->MaxSpeed = 2000.0f;
 	ProjectileMovementComp->ProjectileGravityScale = 0.0f;
 	// 풀링을 위해 자동 활성화를 끕니다. (OnPoolActivate에서 켭니다)
@@ -70,12 +70,40 @@ void AProjectileBase::SetDamageSpecHandle(const FGameplayEffectSpecHandle& InSpe
 	DamageSpecHandle = InSpecHandle;
 }
 
+void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius)
+{
+	// 투사체 판정 크기(두께) 변경
+	if (SphereComp)
+	{
+		SphereComp->SetSphereRadius(InAttackRadius);
+	}
+
+	// 시각적 메쉬 크기 조절
+	float ScaleRatio = InAttackRadius / 15.0f;
+	SetActorScale3D(FVector(ScaleRatio));
+
+	// 사거리(거리)를 기반으로 생존 시간(LifeTime) 계산 (시간 = 거리 / 속력)
+	float CurrentSpeed = ProjectileMovementComp->InitialSpeed;
+	if (CurrentSpeed > 0.0f)
+	{
+		LifeTime = InAttackRange / CurrentSpeed;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
+	// 타이머 재설정
+	// 이미 OnPoolActivate에서 기본 LifeTime으로 타이머가 돌고 있으므로,
+	// 기존 타이머를 취소하고 계산된 정확한 생존 시간으로 다시 타이머를 가동합니다.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(LifeTimerHandle);
+		World->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	}
+}
+
 void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 자기 자신이나, 나를 쏜 주인(Instigator)은 무시
 	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator()) return;
 
-	// 주인이 ACharacterBase이고, 맞은 대상도 ACharacterBase일 때 적군인지 확인
 	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
 	{
 		if (ACharacterBase* TargetChar = Cast<ACharacterBase>(OtherActor))
@@ -86,6 +114,8 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 			}
 		}
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("🎯 [Projectile] 투사체 적중! 대상: %s"), *OtherActor->GetName());
 
 	if (DamageSpecHandle.IsValid())
 	{

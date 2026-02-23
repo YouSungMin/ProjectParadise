@@ -193,11 +193,16 @@ void UEquipmentComponent::ApplyEquipmentStats()
 			{
 				// 기본 스탯 + 무기 스탯
 				AttrSet->SetAttackPower(AttrSet->GetAttackPower() + WStat->AttackPower);
-				AttrSet->SetAttackRange(AttrSet->GetAttackRange() + WStat->AttackRange);
 				AttrSet->SetAttackSpeed(AttrSet->GetAttackSpeed() + WStat->AttackSpeed);
-				AttrSet->SetCooldown(AttrSet->GetCooldown() + WStat->Cooldown);
 				AttrSet->SetCritDamage(AttrSet->GetCritDamage() + WStat->CritDamage);
 				AttrSet->SetCritRate(AttrSet->GetCritRate() + WStat->CritRate);
+				if (!WStat->BasicAttackActionID.IsNone())
+				{
+					if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WStat->BasicAttackActionID))
+					{
+						AttrSet->SetAttackRange(ActionRow->AttackRange);
+					}
+				}
 			}
 		}
 		//방어구

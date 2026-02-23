@@ -27,6 +27,10 @@ struct FActionStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	float AttackRange = 100.0f;
 
+	/** @brief 공격 반경 (두께/넓이) - 도약 공격 등 광역 판정용 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	float AttackRadius = 40.0f;
+
 	/**
 	 * @brief 전방 오프셋 (캐릭터 앞쪽으로 얼마나 밀어서 타격할 것인가)
 	 * @details 단위: cm (Unreal Unit)
@@ -87,9 +91,34 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
 	TSubclassOf<AActor> ProjectileClass;
 
-	/** * @brief 공격 사거리
-	 * @details AI가 공격을 시작할 거리 또는 투사체의 사거리 등을 결정합니다.
+	// =====================================
+	//  타격 판정 공용 스탯 (Hit Check)
+	// =====================================
+
+	/** * @brief 공격 사거리 (길이/Reach)
+	 * @details
+	 * - 근거리: 전방으로 무기가 닿는 최대 거리 (검=100, 창=300)
+	 * - 원거리: AI의 타겟팅 인식 거리 또는 투사체의 최대 비행 거리
+	 * - 제자리 광역기(Slam): 0으로 설정
 	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
-	float AttackRange;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
+	float AttackRange = 150.0f;
+
+	/** * @brief 공격 반경 (두께/넓이)
+	 * @details
+	 * - 근거리: 무기의 두께 (보통 20~50)
+	 * - 제자리 광역기: 폭발 반경 (보통 300~500)
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
+	float AttackRadius = 40.0f;
+
+	/** * @brief 전방 오프셋 (판정 시작점)
+	 * @details 캐릭터 중심에서 앞쪽으로 얼마나 떨어진 곳에서 타격을 시작/폭발시킬 것인가
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
+	float ForwardOffset = 0.0f;
+
+	/** @brief 엑셀에서 읽어온 스킬 쿨타임 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	float Cooldown = 0.0f;
 };

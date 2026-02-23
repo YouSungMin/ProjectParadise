@@ -61,8 +61,10 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 		Result.MontageToPlay = CachedAttackMontage;
 		Result.DamageEffectClass = CachedDamageEffectClass;
 		Result.ProjectileClass = CachedProjectileClass;
-		Result.AttackRange = CachedAttackRange;
 		Result.DamageMultiplier = CachedDamageMultiplier;
+		Result.AttackRange = CachedAttackRange;
+		Result.AttackRadius = CachedAttackRadius;
+		Result.ForwardOffset = CachedForwardOffset;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
@@ -98,6 +100,8 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 					BaseSet->InitAttackRange(ActionRow->AttackRange);
 					CachedAttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
 					CachedDamageMultiplier = ActionRow->DamageMultiplier;
+					CachedAttackRadius = ActionRow->AttackRadius;
+					CachedForwardOffset = ActionRow->ForwardOffset;
 				}
 				else
 				{
@@ -105,6 +109,9 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 					BaseSet->InitAttackRange(150.0f);
 					CachedAttackRange = 150.0f;
 					CachedDamageMultiplier = 1.0f;
+
+					CachedAttackRadius = 40.0f;
+					CachedForwardOffset = 0.0f;
 				}
 			}
 		}

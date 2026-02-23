@@ -4,6 +4,7 @@
 #include "GAS/Abilities/MeleeBase.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "Characters/Base/CharacterBase.h"
 
 UMeleeBase::UMeleeBase()
 {
@@ -31,6 +32,11 @@ void UMeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		UE_LOG(LogTemp, Warning, TEXT("❌ [MeleeBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}
+
+	if (ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo()))
+	{
+		AvatarChar->SetCurrentActionData(CombatData);
 	}
 
 	PlayMontageAndWaitCallback(CombatData.MontageToPlay);
