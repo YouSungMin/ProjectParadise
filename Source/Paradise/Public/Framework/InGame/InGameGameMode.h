@@ -49,6 +49,13 @@ private:
 
 #pragma endregion PlayerSquad 셋업
 
+#pragma region 스테이지 클리어 보상
+
+	/** 스테이지 클리어 보상 지급 함수 */
+	void DistributeStageRewards();
+
+#pragma endregion 스테이지 클리어 보상
+
 	/**
 	 * @brief 게임 페이즈를 변경하고 관련 이벤트를 트리거합니다.
 	 * @param NewPhase 변경할 새로운 게임 단계
@@ -85,6 +92,10 @@ protected:
 	/** @brief [캐싱] 전역 상태 관리를 위한 GameState 포인터 */
 	UPROPERTY()
 	class AInGameGameState* CachedGameState;
+
+	/** @brief 현재 진행중인 스테이지 ID */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	FName CurrentStageID;
 
 	/** @brief [데이터] 현재 진행 중인 스테이지의 상세 스탯(시간, 보상 등) */
 	FStageStats CurrentStageData;

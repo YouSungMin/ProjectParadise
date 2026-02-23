@@ -62,7 +62,4 @@ private:
 	UPROPERTY()
 	TMap<FName, int32> StageClearStars;
 
-	/** @brief 최고 클리어 층수/인덱스 (GameInstance에 있던 것 이사) */
-	UPROPERTY()
-	int32 MaxClearedStageIndex = 0;
 };

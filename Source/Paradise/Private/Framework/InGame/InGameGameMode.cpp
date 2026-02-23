@@ -56,7 +56,7 @@ void AInGameGameMode::BeginPlay()
 	{
 		// 에러 방지용 비상 코드
 		UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
-		InitializeStageData(FName("Stage_1_1"));
+		InitializeStageData(FName("Stage1_1"));
 		FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
 		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
@@ -215,6 +215,7 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 	FStageStats* Row = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, StageID);
 	if (Row)
 	{
+		CurrentStageID = StageID;
 		CurrentStageData = *Row;	//데이터를 개별변수가 아닌 구조체에 한번에 복사
 
 		//2. 게임스태이트에 정보 할당
@@ -286,54 +287,13 @@ void AInGameGameMode::OnPhaseVictory()
 		//다음 스테이지 ID 캐싱
 		CachedGameState->NextStageID = CurrentStageData.NextStageID;
 
-
-
 		//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장
-		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-		{
-			if (UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>())
-			{
-				EconomySys->AddCurrency(ECurrencyType::Gold, CurrentStageData.ClearGold);
-				EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
 
-				//1회성 클리어보상? //계속?
-				//나머지 재화 추가
-			}
-
-			//경험치 보상 (전투에 참여한 스쿼드 멤버들에게 각각 추가)
-			USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
-			UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
-			if (SquadSys && InvSys) {
-				UE_LOG(LogTemp, Log, TEXT("경험치 보상 : SquadSys InvSys존재"));
-				// 현재 편성된 스쿼드 명단을 가져옴
-				const TArray<FName>& CurrentSquad = SquadSys->GetPlayerSquad();
-
-				for (const FName& HeroID : CurrentSquad)
-				{
-					if (!HeroID.IsNone())
-					{
-						// 각 캐릭터에게 클리어 경험치 지급!
-						InvSys->AddCharacterExp(HeroID, CurrentStageData.ClearExp);
-					}
-				}
-			}
-
-			if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
-			{
-				// 1. 다음 스테이지 해금
-				StageSys->UnlockStage(CurrentStageData.NextStageID);
-				
-				// 2. 현재 스테이지 별점 기록 (임시로 3별 달성이라 가정, 추후 기획에 맞춰 수정)
-				//StageSys->RecordStageClearStar(CurrentStageData., 3);
-			}
-
-
-			GI->SaveGameData();
-		}
+		DistributeStageRewards();
 	}
 
 
-	//3. 3초 후 결과 단계(Result)로 전환
+	//3초 후 결과 단계(Result)로 전환
 	FTimerHandle ResultTimer;
 	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
 		SetGamePhase(EGamePhase::Result);
@@ -370,3 +330,56 @@ void AInGameGameMode::OnPhaseResult()
 	//버튼생성 후 로비로 레벨이동
 }
 
+void AInGameGameMode::DistributeStageRewards()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+	UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>();
+	UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>();
+
+	//경험치 보상 지급
+	if (SquadSys && InvSys)
+	{
+		const TArray<FName>& CurrentSquad = SquadSys->GetPlayerSquad();
+		for (const FName& HeroID : CurrentSquad)
+		{
+			if (!HeroID.IsNone())
+			{
+				InvSys->AddCharacterExp(HeroID, CurrentStageData.ClearExp);
+			}
+		}
+	}
+
+	//재화 보상 및 스테이지 진행도 갱신
+	if (EconomySys && StageSys)
+	{
+		// 기본 보상(골드)은 무조건 지급
+		EconomySys->AddCurrency(ECurrencyType::Gold, CurrentStageData.ClearGold);
+
+		//최초 클리어인지 검사
+		bool bIsFirstClear = (StageSys->GetStageClearStar(CurrentStageID) == 0);
+
+		if (bIsFirstClear)
+		{
+			// 처음 깼을 때만 에테르 지급
+			EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
+
+			if (CachedGameState)
+			{
+				CachedGameState->AcquiredAether = CurrentStageData.ClearAether;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 클리어! 에테르 보상이 지급되었습니다."));
+		}
+
+		//다음 스테이지 해금 및 현재 스테이지 별점 기록
+		StageSys->UnlockStage(CurrentStageData.NextStageID);
+		StageSys->RecordStageClearStar(CurrentStageID, 3); // 임시 3별
+	}
+
+	//세이브 파일에 저장
+	GI->SaveGameData();
+	UE_LOG(LogTemp, Log, TEXT("🎁 [보상 시스템] 스테이지 보상 지급 및 게임 저장 완료!"));
+}

@@ -62,7 +62,6 @@ void UStageSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 	// 세이브 파일에서 데이터를 가져와서 메모리에 덮어씌웁니다.
 	UnlockedStages = SaveGameObj->SavedUnlockedStages;
 	StageClearStars = SaveGameObj->SavedStageClearStars;
-	MaxClearedStageIndex = SaveGameObj->SavedMaxClearedStageIndex;
 
 	
 	if (!UnlockedStages.Contains(FName("Stage1_1")))
@@ -79,5 +78,4 @@ void UStageSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj)const
 	// 현재 메모리에 있는 진행도를 세이브 파일 객체에 담습니다.
 	SaveGameObj->SavedUnlockedStages = UnlockedStages;
 	SaveGameObj->SavedStageClearStars = StageClearStars;
-	SaveGameObj->SavedMaxClearedStageIndex = MaxClearedStageIndex;
 }
