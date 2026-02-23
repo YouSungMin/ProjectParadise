@@ -78,18 +78,22 @@ private:
 	 * @brief 탭을 전환하고 관련 UI를 갱신합니다.
 	 * @param NewTab 전환할 탭 인덱스 (SquadTabs 네임스페이스 참조)
 	 */
+	UFUNCTION()
 	void SwitchTab(int32 NewTab);
 
 	/** @brief 현재 상태(CurrentState)에 따라 버튼 활성/비활성 및 UI 잠금을 처리합니다. */
+	UFUNCTION()
 	void UpdateUIState();
 
 	/** @brief 상세 패널의 버튼 상태(교체 vs 확인 / 취소)를 갱신하는 헬퍼  */ 
+	UFUNCTION()
 	void UpdateDetailPanelState();
 #pragma endregion 로직 - 탭 및 상태 제어
 
 #pragma region 로직 - 데이터 처리
 public:
 	/** @brief 현재 탭에 맞는 데이터를 수집하여 인벤토리 패널을 갱신합니다. */
+	UFUNCTION()
 	void RefreshInventoryUI();
 
 	/**
@@ -106,18 +110,21 @@ private:
 	 *          캐릭터 슬롯(0~2)은 CharacterAssets/Stats 테이블을, 유닛 슬롯(3~7)은
 	 *          FamiliarAssets/Stats 테이블을 조회하여 아이콘 및 레벨 정보를 채웁니다.
 	 */
+	UFUNCTION()
 	void InitFormationFromSubsystem();
 
 	/**
 	 * @brief SquadSubsystem의 슬롯 변경 델리게이트를 구독합니다.
 	 * @details OnPlayerSlotChanged, OnFamiliarSlotChanged 이벤트에 각각 핸들러를 바인딩합니다.
 	 */
+	UFUNCTION()
 	void BindSquadSubsystemDelegates();
 
 	/**
 	 * @brief SquadSubsystem 델리게이트 구독을 해제합니다.
 	 * @details NativeDestruct에서 호출하여 메모리 누수 및 댕글링 포인터를 방지합니다.
 	 */
+	UFUNCTION()
 	void UnbindSquadSubsystemDelegates();
 
 	/** 
@@ -128,6 +135,7 @@ private:
 	 * @param bUseBodyIcon 캐릭터의 경우 BodyIcon(전신)을 사용할지 여부 (기본값: false = FaceIcon)
 	 * @return UI 표시용 데이터 구조체 (FSquadItemUIData)
 	 */
+	UFUNCTION()
 	FSquadItemUIData MakeUIData(FName ID, int32 InLevel, int32 TabType, bool bUseBodyIcon = false);
 #pragma endregion 로직 - 데이터 처리
 
