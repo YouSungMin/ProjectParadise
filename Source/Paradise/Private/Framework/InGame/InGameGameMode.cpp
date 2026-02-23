@@ -6,6 +6,7 @@
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
+#include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
@@ -174,17 +175,6 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 		return;
 	}
 
-	////1.GameInstance에 있는 스테이지 테이블 가져오기
-	//UDataTable* StageTable = GI->StatgeStatsDataTable; 
-	//if (!StageTable)
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] 스테이지 데이터 테이블이 없습니다."));
-	//	return;
-	//}
-
-	////2. 데이터 테이블에서 정보 찾기
-	//FStageStats* Row = StageTable->FindRow<FStageStats>(StageID, TEXT("StageInfoContext"));
-
 	//0220 김성현 - GI 데이터 테이블 검색 템플릿 함수 이용 로직 변경
 	FStageStats* Row = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, StageID);
 	if (Row)
@@ -252,29 +242,49 @@ void AInGameGameMode::OnPhaseVictory()
 	{
 		//1. 타이머 정지(GameState의 플래그 사용)
 		CachedGameState->bIsTimerActive = false;
-		
+
 		//보상 정보 캐싱
 		CachedGameState->AcquiredGold = CurrentStageData.ClearGold;
 		CachedGameState->AcquiredExp = CurrentStageData.ClearExp;
 
 		//다음 스테이지 ID 캐싱
 		CachedGameState->NextStageID = CurrentStageData.NextStageID;
-	}
 
 
-	//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>()) 
+
+		//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장
+		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 		{
-			EconomySys->AddCurrency(ECurrencyType::Gold, CachedGameState->AcquiredGold);
-			//Gem 뽑기재화류 //1회성 클리어보상? //계속?
-			//나머지 재화 추가
+			if (UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>())
+			{
+				EconomySys->AddCurrency(ECurrencyType::Gold, CurrentStageData.ClearGold);
+				EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
+
+				//1회성 클리어보상? //계속?
+				//나머지 재화 추가
+			}
+
+			//경험치 보상 (전투에 참여한 스쿼드 멤버들에게 각각 추가)
+			USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+			UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+			if (SquadSys && InvSys) {
+				UE_LOG(LogTemp, Log, TEXT("경험치 보상 : SquadSys InvSys존재"));
+				// 현재 편성된 스쿼드 명단을 가져옴
+				const TArray<FName>& CurrentSquad = SquadSys->GetPlayerSquad();
+
+				for (const FName& HeroID : CurrentSquad)
+				{
+					if (!HeroID.IsNone())
+					{
+						// 각 캐릭터에게 클리어 경험치 지급!
+						InvSys->AddCharacterExp(HeroID, CurrentStageData.ClearExp);
+					}
+				}
+			}
+
+
+			GI->SaveGameData();
 		}
-
-
-
-		GI->SaveGameData();
 	}
 
 

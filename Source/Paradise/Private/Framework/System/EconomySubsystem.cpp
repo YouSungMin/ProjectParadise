@@ -9,7 +9,7 @@ void UEconomySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	Wallet.Add(ECurrencyType::Gold, 0);
-	Wallet.Add(ECurrencyType::Gem, 0);
+	Wallet.Add(ECurrencyType::Aether, 0);
 	Wallet.Add(ECurrencyType::SummonTicket, 0);
 
 	UE_LOG(LogTemp, Log, TEXT("💰 [EconomySubsystem] 경제 서브시스템 초기화 완료."));

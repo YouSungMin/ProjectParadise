@@ -37,7 +37,7 @@ enum class ECurrencyType : uint8
 	/** * @brief보상으로 획득하는 고급/유료 재화 (다이아/보석)
 	 * @details 프리미엄 뽑기(가챠), 특수 아이템 구매, 행동력 충전 등 핵심 과금 모델에 사용됩니다.
 	 */
-	Gem				UMETA(DisplayName = "Gem (뽑기/고급재화)"),
+	Aether				UMETA(DisplayName = "Aether (뽑기/고급재화)"),
 	/** * @brief 소환(가챠) 시스템 전용 재화 (뽑기권)
 	 * @details 이벤트 보상이나 상점 구매를 통해 얻으며, 영웅이나 퍼밀리어를 뽑을 때 1회용으로 소모됩니다.
 	 */
