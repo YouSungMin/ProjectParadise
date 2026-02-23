@@ -21,7 +21,7 @@ APlayerData::APlayerData()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	
-    CombatAttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
+    CombatAttributeSet2 = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
 
 
 	EquipmentComponent2 = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
@@ -32,19 +32,19 @@ void APlayerData::InitCombatAttributes(FCharacterStats* Stats)
     if (Stats)
     {
         //체력
-        CombatAttributeSet->InitMaxHealth(Stats->BaseMaxHP);
-        CombatAttributeSet->InitHealth(CombatAttributeSet->GetMaxHealth());
+        CombatAttributeSet2->InitMaxHealth(Stats->BaseMaxHP);
+        CombatAttributeSet2->InitHealth(CombatAttributeSet2->GetMaxHealth());
         //마나
-        CombatAttributeSet->InitMaxMana(Stats->BaseMaxMP);
-        CombatAttributeSet->InitMana(CombatAttributeSet->GetMaxMana());
+        CombatAttributeSet2->InitMaxMana(Stats->BaseMaxMP);
+        CombatAttributeSet2->InitMana(CombatAttributeSet2->GetMaxMana());
         //공격력
-        CombatAttributeSet->InitAttackPower(Stats->BaseAttackPower);
+        CombatAttributeSet2->InitAttackPower(Stats->BaseAttackPower);
         //방어력
-        CombatAttributeSet->InitDefense(Stats->BaseDefense);
+        CombatAttributeSet2->InitDefense(Stats->BaseDefense);
         //크리티컬 확률
-        CombatAttributeSet->InitCritRate(Stats->BaseCritRate);
+        CombatAttributeSet2->InitCritRate(Stats->BaseCritRate);
         //이동 속도
-        CombatAttributeSet->InitMoveSpeed(Stats->BaseMoveSpeed);
+        CombatAttributeSet2->InitMoveSpeed(Stats->BaseMoveSpeed);
     }
 }
 
