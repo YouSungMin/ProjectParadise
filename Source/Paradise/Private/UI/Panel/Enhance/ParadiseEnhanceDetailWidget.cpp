@@ -42,7 +42,11 @@ void UParadiseEnhanceDetailWidget::RefreshDetail(const FSquadItemUIData& ItemDat
 	if (TabType == SquadTabs::Weapon || TabType == SquadTabs::Armor)
 	{
 		// 장비일 경우: 강화 버튼 ON, 돌파 버튼 OFF
-		if (Btn_Enhance) Btn_Enhance->SetVisibility(ESlateVisibility::Visible);
+		if (Btn_Enhance)
+		{
+			Btn_Enhance->SetVisibility(ESlateVisibility::Visible);
+			Btn_Enhance->SetIsEnabled(true); // 다시 활성화!
+		}
 		if (Btn_Breakthrough) Btn_Breakthrough->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else if (TabType == SquadTabs::Character)
@@ -51,22 +55,21 @@ void UParadiseEnhanceDetailWidget::RefreshDetail(const FSquadItemUIData& ItemDat
 		if (Btn_Enhance) Btn_Enhance->SetVisibility(ESlateVisibility::Collapsed);
 		if (Btn_Breakthrough) Btn_Breakthrough->SetVisibility(ESlateVisibility::Visible);
 	}
-	else
-	{
-		// 유닛 등 지원하지 않는 탭일 경우 모두 숨김
-		if (Btn_Enhance) Btn_Enhance->SetVisibility(ESlateVisibility::Collapsed);
-		if (Btn_Breakthrough) Btn_Breakthrough->SetVisibility(ESlateVisibility::Collapsed);
-	}
 }
 
 void UParadiseEnhanceDetailWidget::ClearDetail()
 {
 	if (Text_ItemName) Text_ItemName->SetText(FText::FromString(TEXT("대상을 선택하세요")));
 	if (Text_Cost) Text_Cost->SetText(FText::FromString(TEXT("0 G")));
-	if (Text_CurrentStat) Text_CurrentStat->SetText(FText::FromString(TEXT("-")));
-	if (Text_NextStat) Text_NextStat->SetText(FText::FromString(TEXT("-")));
+	if (Text_CurrentStat) Text_CurrentStat->SetText(FText::FromString(TEXT("강화 전 스탯")));
+	if (Text_NextStat) Text_NextStat->SetText(FText::FromString(TEXT("강화 후 스탯")));
 
-	if (Btn_Enhance) Btn_Enhance->SetVisibility(ESlateVisibility::Collapsed);
+	// 강화 버튼을 보이게 하되, 비활성화(누를 수 없음) 처리!
+	if (Btn_Enhance)
+	{
+		Btn_Enhance->SetVisibility(ESlateVisibility::Visible);
+		Btn_Enhance->SetIsEnabled(false); // 회색으로 변하고 클릭 불가
+	}
 	if (Btn_Breakthrough) Btn_Breakthrough->SetVisibility(ESlateVisibility::Collapsed);
 }
 void UParadiseEnhanceDetailWidget::PlayEnhancementFX(bool bSuccess)

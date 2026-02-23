@@ -50,7 +50,7 @@ private:
 	UFUNCTION() void OnClickCharTab();
 	UFUNCTION() void OnClickWpnTab();
 	UFUNCTION() void OnClickArmTab();
-	UFUNCTION() void OnClickUnitTab();
+	//UFUNCTION() void OnClickUnitTab();
 	void SwitchTab(int32 NewTab);
 #pragma endregion 탭 제어
 

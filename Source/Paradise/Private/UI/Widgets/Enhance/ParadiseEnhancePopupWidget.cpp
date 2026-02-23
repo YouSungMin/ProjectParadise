@@ -135,5 +135,18 @@ void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Charac
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }
 void UParadiseEnhancePopupWidget::OnClickArmTab() { SwitchTab(SquadTabs::Armor); }
 //void UParadiseEnhancePopupWidget::OnClickUnitTab() { SwitchTab(SquadTabs::Unit); }
-void UParadiseEnhancePopupWidget::HandleClose() { SetVisibility(ESlateVisibility::Collapsed); }
+void UParadiseEnhancePopupWidget::HandleClose()
+{
+	// 1. 내부 상태 초기화 (다음에 열릴 때를 대비해 빈 화면으로 만들어둠)
+	if (Panel_Detail)
+	{
+		Panel_Detail->ClearDetail();
+	}
+
+	// 2. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
+	if (OnBackRequested.IsBound())
+	{
+		OnBackRequested.Broadcast();
+	}
+}
 #pragma endregion 중재 로직
