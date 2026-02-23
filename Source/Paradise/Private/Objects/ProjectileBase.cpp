@@ -37,7 +37,6 @@ AProjectileBase::AProjectileBase()
 void AProjectileBase::OnPoolActivate_Implementation()
 {
 	SetActorHiddenInGame(false);
-	SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	// 이동 재시작
 	ProjectileMovementComp->SetComponentTickEnabled(true);
@@ -105,6 +104,11 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 	{
 		World->GetTimerManager().ClearTimer(LifeTimerHandle);
 		World->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	}
+
+	if (SphereComp)
+	{
+		SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 }
 

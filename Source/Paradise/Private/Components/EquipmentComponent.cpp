@@ -203,6 +203,8 @@ void UEquipmentComponent::ApplyEquipmentStats()
 						AttrSet->SetAttackRange(ActionRow->AttackRange);
 					}
 				}
+				FWeaponAssets* WeaponAssets = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ItemID);
+				Soul->InitializeWeaponAbilities(WeaponAssets);
 			}
 		}
 		//방어구
@@ -223,6 +225,7 @@ void UEquipmentComponent::ApplyEquipmentStats()
 
 	UE_LOG(LogTemp, Log, TEXT("💪 [Equipment] 장비 스탯 최종 세팅 완료 (Attack: %.1f, Defense: %.1f, HP: %.1f)"),
 		AttrSet->GetAttackPower(), AttrSet->GetDefense(), AttrSet->GetMaxHealth());
+
 }
 
 
