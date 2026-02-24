@@ -194,12 +194,4 @@ private:
 
 
 
-#pragma region 게임 데이터
-public:
-	/** @brief 현재까지 클리어한 최고 스테이지 인덱스 (0: 1-1 도전 중). */
-	UPROPERTY(BlueprintReadWrite, Category = "Paradise|Progress")
-	int32 MaxClearedStageIndex = 0;
-
-#pragma endregion 게임 데이터
-
 };

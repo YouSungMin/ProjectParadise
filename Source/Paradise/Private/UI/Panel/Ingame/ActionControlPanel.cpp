@@ -7,12 +7,21 @@
 #include "CommonButtonBase.h"
 #include "UI/Widgets/InGame/SkillSlotWidget.h"
 #include "Framework/InGame/InGameController.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 
 void UActionControlPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// 생성 시점에서 플레이어 폰을 캐싱한다.
+	CachedPlayer = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (!CachedPlayer.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ActionControlPanel] 플레이어 폰을 찾을 수 없어 캐싱에 실패했습니다."));
+	}
+
 #pragma region 태그 버튼 배열화 및 캐싱
+
 	// 최적화: 루프 처리를 위해 개별 바인딩된 버튼들을 배열에 담습니다.
 	TagButtons.Empty();
 
@@ -34,23 +43,78 @@ void UActionControlPanel::NativeConstruct()
 	if (AttackBtn)
 	{
 		// Common UI의 OnSelected 혹은 OnClicked를 사용합니다.
+		AttackBtn->OnClicked().RemoveAll(this);
 		AttackBtn->OnClicked().AddUObject(this, &UActionControlPanel::OnAttackButtonClicked);
+		UE_LOG(LogTemp, Warning, TEXT(" 공격 키 바인드 됨 "));
 	}
 
 	// 3. 액티브 스킬 슬롯 내 버튼 바인딩
 	if (SkillSlot_Active && SkillSlot_Active->GetSlotButton())
 	{
+		SkillSlot_Active->GetSlotButton()->OnClicked().RemoveAll(this);
 		SkillSlot_Active->GetSlotButton()->OnClicked().AddUObject(this, &UActionControlPanel::ProcessAbilityInput, EInputID::Skill);
 	}
 
 	// 4. 궁극기 스킬 슬롯 내 버튼 바인딩
 	if (SkillSlot_Ultimate && SkillSlot_Ultimate->GetSlotButton())
 	{
+		SkillSlot_Ultimate->GetSlotButton()->OnClicked().RemoveAll(this);
 		SkillSlot_Ultimate->GetSlotButton()->OnClicked().AddUObject(this, &UActionControlPanel::ProcessAbilityInput, EInputID::Ultimate);
 	}
 }
 
+void UActionControlPanel::NativeDestruct()
+{
+	// 위젯 파괴 시 남아있는 포인터들을 깔끔하게 정리 (메모리 릭 원천 차단)
+	if (AttackBtn) AttackBtn->OnClicked().RemoveAll(this);
+	if (SkillSlot_Active && SkillSlot_Active->GetSlotButton()) SkillSlot_Active->GetSlotButton()->OnClicked().RemoveAll(this);
+	if (SkillSlot_Ultimate && SkillSlot_Ultimate->GetSlotButton()) SkillSlot_Ultimate->GetSlotButton()->OnClicked().RemoveAll(this);
+
+	for (TObjectPtr<UCommonButtonBase> Btn : TagButtons)
+	{
+		if (Btn) Btn->OnClicked().RemoveAll(this);
+	}
+
+	TagButtons.Empty();
+	CachedPlayer = nullptr;
+
+	Super::NativeDestruct();
+}
+
 #pragma region 외부 인터페이스 구현
+void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID)
+{
+	// 게임 인스턴스의 공용 데이터 테이블 로직을 활용합니다.
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	/** @section 1. 무기 스킬 (일반 스킬) 데이터 연동 */
+	if (WeaponActionID != NAME_None)
+	{
+		 if (const FActionStats* WeaponActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WeaponActionID))
+		 {
+		 	if (SkillSlot_Active)
+		 	{
+				//SkillSlot_Active->SetSkillIcon(WeaponActionData->SkillIcon);
+		 	}
+		 }
+		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 액티브 스킬 ID 연결 완료: %s"), *WeaponActionID.ToString());
+	}
+
+	/** @section 2. 캐릭터 스킬 (궁극기) 데이터 연동 */
+	if (UltimateActionID != NAME_None)
+	{
+		 if (const FActionStats* UltimateActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, UltimateActionID))
+		 {
+		 	if (SkillSlot_Ultimate)
+		 	{
+				//SkillSlot_Ultimate->SetSkillIcon(UltimateActionData->SkillIcon);
+		 	}
+		 }
+		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 궁극기 ID 연결 완료: %s"), *UltimateActionID.ToString());
+	}
+}
+
 void UActionControlPanel::UpdateSkillCooldown(int32 SkillIndex, float CurrentTime, float MaxTime)
 {
 	// 기본 스킬 쿨타임 정보 호출
@@ -83,10 +147,7 @@ void UActionControlPanel::UpdateTagButtons(int32 ActiveCharIndex)
 }
 void UActionControlPanel::OnAttackButtonClicked()
 {
-	if (CachedPlayer.IsValid())
-	{
-		CachedPlayer->SendAbilityInputToASC(EInputID::Attack, true);
-	}
+	ProcessAbilityInput(EInputID::Attack);
 }
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
