@@ -49,17 +49,25 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TMap<E
 			CurrentPityStack = 0;
 		}
 
-		// 3. 해당 등급 내에서 아이템 뽑기
+		// 3. 해당 등급 내에서 아이템 뽑기 (이 안에서 이미 Item.DuplicateFragmentReward 값이 세팅되어 나옴)
 		FGachaResult Result = PickItemFromRarity(HitRarity);
-		Result.ConvertedFragments = 0; // 기본값 명시 초기화
 
+		// 4. 중복 검사 및 파편 처리
 		if (OwnedItems.Contains(Result.PulledItemID))
 		{
 			Result.bIsDuplicate = true;
-			// Row에서 가져온 파편 보상량 적용 (PickItemFromRarity에서 임시 보관된 값 사용)
-			Result.ConvertedFragments = Result.ConvertedFragments > 0
-				? Result.ConvertedFragments  // PickItemFromRarity에서 이미 세팅
-				: 10; // Fallback (기획자가 0으로 설정했을 경우 대비)
+
+			// 기획자가 데이터 테이블에 실수로 파편 보상량을 0이나 음수로 넣었을 때만 10개(최소 보장)로 세팅
+			if (Result.ConvertedFragments <= 0)
+			{
+				Result.ConvertedFragments = 10;
+			}
+		}
+		else
+		{
+			Result.bIsDuplicate = false;
+			// 중복이 아니므로 조각은 주지 않음
+			Result.ConvertedFragments = 0;
 		}
 
 		// UI에서 표기할 천장 스택 기록
