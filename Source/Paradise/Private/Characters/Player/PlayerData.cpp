@@ -54,6 +54,8 @@ void APlayerData::InitPlayerAssets(FCharacterAssets* Assets)
 	{
 		this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 		this->CachedAnimBP = Assets->AnimBlueprint;
+		this->CachedUnitFXData = Assets->UnitFXData;
+		this->CachedHitReactionTag = Assets->HitReactionTag;
 
 		if (AbilitySystemComponent)
 		{

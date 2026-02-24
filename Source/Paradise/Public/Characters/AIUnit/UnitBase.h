@@ -27,6 +27,12 @@ public:
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
+	/* @brief 이 유닛의 고유 연출 데이터 에셋(FXDataAsset)을 반환합니다. */
+	virtual class UFXDataAsset* GetUnitFXData() const override;
+
+	/* @brief 이 유닛이 피격당했을 때 재생할 고유 피격 태그를 반환합니다. (예: State.Hit) */
+	virtual FGameplayTag GetHitReactionTag() const override;
+
 	/** @brief 유닛 초기화 및 ID 설정 */
 	void InitializeUnit(struct FAIUnitStats* InStats, struct FAIUnitAssets* InAssets);
 
@@ -87,6 +93,14 @@ protected:
 	/** @brief 캐싱된 스킬 Action ID (단일 스킬 기준) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FName CachedSkillActionID;
+
+	/** @brief 캐싱된 유닛 전용 피격/사망 FX 데이터 에셋 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TSoftObjectPtr<class UFXDataAsset> CachedUnitFXData;
+
+	/** @brief 캐싱된 피격 리액션 태그 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	FGameplayTag CachedHitReactionTag;
 
 	// =========================================================
 	// GAS Handles (어빌리티 관리)

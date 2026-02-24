@@ -21,6 +21,7 @@
 #include "Data/Assets/ParadiseInputConfig.h" 
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Data/Assets/FXDataAsset.h"
 
 APlayerBase::APlayerBase()
 {
@@ -199,6 +200,27 @@ FCombatActionData APlayerBase::GetCombatActionData(ECombatActionType ActionType)
     }
 
     return LinkedPlayerData->GetCombatActionData(ActionType);
+}
+
+UFXDataAsset* APlayerBase::GetUnitFXData() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        // PlayerData에 캐싱해둔 데이터를 로드해서 반환
+        return LinkedPlayerData->CachedUnitFXData.LoadSynchronous();
+    }
+
+    return nullptr;
+}
+
+FGameplayTag APlayerBase::GetHitReactionTag() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        return LinkedPlayerData->CachedHitReactionTag;
+    }
+
+    return FGameplayTag::EmptyTag;
 }
 
 void APlayerBase::SetCamera_Default()

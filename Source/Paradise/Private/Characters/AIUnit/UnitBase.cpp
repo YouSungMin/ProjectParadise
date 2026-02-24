@@ -9,6 +9,7 @@
 #include "BrainComponent.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
+#include "Data/Assets/FXDataAsset.h"
 
 AUnitBase::AUnitBase()
 {
@@ -74,6 +75,16 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 
 
 	return Result;
+}
+
+UFXDataAsset* AUnitBase::GetUnitFXData() const
+{
+	return CachedUnitFXData.LoadSynchronous();
+}
+
+FGameplayTag AUnitBase::GetHitReactionTag() const
+{
+	return CachedHitReactionTag;
 }
 
 void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
@@ -157,6 +168,8 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		CachedDamageEffectClass = InAssets->BasicAttackEffect;
 		CachedAttackMontage = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
 		CachedProjectileClass = InAssets->ProjectileClass;
+		CachedUnitFXData = InAssets->UnitFXData;
+		CachedHitReactionTag = InAssets->HitReactionTag;
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)

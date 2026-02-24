@@ -314,12 +314,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
 
+	// =========================================================
+	//  Audio & FX (Physical Reaction)
+	// =========================================================
 	/**
-	 * @brief 유닛 전용 목소리/이펙트 데이터 에셋 (Voice Pack)
-	 * @detail 사망(State.Dead), 기합(State.Attack), 피격(State.Hit) 사운드를 담고 있는 에셋입니다.
+	 * @brief 유닛 본체 전용 FX 데이터 에셋
+	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리, 기합 소리 등을 담습니다.
+	 * (예: Event.Hit, Event.Death 태그로 검색)
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Common")
-	TSoftObjectPtr<UFXDataAsset> VoiceDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Common")
+	TSoftObjectPtr<UFXDataAsset> UnitFXData;
 
 	/**
 	 * @brief 피격 이펙트 태그

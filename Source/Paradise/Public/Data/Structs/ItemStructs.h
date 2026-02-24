@@ -13,6 +13,7 @@ class UGameplayAbility;
 class UAnimMontage;
 class USoundBase;
 class UNiagaraSystem;
+class UFXDataAsset;
 
 /**
  * @struct FItemBaseStats
@@ -273,6 +274,13 @@ public:
 	// -----------------------------------------------------------------
 	// [FX & Sound] 연출
 	// -----------------------------------------------------------------
+
+	/**
+	 * @brief 무기 전용 FX 데이터 에셋
+	 * @details 무기 휘두르는 소리, 몬스터에 적중했을 때의 타격 이펙트 등을 담습니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TSoftObjectPtr<UFXDataAsset> WeaponFXData;
 
 	/**
 	 * @brief 평타 연출 태그
