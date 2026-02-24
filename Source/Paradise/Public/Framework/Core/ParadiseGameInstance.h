@@ -179,6 +179,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Stage", meta = (RowType = "StageWaveDetail", RequiredAssetDataTags = "RowStructure=/Script/Paradise.StageWaveDetail"))
 	TObjectPtr<class UDataTable> StageWaveDetailDataTable = nullptr;
 
+	//성장시스템 데이터 테이블
+
+	/** @brief 캐릭터 레벨업 경험치 및 스탯 테이블 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth")
+	TObjectPtr<class UDataTable> CharacterLevelUpDataTable=nullptr;
+
 public:
 
 #pragma region 인벤토리 

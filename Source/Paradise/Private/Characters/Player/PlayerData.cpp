@@ -24,7 +24,7 @@ APlayerData::APlayerData()
     CombatAttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
 
 
-	EquipmentComponent2 = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
+	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
 }
 
 void APlayerData::InitCombatAttributes(FCharacterStats* Stats)
@@ -124,10 +124,10 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	// =========================================================
 
 	// 1. 장비 컴포넌트 체크
-	if (!EquipmentComponent2) return Result;
+	if (!EquipmentComponent) return Result;
 
 	// 2. 현재 무기 ID 조회
-	FName WeaponID = EquipmentComponent2->GetEquippedItemID(EEquipmentSlot::Weapon);
+	FName WeaponID = EquipmentComponent->GetEquippedItemID(EEquipmentSlot::Weapon);
 	if (WeaponID.IsNone()) return Result;
 
 	// 3. 무기 데이터 테이블 조회
