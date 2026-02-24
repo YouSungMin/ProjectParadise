@@ -58,6 +58,14 @@ private:
 	UFUNCTION()
 	void OnAttackButtonClicked();
 
+	/** 액티브 스킬 델리게이트 수신용 래퍼 함수 */
+	UFUNCTION() 
+	void OnActiveSkillRequested();
+
+	/** 궁극기 델리게이트 수신용 래퍼 함수 */
+	UFUNCTION() 
+	void OnUltimateSkillRequested();
+
 	/**
 	 * @brief UI 버튼 입력을 통합하여 플레이어의 ASC로 전달하는 중앙 제어 함수입니다.
 	 * @details 하드코딩된 개별 콜백 함수들을 대체하며, 입력 ID에 따라 적절한 어빌리티 신호를 송신합니다.

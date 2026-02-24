@@ -13,6 +13,9 @@ class UTextBlock;
 class UButton;
 #pragma endregion 전방 선언
 
+// 노드가 클릭되었을 때 ID를 전달할 델리게이트 선언
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageNodeClicked, FName, SelectedStageID);
+
 /**
  * @class UStageNodeWidget
  * @brief 월드맵(Canvas)에 수동으로 배치되는 개별 스테이지 노드.
@@ -28,21 +31,19 @@ protected:
 
 #pragma region 설정 데이터 (Config)
 public:
-	/** 
-	 * @brief 이 노드가 담당할 스테이지 ID (기획자가 에디터에서 직접 입력)
-	 * @note "1-1", "1-2"
-	 */
+	/** @brief 스테이지 ID (기획자가 에디터에서 입력) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	FName StageID = NAME_None;
+
+	/** @brief 부모 위젯(Manager)에게 클릭 이벤트를 알리는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnStageNodeClicked OnNodeClicked;
 #pragma endregion 설정 데이터 (Config)
 
 #pragma region UI 컴포넌트
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> Img_Thumbnail = nullptr;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_StageName = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Enter = nullptr;

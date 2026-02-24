@@ -48,18 +48,18 @@ void UActionControlPanel::NativeConstruct()
 		UE_LOG(LogTemp, Warning, TEXT(" 공격 키 바인드 됨 "));
 	}
 
-	// 3. 액티브 스킬 슬롯 내 버튼 바인딩
-	if (SkillSlot_Active && SkillSlot_Active->GetSlotButton())
+	// 3. 액티브 스킬 슬롯 바인딩
+	if (SkillSlot_Active)
 	{
-		SkillSlot_Active->GetSlotButton()->OnClicked().RemoveAll(this);
-		SkillSlot_Active->GetSlotButton()->OnClicked().AddUObject(this, &UActionControlPanel::ProcessAbilityInput, EInputID::Skill);
+		SkillSlot_Active->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
+		SkillSlot_Active->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
 	}
 
-	// 4. 궁극기 스킬 슬롯 내 버튼 바인딩
-	if (SkillSlot_Ultimate && SkillSlot_Ultimate->GetSlotButton())
+	//  4. 궁극기 스킬 슬롯 바인딩
+	if (SkillSlot_Ultimate)
 	{
-		SkillSlot_Ultimate->GetSlotButton()->OnClicked().RemoveAll(this);
-		SkillSlot_Ultimate->GetSlotButton()->OnClicked().AddUObject(this, &UActionControlPanel::ProcessAbilityInput, EInputID::Ultimate);
+		SkillSlot_Ultimate->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
+		SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
 	}
 }
 
@@ -67,8 +67,8 @@ void UActionControlPanel::NativeDestruct()
 {
 	// 위젯 파괴 시 남아있는 포인터들을 깔끔하게 정리 (메모리 릭 원천 차단)
 	if (AttackBtn) AttackBtn->OnClicked().RemoveAll(this);
-	if (SkillSlot_Active && SkillSlot_Active->GetSlotButton()) SkillSlot_Active->GetSlotButton()->OnClicked().RemoveAll(this);
-	if (SkillSlot_Ultimate && SkillSlot_Ultimate->GetSlotButton()) SkillSlot_Ultimate->GetSlotButton()->OnClicked().RemoveAll(this);
+	if (SkillSlot_Active) SkillSlot_Active->OnSkillActionRequested.RemoveAll(this);
+	if (SkillSlot_Ultimate) SkillSlot_Ultimate->OnSkillActionRequested.RemoveAll(this);
 
 	for (TObjectPtr<UCommonButtonBase> Btn : TagButtons)
 	{
@@ -148,6 +148,16 @@ void UActionControlPanel::UpdateTagButtons(int32 ActiveCharIndex)
 void UActionControlPanel::OnAttackButtonClicked()
 {
 	ProcessAbilityInput(EInputID::Attack);
+}
+
+void UActionControlPanel::OnActiveSkillRequested()
+{
+	ProcessAbilityInput(EInputID::Skill);
+}
+
+void UActionControlPanel::OnUltimateSkillRequested()
+{
+	ProcessAbilityInput(EInputID::Ultimate);
 }
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)

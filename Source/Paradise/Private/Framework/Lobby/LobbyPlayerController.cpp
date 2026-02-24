@@ -122,6 +122,9 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 {
     if (CurrentMenu == InNewMenu) return;
 
+	// 메뉴를 변경하기 직전에 현재 메뉴를 '이전 메뉴'로 저장합니다.
+	PreviousMenu = CurrentMenu;
+
     CurrentMenu = InNewMenu;
     UE_LOG(LogTemp, Log, TEXT("[Controller] 메뉴 변경: %d"), (int32)CurrentMenu);
 
@@ -130,4 +133,11 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
     {
         CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
+}
+
+void ALobbyPlayerController::RequestBackToPreviousMenu()
+{
+	// 저장해둔 직전 메뉴로 다시 돌아갑니다.
+	// 만약 Battle에서 왔다면 다시 Battle로, 메인에서 왔다면 메인(None)으로 갑니다.
+	SetLobbyMenu(PreviousMenu);
 }

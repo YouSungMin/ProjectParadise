@@ -39,6 +39,12 @@ public:
 	 * @param SlotIndex 선택된(강조할) 슬롯의 인덱스.
 	 */
 	void HighlightSlot(int32 SlotIndex);
+
+	/**
+	 * @brief 위젯을 미리보기 모드로 설정합니다.
+	 * @param bIsPreview true면 터치 불가(눈으로만 봄), false면 터치 가능
+	 */
+	void SetPreviewMode(bool bIsPreview);
 #pragma endregion 공개 함수
 
 #pragma region 생명주기

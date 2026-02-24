@@ -103,8 +103,10 @@ void USkillSlotWidget::OnSkillButtonClicked()
 	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
 	if (CurrentCooldown <= 0.0f)
 	{
-		// TODO: 실제 스킬 사용 요청을 상위 컨트롤러나 GAS Component로 전달하는 델리게이트 호출
-		// 예: OnSkillActionRequested.Broadcast(SkillId);
+		if (OnSkillActionRequested.IsBound())
+		{
+			OnSkillActionRequested.Broadcast();
+		}
 	}
 }
 
