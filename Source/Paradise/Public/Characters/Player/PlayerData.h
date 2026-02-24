@@ -97,6 +97,14 @@ public:
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
 	TSubclassOf<UAnimInstance> CachedAnimBP = nullptr;
 
+	/** @brief 미리 로드된 유닛 전용 피격/사망 FX 데이터 에셋 */
+	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
+	TSoftObjectPtr<class UFXDataAsset> CachedUnitFXData = nullptr;
+
+	/** @brief 미리 로드된 피격 리액션 태그 */
+	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
+	FGameplayTag CachedHitReactionTag;
+
 	/* * 현재 빙의 중인 육체 (약한 참조)
 	 * @details PlayerBase는 언제든 파괴될 수 있으므로 WeakPtr로 참조합니다.
 	 */
