@@ -485,6 +485,12 @@ struct FEnemyAssets : public FAIUnitAssets
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Skill"))
 	TArray<FGameplayTag> SkillEffectTags;
+
+	/**
+	 * @brief 스테이지 상세 팝업용 적 얼굴 아이콘.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
 };
 
 /**
@@ -495,4 +501,10 @@ USTRUCT(BlueprintType)
 struct FFamiliarAssets : public FAIUnitAssets
 {
 	GENERATED_BODY()
+
+	/**
+	 * @brief 인게임 HUD/편성창 유닛 얼굴 아이콘.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
 };
