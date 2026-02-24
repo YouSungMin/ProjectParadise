@@ -50,7 +50,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance")
 	int32 RequiredGold = 0;
 
-	/** @brief 요구 강화석 개수 (별도의 강화 재화가 필요할 경우 사용, 없으면 0) */
+	/** @brief 요구 강화석 개수 */
+	//일단 강화석 아이템 같은 건 없지만 0으로 해두고 추후 기능 확장시 구현
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance")
 	int32 RequiredMaterialCount = 0;
 
@@ -74,9 +75,10 @@ struct FCharacterAwakenData : public FTableRowBase
 public:
 	/** @brief 돌파에 필요한 캐릭터 영혼석(조각) 개수 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Awaken")
-	int32 RequiredSoulstone = 0;
+	int32 RequiredAwakeningPieces = 0;
 
 	/** @brief 돌파에 필요한 골드 비용 */
+	//현재는 골드가 들 기획은 아니지만 추후 확장시 구현가능
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Awaken")
 	int32 RequiredGold = 0;
 
