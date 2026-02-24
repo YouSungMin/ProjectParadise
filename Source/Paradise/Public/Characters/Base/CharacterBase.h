@@ -67,11 +67,11 @@ public:
 	/*
 	 * @brief 공격 판정 수행 (공용)
 	 * @param SocketName : 판정의 기준이 될 소켓 이름 (예: hand_r, Jaw, WeaponTip)
-	 * @param AttackRadius : 공격 반경 (기본 50cm)
-	 * @param DamageTag : GAS 이벤트 태그 (기본: Event.Montage.Hit)
+	 * @param AttackRadius : 공격 사거리 (범위)
+	 * @param ForwardOffset : 타격 시작점을 앞으로 얼마나 밀어낼 것인가
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHit(FName SocketName, float AttackRadius = 50.0f);
+	void CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset);
 
 	/*
 	 * @brief 새로운 공격이 시작될 때 타격 목록 초기화
@@ -94,6 +94,18 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void SpawnDamagePopup(float DamageAmount, bool bIsCritical);
+
+	/** @brief 현재 액션 데이터 세팅 (어빌리티에서 스킬 시작 시 호출) */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetCurrentActionData(const FCombatActionData& InData) { CurrentActiveActionData = InData; }
+
+	/** @brief 현재 액션 데이터 반환 (노티파이에서 타격 시 호출) */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	FCombatActionData GetCurrentActionData() const { return CurrentActiveActionData; }
+
+	/** @brief 무기 또는 몸통에서 소켓 위치를 찾아 반환합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	FVector GetMuzzleLocation(FName SocketName) const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -151,6 +163,13 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UAttributeSet> AttributeSet;
+
+	/*
+	 * @brief 현재 실행 중인 전투 액션의 임시 데이터 (택배 상자)
+	 * @details GA가 실행될 때 세팅해주며, AnimNotify가 꺼내서 CheckHit에 사용합니다.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Data")
+	FCombatActionData CurrentActiveActionData;
 
 	/*
 	 * @brief 이미 때린 적을 중복 타격하지 않게 저장하는 목록

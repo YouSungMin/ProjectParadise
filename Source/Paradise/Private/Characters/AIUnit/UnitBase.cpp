@@ -9,7 +9,6 @@
 #include "BrainComponent.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
-#include "Characters/Base/PlayerBase.h"
 
 AUnitBase::AUnitBase()
 {
@@ -62,8 +61,10 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 		Result.MontageToPlay = CachedAttackMontage;
 		Result.DamageEffectClass = CachedDamageEffectClass;
 		Result.ProjectileClass = CachedProjectileClass;
-		Result.AttackRange = CachedAttackRange;
 		Result.DamageMultiplier = CachedDamageMultiplier;
+		Result.AttackRange = CachedAttackRange;
+		Result.AttackRadius = CachedAttackRadius;
+		Result.ForwardOffset = CachedForwardOffset;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
@@ -99,6 +100,8 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 					BaseSet->InitAttackRange(ActionRow->AttackRange);
 					CachedAttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
 					CachedDamageMultiplier = ActionRow->DamageMultiplier;
+					CachedAttackRadius = ActionRow->AttackRadius;
+					CachedForwardOffset = ActionRow->ForwardOffset;
 				}
 				else
 				{
@@ -106,6 +109,9 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 					BaseSet->InitAttackRange(150.0f);
 					CachedAttackRange = 150.0f;
 					CachedDamageMultiplier = 1.0f;
+
+					CachedAttackRadius = 40.0f;
+					CachedForwardOffset = 0.0f;
 				}
 			}
 		}
@@ -203,18 +209,16 @@ void AUnitBase::Die()
 	}
 }
 
-bool AUnitBase::IsEnemy(AActor* OtherActor)
+bool AUnitBase::IsEnemy(AUnitBase* OtherUnit)
 {
-	ACharacterBase* OtherChar = Cast<ACharacterBase>(OtherActor);
-	if (OtherChar)
-	{
-		return IsHostile(OtherChar);
-	}
-	return false;
+	if (!OtherUnit || OtherUnit == this) return false;
+	// 태그가 다르면 적군으로 간주
+	return !this->FactionTag.MatchesTag(OtherUnit->FactionTag);
 }
 
 void AUnitBase::PlayRangeAttack()
 {
+	// 공격 몽타주 실행 또는 발사체 생성 로직
 	UE_LOG(LogTemp, Log, TEXT("%s 유닛이 원거리 공격을 수행합니다."), *GetName());
 }
 
