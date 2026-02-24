@@ -392,6 +392,12 @@ struct FAIUnitAssets : public FUnitBaseAssets
 {
 	GENERATED_BODY()
 
+	/**
+	 * @brief UI 표현을 위한 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
+
 	// =========================================================
 	//  Visual (AI Specific)
 	// =========================================================
@@ -467,6 +473,8 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Attack", meta = (Categories = "Effect.Attack"))
 	FGameplayTag BasicAttackEffectTag;
+
+
 };
 
 /**
