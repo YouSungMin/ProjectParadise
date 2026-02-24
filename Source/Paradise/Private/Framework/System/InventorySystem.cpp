@@ -11,7 +11,6 @@ UInventorySystem::UInventorySystem()
 
 void UInventorySystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 {
-	//CharacterID가 None(빈칸)이면 그냥 무시
 	if (CharacterID.IsNone()) return;
 
 	//내 인벤토리에서 캐릭터 데이터 찾기
@@ -25,52 +24,60 @@ void UInventorySystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 		}
 	}
 
-	//0223 김성현 - 아래 로직은 데이터 테이블 추가후 변경예정
-
-	// [테스트용 강제 추가 로직] 캐릭터가 인벤토리에 없으면 새로 생성
-	if (!TargetCharacterData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("🛠️ [Test] 인벤토리에 '%s'가 없어서 강제로 1레벨로 생성합니다!"), *CharacterID.ToString());
-
-		FOwnedCharacterData NewTestCharacter;
-		NewTestCharacter.CharacterID = CharacterID;
-		NewTestCharacter.Level = 1;
-		NewTestCharacter.CurrentExp = 0;
-
-		OwnedCharacters.Add(NewTestCharacter);
-
-		// 방금 배열의 맨 마지막에 추가한 캐릭터의 주소값을 가져옵니다.
-		TargetCharacterData = &OwnedCharacters.Last();
-	}
-
 	//획득한 경험치를 전부 더함
 	TargetCharacterData->CurrentExp += ExpAmount;
 	UE_LOG(LogTemp, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, TargetCharacterData->CurrentExp);
 
-	//임시 레벨업 루프 (임시 50레벨 제한 + (레벨*100) 공식 적용)
+	// 게임 인스턴스 가져오기
+	UParadiseGameInstance* GI = GetParadiseGI();
+	if (!GI || !GI->CharacterLevelUpDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ CharacterLevelUpDataTable이 게임 인스턴스에 설정되지 않았습니다!"));
+		return;
+	}
+
+	//데이터 테이블 기반 레벨업 루프
 	while (true)
 	{
-		if (TargetCharacterData->Level >= 50)
+		//다음 레벨 의 RowName 데이터 테이블 찾기
+		int32 NextLevel = TargetCharacterData->Level + 1;
+		FName RowName = FName(*FString::FromInt(NextLevel));
+
+		//테이블에서 다음 레벨 데이터 조회
+		FCharacterLevelUpData* LevelData = GI->GetDataTableRow<FCharacterLevelUpData>(GI->CharacterLevelUpDataTable, RowName);
+
+		//만렙 이후 (데이터없을시)
+		if (!LevelData)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 최대 레벨 도달!"), *CharacterID.ToString());
-			TargetCharacterData->CurrentExp = 0;
+			UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), TargetCharacterData->Level);
+			TargetCharacterData->CurrentExp = 0; // 초과 경험치 증발 처리
 			break;
 		}
 
-		int32 RequiredExp = TargetCharacterData->Level * 100;
-
-		if (TargetCharacterData->CurrentExp >= RequiredExp)
+		//경험치가 충분하다면 레벨업 진행
+		if (TargetCharacterData->CurrentExp >= LevelData->RequiredExp)
 		{
-			TargetCharacterData->CurrentExp -= RequiredExp;
+			TargetCharacterData->CurrentExp -= LevelData->RequiredExp;
 			TargetCharacterData->Level++;
 
-			UE_LOG(LogTemp, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d)"), *CharacterID.ToString(), TargetCharacterData->Level);
+			UE_LOG(LogTemp, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d -> %d)"), *CharacterID.ToString(), TargetCharacterData->Level - 1, TargetCharacterData->Level);
+
+			// TODO : 파티클 시스템이나 레벨업 사운드를 재생하는 이벤트
 		}
 		else
 		{
+			// 경험치가 모자라면 루프 종료
 			break;
 		}
 	}
+
+	//UI 델리게이트 발송
+	if (OnInventoryUpdated.IsBound())
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+
+
 }
 
 void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes, const TArray<FOwnedFamiliarData>& InFamiliars, const TArray<FOwnedItemData>& InItems)

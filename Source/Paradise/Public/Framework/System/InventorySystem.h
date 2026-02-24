@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/Structs/ItemStructs.h"
+#include "Data/Structs/GrowthStruct.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/InventoryStruct.h"
 #include "Subsystems/GameInstanceSubsystem.h"

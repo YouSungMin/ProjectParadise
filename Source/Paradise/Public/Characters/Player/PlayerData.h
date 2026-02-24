@@ -46,7 +46,7 @@ public:
 	 * @return 장비컴포넌트 반환
 	 */
 	UFUNCTION(BlueprintCallable)
-	UEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent2; }
+	UEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
 	/**
 	 * @brief 무기 데이터(FWeaponAssets)를 받아 관련 어빌리티(평타, 스킬)를 부여합니다.
@@ -137,7 +137,7 @@ protected:
 	 * @details 인게임에서 착용 중인 장비의 로직과 데이터를 처리합니다.
 	 */
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Equipment")
-	TObjectPtr<UEquipmentComponent> EquipmentComponent2 = nullptr;
+	TObjectPtr<UEquipmentComponent> EquipmentComponent = nullptr;
 
 	/* * GAS 스탯 관리용 어트리뷰트 셋
 	 * @details UBaseAttributeSet 전체 스탯 관리 어트리뷰트셋

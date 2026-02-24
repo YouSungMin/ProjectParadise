@@ -1,0 +1,7 @@
+Name,RequiredSoulstone,RequiredGold,MaxLevelCap,BonusStatMultiplier
+1,1,0,35,1.025
+2,1,0,40,1.05
+3,1,0,45,1.085
+4,1,0,50,1.125
+5,1,0,55,1.15
+6,1,0,60,1.2

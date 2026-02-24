@@ -3,6 +3,8 @@
 
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Lobby/LobbySetupActor.h"
+#include "Framework/System/InventorySystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
@@ -69,6 +71,42 @@ void ALobbyPlayerController::BeginPlay()
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[LobbyController] LobbyHUDClass가 설정되지 않았습니다! BP를 확인하세요."));
+	}
+}
+
+void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddCharacter(CharacterID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 획득: %s"), *CharacterID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddFamiliar(FName FamiliarID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddFamiliar(FamiliarID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 획득: %s"), *FamiliarID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddItem(FName ItemID, int32 Count)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddItem(ItemID, Count, 0); // 0강 상태로 지급
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 아이템 획득: %s (%d개)"), *ItemID.ToString(), Count);
+		}
 	}
 }
 
