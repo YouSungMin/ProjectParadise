@@ -20,10 +20,10 @@ class PARADISE_API UFXDataAsset : public UDataAsset
 public:
     // 태그 : 이펙트 매핑
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data", meta = (Categories = "Effect, State"))
-    TMap<FGameplayTag, FCombatFXSet> EffectMap;
+    TMap<FGameplayTag, FFXPayload> EffectMap;
 
     // 검색 함수
-    FCombatFXSet* FindEffect(const FGameplayTag& Tag)
+    FFXPayload* FindEffect(const FGameplayTag& Tag)
     {
         return EffectMap.Find(Tag);
     }

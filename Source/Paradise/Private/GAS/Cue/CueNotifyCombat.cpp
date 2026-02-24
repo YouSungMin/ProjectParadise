@@ -17,12 +17,17 @@ bool UCueNotifyCombat::OnExecute_Implementation(AActor* MyTarget, const FGamepla
     FGameplayTag RequestTag = Parameters.OriginalTag;
 
     // 3. 데이터 에셋에서 구조체 검색
-    FCombatFXSet* FoundFX = FXDataAsset->FindEffect(RequestTag);
+    FFXPayload* FoundFX = FXDataAsset->FindEffect(RequestTag);
 
     // 4. 찾았다면 재생!
     if (FoundFX)
     {
-        FVector SpawnLocation = Parameters.Location; // HitResult 위치
+        FVector SpawnLocation = Parameters.Location;
+
+        if (Parameters.EffectContext.GetHitResult())
+        {
+            SpawnLocation = Parameters.EffectContext.GetHitResult()->ImpactPoint;
+        }
 
         // (A) 나이아가라 재생 (동기 로드)
         if (!FoundFX->VisualEffect.IsNull())

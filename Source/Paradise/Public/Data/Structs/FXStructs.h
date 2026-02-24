@@ -4,11 +4,11 @@
 #include "FXStructs.generated.h"
 
 /**
- * @struct FCombatFXSet
- * @brief 시각(VFX)과 청각(SFX) 효과를 하나로 묶은 패키지
+ * @struct FFXPayload
+ * @brief 사운드, 파티클 등 한 번에 재생될 연출 데이터의 묶음
  */
 USTRUCT(BlueprintType)
-struct FCombatFXSet
+struct FFXPayload
 {
     GENERATED_BODY()
 
@@ -20,6 +20,10 @@ public:
     // 청각 효과 (사운드)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
     TSoftObjectPtr<class USoundBase> SoundEffect;
+
+    // 카메라 쉐이크
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+    TSubclassOf<UCameraShakeBase> CameraShake;
 
     // 크기 조절
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")

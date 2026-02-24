@@ -102,7 +102,14 @@ public:
 	/** @brief HUD 캐싱용 (필요시 구현) */
 	void SetLobbyHUD(UParadiseLobbyHUDWidget* InHUD);
 
+	/** @brief 컨텍스트를 유지한 채 직전 메뉴로 돌아갑니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Navigation")
+	void RequestBackToPreviousMenu();
+
 private:
+	/** @brief 직전 메뉴 상태를 캐싱합니다. */
+	EParadiseLobbyMenu PreviousMenu = EParadiseLobbyMenu::None;
+
 	/** @brief 현재 메뉴 상태 저장 */
 	EParadiseLobbyMenu CurrentMenu = EParadiseLobbyMenu::None;
 

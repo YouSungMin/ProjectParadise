@@ -141,3 +141,16 @@ enum class EInputID : uint8
 	Skill,      // 4 (무기스킬)
 	Ultimate    // 5 (궁극기)
 };
+
+/**
+ * @enum EWeaponType
+ * @brief 장착한 무기에 따른 애니메이션 및 로직 분기용
+ */
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	Base	UMETA(DisplayName = "Base (맨손/기본)"),
+	Melee	UMETA(DisplayName = "Melee (근접)"),
+	Gun		UMETA(DisplayName = "Gun (총)"),
+	Book	UMETA(DisplayName = "Book (마법책/지팡이)")
+};

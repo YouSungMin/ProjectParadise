@@ -14,6 +14,9 @@ class UTextBlock;
 class UTexture2D;
 #pragma endregion 전방 선언
 
+// 쿨타임이 없을 때 스킬 사용을 부모에게 요청하는 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
+
 /**
  * @class USkillSlotWidget
  * @brief 개별 스킬의 아이콘 표시 및 쿨타임 오버레이 로직을 전담합니다. 캐릭터 태그 시 상위 패널에 의해 데이터가 재설정됩니다.
@@ -69,6 +72,11 @@ private:
 	/** @brief 쿨타임 UI를 비활성화하고 초기 상태로 되돌립니다. */
 	void ClearCooldownVisual();
 #pragma endregion 내부 로직 (최적화)
+
+public:
+	/** @brief 스킬 사용 조건이 충족되었을 때 발생 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnSkillActionRequested OnSkillActionRequested;
 
 private:
 #pragma region 쿨타임 설정

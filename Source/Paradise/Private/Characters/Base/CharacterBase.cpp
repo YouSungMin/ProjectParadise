@@ -10,6 +10,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interfaces/ObjectPoolInterface.h"
 #include "AttributeSet.h"
+#include "AbilitySystemComponent.h"
 
 ACharacterBase::ACharacterBase()
 {
@@ -87,26 +88,34 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			AActor* HitActor = Result.GetActor();
 			if (!HitActor) continue;
 
-			// 중복 타격 방지
+			// ACharacterBase로 캐스팅 시도
+			ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor);
+
+			// 캐스팅 실패 시 (바닥, 배경 프랍 등) 무시하고 다음 타겟으로 넘어감
+			if (HitChar == nullptr)
+			{
+				// UE_LOG(LogTemp, Log, TEXT("Skipping non-character actor: %s"), *HitActor->GetName());
+				continue;
+			}
+
+			// 중복 타격 방지 (캐릭터인 경우에만 리스트에 추가)
 			if (HitActors.Contains(HitActor))
 			{
 				continue;
 			}
 			HitActors.Add(HitActor);
 
-			// 태그 기반 피아 식별
-			if (ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor))
+			// 피아 식별 (이미 위에서 HitChar를 구했으므로 바로 사용)
+			if (!IsHostile(HitChar))
 			{
-				if (!IsHostile(HitChar))
-				{
-					continue;
-				}
+				continue;
 			}
 
 			// GAS 이벤트 전송
 			FGameplayEventData Payload;
 			Payload.Instigator = this;
 			Payload.Target = HitActor;
+			Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Result);
 
 			// 태그를 고정하거나, 인자로 받을 수도 있음
 			FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));

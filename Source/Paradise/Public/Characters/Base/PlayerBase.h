@@ -53,6 +53,12 @@ public:
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
+	/** @brief 플레이어 본체의 피격/사망 FX 데이터 에셋을 영혼(PlayerData)으로부터 가져옵니다. */
+	virtual class UFXDataAsset* GetUnitFXData() const override;
+
+	/** @brief 플레이어 본체의 피격 태그를 영혼(PlayerData)으로부터 가져옵니다. */
+	virtual FGameplayTag GetHitReactionTag() const override;
+
 	UFUNCTION(BlueprintCallable)
 	class APlayerData* GetPlayerData() const { return LinkedPlayerData.Get(); }
 
@@ -97,8 +103,6 @@ public:
 	 * @param InPlayerData 이 육체를 제어할 데이터 주체(영혼) 액터
 	 */
 	void InitializePlayer(APlayerData* InPlayerData);
-
-
 
 	/**
 	 * @brief 입력 액션이 들어오면 ASC로 신호를 보내는 배달부 함수
