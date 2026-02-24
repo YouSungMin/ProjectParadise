@@ -7,8 +7,6 @@
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/System/SquadSubsystem.h"
-#include "Framework/System/EconomySubsystem.h"
-#include "Framework/System/StageSubsystem.h"
 #include "Components/EquipmentComponent.h"
 #include "Characters/Player/PlayerData.h"
 #include "Kismet/GameplayStatics.h"
@@ -66,17 +64,7 @@ void UParadiseGameInstance::SaveGameData()
 		SquadSys->SaveToSaveGame(SaveObj);
 	}
 
-	//플레이어 보유 재화 정보 저장
-	if (UEconomySubsystem* EconomySys = GetSubsystem<UEconomySubsystem>())
-	{
-		EconomySys->SaveToSaveGame(SaveObj);
-	}
-
-	//스테이지 정보 저장
-	if (UStageSubsystem* StageSys = GetSubsystem<UStageSubsystem>()) {
-		StageSys->SaveToSaveGame(SaveObj);
-	}
-
+	//플레이어 전체 재화 (뽑기재화 , 레벨업등에 사용하는 재화) 추가예정
 
 	//슬롯 이름으로 디스크에 실제 파일 쓰기
 	if (UGameplayStatics::SaveGameToSlot(SaveObj, SaveGameSlotName, 0))
@@ -113,17 +101,6 @@ void UParadiseGameInstance::LoadGameData()
 			if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
 			{
 				SquadSys->LoadFromSaveGame(LoadObj);
-			}
-
-			//플레이어 보유 재화 정보 로드
-			if (UEconomySubsystem* EconomySys = GetSubsystem<UEconomySubsystem>())
-			{
-				EconomySys->LoadFromSaveGame(LoadObj);
-			}
-
-			//스테이지 정보 로드
-			if (UStageSubsystem* StageSys = GetSubsystem<UStageSubsystem>()) {
-				StageSys->LoadFromSaveGame(LoadObj);
 			}
 
 			UE_LOG(LogTemp, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));

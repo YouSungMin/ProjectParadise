@@ -12,11 +12,6 @@
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
 
-void AInGameGameMode::ForceVictory()
-{
-	SetGamePhase(EGamePhase::Victory);
-}
-
 AInGameGameMode::AInGameGameMode()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -279,13 +274,14 @@ void AInGameGameMode::OnPhaseVictory()
 	{
 		//1. 타이머 정지(GameState의 플래그 사용)
 		CachedGameState->bIsTimerActive = false;
-
+		
 		//보상 정보 캐싱
 		CachedGameState->AcquiredGold = CurrentStageData.ClearGold;
 		CachedGameState->AcquiredExp = CurrentStageData.ClearExp;
 
 		//다음 스테이지 ID 캐싱
 		CachedGameState->NextStageID = CurrentStageData.NextStageID;
+	}
 
 		//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장
 

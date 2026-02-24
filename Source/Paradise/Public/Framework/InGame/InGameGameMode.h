@@ -20,12 +20,6 @@ class PARADISE_API AInGameGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
-	/**
-	* @brief 디버그 테스트 함수 콘솔창에서 호출시 강제 승리
-	*/
-	UFUNCTION(Exec)
-	void ForceVictory();
-
 	AInGameGameMode();
 
 	virtual void BeginPlay() override;

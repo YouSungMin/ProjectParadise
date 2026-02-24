@@ -7,8 +7,6 @@
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Data/Structs/StageStructs.h"
-#include "Framework/System/StageSubsystem.h"
-#include "Framework/Core/ParadiseGameInstance.h"
 
 void UParadiseStageSelectWidget::NativeConstruct()
 {
@@ -76,15 +74,14 @@ void UParadiseStageSelectWidget::RefreshMapNodes()
 
 bool UParadiseStageSelectWidget::IsStageUnlocked(FName StageID)
 {
-	//0223 김성현 - 스테이지 서브시스템 추가에 따라 헬퍼 함수 이용토록 변경
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
-		{
-			// 하드코딩(if StageID == 1-1)을 지우고 진짜 데이터를 물어봅니다!
-			return StageSys->IsStageUnlocked(StageID);
-		}
-	}
+	// TODO: 실제로는 GameInstance의 SaveGame에서 'MaxClearedStage' 등을 가져와 비교해야 함.
+	// 예시: "1-1"은 항상 해금, 나머지는 세이브 데이터 확인.
+
+	if (StageID == FName("1-1")) return true; // 1-1은 무조건 보임
+
+	// 테스트용: 1-1 클리어 가정, 1-2까지 보임 (실제 개발 시엔 세이브 데이터와 연동하세요)
+	// if (StageID == FName("1-2")) return true; 
+
 	return false;
 }
 #pragma endregion 로직 구현

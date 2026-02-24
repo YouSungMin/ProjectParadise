@@ -21,7 +21,7 @@ APlayerData::APlayerData()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	
-    CombatAttributeSet2 = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
+    CombatAttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
 
 
 	EquipmentComponent2 = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
@@ -32,19 +32,19 @@ void APlayerData::InitCombatAttributes(FCharacterStats* Stats)
     if (Stats)
     {
         //체력
-        CombatAttributeSet2->InitMaxHealth(Stats->BaseMaxHP);
-        CombatAttributeSet2->InitHealth(CombatAttributeSet2->GetMaxHealth());
+        CombatAttributeSet->InitMaxHealth(Stats->BaseMaxHP);
+        CombatAttributeSet->InitHealth(CombatAttributeSet->GetMaxHealth());
         //마나
-        CombatAttributeSet2->InitMaxMana(Stats->BaseMaxMP);
-        CombatAttributeSet2->InitMana(CombatAttributeSet2->GetMaxMana());
+        CombatAttributeSet->InitMaxMana(Stats->BaseMaxMP);
+        CombatAttributeSet->InitMana(CombatAttributeSet->GetMaxMana());
         //공격력
-        CombatAttributeSet2->InitAttackPower(Stats->BaseAttackPower);
+        CombatAttributeSet->InitAttackPower(Stats->BaseAttackPower);
         //방어력
-        CombatAttributeSet2->InitDefense(Stats->BaseDefense);
+        CombatAttributeSet->InitDefense(Stats->BaseDefense);
         //크리티컬 확률
-        CombatAttributeSet2->InitCritRate(Stats->BaseCritRate);
+        CombatAttributeSet->InitCritRate(Stats->BaseCritRate);
         //이동 속도
-        CombatAttributeSet2->InitMoveSpeed(Stats->BaseMoveSpeed);
+        CombatAttributeSet->InitMoveSpeed(Stats->BaseMoveSpeed);
     }
 }
 
@@ -107,6 +107,9 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			{
 				Result.DamageMultiplier = ActionRow->DamageMultiplier;
 				Result.AttackRange = ActionRow->AttackRange;
+				Result.AttackRadius = ActionRow->AttackRadius;
+				Result.ForwardOffset = ActionRow->ForwardOffset;
+				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
@@ -158,6 +161,14 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			{
 				Result.DamageMultiplier = ActionRow->DamageMultiplier;
 				Result.AttackRange = ActionRow->AttackRange;
+				Result.AttackRadius = ActionRow->AttackRadius;
+				Result.ForwardOffset = ActionRow->ForwardOffset;
+				Result.Cooldown = ActionRow->Cooldown;
+				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 ActionID(%s)를 찾을 수 없습니다!"), *TargetActionID.ToString());
 			}
 		}
 	}
@@ -172,7 +183,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기 어빌리티 교체 시작..."));
 
 	// ---------------------------------------------------------
-	// 1. 기존 무기 어빌리티 제거 (Clean Up)
+	// 기존 무기 어빌리티 제거 (Clean Up)
 	// ---------------------------------------------------------
 	if (BasicAttackHandle.IsValid())
 	{
@@ -187,7 +198,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	}
 
 	// ---------------------------------------------------------
-	// 2. 새 무기 어빌리티 부여 (Grant New Abilities)
+	// 새 무기 어빌리티 부여 (Grant New Abilities)
 	// ---------------------------------------------------------
 
 	// 평타 (Basic Attack)

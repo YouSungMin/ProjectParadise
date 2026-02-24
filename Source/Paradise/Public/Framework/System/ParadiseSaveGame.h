@@ -69,11 +69,7 @@ public:
 	TArray<FName> SavedFamiliarSquadIDs;
 
 #pragma endregion 스쿼드 편성 데이터
-
-#pragma region 플레이어 재화
-
-	UPROPERTY()
-	TMap<ECurrencyType, int32> SavedWallet;
+	//추가 예정 : 플레이어 재화류 , 클리어한 스테이지 정보 등등 
 
 
 #pragma endregion 플레이어 재화
