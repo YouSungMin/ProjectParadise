@@ -27,7 +27,7 @@ void UParadiseStageSelectWidget::NativeConstruct()
 
 	if (UI_StageDetail)
 	{
-		UI_StageDetail->SetVisibility(ESlateVisibility::Collapsed);
+		UI_StageDetail->OnDetailClosed.AddDynamic(this, &UParadiseStageSelectWidget::HandleDetailClosed);
 	}
 }
 
@@ -100,11 +100,19 @@ void UParadiseStageSelectWidget::HandleNodeClicked(FName SelectedStageID)
 	if (UI_StageDetail)
 	{
 		UI_StageDetail->InitDetailPopup(SelectedStageID);
+
+		if (Btn_Back) Btn_Back->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] UI_StageDetail이 없습니다. WBP_StageSelect 내부에 배치했는지 확인하세요."));
 	}
+}
+
+void UParadiseStageSelectWidget::HandleDetailClosed()
+{
+	// 팝업이 닫혔다는 신호를 받으면 메인 뒤로가기 버튼을 다시 보여줍니다.
+	if (Btn_Back) Btn_Back->SetVisibility(ESlateVisibility::Visible);
 }
 
 bool UParadiseStageSelectWidget::IsStageUnlocked(FName StageID)

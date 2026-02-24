@@ -16,6 +16,9 @@ class UParadiseEnemyIconWidget;
 class ALobbyPlayerController;
 #pragma endregion 전방 선언
 
+/** @brief 상세 팝업이 닫힐 때(Close 또는 Formation 이동 등) 부모에게 알림 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageDetailClosed);
+
 /**
  * @class UParadiseStageDetailWidget
  * @brief 스테이지 진입 전 상세 정보 팝업 (스쿼드 확인, 적 정보 표기, 진입 제어)
@@ -32,6 +35,10 @@ protected:
 public:
 	/** @brief 팝업을 열 때 StageSelectWidget에서 호출해 줄 초기화 함수 */
 	void InitDetailPopup(FName InStageID);
+
+	/** @brief 팝업 종료 소식을 외부에 알리는 이벤트 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnStageDetailClosed OnDetailClosed;
 
 #pragma region 내부 로직
 private:

@@ -52,6 +52,8 @@ void UParadiseStageDetailWidget::InitDetailPopup(FName InStageID)
 	if (UI_SquadPreview)
 	{
 		UI_SquadPreview->SetPreviewMode(true);
+
+		UI_SquadPreview->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 
 	// 3. 적 리스트 표기 (데이터 테이블 연동)
@@ -109,14 +111,13 @@ void UParadiseStageDetailWidget::SetupEnemyList(FName InStageID)
 void UParadiseStageDetailWidget::OnClickClose()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
+
+	if (OnDetailClosed.IsBound()) OnDetailClosed.Broadcast();
 }
 
 void UParadiseStageDetailWidget::OnClickFormation()
 {
-	// 1. 현재 떠 있는 팝업은 가려줍니다.
-	SetVisibility(ESlateVisibility::Collapsed);
-
-	// 2. UI 상태 전환만 요청함
+	// 1. UI 상태 전환만 요청함
 	if (CachedLobbyPC.IsValid())
 	{
 		CachedLobbyPC->SetLobbyMenu(EParadiseLobbyMenu::Squad);

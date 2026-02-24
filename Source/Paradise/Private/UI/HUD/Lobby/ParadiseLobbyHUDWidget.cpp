@@ -150,7 +150,7 @@ void UParadiseLobbyHUDWidget::HandleBackToMainLobby()
 {
 	if (CachedController.IsValid())
 	{
-		CachedController->SetLobbyMenu(EParadiseLobbyMenu::None);
+		CachedController->RequestBackToPreviousMenu();
 	}
 
 	// 로비로 돌아갈 때(팝업이 닫힐 때) 게임 데이터 자동 저장!

@@ -72,6 +72,10 @@ private:
 	UFUNCTION()
 	void HandleNodeClicked(FName SelectedStageID);
 
+	/** @brief 팝업이 닫혔다는 신호를 받는 함수 */
+	UFUNCTION()
+	void HandleDetailClosed();
+
 #pragma region 내부 캐싱
 private:
 	/** @brief 게임 인스턴스 1회 캐싱 */
