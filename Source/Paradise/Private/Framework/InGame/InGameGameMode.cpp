@@ -56,7 +56,7 @@ void AInGameGameMode::BeginPlay()
 	{
 		// 에러 방지용 비상 코드
 		UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
-		InitializeStageData(FName("Stage_1_1"));
+		InitializeStageData(FName("Stage1_1"));
 		FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
 		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
