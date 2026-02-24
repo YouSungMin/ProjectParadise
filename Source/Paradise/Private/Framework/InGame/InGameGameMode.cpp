@@ -61,7 +61,7 @@ void AInGameGameMode::BeginPlay()
 		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
 	}
-
+		
 	//전투 시작 전, 데미지 텍스트 미리 넣기
 	if (DamageTextClass)
 	{

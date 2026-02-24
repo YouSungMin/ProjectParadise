@@ -63,6 +63,7 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetGamePhase(EGamePhase NewPhase);
 
+public:
 	/**
 	 * @brief 게임 승패가 결정되었을 때 호출하는 함수
 	 * @details 타임오버, 기지 파괴 등 모든 게임 종료 상황에서 이 함수를 호출합니다.
