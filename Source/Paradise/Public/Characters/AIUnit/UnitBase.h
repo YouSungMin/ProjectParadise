@@ -39,7 +39,7 @@ public:
 	virtual void Die()override;
 
 	UFUNCTION(BlueprintCallable, Category = "Unit|Logic")
-	virtual bool IsEnemy(AActor* OtherActor);
+	bool IsEnemy(AUnitBase* OtherUnit);
 
 	void PlayRangeAttack();
 
@@ -68,7 +68,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	float CachedAttackRange;
 
-	/** @brief 캐싱된 기본 공격 데미지 배율 (추가!) */
+	/** @brief 캐싱된 기본 공격 반경 (두께) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	float CachedAttackRadius;
+
+	/** @brief 캐싱된 기본 공격 전방 오프셋 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	float CachedForwardOffset;
+
+	/** @brief 캐싱된 기본 공격 데미지 배율 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	float CachedDamageMultiplier = 1.0f;
 
