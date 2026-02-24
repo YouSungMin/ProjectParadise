@@ -88,6 +88,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Stage")
 	TMap<FName, int32> SavedStageClearStars;
 
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Stage")
+	int32 SavedMaxClearedStageIndex = 0;
 
 #pragma endregion 스테이지 해금 , 클리어 목록
 };
