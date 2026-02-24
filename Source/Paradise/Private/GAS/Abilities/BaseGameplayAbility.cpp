@@ -60,32 +60,6 @@ void UBaseGameplayAbility::ApplySpecHandleToTarget(AActor* TargetActor, const FG
 	}
 }
 
-void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
-{
-	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
-	if (CooldownGE)
-	{
-		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
-
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
-
-		UE_LOG(LogTemp, Warning, TEXT("⏳ [ApplyCooldown] 적용 시도! 엑셀 쿨타임: %.1f"), CombatData.Cooldown);
-
-		if (CombatData.Cooldown > 0.0f)
-		{
-			FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Data.Cooldown"));
-			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Cooldown);
-		}
-
-		// 나 자신에게 쿨타임 이펙트 적용
-		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCooldown] 어빌리티에 Cooldown GE가 설정되지 않았습니다!"));
-	}
-}
-
 UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName)
 {
 	if (!MontageToPlay) return nullptr;
@@ -116,7 +90,7 @@ const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 		return CachedCombatData;
 	}
 
-	// 처음 호출된 경우 -> 인터페이스를 통해 데이터 가져오기
+	// 2. 처음 호출된 경우 -> 인터페이스를 통해 데이터 가져오기
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 
 	if (ICombatInterface* CombatInt = Cast<ICombatInterface>(AvatarActor))

@@ -7,7 +7,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Objects/ProjectileBase.h"
-#include "Characters/Base/CharacterBase.h"
 
 URangeBase::URangeBase()
 {
@@ -49,12 +48,10 @@ void URangeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
-	ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo());
+	ACharacter* AvatarChar = GetPlayerCharacterFromActorInfo();
 	if (!AvatarChar) return;
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
-
-	UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.ProjectileSpeed);
 
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
@@ -64,8 +61,7 @@ void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	}
 
 	// 발사 위치(Transform) 계산
-	FVector SpawnLocation = AvatarChar->GetMuzzleLocation(MuzzleSocketName);
-	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.ForwardOffset;
+	FVector SpawnLocation = AvatarChar->GetMesh()->GetSocketLocation(MuzzleSocketName);
 	FRotator SpawnRotation = AvatarChar->GetActorRotation(); // 임시로 캐릭터가 보는 방향
 
 	// (선택) 타겟팅 시스템이 있다면 타겟 방향으로 Rotation을 돌려주면 유도탄처럼 날아갑니다.
@@ -90,23 +86,17 @@ void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		);
 	}
 
-	if (SpawnedProjectile)
+	if (SpawnedProjectile && CombatData.DamageEffectClass)
 	{
+		FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.DamageEffectClass, GetAbilityLevel());
+		SpecHandle.Data->SetSetByCallerMagnitude(
+			FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
+			CombatData.DamageMultiplier
+		);
+
 		if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
 		{
-			// 데미지 이펙트 세팅
-			if (CombatData.DamageEffectClass)
-			{
-				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.DamageEffectClass, GetAbilityLevel());
-				SpecHandle.Data->SetSetByCallerMagnitude(
-					FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
-					CombatData.DamageMultiplier
-				);
-				Proj->SetDamageSpecHandle(SpecHandle);
-			}
-
-			// 사거리(길이)와 반경(두께) 전달하여 투사체 갱신
-			Proj->ApplyCombatData(CombatData.AttackRange, CombatData.AttackRadius, CombatData.ProjectileSpeed);
+			Proj->SetDamageSpecHandle(SpecHandle);
 		}
 	}
 }

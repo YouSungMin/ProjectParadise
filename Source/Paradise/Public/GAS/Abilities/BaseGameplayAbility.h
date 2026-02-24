@@ -27,6 +27,22 @@ public:
 	UBaseGameplayAbility();
 
 	// =========================================================================
+	// Data Retrieval Helpers
+	// =========================================================================
+
+	/**
+	 * @brief 현재 캐릭터가 장착 중인 무기의 전체 데이터(FWeaponAssets)를 가져옵니다.
+	 * * @details
+	 * 1. 실행한 캐릭터의 ICombatInterface를 통해 WeaponID(RowName)를 얻습니다.
+	 * 2. UDataManagerSubsystem에 접근하여 해당 ID로 데이터 테이블을 검색합니다.
+	 * 3. 검색된 데이터를 반환합니다.
+	 * * @return 찾은 무기 데이터 구조체. 실패 시 빈 구조체를 반환합니다.
+	 * @see ICombatInterface::GetCurrentWeaponID, UDataManagerSubsystem::GetWeaponDataByID
+	 */
+	//UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Ability|Helper")
+	//FWeaponAssets GetEquippedWeaponAssets() const;
+
+	// =========================================================================
 	// Actor Helpers
 	// =========================================================================
 
@@ -65,8 +81,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Effect")
 	void ApplySpecHandleToTarget(AActor* TargetActor, const FGameplayEffectSpecHandle& SpecHandle);
 
-	/** @brief 엑셀 데이터의 쿨타임을 적용하기 위해 오버라이드 */
-	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 protected:
 	/**
 	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수
