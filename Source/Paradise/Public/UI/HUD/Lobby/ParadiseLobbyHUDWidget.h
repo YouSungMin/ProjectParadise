@@ -11,6 +11,8 @@
 class UWidgetSwitcher;
 class UParadiseLobbyTopBarWidget;
 class UParadiseLobbyMenuPanelWidget;
+class ALobbyPlayerController;
+class UParadiseGameInstance;
 #pragma endregion 전방 선언
 
 /**
@@ -58,6 +60,15 @@ private:
 	/** @brief 생성된 메뉴 위젯 캐싱 (Object Pooling 효과). */
 	UPROPERTY()
 	TMap<EParadiseLobbyMenu, TObjectPtr<UUserWidget>> CreatedMenuWidgets;
+
+	/**
+	 * @brief [최적화] 매번 컨트롤러를 찾는 연산 비용을 없애기 위한 약참조 캐싱
+	 * @details 순환 참조 방지를 위해 TWeakObjectPtr를 사용합니다.
+	 */
+	TWeakObjectPtr<ALobbyPlayerController> CachedController = nullptr;
+
+	/** @brief 매번 게임 인스턴스를 캐스팅하는 비용을 줄이기 위한 캐싱 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
 #pragma endregion 내부 캐싱
 
 #pragma region 외부 제어 (From Controller)
@@ -72,8 +83,11 @@ public:
 	void OnStartCameraMove();
 
 private:
-	/** @brief 편성(Squad) 위젯에서 뒤로가기 버튼을 눌렀을 때 호출되는 콜백 */
+	/**
+	 * @brief [최적화] 여러 팝업의 뒤로가기 요청을 하나로 통합 처리합니다.
+	 * (메뉴로 복귀하는 단일 책임)
+	 */
 	UFUNCTION()
-	void HandleSquadBackRequest();
+	void HandleBackToMainLobby();
 #pragma endregion 외부 제어
 };

@@ -37,11 +37,11 @@ void ACharacterBase::TestKillSelf()
 	Die();
 }
 
-void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset)
+void ACharacterBase::CheckHit(FName SocketName, float AttackRadius)
 {
 	FVector TraceStart;
 
-	// 소켓 위치 찾기 시도
+	// 1. 소켓 위치 찾기 시도
 	if (GetMesh()->DoesSocketExist(SocketName))
 	{
 		TraceStart = GetMesh()->GetSocketLocation(SocketName);
@@ -52,16 +52,11 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 		// 캐릭터의 위치 + 전방 100cm 앞을 타격 지점으로 설정
 		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
 
-		// 디버그용 로그
+		// 디버그용 로그 (개발 중에만 켜두세요)
 		// UE_LOG(LogTemp, Warning, TEXT("[%s] 소켓(%s)을 찾을 수 없어 전방 위치를 사용합니다."), *GetName(), *SocketName.ToString());
 	}
 
-	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
-	TraceStart += GetActorForwardVector() * ForwardOffset;
-
-	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
-	FVector TraceEnd = TraceStart + (GetActorForwardVector() * AttackRange);
-
+	// 2. 트레이스 설정 (Multi로 변경하여 다수 타격 지원)
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this); // 나는 때리면 안 됨
 
@@ -69,12 +64,12 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
 		GetWorld(),
 		TraceStart,      // 시작점
-		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
-		AttackRadius,    // 반경
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+		TraceStart,      // 끝점 (제자리 구체)
+		AttackRadius,    // 반경 (인자로 받음)
+		UEngineTypes::ConvertToTraceType(ECC_Pawn), // 폰만 검사
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::ForDuration, // 디버그 선 그리기
 		HitResults,
 		true
 	);
@@ -88,10 +83,7 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			if (!HitActor) continue;
 
 			// 중복 타격 방지
-			if (HitActors.Contains(HitActor))
-			{
-				continue;
-			}
+			if (HitActors.Contains(HitActor)) continue;
 			HitActors.Add(HitActor);
 
 			// 태그 기반 피아 식별
@@ -139,31 +131,6 @@ bool ACharacterBase::IsHostile(ACharacterBase* Target) const
 	// Friendly 그룹이고 상대도 Friendly 그룹이면 false (아군)
 	// Friendly 그룹인데 상대가 아니면(Enemy면) true (적군)
 	return bAmIFriendly != bIsTargetFriendly;
-}
-
-FVector ACharacterBase::GetMuzzleLocation(FName SocketName) const
-{
-	// 장착한 무기가 있다면 무기에서 먼저 찾기
-	if (CurrentWeaponActor)
-	{
-		// 무기 액터의 첫 번째 메쉬 컴포넌트를 가져옴
-		if (UMeshComponent* WeaponMesh = CurrentWeaponActor->GetComponentByClass<UMeshComponent>())
-		{
-			if (WeaponMesh->DoesSocketExist(SocketName))
-			{
-				return WeaponMesh->GetSocketLocation(SocketName);
-			}
-		}
-	}
-
-	// 무기가 없거나 무기에 소켓이 없다면 캐릭터 몸통에서 찾기
-	if (GetMesh() && GetMesh()->DoesSocketExist(SocketName))
-	{
-		return GetMesh()->GetSocketLocation(SocketName);
-	}
-
-	// 둘 다 없으면 기본 높이(가슴/배꼽) 반환
-	return GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
 }
 
 void ACharacterBase::BeginPlay()

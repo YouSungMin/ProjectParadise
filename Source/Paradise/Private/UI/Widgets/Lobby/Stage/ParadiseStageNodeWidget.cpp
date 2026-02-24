@@ -10,6 +10,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Data/Structs/StageStructs.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
+#include "Framework/System/StageSubsystem.h"
 
 void UParadiseStageNodeWidget::NativeConstruct()
 {
@@ -56,6 +57,17 @@ void UParadiseStageNodeWidget::OnClickEnter()
 	// 1. 데이터 테이블에서 맵 이름 찾기
 	if (auto* GI = GetGameInstance<UParadiseGameInstance>())
 	{
+		//0223 - 김성현 스테이지 ID 연결 초기화 플로우 연결
+		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+		{
+			StageSys->SetSelectedStageID(StageID);
+
+			// 🌟 [디버그 1] 저장된 ID를 화면과 로그에 출력
+			FString DebugMsg = FString::Printf(TEXT("👉 [로비] 선택한 스테이지 전달 중... ID: %s"), *StageID.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, DebugMsg);
+		}
+
 		if (GI->StageAssetsDataTable)
 		{
 			FStageAssets* Assets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, StageID);
