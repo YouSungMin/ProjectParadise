@@ -3,6 +3,7 @@
 
 #include "UI/Widgets/Lobby/Stage/ParadiseStageSelectWidget.h"
 #include "UI/Widgets/Lobby/Stage/ParadiseStageNodeWidget.h"
+#include "UI/Widgets/Lobby/Stage/ParadiseStageDetailWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h" // 컨트롤러 헤더 필수
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
@@ -10,15 +11,31 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+
 void UParadiseStageSelectWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
+
 	RefreshMapNodes();
 
 	if (Btn_Back)
 	{
 		Btn_Back->OnClicked.AddDynamic(this, &UParadiseStageSelectWidget::OnClickBack);
 	}
+
+	if (UI_StageDetail)
+	{
+		UI_StageDetail->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
+void UParadiseStageSelectWidget::NativeDestruct()
+{
+	if (Btn_Back) Btn_Back->OnClicked.RemoveAll(this);
+	CachedGI = nullptr;
+	Super::NativeDestruct();
 }
 
 #pragma region 로직 구현
@@ -52,6 +69,9 @@ void UParadiseStageSelectWidget::RefreshMapNodes()
 			// ID가 없으면 무시
 			if (Node->StageID.IsNone()) continue;
 
+			Node->OnNodeClicked.RemoveDynamic(this, &UParadiseStageSelectWidget::HandleNodeClicked);
+			Node->OnNodeClicked.AddDynamic(this, &UParadiseStageSelectWidget::HandleNodeClicked);
+
 			// 3. 해금 여부 확인 (핵심: 해금 안 됐으면 Collapsed 상태 유지)
 			if (IsStageUnlocked(Node->StageID))
 			{
@@ -74,14 +94,26 @@ void UParadiseStageSelectWidget::RefreshMapNodes()
 	}
 }
 
+void UParadiseStageSelectWidget::HandleNodeClicked(FName SelectedStageID)
+{
+	// 노드가 클릭되었다는 소식을 들으면, 숨겨뒀던 상세창을 열고 데이터를 넘겨줍니다.
+	if (UI_StageDetail)
+	{
+		UI_StageDetail->InitDetailPopup(SelectedStageID);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] UI_StageDetail이 없습니다. WBP_StageSelect 내부에 배치했는지 확인하세요."));
+	}
+}
+
 bool UParadiseStageSelectWidget::IsStageUnlocked(FName StageID)
 {
 	//0223 김성현 - 스테이지 서브시스템 추가에 따라 헬퍼 함수 이용토록 변경
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	if (CachedGI.IsValid())
 	{
-		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+		if (UStageSubsystem* StageSys = CachedGI->GetSubsystem<UStageSubsystem>())
 		{
-			// 하드코딩(if StageID == 1-1)을 지우고 진짜 데이터를 물어봅니다!
 			return StageSys->IsStageUnlocked(StageID);
 		}
 	}

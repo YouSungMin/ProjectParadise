@@ -83,6 +83,23 @@ void UParadiseSquadFormationWidget::HighlightSlot(int32 SlotIndex)
 		}
 	}
 }
+
+void UParadiseSquadFormationWidget::SetPreviewMode(bool bIsPreview)
+{
+	// 미리보기 모드일 경우 슬롯을 클릭하지 못하게 HitTestInvisible 처리
+	// 이렇게 하면 멍청한 뷰(Dumb View)로서 시각적 기능만 수행하게 됨.
+	ESlateVisibility TargetVisibility = bIsPreview ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Visible;
+
+	Slot_Main->SetVisibility(TargetVisibility);
+	Slot_Sub1->SetVisibility(TargetVisibility);
+	Slot_Sub2->SetVisibility(TargetVisibility);
+
+	Slot_Unit1->SetVisibility(TargetVisibility);
+	Slot_Unit2->SetVisibility(TargetVisibility);
+	Slot_Unit3->SetVisibility(TargetVisibility);
+	Slot_Unit4->SetVisibility(TargetVisibility);
+	Slot_Unit5->SetVisibility(TargetVisibility);
+}
 #pragma endregion 공개 함수
 
 #pragma region 내부 로직

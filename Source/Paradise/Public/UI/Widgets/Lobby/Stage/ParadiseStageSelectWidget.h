@@ -10,6 +10,8 @@
 class UCanvasPanel;
 class UDataTable;
 class UButton;
+class UParadiseStageDetailWidget;
+class UParadiseGameInstance;
 #pragma endregion 전방 선언
 
 /**
@@ -24,7 +26,7 @@ class PARADISE_API UParadiseStageSelectWidget : public UUserWidget
 	
 protected:
 	virtual void NativeConstruct() override;
-
+	virtual void NativeDestruct() override;
 #pragma region UI 컴포넌트
 protected:
 	/** @brief 노드들이 배치된 컨테이너 (지도 배경이 깔린 패널) */
@@ -43,6 +45,13 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Data")
 	TObjectPtr<UDataTable> DT_StageAssets = nullptr;
+
+	/**
+	 * @brief  상세 정보 팝업 창 (WBP_StageSelect 내부에 배치)
+	 * @details 에디터에서 WBP_StageDetail 위젯을 캔버스에 올리고 이름을 'UI_StageDetail'로 맞춰야 합니다.
+	 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseStageDetailWidget> UI_StageDetail = nullptr;
 #pragma endregion 데이터 (Data)
 
 private:
@@ -55,4 +64,17 @@ private:
 
 	/** @brief (임시) 해당 스테이지가 해금되었는지 확인하는 헬퍼 함수 */
 	bool IsStageUnlocked(FName StageID);
+
+	/**
+	 * @brief 자식 노드(StageNodeWidget)에서 브로드캐스트한 클릭 이벤트를 수신합니다.
+	 * @param SelectedStageID 클릭된 노드의 스테이지 ID
+	 */
+	UFUNCTION()
+	void HandleNodeClicked(FName SelectedStageID);
+
+#pragma region 내부 캐싱
+private:
+	/** @brief 게임 인스턴스 1회 캐싱 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+#pragma endregion 내부 캐싱
 };
