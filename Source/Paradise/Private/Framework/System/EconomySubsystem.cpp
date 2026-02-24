@@ -79,12 +79,12 @@ void UEconomySubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 {
 	if (!SaveGameObj) return;
 
-	// 세이브된 지갑 데이터들을 순회하면서 현재 지갑(Wallet)에 덮어씌우기
-	for (const auto& Pair : SaveGameObj->SavedWallet)
+	// 세이브 파일에 저장된 지갑 데이터가 비어있지 않다면 메모리에 덮어쓰기
+	if (SaveGameObj->SavedWallet.Num() > 0)
 	{
-		Wallet.Add(Pair.Key, Pair.Value);
+		Wallet = SaveGameObj->SavedWallet;
+		UE_LOG(LogTemp, Log, TEXT("💰 [Economy] 세이브 파일에서 재화 정보를 성공적으로 불러왔습니다."));
 	}
-	UE_LOG(LogTemp, Log, TEXT("💰 [Economy] 세이브 파일에서 재화 정보를 성공적으로 불러왔습니다."));
 }
 
 void UEconomySubsystem::SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const

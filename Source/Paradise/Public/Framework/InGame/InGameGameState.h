@@ -51,10 +51,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
 	int32 AcquiredExp;
 
-	/** @brief [보상] 이번 스테이지에서 획득한 에테르 (최초 클리어 보상 UI용) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
-	int32 AcquiredAether = 0;
-
 	/** @brief [정보] 클리어 후 이동할 다음 스테이지 ID */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage Data")
 	FName NextStageID;
