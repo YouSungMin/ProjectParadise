@@ -78,8 +78,7 @@ void UParadiseStageDetailWidget::SetupEnemyList(FName InStageID)
 		// 1. 해당 스테이지에 등장하는 모든 몬스터 ID를 수집할 Set (중복 제거용)
 		TSet<FName> UniqueEnemyIDs;
 
-		// 2. [사용자님의 아키텍처 적용!] 
-		// StageWaveDetail 테이블의 모든 행을 순회하며, TargetStageID가 현재 스테이지와 일치하는 것만 뽑아냅니다.
+		// 2. StageWaveDetail 테이블의 모든 행을 순회하며, TargetStageID가 현재 스테이지와 일치하는 것만 뽑아냅니다.
 		TArray<FStageWaveDetail*> AllWaves;
 		CachedGI->StageWaveDetailDataTable->GetAllRows<FStageWaveDetail>(TEXT("StageDetail"), AllWaves);
 

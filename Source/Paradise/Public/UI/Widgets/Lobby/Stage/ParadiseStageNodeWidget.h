@@ -46,9 +46,6 @@ protected:
 	TObjectPtr<UImage> Img_Thumbnail = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_StageName = nullptr;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Enter = nullptr;
 #pragma endregion UI 컴포넌트
 

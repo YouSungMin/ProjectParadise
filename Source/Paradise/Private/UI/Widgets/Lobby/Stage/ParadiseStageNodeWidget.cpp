@@ -28,13 +28,7 @@ void UParadiseStageNodeWidget::SetupNode(const FStageStats& InStats, const FStag
 	// 1. 데이터가 들어왔다는 건 해금되었다는 뜻이므로 보이게 설정
 	SetVisibility(ESlateVisibility::Visible);
 
-	// 2. 이름 설정
-	if (Text_StageName)
-	{
-		Text_StageName->SetText(InStats.StageName);
-	}
-
-	// 3. 썸네일 설정
+	// 2. 썸네일 설정
 	if (Img_Thumbnail)
 	{
 		UTexture2D* LoadedThumbnail = nullptr;
