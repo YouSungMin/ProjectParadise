@@ -23,6 +23,25 @@ class PARADISE_API ALobbyPlayerController : public APlayerController
 	
 protected:
 	virtual void BeginPlay() override;
+#pragma region 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
+
+public:
+	// ==========================================
+	// 디버그 / 치트 명령어 (콘솔창에 입력 가능)
+	// ==========================================
+	UFUNCTION(Exec)
+	void CheatAddCharacter(FName CharacterID);
+
+	UFUNCTION(Exec)
+	void CheatAddFamiliar(FName FamiliarID);
+
+	UFUNCTION(Exec)
+	void CheatAddItem(FName ItemID, int32 Count = 1);
+
+#pragma endregion 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
+
+
+#pragma region 카메라 설정
 
 #pragma region 카메라 설정
 public:
