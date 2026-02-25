@@ -192,10 +192,10 @@ void UParadiseSquadMainWidget::InitFormationFromSubsystem()
 	for (int32 i = 0; i < PlayerIDs.Num(); ++i)
 	{
 		FName PlayerID = PlayerIDs[i];
-		// NAME_None이면 빈 슬롯으로 처리 (ID가 없는 FSquadItemUIData 전달)
+		// 여기 마지막 인자를 false로 (FaceIcon 사용)
 		FSquadItemUIData UIData = PlayerID.IsNone()
 			? FSquadItemUIData()
-			: MakeUIData(PlayerID, 1, SquadTabs::Character, true);
+			: MakeUIData(PlayerID, 1, SquadTabs::Character, false);
 
 		WBP_FormationPanel->UpdateSlot(i, UIData);
 	}
@@ -225,7 +225,7 @@ void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPla
 	// SquadSubsystem 플레이어 슬롯(0~2)은 FormationWidget과 인덱스가 동일합니다.
 	FSquadItemUIData UIData = NewPlayerID.IsNone()
 		? FSquadItemUIData()
-		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, true);
+		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, false);
 
 	WBP_FormationPanel->UpdateSlot(SlotIndex, UIData);
 
@@ -330,6 +330,7 @@ void UParadiseSquadMainWidget::UpdateDetailPanelState()
 	// 선택된 데이터가 있는지 판별
 	bool bHasFormationSelection = (SelectedFormationSlotIndex != -1);
 	bool bHasInventorySelection = (!PendingSelection.ID.IsNone());
+	bool bIsNormalMode = (CurrentState == ESquadUIState::Normal);
 
 	// 편성 슬롯을 눌렀거나, 인벤토리 아이템을 눌렀을 때만 상세창을 켭니다.
 	if (bHasFormationSelection || bHasInventorySelection)
@@ -344,7 +345,16 @@ void UParadiseSquadMainWidget::UpdateDetailPanelState()
 	}
 
 	// 켜져 있다면 내부 버튼 가시성을 상태에 맞게 갱신
+	if (bIsNormalMode && !bHasFormationSelection)
+	{
+		// 일반 모드에서 인벤토리 아이템만 클릭한 경우
+		return; 
+	}
+
+	/** 켜져 있다면 내부 버튼 가시성을 상태에 맞게 갱신 */
 	bool bIsUnitSlot = (SelectedFormationSlotIndex >= 3 && SelectedFormationSlotIndex <= 7);
+
+	// 교체 모드이거나, 편성 슬롯을 선택한 상태라면 버튼 상태 업데이트
 	WBP_DetailPanel->UpdateButtonState(CurrentState, bIsUnitSlot, bHasInventorySelection);
 }
 #pragma endregion 로직 - 탭 및 상태 제어
@@ -464,8 +474,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
 		{
-			// ★ [수정] 캐릭터에 Rarity 변수가 있다면 ConvertRarityToTag를 호출. 없다면 임시 태그 적용.
-			Result.RankTag = FGameplayTag::RequestGameplayTag(TEXT("Unit.Rank.A"));
+			// 데이터 테이블 구조체에 등급이 추가되면 연결
+			Result.RankTag = FGameplayTag::EmptyTag;
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
@@ -503,9 +513,12 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FFamiliarStats>(CachedGI->FamiliarStatsDataTable, ID))
 		{
-			// 퍼밀리어는 구조체에 RankTypeTag가 있다면 주석 해제 (기존 코드 존중)
-			// Result.RankTag = Stat->RankTypeTag;
-			Result.RankTag = FGameplayTag::EmptyTag;
+			Result.RankTag = Stat->RankTypeTag;
+		}
+		if (auto* Asset = CachedGI->GetDataTableRow<FFamiliarAssets>(CachedGI->FamiliarAssetsDataTable, ID))
+		{
+			// 유닛은 무조건 FaceIcon을 씁니다
+			Result.Icon = Asset->FaceIcon.LoadSynchronous();
 		}
 	}
 
@@ -525,15 +538,33 @@ void UParadiseSquadMainWidget::HandleFormationSlotSelected(int32 SlotIndex)
 		HandleCancelEquipMode();
 	}
 
-	// 임시 데이터로 상세창 갱신 테스트
-	FSquadItemUIData DummyData;
-	DummyData.Name = FText::FromString(bIsUnitSlot ? TEXT("선택된 유닛 슬롯") : TEXT("선택된 캐릭터 슬롯"));
-	DummyData.Level = 1;
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	FSquadItemUIData RealData;
 
-	// 상세 패널 갱신 (편성창 컨텍스트 = true)
-	WBP_DetailPanel->ShowInfo(DummyData, true, bIsUnitSlot);
+	if (SquadSys)
+	{
+		if (!bIsUnitSlot)
+		{
+			// 0~2번: 캐릭터 슬롯
+			FName EquippedID = SquadSys->GetPlayerSquad()[SlotIndex];
+			RealData = MakeUIData(EquippedID, 1, SquadTabs::Character, true);
+		}
+		else
+		{
+			// 3~7번: 유닛 슬롯 (서브시스템 인덱스는 0~4)
+			FName EquippedID = SquadSys->GetFamiliarSquad()[SlotIndex - 3];
+			RealData = MakeUIData(EquippedID, 1, SquadTabs::Unit, false);
+		}
+	}
 
-	// 버튼 상태 업데이트
+	// 빈 슬롯이면 "비어있음" 처리
+	if (RealData.ID.IsNone())
+	{
+		RealData.Name = FText::FromString(TEXT("비어있음"));
+	}
+
+	// 상세 패널에 실제 데이터 전달
+	WBP_DetailPanel->ShowInfo(RealData, true, bIsUnitSlot);
 	UpdateDetailPanelState();
 }
 
@@ -583,11 +614,44 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 
 	UE_LOG(LogTemp, Log, TEXT("[SquadMain] CONFIRM SWAP: Slot[%d] <-> Item[%s]"), SelectedFormationSlotIndex, *PendingSelection.ID.ToString());
 
-	// TODO: InventoryComponent에 실제 교체 요청
-	// if (CurrentState == CharacterSwap) Inventory->EquipCharacter(...)
-	// else if (CurrentState == EquipMode) Inventory->EquipItem(...)
+	// InventoryComponent에 실제 교체 요청
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (SquadSys)
+	{
+		if (CurrentState == ESquadUIState::CharacterSwap)
+		{
+			if (SelectedFormationSlotIndex < 3)
+			{
+				// 캐릭터 장착
+				SquadSys->SetPlayerToSlot(SelectedFormationSlotIndex, PendingSelection.ID);
+			}
+			else
+			{
+				// 유닛(퍼밀리어) 장착 (UI 인덱스 3~7을 시스템 인덱스 0~4로 변환)
+				SquadSys->SetFamiliarToSlot(SelectedFormationSlotIndex - 3, PendingSelection.ID);
+			}
+		}
+		else if (CurrentState == ESquadUIState::EquipmentSwap)
+		{
+			if (UInventorySystem* InvSys = GetInventorySystem())
+			{
+				// 타겟 캐릭터 ID 추출 (UI 슬롯 0~2번 중 어디를 누르고 장비창을 열었는지 확인)
+				FName TargetCharacterID = SquadSys->GetPlayerAtSlot(SelectedFormationSlotIndex);
 
-	// 교체 완료 후 일반 모드로 복귀
+				if (!TargetCharacterID.IsNone() && PendingSelection.InstanceUID.IsValid())
+				{
+					// TODO: 인벤토리 시스템에 실제로 장비를 장착하는 함수(예: EquipItemToCharacter)가 
+					// 구현되어 있다면 아래 주석을 풀고 연결해라.
+					// InvSys->EquipItemToCharacter(TargetCharacterID, PendingSelection.InstanceUID);
+
+					UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] [%s]에게 장비[%s] 장착 로직 호출 완료 (InventorySystem 연동 필요)."),
+						*TargetCharacterID.ToString(), *PendingSelection.ID.ToString());
+				}
+			}
+		}
+	}
+
+	// 교체 완료 후 일반 모드로 복귀 (이때 시스템 델리게이트가 자동으로 화면을 갱신함)
 	HandleCancelEquipMode();
 }
 
@@ -613,8 +677,16 @@ void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemD
 	else
 	{
 		// [일반 모드]
-		// 단순 정보 표시 (버튼은 상세 패널 내부 로직에 의해 숨겨짐)
-		WBP_DetailPanel->ShowInfo(ItemData, false, (CurrentTabIndex == SquadTabs::Unit));
+		SelectedFormationSlotIndex = -1;
+		if (WBP_FormationPanel)
+		{
+			WBP_FormationPanel->HighlightSlot(-1); // Img_SelectionBorder 끄기!
+		}
+
+		if (WBP_DetailPanel)
+		{
+			WBP_DetailPanel->ShowInfo(ItemData, false, (CurrentTabIndex == SquadTabs::Unit));
+		}
 	}
 }
 
@@ -623,6 +695,19 @@ void UParadiseSquadMainWidget::HandleBackClicked()
 	if (WBP_DetailPanel)
 	{
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	SelectedFormationSlotIndex = -1;
+	PendingSelection = FSquadItemUIData();
+	if (WBP_FormationPanel)
+	{
+		WBP_FormationPanel->HighlightSlot(-1); // ← Img_SelectionBorder 끄기!
+	}
+	if (bAutoSaveOnBack)
+	{
+		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+		{
+			GI->SaveGameData();
+		}
 	}
 	// LobbyHUD가 이 이벤트를 받아서 WidgetSwitcher를 메인 메뉴로 전환합니다.
 	if (OnBackRequested.IsBound())

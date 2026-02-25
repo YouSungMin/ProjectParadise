@@ -47,9 +47,6 @@ void USummonSlotWidget::InitSlot(int32 InIndex)
 
 void USummonSlotWidget::UpdateSlotInfo(UTexture2D* IconTexture, int32 InCost)
 {
-	// =================================================================
-	// [임시 하드코딩] 데이터가 없어도 무조건 보이게 강제 설정
-	// =================================================================
 
 	// 1. 아이콘 처리
 	if (Img_SummonIcon)
@@ -58,10 +55,13 @@ void USummonSlotWidget::UpdateSlotInfo(UTexture2D* IconTexture, int32 InCost)
 		if (IconTexture)
 		{
 			Img_SummonIcon->SetBrushFromTexture(IconTexture);
+			Img_SummonIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
-
-		// 조건 없이 무조건 보이게 설정 (Hidden 처리 삭제함)
-		Img_SummonIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+		else
+		{
+			// 데이터가 없으면 아이콘을 숨깁니다 (혹은 투명 슬롯 처리)
+			Img_SummonIcon->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 
 	// 2. 버튼 처리

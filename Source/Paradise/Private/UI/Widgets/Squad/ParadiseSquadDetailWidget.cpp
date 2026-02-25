@@ -64,8 +64,15 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, bool b
 		HBox_ButtonRoot->SetVisibility(bIsFormationContext ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 
+	if (!bIsFormationContext)
+	{
+		// 인벤토리 클릭 시 교체 버튼 강제로 숨김
+		if (Btn_SwapCharacter) Btn_SwapCharacter->SetVisibility(ESlateVisibility::Collapsed);
+		if (Btn_SwapEquipment) Btn_SwapEquipment->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
 	// 3. 아이콘
-	/*if (Img_Icon)
+	if (Img_Icon)
 	{
 		if (InData.Icon)
 		{
@@ -76,7 +83,7 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, bool b
 		{
 			Img_Icon->SetVisibility(ESlateVisibility::Hidden);
 		}
-	}*/
+	}
 }
 
 void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, bool bIsUnitTab, bool bHasPendingSelection)
