@@ -9,6 +9,7 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "Data/Structs/CombatTypes.h"
 #include "Data/Enums/GameEnums.h"
+#include "Data/Structs/UnitStructs.h"
 #include "GameplayTagContainer.h"
 #include "PlayerData.generated.h"
 
@@ -80,11 +81,15 @@ public:
 	 */
 	FCombatActionData GetCombatActionData(ECombatActionType ActionType) const;
 
+	/** @brief 상황에 맞는 최종 연출 데이터를 캐싱된 에셋에서 찾아 반환합니다. */
+	struct FFXPayload* GetFXPayload(EFXEventType EventType) const;
+
 protected:
-	/** @brief Combat어트리뷰트셋 데이터테이블 기반 초기화 (GI 이용)*/
-	void InitCombatAttributes(FCharacterStats* Stats);
-	/** @brief 플레이어 에셋 데이터테이블 기반 초기화 (GI 이용)*/
-	void InitPlayerAssets(FCharacterAssets* Assets);
+	/** @brief Combat어트리뷰트셋 초기화 (GI 데이터 조회) */
+	void InitCombatAttributes();
+
+	/** @brief 플레이어 에셋 초기화 (GI 데이터 조회) */
+	void InitPlayerAssets();
 
 public:
 	/** * @brief 미리 로드된 스켈레탈 메시
@@ -97,13 +102,17 @@ public:
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
 	TSubclassOf<UAnimInstance> CachedAnimBP = nullptr;
 
-	/** @brief 미리 로드된 유닛 전용 피격/사망 FX 데이터 에셋 */
+	/** @brief 미리 로드된 피격/사망 등 생존 반응 연출 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	TSoftObjectPtr<class UFXDataAsset> CachedUnitFXData = nullptr;
+	FReactionFXSettings CachedReactionFX;
 
-	/** @brief 미리 로드된 피격 리액션 태그 */
+	/** @brief 미리 로드된 캐릭터 고유 궁극기 연출 태그 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FGameplayTag CachedHitReactionTag;
+	FGameplayTag CachedUltimateFXTag;
+
+	/** @brief 장착 중인 무기의 공격/스킬 연출 데이터 캐싱 */
+	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
+	FActionFXSettings CachedActionFX;
 
 	/* * 현재 빙의 중인 육체 (약한 참조)
 	 * @details PlayerBase는 언제든 파괴될 수 있으므로 WeakPtr로 참조합니다.
@@ -124,7 +133,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data")
 	FGameplayTag FactionTag;
 protected:
-	
+
+	/** @brief 인게임에서 사용할 현재 레벨 (인벤토리에서 받아옴)*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Growth")
+	int32 CurrentLevel = 1;
+
+	/** @brief 인게임에서 사용할 현재 각성/돌파 단계 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Growth")
+	int32 CurrentAwakenLevel = 0;
 
 	/*
 	 * @brief 플레이어 ASC 컴포넌트

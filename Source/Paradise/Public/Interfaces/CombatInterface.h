@@ -36,12 +36,9 @@ public:
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const = 0;
 
 	/**
-	 * @brief 이 유닛의 고유 연출 데이터 에셋(FXDataAsset)을 반환합니다.
+	 * @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다.
+	 * @param EventType 피격, 공격, 사망 등 요청할 연출의 종류
+	 * @return FFXPayload* 사운드, 파티클 등이 담긴 구조체 포인터 (없으면 nullptr)
 	 */
-	virtual UFXDataAsset* GetUnitFXData() const = 0;
-
-	/**
-	 * @brief 이 유닛이 피격당했을 때 재생할 고유 피격 태그를 반환합니다. (예: State.Hit)
-	 */
-	virtual FGameplayTag GetHitReactionTag() const = 0;
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const = 0;
 };

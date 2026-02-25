@@ -59,13 +59,13 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 
 	if (ActionType == ECombatActionType::BasicAttack)
 	{
-		Result.MontageToPlay = CachedAttackMontage;
-		Result.DamageEffectClass = CachedDamageEffectClass;
-		Result.ProjectileClass = CachedProjectileClass;
-		Result.DamageMultiplier = CachedDamageMultiplier;
-		Result.AttackRange = CachedAttackRange;
-		Result.AttackRadius = CachedAttackRadius;
-		Result.ForwardOffset = CachedForwardOffset;
+		Result.MontageToPlay = BasicAttackData.MontageToPlay;
+		Result.DamageEffectClass = BasicAttackData.DamageEffectClass;
+		Result.ProjectileClass = BasicAttackData.ProjectileClass;
+		Result.DamageMultiplier = BasicAttackData.DamageMultiplier;
+		Result.AttackRange = BasicAttackData.AttackRange;
+		Result.AttackRadius = BasicAttackData.AttackRadius;
+		Result.ForwardOffset = BasicAttackData.ForwardOffset;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
@@ -77,16 +77,41 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 	return Result;
 }
 
-UFXDataAsset* AUnitBase::GetUnitFXData() const
+FFXPayload* AUnitBase::GetFXPayload(EFXEventType EventType) const
 {
-	return CachedUnitFXData.LoadSynchronous();
-}
+	UFXDataAsset* TargetAsset = nullptr;
+	FGameplayTag TargetTag;
 
-FGameplayTag AUnitBase::GetHitReactionTag() const
-{
-	return CachedHitReactionTag;
-}
+	// 몬스터는 궁극기(Ultimate)가 없으므로 Reaction과 Action만 처리합니다.
+	switch (EventType)
+	{
+	case EFXEventType::Hit:
+		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
+		TargetTag = CachedReactionFX.HitTag;
+		break;
+	case EFXEventType::Death:
+		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
+		TargetTag = CachedReactionFX.DeathTag;
+		break;
+	case EFXEventType::BasicAttack:
+		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
+		TargetTag = CachedActionFX.BasicAttackTag;
+		break;
+	case EFXEventType::Skill:
+		//TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
+		//TargetTag = CachedActionFX.SkillTag;
+		break;
+	case EFXEventType::Ultimate:
+		return nullptr; // 몬스터는 궁극기가 없음
+	}
 
+	if (TargetAsset && TargetTag.IsValid())
+	{
+		return TargetAsset->FindEffect(TargetTag);
+	}
+
+	return nullptr;
+}
 void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 {
 	if (AbilitySystemComponent)
@@ -96,7 +121,6 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 
 	if (InStats)
 	{
-		CachedBasicAttackActionID = InStats->BasicAttackActionID;
 		if (UBaseAttributeSet* BaseSet = Cast<UBaseAttributeSet>(AttributeSet))
 		{
 			BaseSet->InitMaxHealth(InStats->BaseMaxHP);
@@ -109,20 +133,20 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 				{
 					// 액션 테이블에 정의된 평타 사거리로 AttributeSet을 초기화합니다.
 					BaseSet->InitAttackRange(ActionRow->AttackRange);
-					CachedAttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
-					CachedDamageMultiplier = ActionRow->DamageMultiplier;
-					CachedAttackRadius = ActionRow->AttackRadius;
-					CachedForwardOffset = ActionRow->ForwardOffset;
+					BasicAttackData.AttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
+					BasicAttackData.DamageMultiplier = ActionRow->DamageMultiplier;
+					BasicAttackData.AttackRadius = ActionRow->AttackRadius;
+					BasicAttackData.ForwardOffset = ActionRow->ForwardOffset;
 				}
 				else
 				{
 					// 만약 데이터를 찾지 못했을 경우의 안전 장치
 					BaseSet->InitAttackRange(150.0f);
-					CachedAttackRange = 150.0f;
-					CachedDamageMultiplier = 1.0f;
+					BasicAttackData.AttackRange = 150.0f;
+					BasicAttackData.DamageMultiplier = 1.0f;
 
-					CachedAttackRadius = 40.0f;
-					CachedForwardOffset = 0.0f;
+					BasicAttackData.AttackRadius = 40.0f;
+					BasicAttackData.ForwardOffset = 0.0f;
 				}
 			}
 		}
@@ -165,11 +189,11 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		}
 
 		// 전투 데이터 캐싱 (멤버 변수에 저장)
-		CachedDamageEffectClass = InAssets->BasicAttackEffect;
-		CachedAttackMontage = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
-		CachedProjectileClass = InAssets->ProjectileClass;
-		CachedUnitFXData = InAssets->UnitFXData;
-		CachedHitReactionTag = InAssets->HitReactionTag;
+		BasicAttackData.DamageEffectClass = InAssets->BasicAttackEffect;
+		BasicAttackData.MontageToPlay = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
+		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
+		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
+		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)

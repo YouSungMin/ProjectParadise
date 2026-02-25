@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameplayCueNotify_Static.h"
-#include "UnitHitCueNotify.generated.h"
+#include "Data/Enums/GameEnums.h"
+#include "MasterCueNotifyStatic.generated.h"
 
 /**
  * @class UGC_UnitHit
@@ -12,15 +13,19 @@
  * @details ICombatInterface를 통해 타겟의 데이터를 읽어와 동적으로 이펙트를 재생합니다.
  */
 UCLASS()
-class PARADISE_API UUnitHitCueNotify : public UGameplayCueNotify_Static
+class PARADISE_API UMasterCueNotifyStatic : public UGameplayCueNotify_Static
 {
 	GENERATED_BODY()
 
 public:
-	UUnitHitCueNotify();
+	UMasterCueNotifyStatic();
 
 	/**
 	 * @brief 큐가 실행될 때(즉, 데미지가 들어갈 때) 호출되는 핵심 함수
 	 */
 	virtual bool OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+public:
+	// 💡 언리얼 에디터 디테일 패널에서 이 큐가 어떤 이벤트를 요청할지 선택하게 합니다.
+	UPROPERTY(EditDefaultsOnly, Category = "FX Setup")
+	EFXEventType TargetEventType = EFXEventType::Hit;
 };

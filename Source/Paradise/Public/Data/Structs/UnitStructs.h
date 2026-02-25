@@ -4,6 +4,7 @@
 #include "Data/Enums/GameEnums.h"
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
+#include "Data/Structs/FXStructs.h"
 #include "UnitStructs.generated.h"
 
 class USkeletalMesh;
@@ -15,7 +16,6 @@ class AAIController;
 class UBehaviorTree;
 class UBlackboardData;
 class USoundBase;
-class UFXDataAsset;
 
 /**
  * @struct FUnitBaseStats
@@ -318,19 +318,11 @@ public:
 	//  Audio & FX (Physical Reaction)
 	// =========================================================
 	/**
-	 * @brief 유닛 본체 전용 FX 데이터 에셋
-	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리, 기합 소리 등을 담습니다.
-	 * (예: Event.Hit, Event.Death 태그로 검색)
+	 * @brief 피격 및 생존 반응 전용 FX, Tag 구조체
+	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Common")
-	TSoftObjectPtr<UFXDataAsset> UnitFXData;
-
-	/**
-	 * @brief 피격 이펙트 태그
-	 * @detail 이 유닛을 때리면 무슨 효과가 나나요?" (예: Effect.Hit.Flesh.Small)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Hit"))
-	FGameplayTag HitReactionTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FReactionFXSettings ReactionFX;
 };
 
 /**
@@ -380,10 +372,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Skill")
 	TSoftObjectPtr<UAnimMontage> UltimateMontage;
 
-	/**
-	 * 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Skill.Ultimate.Meteor)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Skill"))
+	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
 	FGameplayTag UltimateEffectTag;
 };
 
@@ -472,11 +462,10 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	TSubclassOf<AActor> ProjectileClass;
 
 	/**
-	 * @brief 평타 연출 태그
-	 * @details 몬스터가 평타를 칠 때 재생할 이펙트/사운드 (예: Effect.Attack.Claw)
+	 * @brief 공격 행동 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Attack", meta = (Categories = "Effect.Attack"))
-	FGameplayTag BasicAttackEffectTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FActionFXSettings ActionFX;
 
 
 };

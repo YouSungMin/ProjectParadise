@@ -42,16 +42,13 @@ class PARADISE_API UInventorySystem : public UGameInstanceSubsystem
 public:	
 	UInventorySystem();
 
-#pragma region 캐릭터 경험치 추가
-	/**
-	 * @brief 특정 캐릭터에게 경험치를 부여하고, 조건 충족 시 레벨업을 처리합니다.
-	 * @param CharacterID 경험치를 받을 캐릭터의 고유 식별자 (ID)
-	 * @param ExpAmount 획득할 경험치량
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Growth")
-	void AddCharacterExp(FName CharacterID, int32 ExpAmount);
+#pragma region 성장 시스템 전용 데이터 세터 (Setter)
 
-#pragma endregion 캐릭터 경험치 추가
+	/** @brief 성장 시스템이 계산한 최종 레벨/경험치 덮어쓰기 */
+	void SetCharacterLevelAndExp(FName CharacterID, int32 NewLevel, int32 NewExp);
+
+#pragma endregion 성장 시스템 전용 데이터 세터 (Setter)
+
 
 #pragma region 장비 관련 함수 선언
 	/**
@@ -108,6 +105,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory|Modify")
 	void AddFamiliar(FName FamiliarID);
+
+	/** @brief 각성 조각 수치 추가 */
+	void AddAwakeningPiece(FName CharacterID, int32 Count);
 
 	/** * @brief 통합 삭제 함수
 		* @details 인벤토리 내의 영웅, 병사, 아이템을 모두 뒤져서 해당 GUID를 가진 객체를 삭제합니다.
