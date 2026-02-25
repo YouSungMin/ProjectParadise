@@ -4,6 +4,7 @@
 #include "GameplayTagContainer.h"
 #include "Data/Enums/GameEnums.h"
 #include "GameplayEffect.h"
+#include "Data/Structs/FXStructs.h"
 #include "ItemStructs.generated.h"
 
 class USkeletalMesh;
@@ -276,25 +277,10 @@ public:
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 무기 전용 FX 데이터 에셋
-	 * @details 무기 휘두르는 소리, 몬스터에 적중했을 때의 타격 이펙트 등을 담습니다.
+	 * @brief 공격 행동 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
-	TSoftObjectPtr<UFXDataAsset> WeaponFXData;
-
-	/**
-	 * @brief 평타 연출 태그
-	 * @details 태그를 통해 이펙트와 사운드를 불러와 사용
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Weapon"))
-	FGameplayTag BasicEffectTag;
-
-	/**
-	 * @brief 스킬 연출 태그
-	 * @details 태그를 통해 이펙트와 사운드를 불러와 사용
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Skill"))
-	FGameplayTag SkillEffectTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|FX")
+	FActionFXSettings ActionFX;
 };
 
 /**

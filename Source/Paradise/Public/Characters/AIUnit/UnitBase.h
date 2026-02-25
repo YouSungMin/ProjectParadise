@@ -27,11 +27,8 @@ public:
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
-	/* @brief 이 유닛의 고유 연출 데이터 에셋(FXDataAsset)을 반환합니다. */
-	virtual class UFXDataAsset* GetUnitFXData() const override;
-
-	/* @brief 이 유닛이 피격당했을 때 재생할 고유 피격 태그를 반환합니다. (예: State.Hit) */
-	virtual FGameplayTag GetHitReactionTag() const override;
+	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
 
 	/** @brief 유닛 초기화 및 ID 설정 */
 	void InitializeUnit(struct FAIUnitStats* InStats, struct FAIUnitAssets* InAssets);
@@ -51,56 +48,28 @@ public:
 
 	/** @brief 캐싱된 기본 공격 사거리 반환 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	float GetAttackRange() const { return CachedAttackRange; }
+	float GetAttackRange() const { return BasicAttackData.AttackRange; }
 
 protected:
 	/** @brief 데이터 테이블 조회를 위한 RowName 저장 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
 	FName UnitID;
 
-	/** @brief 기본 공격 데미지 이펙트 (GE) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cache")
-	TSubclassOf<UGameplayEffect> CachedDamageEffectClass;
+	/** @brief 기본 공격에 필요한 전투 데이터 모음 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Data")
+	FCombatActionData BasicAttackData;
 
-	/** @brief 기본 공격 몽타주 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cache")
-	TObjectPtr<UAnimMontage> CachedAttackMontage;
-
-	/** @brief 캐싱된 원거리 투사체 클래스 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	TSubclassOf<AActor> CachedProjectileClass;
-
-	/** @brief 캐싱된 기본 공격 사거리 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	float CachedAttackRange;
-
-	/** @brief 캐싱된 기본 공격 반경 (두께) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	float CachedAttackRadius;
-
-	/** @brief 캐싱된 기본 공격 전방 오프셋 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	float CachedForwardOffset;
-
-	/** @brief 캐싱된 기본 공격 데미지 배율 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	float CachedDamageMultiplier = 1.0f;
-
-	/** @brief 캐싱된 기본 공격 Action ID */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	FName CachedBasicAttackActionID;
-
-	/** @brief 캐싱된 스킬 Action ID (단일 스킬 기준) */
+	/** @brief 위의 코드 처럼 변경 필요 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FName CachedSkillActionID;
 
-	/** @brief 캐싱된 유닛 전용 피격/사망 FX 데이터 에셋 */
+	/** @brief 피격/사망 등 생존 반응 연출 캐싱 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
-	TSoftObjectPtr<class UFXDataAsset> CachedUnitFXData;
+	FReactionFXSettings CachedReactionFX;
 
-	/** @brief 캐싱된 피격 리액션 태그 */
+	/** @brief 평타/스킬 등 공격 행동 연출 캐싱 (몬스터 본체용) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
-	FGameplayTag CachedHitReactionTag;
+	FActionFXSettings CachedActionFX;
 
 	// =========================================================
 	// GAS Handles (어빌리티 관리)

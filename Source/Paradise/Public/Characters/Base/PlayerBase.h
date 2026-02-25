@@ -53,11 +53,8 @@ public:
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
-	/** @brief 플레이어 본체의 피격/사망 FX 데이터 에셋을 영혼(PlayerData)으로부터 가져옵니다. */
-	virtual class UFXDataAsset* GetUnitFXData() const override;
-
-	/** @brief 플레이어 본체의 피격 태그를 영혼(PlayerData)으로부터 가져옵니다. */
-	virtual FGameplayTag GetHitReactionTag() const override;
+	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
 
 	UFUNCTION(BlueprintCallable)
 	class APlayerData* GetPlayerData() const { return LinkedPlayerData.Get(); }

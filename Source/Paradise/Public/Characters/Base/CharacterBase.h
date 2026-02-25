@@ -41,21 +41,8 @@ public:
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override { return FCombatActionData();}
 
-	/**
-	 * @brief 이 유닛의 고유 연출 데이터 에셋(FXDataAsset)을 반환합니다.
-	 * @detail UnitBase와 PlayerBase는 이를 오버라이딩하여
-	 * 서로 다른 데이터 테이블을 참조하여 구조체를 리턴
-	 * @return UFXDataAsset 고유 연출 데이터 에셋 
-	 */
-	virtual class UFXDataAsset* GetUnitFXData() const override { return nullptr; }
-
-	/**
-	 * @brief 이 유닛이 피격당했을 때 재생할 고유 피격 태그를 반환합니다. (예: State.Hit)
-	 * @detail UnitBase와 PlayerBase는 이를 오버라이딩하여
-	 * 서로 다른 데이터 테이블을 참조하여 구조체를 리턴
-	 * @return UFXDataAsset 고유 피격 태그
-	 */
-	virtual FGameplayTag GetHitReactionTag() const override { return FGameplayTag::EmptyTag; }
+	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override { return nullptr; }
 
 	/*
 	 * @brief 죽은후 Destroy() 하는 함수
