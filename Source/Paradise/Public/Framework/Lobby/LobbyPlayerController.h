@@ -38,6 +38,18 @@ public:
 	UFUNCTION(Exec)
 	void CheatAddItem(FName ItemID, int32 Count = 1);
 
+	UFUNCTION(Exec)
+	void CheatAddExp(FName CharacterID, int32 ExpAmount);
+
+	UFUNCTION(Exec)
+	void CheatSetPlayerSlot(int32 SlotIndex, FName CharacterID);
+
+	UFUNCTION(Exec)
+	void CheatSetFamiliarSlot(int32 SlotIndex, FName FamiliarID);
+
+	UFUNCTION(Exec)
+	void CheatEquipItem(FName CharacterID, FName ItemID);
+
 #pragma endregion 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
 
 
