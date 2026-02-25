@@ -81,10 +81,11 @@ public:
 	FCombatActionData GetCombatActionData(ECombatActionType ActionType) const;
 
 protected:
-	/** @brief Combat어트리뷰트셋 데이터테이블 기반 초기화 (GI 이용)*/
-	void InitCombatAttributes(FCharacterStats* Stats);
-	/** @brief 플레이어 에셋 데이터테이블 기반 초기화 (GI 이용)*/
-	void InitPlayerAssets(FCharacterAssets* Assets);
+	/** @brief Combat어트리뷰트셋 초기화 (GI 데이터 조회) */
+	void InitCombatAttributes();
+
+	/** @brief 플레이어 에셋 초기화 (GI 데이터 조회) */
+	void InitPlayerAssets();
 
 public:
 	/** * @brief 미리 로드된 스켈레탈 메시
@@ -124,7 +125,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data")
 	FGameplayTag FactionTag;
 protected:
-	
+
+	/** @brief 인게임에서 사용할 현재 레벨 (인벤토리에서 받아옴)*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Growth")
+	int32 CurrentLevel = 1;
+
+	/** @brief 인게임에서 사용할 현재 각성/돌파 단계 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Growth")
+	int32 CurrentAwakenLevel = 0;
 
 	/*
 	 * @brief 플레이어 ASC 컴포넌트

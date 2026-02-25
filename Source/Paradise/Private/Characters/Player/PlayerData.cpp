@@ -5,7 +5,9 @@
 #include "Characters/Base/CharacterBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/InventorySystem.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/GrowthStruct.h"
 #include "AbilitySystemComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "Data/Enums/GameEnums.h"
@@ -27,57 +29,154 @@ APlayerData::APlayerData()
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
 }
 
-void APlayerData::InitCombatAttributes(FCharacterStats* Stats)
+void APlayerData::InitCombatAttributes()
 {
-    if (Stats)
-    {
-        //체력
-        CombatAttributeSet2->InitMaxHealth(Stats->BaseMaxHP);
-        CombatAttributeSet2->InitHealth(CombatAttributeSet2->GetMaxHealth());
-        //마나
-        CombatAttributeSet2->InitMaxMana(Stats->BaseMaxMP);
-        CombatAttributeSet2->InitMana(CombatAttributeSet2->GetMaxMana());
-        //공격력
-        CombatAttributeSet2->InitAttackPower(Stats->BaseAttackPower);
-        //방어력
-        CombatAttributeSet2->InitDefense(Stats->BaseDefense);
-        //크리티컬 확률
-        CombatAttributeSet2->InitCritRate(Stats->BaseCritRate);
-        //이동 속도
-        CombatAttributeSet2->InitMoveSpeed(Stats->BaseMoveSpeed);
-    }
-}
+	if (!CombatAttributeSet) return;
 
-void APlayerData::InitPlayerAssets(FCharacterAssets* Assets)
-{
-	if (Assets)
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	//캐릭터 기본 스탯 로드
+	FCharacterStats* Stats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, CharacterID);
+	if (!Stats) return;
+
+	//캐릭터 레벨 및 각성 데이터 로드
+	float BonusLevelHP = 0.0f;
+	float BonusLevelAttack = 0.0f;
+	float BonusLevelDefense = 0.0f;
+	float AwakenMultiplier = 1.0f;
+
+	//레벨업 데이터 테이블 조회
+	FName LevelRowName = FName(*FString::FromInt(CurrentLevel));
+	if (FCharacterLevelUpData* LevelData = GI->GetDataTableRow<FCharacterLevelUpData>(GI->CharacterLevelUpDataTable, LevelRowName))
 	{
-		this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
-		this->CachedAnimBP = Assets->AnimBlueprint;
-		this->CachedUnitFXData = Assets->UnitFXData;
-		this->CachedHitReactionTag = Assets->HitReactionTag;
+		BonusLevelHP = LevelData->BonusMaxHP;
+		BonusLevelAttack = LevelData->BonusAttackPower;
+		BonusLevelDefense = LevelData->BonusDefense;
+	}
 
-		if (AbilitySystemComponent)
+	//각성(돌파) 데이터 테이블 조회
+	FName AwakenRowName = FName(*FString::FromInt(CurrentAwakenLevel));
+	if (FCharacterAwakenData* AwakenData = GI->GetDataTableRow<FCharacterAwakenData>(GI->CharacterAwakenDataTable, AwakenRowName))
+	{
+		AwakenMultiplier = AwakenData->BonusStatMultiplier;
+	}
+
+	//캐릭터 순수 스탯 최종 계산=
+	float CharMaxHP = (Stats->BaseMaxHP + BonusLevelHP) * AwakenMultiplier;
+	float CharMaxMP = Stats->BaseMaxMP;
+	float CharAttack = (Stats->BaseAttackPower + BonusLevelAttack) * AwakenMultiplier;
+	float CharDefense = (Stats->BaseDefense + BonusLevelDefense) * AwakenMultiplier;
+	float CharCritRate = Stats->BaseCritRate;
+	float CharMoveSpeed = Stats->BaseMoveSpeed;
+
+
+	//장비 스탯 합산 (강화 수치 연동)
+	float EquipMaxHP = 0.0f;
+	float EquipMaxMP = 0.0f;
+	float EquipAttack = 0.0f;
+	float EquipDefense = 0.0f;
+	float EquipCritRate = 0.0f;
+
+	if (EquipmentComponent)
+	{
+		for (const auto& Pair : EquipmentComponent->GetEquippedItems())
 		{
-			// 기존 궁극기가 있다면 제거 (재초기화/리스폰 대비)
-			if (UltimateSkillHandle.IsValid())
+			EEquipmentSlot Slot = Pair.Key;
+			FOwnedItemData ItemData;
+
+			if (EquipmentComponent->GetEquippedItemData(Slot, ItemData))
 			{
-				AbilitySystemComponent->ClearAbility(UltimateSkillHandle);
-				UltimateSkillHandle = FGameplayAbilitySpecHandle(); // 초기화
-			}
+				float EnhanceMult = 1.0f;
 
-			// 새 궁극기 부여
-			if (Assets->UltimateAbility)
-			{
-				// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
-				FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
+				//강화 스탯 배율 조회
+				FName EnhanceRowName = FName(*FString::FromInt(ItemData.EnhancementLevel));
+				if (FEquipmentEnhanceData* EnhanceData = GI->GetDataTableRow<FEquipmentEnhanceData>(GI->EquipmentEnhanceDataTable, EnhanceRowName))
+				{
+					EnhanceMult = EnhanceData->StatMultiplier;
+				}
 
-				UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
-
-				UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
+				//무기 / 방어구 계산
+				if (Slot == EEquipmentSlot::Weapon)
+				{
+					FWeaponStats* WeaponStats = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, ItemData.ItemID);
+					if (WeaponStats)
+					{
+						EquipAttack += (WeaponStats->AttackPower * EnhanceMult);
+						EquipCritRate += WeaponStats->CritRate; // 크리티컬은 보통 강화 배율 안 곱함
+					}
+				}
+				else if (Slot == EEquipmentSlot::Helmet || Slot == EEquipmentSlot::Chest ||
+					Slot == EEquipmentSlot::Gloves || Slot == EEquipmentSlot::Boots)
+				{
+					FArmorStats* ArmorStats = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, ItemData.ItemID);
+					if (ArmorStats)
+					{
+						EquipMaxHP += (ArmorStats->MaxHP * EnhanceMult);
+						EquipMaxMP += (ArmorStats->MaxMana * EnhanceMult);
+						EquipDefense += (ArmorStats->DefensePower * EnhanceMult);
+					}
+				}
 			}
 		}
 	}
+
+	//최종 스탯을 AttributeSet에 Init
+	float FinalMaxHP = CharMaxHP + EquipMaxHP;
+	float FinalMaxMP = CharMaxMP + EquipMaxMP;
+	float FinalAttack = CharAttack + EquipAttack;
+	float FinalDefense = CharDefense + EquipDefense;
+	float FinalCritRate = CharCritRate + EquipCritRate;
+
+	CombatAttributeSet->InitMaxHealth(FinalMaxHP);
+	CombatAttributeSet->InitHealth(FinalMaxHP);
+	CombatAttributeSet->InitMaxMana(FinalMaxMP);
+	CombatAttributeSet->InitMana(FinalMaxMP);
+	CombatAttributeSet->InitAttackPower(FinalAttack);
+	CombatAttributeSet->InitDefense(FinalDefense);
+	CombatAttributeSet->InitCritRate(FinalCritRate);
+	CombatAttributeSet->InitMoveSpeed(CharMoveSpeed);
+
+	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
+}
+
+void APlayerData::InitPlayerAssets()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	//데이터 조회후 초기화
+	FCharacterAssets* Assets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID);
+	if (!Assets) return;
+
+	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
+	this->CachedAnimBP = Assets->AnimBlueprint;
+	this->CachedUnitFXData = Assets->UnitFXData;
+	this->CachedHitReactionTag = Assets->HitReactionTag;
+
+
+	//ASC 세팅
+	if (AbilitySystemComponent)
+	{
+		// 기존 궁극기가 있다면 제거 (재초기화/리스폰 대비)
+		if (UltimateSkillHandle.IsValid())
+		{
+			AbilitySystemComponent->ClearAbility(UltimateSkillHandle);
+			UltimateSkillHandle = FGameplayAbilitySpecHandle(); // 초기화
+		}
+
+		// 새 궁극기 부여
+		if (Assets->UltimateAbility)
+		{
+			// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
+			FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
+
+			UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
+
+			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
+		}
+	}
+	
 
 }
 
@@ -234,27 +333,44 @@ void APlayerData::InitPlayerData(FName HeroID)
 	this->CharacterID = HeroID;
 	UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
 
-	//스탯 데이터 조회 및 적용
-	FCharacterStats* Stats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, HeroID);
-	if (Stats)
+	UInventorySystem* InvSys = GI->GetMainInventory();
+	if (InvSys)
 	{
-		InitCombatAttributes(Stats);
+		const FOwnedCharacterData* MyData;
+		bool bFound = false;
+		MyData = InvSys->GetCharacterDataByID(HeroID);// 함수명은 실제 구현에 맞게 변경하세요.
 
-		this->FactionTag = Stats->FactionTag;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ 스탯 데이터를 찾을 수 없습니다: %s"), *HeroID.ToString());
+		if (MyData) {
+			bFound = true;
+		}
+
+		if (bFound)
+		{
+			// 인벤토리의 진짜 성장 데이터를 내 변수에 복사
+			this->CurrentLevel = MyData->Level;
+			this->CurrentAwakenLevel = MyData->AwakeningLevel;
+
+			// 인벤토리에 저장된 진짜 장착 장비 맵을 장비 컴포넌트에 넘겨줌!
+			if (EquipmentComponent)
+			{
+				EquipmentComponent->InitializeEquipment(MyData->EquipmentMap);
+			}
+			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerData] 인벤토리에서 %s 데이터를 못 찾음. 1레벨 기본값 적용."), *HeroID.ToString());
+		}
 	}
 
-	//에셋 데이터 조회 및 적용
-	FCharacterAssets* Assets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, HeroID);
-	if (Assets)
-	{
-		InitPlayerAssets(Assets);
+	//전투 스탯 초기화 (내부에서 스스로 테이블 조회)
+	InitCombatAttributes();
 
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 완료"));
-	}
+	//시각적 에셋 초기화 (내부에서 스스로 테이블 조회)
+	InitPlayerAssets();
+
+	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
+	
 }
 
 void APlayerData::OnDeath()

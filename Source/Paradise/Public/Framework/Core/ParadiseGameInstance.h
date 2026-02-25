@@ -182,8 +182,16 @@ public:
 	//성장시스템 데이터 테이블
 
 	/** @brief 캐릭터 레벨업 경험치 및 스탯 테이블 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth")
-	TObjectPtr<class UDataTable> CharacterLevelUpDataTable=nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterLevelUpData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterLevelUpData"))
+	TObjectPtr<class UDataTable> CharacterLevelUpDataTable = nullptr;
+
+	/** @brief 장비 강화 스탯 배율 테이블 (추가!) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "EquipmentEnhanceData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.EquipmentEnhanceData"))
+	TObjectPtr<class UDataTable> EquipmentEnhanceDataTable = nullptr;
+
+	/** @brief 캐릭터 각성/돌파 스탯 배율 테이블 (추가!) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterAwakenData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterAwakenData"))
+	TObjectPtr<class UDataTable> CharacterAwakenDataTable = nullptr;
 
 public:
 
