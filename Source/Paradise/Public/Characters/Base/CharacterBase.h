@@ -147,7 +147,7 @@ public:
 		 * @details 데이터 테이블에서 로드되어 부여되며, 피아식별(IsHostile) 및 GAS 타겟팅에 사용됩니다.
 		 * 예: Unit.Faction.Friendly.Player, Unit.Faction.Enemy
 		 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	FGameplayTag FactionTag;
 
 protected:

@@ -95,11 +95,11 @@ protected:
 	FName CachedSkillActionID;
 
 	/** @brief 캐싱된 유닛 전용 피격/사망 FX 데이터 에셋 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
 	TSoftObjectPtr<class UFXDataAsset> CachedUnitFXData;
 
 	/** @brief 캐싱된 피격 리액션 태그 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
 	FGameplayTag CachedHitReactionTag;
 
 	// =========================================================

@@ -12,7 +12,7 @@
 
 UUnitHitCueNotify::UUnitHitCueNotify()
 {
-	GameplayCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.Unit.Hit"));
+	//GameplayCueTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.Unit.Hit"));
 }
 
 bool UUnitHitCueNotify::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
