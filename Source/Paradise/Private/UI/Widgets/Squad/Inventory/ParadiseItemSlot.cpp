@@ -50,8 +50,8 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 	{
 		if (InData.Level > 0)
 		{
-			Text_Level->SetText(FText::AsNumber(InData.Level));
-			Text_Level->SetVisibility(ESlateVisibility::Visible);
+			Text_Level->SetText(FText::Format(FText::FromString(TEXT("Lv.{0}")), InData.Level));
+			Text_Level->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 		else
 		{

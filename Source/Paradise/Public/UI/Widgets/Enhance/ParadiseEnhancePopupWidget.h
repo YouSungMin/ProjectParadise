@@ -73,6 +73,9 @@ private:
 
 	/** @brief 강화/돌파 후 화면을 최신 상태로 갱신합니다. */
 	void RefreshAfterEnhancement();
+
+	/** @brief ID와 레벨 정보를 받아 UI 표시용 데이터로 변환합니다. */
+	FSquadItemUIData MakeUIData(FName ID, int32 InLevel, int32 TabType, bool bUseBodyIcon = false);
 #pragma endregion 시스템 연동 및 이벤트
 
 #pragma region UI 컴포넌트 바인딩

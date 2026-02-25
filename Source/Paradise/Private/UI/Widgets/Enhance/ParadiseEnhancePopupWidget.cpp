@@ -7,6 +7,22 @@
 #include "Components/Button.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
+#include "Data/Structs/ItemStructs.h"
+#include "Data/Structs/UnitStructs.h"
+
+#pragma region 헬퍼 함수
+/** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
+static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
+{
+	switch (Rarity)
+	{
+	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
+	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
+	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
+	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
+	}
+}
+#pragma endregion 헬퍼 함수
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -86,10 +102,56 @@ void UParadiseEnhancePopupWidget::RefreshInventory()
 
 	TArray<FSquadItemUIData> ListData;
 
-	// 임시 테스트용 더미 데이터를 주입하거나, 실제 InventorySystem에서 가져오는 로직
-	// (SquadMainWidget에 쓰셨던 switch(CurrentTabIndex) 로직을 여기에 복사해서 넣으시면 됩니다!)
+	// 실제 InventorySystem에서 데이터를 가져와서 포장합니다!
+	switch (CurrentTabIndex)
+	{
+	case SquadTabs::Character:
+		for (const auto& Data : InvSys->GetOwnedCharacters())
+		{
+			// 강화 인벤토리 리스트에서는 캐릭터 BodyIcon(true) 사용
+			FSquadItemUIData UIData = MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true);
+			UIData.InstanceUID = Data.CharacterUID;
+			ListData.Add(UIData);
+		}
+		break;
 
-	// 뷰에 전달
+	case SquadTabs::Weapon:
+		for (const auto& Data : InvSys->GetOwnedItems())
+		{
+			if (CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, Data.ItemID))
+			{
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Weapon);
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
+			}
+		}
+		break;
+
+	case SquadTabs::Armor:
+		for (const auto& Data : InvSys->GetOwnedItems())
+		{
+			if (CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, Data.ItemID))
+			{
+				FSquadItemUIData UIData = MakeUIData(Data.ItemID, Data.EnhancementLevel, SquadTabs::Armor);
+				UIData.InstanceUID = Data.ItemUID;
+				UIData.Quantity = Data.Quantity;
+				ListData.Add(UIData);
+			}
+		}
+		break;
+	}
+
+	// 현재 선택된 아이템 하이라이트 유지 로직 (필수 UX)
+	for (auto& Item : ListData)
+	{
+		if (Item.InstanceUID.IsValid() && Item.InstanceUID == SelectedItem.InstanceUID)
+		{
+			Item.bIsSelected = true;
+		}
+	}
+
+	// 뷰(우측 리스트)에 완성된 꽉 찬 택배 상자들 전달!
 	Panel_Inventory->UpdateList(CurrentTabIndex, ListData);
 }
 void UParadiseEnhancePopupWidget::RefreshAfterEnhancement()
@@ -100,6 +162,53 @@ void UParadiseEnhancePopupWidget::RefreshAfterEnhancement()
 		HandleInventoryItemClicked(SelectedItem); // 디테일 패널 갱신
 	}
 }
+
+FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel, int32 TabType, bool bUseBodyIcon)
+{
+	FSquadItemUIData Result;
+	Result.ID = ID;
+	Result.Level = InLevel;
+	Result.Name = FText::FromName(ID);
+
+	if (!CachedGI.IsValid()) return Result;
+
+	if (TabType == SquadTabs::Character)
+	{
+		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
+		{
+			// 강화 인벤토리에서도 전신(Body)을 보여주려면 bUseBodyIcon을 활용
+			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
+			Result.Icon = TargetIcon.LoadSynchronous();
+		}
+	}
+	else if (TabType == SquadTabs::Weapon)
+	{
+		if (auto* Stat = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, ID))
+		{
+			Result.Name = Stat->DisplayName;
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity); // 헬퍼 함수 필요(SquadMain 참조)
+		}
+		if (auto* Asset = CachedGI->GetDataTableRow<FWeaponAssets>(CachedGI->WeaponAssetsDataTable, ID))
+		{
+			Result.Icon = Asset->Icon.LoadSynchronous();
+		}
+	}
+	else if (TabType == SquadTabs::Armor)
+	{
+		if (auto* Stat = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, ID))
+		{
+			Result.Name = Stat->DisplayName;
+			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
+		}
+		if (auto* Asset = CachedGI->GetDataTableRow<FArmorAssets>(CachedGI->ArmorAssetsDataTable, ID))
+		{
+			Result.Icon = Asset->Icon.LoadSynchronous();
+		}
+	}
+
+	return Result;
+}
+
 void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
 {
 	SelectedItem = ItemData;

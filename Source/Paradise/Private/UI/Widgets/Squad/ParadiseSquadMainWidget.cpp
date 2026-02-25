@@ -511,6 +511,8 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	}
 	else if (TabType == SquadTabs::Unit)
 	{
+		// 유닛은 레벨 텍스트가 필요 없음
+		Result.Level = 0;
 		if (auto* Stat = CachedGI->GetDataTableRow<FFamiliarStats>(CachedGI->FamiliarStatsDataTable, ID))
 		{
 			Result.RankTag = Stat->RankTypeTag;
