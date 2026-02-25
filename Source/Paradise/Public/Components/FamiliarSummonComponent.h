@@ -11,6 +11,8 @@ class UCostManageComponent;
 class UObjectPoolSubsystem;
 class AFamiliarUnit;
 class AFamiliarSpawner;
+class USquadSubsystem;	// [추가] 02/25 담당자:최지원
+class UTexture2D;
 
 USTRUCT(BlueprintType)
 struct FSummonSlotInfo
@@ -85,15 +87,29 @@ protected:
 	UFUNCTION()
 	void ConsumeSpecificSlot(int32 SlotIndex);
 
-	/** @brief 랜덤 유닛을 하나 생성하여 슬롯 정보를 반환함 
-	* @return 생성된 슬롯 정보 구조체 -> RefreshAllSlots함수에서 반복문으로 배열 생성
-	*/
-	FSummonSlotInfo GenerateRandomSlot(UDataTable* StatsTable, UDataTable* AssetsTable);
+	///** @brief 랜덤 유닛을 하나 생성하여 슬롯 정보를 반환함 
+	//* @return 생성된 슬롯 정보 구조체 -> RefreshAllSlots함수에서 반복문으로 배열 생성
+	//*/
+	//FSummonSlotInfo GenerateRandomSlot(UDataTable* StatsTable, UDataTable* AssetsTable);
+
+	/** * @brief SquadSubsystem에서 편성 정보를 가져와 데이터 테이블 조회를 선행하여 캐싱합니다.
+	 * @details 인게임 프레임 드랍을 막기 위한 필수 최적화 과정입니다.
+	 */
+	void InitializeDeckPool();
+
+	/** * @brief 메모리에 캐싱된 덱(Deck) 풀에서 무작위로 하나의 카드를 즉시 뽑아옵니다. (O(1))
+	 * @return 완성된 슬롯 정보 구조체
+	 */
+	FSummonSlotInfo DrawRandomCardFromPool();
 
 protected:
 	/** @brief 현재 관리 중인 소환 슬롯들 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	TArray<FSummonSlotInfo> CurrentSlots;
+
+	/** @brief 데이터 테이블 조회를 마치고 캐싱 완료된 5마리 유닛 덱(Deck) 풀 */
+	UPROPERTY(VisibleAnywhere, Category = "Paradise|Deck")
+	TArray<FSummonSlotInfo> CachedDeckPool;
 
 	/** @brief 슬롯 자동 갱신 쿨타임 (초 단위) */
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
@@ -107,5 +123,5 @@ protected:
 
 	//스포너를 저장할 포인터
 	UPROPERTY()
-	AFamiliarSpawner* LinkedSpawner;
+	TObjectPtr<AFamiliarSpawner> LinkedSpawner = nullptr;
 };
