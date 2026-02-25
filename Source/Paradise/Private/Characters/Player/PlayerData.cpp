@@ -317,7 +317,7 @@ FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
 		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
 		TargetTag = CachedActionFX.BasicAttackTag;
 		break;
-	case EFXEventType::WeaponSkill:
+	case EFXEventType::Skill:
 		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
 		TargetTag = CachedActionFX.SkillTag;
 		break;

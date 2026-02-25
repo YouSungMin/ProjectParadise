@@ -373,7 +373,7 @@ public:
 	TSoftObjectPtr<UAnimMontage> UltimateMontage;
 
 	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Ultimate"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
 	FGameplayTag UltimateEffectTag;
 };
 

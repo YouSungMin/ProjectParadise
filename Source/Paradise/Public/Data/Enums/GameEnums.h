@@ -165,6 +165,6 @@ enum class EFXEventType : uint8
 	Hit			UMETA(DisplayName = "Hit (피격)"),
 	Death		UMETA(DisplayName = "Death (사망)"),
 	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
-	WeaponSkill	UMETA(DisplayName = "Weapon Skill (무기 스킬)"),
+	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
 	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
 };
