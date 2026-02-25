@@ -154,3 +154,17 @@ enum class EWeaponType : uint8
 	Gun		UMETA(DisplayName = "Gun (총)"),
 	Book	UMETA(DisplayName = "Book (마법책/지팡이)")
 };
+
+/**
+ * @enum EFXEventType
+ * @brief 연출(FX)이 필요한 상황을 정의합니다. 큐 노티파이에서 이 값을 넘겨 페이로드를 요청합니다.
+ */
+UENUM(BlueprintType)
+enum class EFXEventType : uint8
+{
+	Hit			UMETA(DisplayName = "Hit (피격)"),
+	Death		UMETA(DisplayName = "Death (사망)"),
+	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
+	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
+	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
+};

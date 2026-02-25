@@ -21,6 +21,39 @@ void AUnitSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 1. GameInstance를 통해 테이블 데이터 자동 로드
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (GI && GI->StageWaveDetailDataTable && !TargetStageID.IsNone())
+	{
+		WaveConfigs.Empty();
+
+		TArray<FStageWaveDetail*> AllRows;
+		// GI_Paradise에 할당된 테이블에서 모든 행을 가져옴
+		GI->StageWaveDetailDataTable->GetAllRows<FStageWaveDetail>(TEXT(""), AllRows);
+
+		for (FStageWaveDetail* Row : AllRows)
+		{
+			// TargetStageID가 일치하는 웨이브만 필터링
+			if (Row && Row->TargetStageID == TargetStageID)
+			{
+				FWaveConfig NewConfig;
+				NewConfig.UnitRowName = Row->MonsterID;      // MonsterID 매핑
+				NewConfig.SpawnCount = Row->SpawnCount;      // SpawnCount 매핑
+				NewConfig.SpawnInterval = Row->SpawnInterval;// SpawnInterval 매핑
+				NewConfig.NextWaveDelay = Row->PreWaveDelay; // PreWaveDelay를 딜레이로 사용
+
+				WaveConfigs.Add(NewConfig);
+			}
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("✅ [Spawner] 스테이지 '%s' 데이터 로드 완료 (%d 웨이브)"), *TargetStageID.ToString(), WaveConfigs.Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [Spawner] 데이터 로드 실패! GI 또는 Table이 유효하지 않거나 TargetStageID가 없습니다."));
+	}
+
+	// 2. 오브젝트 풀 초기화
 	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
 	if (PoolSubsystem && UnitClass)
 	{
@@ -31,9 +64,12 @@ void AUnitSpawner::BeginPlay()
 		}
 	}
 
+	// 3. 첫 웨이브 시작
 	if (WaveConfigs.Num() > 0)
 	{
-		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit, WaveConfigs[0].SpawnInterval, true, 1.0f);
+		// 첫 소환은 PreWaveDelay만큼 대기 후 시작하도록 타이머 설정
+		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
+			WaveConfigs[0].SpawnInterval, true, WaveConfigs[0].NextWaveDelay);
 	}
 }
 
@@ -61,6 +97,7 @@ void AUnitSpawner::SpawnUnit()
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
 		NewUnit->SetUnitID(EnemyRowName);
 
+		// 유닛 데이터 로드 (GI 참조)
 		if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
 		{
 			FEnemyStats* StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, NewUnit->GetUnitID());
@@ -95,7 +132,6 @@ void AUnitSpawner::SpawnUnit()
 								UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
 								AHomeBase* TargetFriendlyBase = nullptr;
-
 								for (AActor* BaseActor : FoundBases)
 								{
 									AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
@@ -109,23 +145,12 @@ void AUnitSpawner::SpawnUnit()
 								if (TargetFriendlyBase)
 								{
 									BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
-
 									FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
 									FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
 									FVector TargetLocation = BaseLoc + (Dir * 200.0f);
 
 									BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
 									BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
-
-									UE_LOG(LogTemp, Log, TEXT("[%s] BT Started with Target: %s"), *NewUnit->GetName(), *TargetFriendlyBase->GetName());
-								}
-								else
-								{
-									if (APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn())
-									{
-										BB->SetValueAsVector(FName("MoveLocation"), PlayerPawn->GetActorLocation());
-										UE_LOG(LogTemp, Log, TEXT("[%s] BT Started with Target: Player"), *NewUnit->GetName());
-									}
 								}
 							}
 						}
@@ -135,6 +160,7 @@ void AUnitSpawner::SpawnUnit()
 		}
 	}
 
+	// 웨이브 진행 체크
 	CurrentSpawnCountInWave++;
 	if (CurrentSpawnCountInWave >= WaveConfigs[CurrentWaveIndex].SpawnCount)
 	{
@@ -146,6 +172,7 @@ void AUnitSpawner::SpawnUnit()
 
 		if (WaveConfigs.IsValidIndex(CurrentWaveIndex))
 		{
+			// 다음 웨이브로 전환 시 간격과 딜레이 적용
 			GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
 				WaveConfigs[CurrentWaveIndex].SpawnInterval, true, WaveConfigs[FinishedIdx].NextWaveDelay);
 		}
