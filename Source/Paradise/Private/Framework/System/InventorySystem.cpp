@@ -3,81 +3,25 @@
 
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/GrowthSubsystem.h"
 
 // Sets default values for this component's properties
 UInventorySystem::UInventorySystem()
 {
 }
 
-void UInventorySystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
+void UInventorySystem::SetCharacterLevelAndExp(FName CharacterID, int32 NewLevel, int32 NewExp)
 {
-	if (CharacterID.IsNone()) return;
-
-	//내 인벤토리에서 캐릭터 데이터 찾기
-	FOwnedCharacterData* TargetCharacterData = nullptr;
 	for (FOwnedCharacterData& CharData : OwnedCharacters)
 	{
 		if (CharData.CharacterID == CharacterID)
 		{
-			TargetCharacterData = &CharData;
-			break;
+			CharData.Level = NewLevel;
+			CharData.CurrentExp = NewExp;
+			if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
+			return;
 		}
 	}
-
-	//획득한 경험치를 전부 더함
-	TargetCharacterData->CurrentExp += ExpAmount;
-	UE_LOG(LogTemp, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, TargetCharacterData->CurrentExp);
-
-	// 게임 인스턴스 가져오기
-	UParadiseGameInstance* GI = GetParadiseGI();
-	if (!GI || !GI->CharacterLevelUpDataTable)
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ CharacterLevelUpDataTable이 게임 인스턴스에 설정되지 않았습니다!"));
-		return;
-	}
-
-	//데이터 테이블 기반 레벨업 루프
-	while (true)
-	{
-		//다음 레벨 의 RowName 데이터 테이블 찾기
-		int32 NextLevel = TargetCharacterData->Level + 1;
-		FName RowName = FName(*FString::FromInt(NextLevel));
-
-		//테이블에서 다음 레벨 데이터 조회
-		FCharacterLevelUpData* LevelData = GI->GetDataTableRow<FCharacterLevelUpData>(GI->CharacterLevelUpDataTable, RowName);
-
-		//만렙 이후 (데이터없을시)
-		if (!LevelData)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), TargetCharacterData->Level);
-			TargetCharacterData->CurrentExp = 0; // 초과 경험치 증발 처리
-			break;
-		}
-
-		//경험치가 충분하다면 레벨업 진행
-		if (TargetCharacterData->CurrentExp >= LevelData->RequiredExp)
-		{
-			TargetCharacterData->CurrentExp -= LevelData->RequiredExp;
-			TargetCharacterData->Level++;
-
-			UE_LOG(LogTemp, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d -> %d)"), *CharacterID.ToString(), TargetCharacterData->Level - 1, TargetCharacterData->Level);
-
-			// TODO : 파티클 시스템이나 레벨업 사운드를 재생하는 이벤트
-		}
-		else
-		{
-			// 경험치가 모자라면 루프 종료
-			break;
-		}
-	}
-
-	//UI 델리게이트 발송
-	if (OnInventoryUpdated.IsBound())
-	{
-		OnInventoryUpdated.Broadcast();
-	}
-
-
 }
 
 void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes, const TArray<FOwnedFamiliarData>& InFamiliars, const TArray<FOwnedItemData>& InItems)
@@ -184,47 +128,27 @@ void UInventorySystem::AddCharacter(FName CharacterID)
 {
 	UParadiseGameInstance* GI = GetParadiseGI();
 	if (!GI) return;
-	if (CharacterID.IsNone()) return;
 
-	bool bExist = GI->IsValidPlayerID(CharacterID);
-	if (!bExist)
+	//이미 보유 중인 캐릭터인지 먼저 확인
+	if (HasCharacter(CharacterID))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AddCharacter] 실패: ID(%s)가 캐릭터 Assets 혹은 Stats 테이블에 없습니다."), *CharacterID.ToString());
+		// 중복 획득 처리는 UGrowthSubsystem에서 처리
+		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
+		{
+			GrowthSys->HandleDuplicateCharacter(CharacterID);
+		}
 		return;
 	}
 
-	for (int i = 0; i < OwnedCharacters.Num(); i++)
-	{
-		if (OwnedCharacters[i].CharacterID == CharacterID)
-		{
-			//중복 캐릭터 획득시 //돌파 재화추가
-			if (OwnedCharacters[i].AwakeningPieces < 6)
-			{
-				OwnedCharacters[i].AwakeningPieces++;
-
-				UE_LOG(LogTemp, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 6)"), *CharacterID.ToString(), OwnedCharacters[i].AwakeningPieces);
-
-				// UI 갱신
-				if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
-			}
-			else
-			{
-				// 🌟 이미 최대 돌파(6돌) 재화를 다 모았는데 또 뽑았을 때의 처리
-				UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 이미 최대 돌파 조각을 보유 중입니다!"), *CharacterID.ToString());
-
-				// [TODO/기획] 마일리지나 범용 재화로 환급해주는 로직을 넣으면 좋습니다.
-				// 예시: EconomySys->AddCurrency(ECurrencyType::Mileage, 50);
-			}
-
-			return;
-		}
-	}
+	//최초 획득시 
+	if (!GI->IsValidPlayerID(CharacterID)) return;
 
 	FOwnedCharacterData NewCharacter;
 	NewCharacter.CharacterUID = FGuid::NewGuid();
 	NewCharacter.CharacterID = CharacterID;
 	NewCharacter.Level = 1;
-	NewCharacter.AwakeningLevel = 1;
+	NewCharacter.AwakeningLevel = 0; // 초기 각성 레벨
+	NewCharacter.AwakeningPieces = 0;
 
 	OwnedCharacters.Add(NewCharacter);
 
@@ -260,6 +184,19 @@ void UInventorySystem::AddFamiliar(FName FamiliarID)
 		*FamiliarID.ToString(), *NewFamiliar.FamiliarUID.ToString());
 
 	if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
+}
+
+void UInventorySystem::AddAwakeningPiece(FName CharacterID, int32 Count)
+{
+	for (FOwnedCharacterData& CharData : OwnedCharacters)
+	{
+		if (CharData.CharacterID == CharacterID)
+		{
+			CharData.AwakeningPieces += Count;
+			if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
+			return;
+		}
+	}
 }
 
 bool UInventorySystem::RemoveObjectByGUID(FGuid TargetGUID, int32 Count)
