@@ -4,7 +4,6 @@
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Lobby/LobbySetupActor.h"
 #include "Framework/System/InventorySystem.h"
-#include "Framework/System/SquadSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -107,86 +106,6 @@ void ALobbyPlayerController::CheatAddItem(FName ItemID, int32 Count)
 		{
 			InvSys->AddItem(ItemID, Count, 0); // 0강 상태로 지급
 			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 아이템 획득: %s (%d개)"), *ItemID.ToString(), Count);
-		}
-	}
-}
-
-void ALobbyPlayerController::CheatAddExp(FName CharacterID, int32 ExpAmount)
-{
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (UInventorySystem* InvSys = GI->GetMainInventory())
-		{
-			InvSys->AddCharacterExp(CharacterID, ExpAmount);
-			// 로그는 시스템 내부에서 출력되므로 생략
-		}
-	}
-}
-
-void ALobbyPlayerController::CheatSetPlayerSlot(int32 SlotIndex, FName CharacterID)
-{
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>())
-		{
-			// UI 대신 직접 서브시스템에 데이터 꽂아넣기
-			SquadSys->SetPlayerToSlot(SlotIndex, CharacterID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *CharacterID.ToString());
-		}
-	}
-}
-
-void ALobbyPlayerController::CheatSetFamiliarSlot(int32 SlotIndex, FName FamiliarID)
-{
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>())
-		{
-			SquadSys->SetFamiliarToSlot(SlotIndex, FamiliarID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *FamiliarID.ToString());
-		}
-	}
-}
-
-void ALobbyPlayerController::CheatEquipItem(FName CharacterID, FName ItemID)
-{
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (UInventorySystem* InvSys = GI->GetMainInventory())
-		{
-			FGuid TargetCharUID;
-			FGuid TargetItemUID;
-
-			// 1. 내 인벤토리에서 해당 ID를 가진 캐릭터의 실제 GUID 찾기
-			for (const auto& Char : InvSys->GetOwnedCharacters())
-			{
-				if (Char.CharacterID == CharacterID)
-				{
-					TargetCharUID = Char.CharacterUID;
-					break;
-				}
-			}
-
-			// 2. 내 인벤토리에서 해당 ID를 가진 아이템의 실제 GUID 찾기
-			for (const auto& Item : InvSys->GetOwnedItems())
-			{
-				if (Item.ItemID == ItemID)
-				{
-					TargetItemUID = Item.ItemUID;
-					break;
-				}
-			}
-
-			// 3. 둘 다 찾았다면 장착 시스템 호출!
-			if (TargetCharUID.IsValid() && TargetItemUID.IsValid())
-			{
-				InvSys->EquipItemToCharacter(TargetCharUID, TargetItemUID);
-				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 장착 성공: [%s]가 [%s] 장착!"), *CharacterID.ToString(), *ItemID.ToString());
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장착 실패: 인벤토리에서 %s 캐릭터나 %s 아이템을 찾지 못했습니다."), *CharacterID.ToString(), *ItemID.ToString());
-			}
 		}
 	}
 }
