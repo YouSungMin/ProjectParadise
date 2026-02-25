@@ -6,6 +6,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Assets/FXDataAsset.h"
 #include "AbilitySystemComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "Data/Enums/GameEnums.h"
@@ -54,8 +55,8 @@ void APlayerData::InitPlayerAssets(FCharacterAssets* Assets)
 	{
 		this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 		this->CachedAnimBP = Assets->AnimBlueprint;
-		this->CachedUnitFXData = Assets->UnitFXData;
-		this->CachedHitReactionTag = Assets->HitReactionTag;
+		this->CachedReactionFX = Assets->ReactionFX;
+		this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
 		if (AbilitySystemComponent)
 		{
@@ -218,6 +219,20 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
+
+	// ---------------------------------------------------------
+	// 무기 FX 데이터 캐싱 (새로 추가!)
+	// ---------------------------------------------------------
+	if (WeaponData)
+	{
+		CachedActionFX = WeaponData->ActionFX;
+		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
+	}
+	else
+	{
+		// 무기를 해제했을 경우 비워줌
+		CachedActionFX = FActionFXSettings();
+	}
 }
 
 
@@ -280,4 +295,43 @@ void APlayerData::OnRespawnFinished()
 {
 	bIsDead = false;
 	UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
+}
+
+FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
+{
+	UFXDataAsset* TargetAsset = nullptr;
+	FGameplayTag TargetTag;
+
+	// 요청 타입(Enum)에 따라 알맞은 에셋과 태그를 매핑 (라우팅)
+	switch (EventType)
+	{
+	case EFXEventType::Hit:
+		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
+		TargetTag = CachedReactionFX.HitTag;
+		break;
+	case EFXEventType::Death:
+		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
+		TargetTag = CachedReactionFX.DeathTag;
+		break;
+	case EFXEventType::BasicAttack:
+		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
+		TargetTag = CachedActionFX.BasicAttackTag;
+		break;
+	case EFXEventType::Skill:
+		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
+		TargetTag = CachedActionFX.SkillTag;
+		break;
+	case EFXEventType::Ultimate:
+		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
+		TargetTag = CachedUltimateFXTag;
+		break;
+	}
+
+	// 에셋이 있고, 태그가 유효하다면 직접 검색해서 보따리(Payload) 반환
+	if (TargetAsset && TargetTag.IsValid())
+	{
+		return TargetAsset->FindEffect(TargetTag);
+	}
+
+	return nullptr;
 }
