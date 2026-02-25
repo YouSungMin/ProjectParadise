@@ -40,7 +40,7 @@ public:
 	 * @brief 어트리뷰트셋 (UBaseAttributeSet) Getter함수
 	 * @return 어트리뷰트셋 반환
 	 */
-	UBaseAttributeSet* GetAttributeSet() const { return CombatAttributeSet2; }
+	UBaseAttributeSet* GetAttributeSet() const { return CombatAttributeSet; }
 
 	/*
 	 * @brief 장비컴포넌트 (UEquipmentComponent) Getter함수
@@ -159,7 +159,7 @@ protected:
 	 * @details UBaseAttributeSet 전체 스탯 관리 어트리뷰트셋
 	 */
 	UPROPERTY()
-	TObjectPtr<UBaseAttributeSet> CombatAttributeSet2 = nullptr;
+	TObjectPtr<UBaseAttributeSet> CombatAttributeSet = nullptr;
 
 
 	// =========================================================

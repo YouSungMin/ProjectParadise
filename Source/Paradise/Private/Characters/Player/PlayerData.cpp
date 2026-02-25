@@ -24,7 +24,7 @@ APlayerData::APlayerData()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	
-    CombatAttributeSet2 = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
+    CombatAttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
 
 
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
@@ -32,7 +32,7 @@ APlayerData::APlayerData()
 
 void APlayerData::InitCombatAttributes()
 {
-	if (!CombatAttributeSet2) return;
+	if (!CombatAttributeSet) return;
 
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
@@ -146,20 +146,20 @@ void APlayerData::InitCombatAttributes()
 	float FinalDefense = CharDefense + EquipDefense;
 	float FinalCritRate = CharCritRate + EquipCritRate;
 
-	CombatAttributeSet2->InitMaxHealth(FinalMaxHP);
-	CombatAttributeSet2->InitHealth(FinalMaxHP);
-	CombatAttributeSet2->InitMaxMana(FinalMaxMP);
-	CombatAttributeSet2->InitMana(FinalMaxMP);
-	CombatAttributeSet2->InitAttackPower(FinalAttack);
-	CombatAttributeSet2->InitDefense(FinalDefense);
-	CombatAttributeSet2->InitCritRate(FinalCritRate);
-	CombatAttributeSet2->InitMoveSpeed(CharMoveSpeed);
+	CombatAttributeSet->InitMaxHealth(FinalMaxHP);
+	CombatAttributeSet->InitHealth(FinalMaxHP);
+	CombatAttributeSet->InitMaxMana(FinalMaxMP);
+	CombatAttributeSet->InitMana(FinalMaxMP);
+	CombatAttributeSet->InitAttackPower(FinalAttack);
+	CombatAttributeSet->InitDefense(FinalDefense);
+	CombatAttributeSet->InitCritRate(FinalCritRate);
+	CombatAttributeSet->InitMoveSpeed(CharMoveSpeed);
 
-	CombatAttributeSet2->InitCritDamage(EquipCritDamage); // 기본 크뎀이 있다면 합산 필요
-	CombatAttributeSet2->InitAttackSpeed(EquipAttackSpeed);
+	CombatAttributeSet->InitCritDamage(EquipCritDamage); // 기본 크뎀이 있다면 합산 필요
+	CombatAttributeSet->InitAttackSpeed(EquipAttackSpeed);
 	if (FinalAttackRange > 0.0f)
 	{
-		CombatAttributeSet2->InitAttackRange(FinalAttackRange);
+		CombatAttributeSet->InitAttackRange(FinalAttackRange);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
@@ -176,8 +176,8 @@ void APlayerData::InitPlayerAssets()
 
 	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
-	this->CachedUnitFXData = Assets->UnitFXData;
-	this->CachedHitReactionTag = Assets->HitReactionTag;
+	this->CachedReactionFX = Assets->ReactionFX;
+	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
 
 	//ASC 세팅
