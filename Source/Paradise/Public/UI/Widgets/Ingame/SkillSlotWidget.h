@@ -7,7 +7,7 @@
 #include "SkillSlotWidget.generated.h"
 
 #pragma region 전방 선언
-class UCommonButtonBase;
+class UParadiseCommonButton;
 class UImage;
 class UProgressBar;
 class UTextBlock;
@@ -58,7 +58,7 @@ public:
 	 * @return 버튼 위젯의 포인터를 반환합니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	UCommonButtonBase* GetSlotButton() const { return Btn_SkillAction; }
+	UParadiseCommonButton* GetSlotButton() const { return Btn_SkillAction; }
 #pragma endregion Getter
 
 private:
@@ -91,7 +91,7 @@ private:
 #pragma region 위젯 바인딩
 	/** @brief 스킬 클릭을 담당하는 Common UI 버튼입니다. */
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> Btn_SkillAction = nullptr;
+	TObjectPtr<UParadiseCommonButton> Btn_SkillAction = nullptr;
 
 	/** @brief 스킬 아이콘을 표시하는 이미지입니다. */
 	UPROPERTY(meta = (BindWidget))

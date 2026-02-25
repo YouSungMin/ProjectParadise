@@ -2,12 +2,16 @@
 
 
 #include "UI/Panel/Ingame/ActionControlPanel.h"
-
-#include "Characters/Base/PlayerBase.h"
-#include "CommonButtonBase.h"
+#include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "UI/Widgets/InGame/SkillSlotWidget.h"
+
 #include "Framework/InGame/InGameController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/SquadSubsystem.h"
+
+#include "Characters/Base/PlayerBase.h"
+
+#include "Data/Structs/UnitStructs.h"
 
 void UActionControlPanel::NativeConstruct()
 {
@@ -61,6 +65,9 @@ void UActionControlPanel::NativeConstruct()
 		SkillSlot_Ultimate->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
 		SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
 	}
+
+	// 5. 로비 데이터 연동 초기화
+	InitTagButtons();
 }
 
 void UActionControlPanel::NativeDestruct()
@@ -113,6 +120,41 @@ void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateAc
 		 }
 		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 궁극기 ID 연결 완료: %s"), *UltimateActionID.ToString());
 	}
+}
+
+void UActionControlPanel::InitTagButtons()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	USquadSubsystem* SquadSys = GI ? GI->GetSubsystem<USquadSubsystem>() : nullptr;
+	if (!SquadSys || !GI) return;
+
+	// 서브시스템에서 편성된 캐릭터 ID 목록 획득
+	const TArray<FName>& PlayerSquad = SquadSys->GetPlayerSquad();
+
+	for (int32 i = 0; i < TagButtons.Num(); ++i)
+	{
+		if (!TagButtons.IsValidIndex(i) || !TagButtons[i]) continue;
+
+		// 편성이 존재하는 슬롯인 경우
+		if (PlayerSquad.IsValidIndex(i) && !PlayerSquad[i].IsNone())
+		{
+			FName CharID = PlayerSquad[i];
+			if (FCharacterAssets* Asset = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharID))
+			{
+				// UParadiseCommonButton의 캡슐화된 인터페이스를 통해 아이콘 세팅
+				TagButtons[i]->SetButtonIcon(Asset->FaceIcon.LoadSynchronous());
+				TagButtons[i]->SetVisibility(ESlateVisibility::Visible);
+			}
+		}
+		else
+		{
+			// 편성되지 않은 빈 슬롯은 UI에서 숨김 처리
+			TagButtons[i]->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
+	// 게임 시작 시 무조건 0번(메인) 캐릭터가 조작 중이므로, A버튼을 비활성화시킴
+	UpdateTagButtons(0);
 }
 
 void UActionControlPanel::UpdateSkillCooldown(int32 SkillIndex, float CurrentTime, float MaxTime)

@@ -34,7 +34,22 @@ void UParadiseEnhanceDetailWidget::RefreshDetail(const FSquadItemUIData& ItemDat
 	// 1. 공통 정보 세팅
 	if (Img_ItemIcon && ItemData.Icon) Img_ItemIcon->SetBrushFromTexture(ItemData.Icon);
 	if (Text_ItemName) Text_ItemName->SetText(ItemData.Name);
-	if (Text_Cost) Text_Cost->SetText(FText::FromString(FString::Printf(TEXT("%d G"), Cost)));
+
+	// 탭 타입에 따라 재화의 '단위'를 다르게 출력합니다!
+	if (Text_Cost)
+	{
+		if (TabType == SquadTabs::Character)
+		{
+			// 캐릭터: 돌파 재료 (조각/영혼석 개수)
+			Text_Cost->SetText(FText::FromString(FString::Printf(TEXT("%d 조각"), Cost)));
+		}
+		else
+		{
+			// 무기/방어구: 강화 비용 (골드)
+			Text_Cost->SetText(FText::FromString(FString::Printf(TEXT("%d 골드"), Cost)));
+		}
+	}
+
 	if (Text_CurrentStat) Text_CurrentStat->SetText(FText::FromString(CurrentStat));
 	if (Text_NextStat) Text_NextStat->SetText(FText::FromString(NextStat));
 

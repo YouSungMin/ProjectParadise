@@ -41,7 +41,7 @@ void UParadiseCommonButton::SetButtonIcon(UTexture2D* InIcon)
 	{
 		if (ButtonIcon)
 		{
-			Img_Icon->SetBrushFromTexture(ButtonIcon);
+			Img_Icon->SetBrushFromTexture(ButtonIcon, false);
 			// 클릭 판정은 부모인 버튼 베이스가 처리해야 하므로, 이미지는 마우스 충돌을 무시하도록 설정
 			Img_Icon->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}

@@ -77,6 +77,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Desc = nullptr;
 
+	/** @brief 대상 이미지 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Icon = nullptr;
+
 	/** @brief 캐릭터 교체 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_SwapCharacter = nullptr;
@@ -116,4 +120,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDetailAction OnConfirmClicked;
 #pragma endregion 이벤트
+
+private:
+	/** @brief 현재 보여주는 정보가 편성(Formation) 슬롯의 정보인지 여부 */
+	bool bIsFormation = false;
 };

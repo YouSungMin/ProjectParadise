@@ -5,10 +5,7 @@
 #include "Characters/Base/CharacterBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Framework/Core/ParadiseGameInstance.h"
-#include "Framework/System/InventorySystem.h"
 #include "Data/Structs/UnitStructs.h"
-#include "Data/Structs/GrowthStruct.h"
-#include "Data/Assets/FXDataAsset.h"
 #include "AbilitySystemComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "Data/Enums/GameEnums.h"
@@ -30,7 +27,7 @@ APlayerData::APlayerData()
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
 }
 
-void APlayerData::InitCombatAttributes()
+void APlayerData::InitCombatAttributes(FCharacterStats* Stats)
 {
 	if (!CombatAttributeSet) return;
 
@@ -165,7 +162,7 @@ void APlayerData::InitCombatAttributes()
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
 }
 
-void APlayerData::InitPlayerAssets()
+void APlayerData::InitPlayerAssets(FCharacterAssets* Assets)
 {
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
@@ -183,43 +180,32 @@ void APlayerData::InitPlayerAssets()
 	//ASC 세팅
 	if (AbilitySystemComponent)
 	{
-		// 기존 궁극기가 있다면 제거 (재초기화/리스폰 대비)
-		if (UltimateSkillHandle.IsValid())
+		this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
+		this->CachedAnimBP = Assets->AnimBlueprint;
+		this->CachedUnitFXData = Assets->UnitFXData;
+		this->CachedHitReactionTag = Assets->HitReactionTag;
+
+		if (AbilitySystemComponent)
 		{
-			AbilitySystemComponent->ClearAbility(UltimateSkillHandle);
-			UltimateSkillHandle = FGameplayAbilitySpecHandle(); // 초기화
-		}
-
-		// 새 궁극기 부여
-		if (Assets->UltimateAbility)
-		{
-			// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
-			FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
-
-			UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
-
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
-		}
-	}
-
-	//장비
-	if (EquipmentComponent)
-	{
-		FName WeaponID = EquipmentComponent->GetEquippedItemID(EEquipmentSlot::Weapon);
-
-		if (!WeaponID.IsNone())
-		{
-			// 무기 테이블 조회
-			FWeaponAssets* WeaponAssets = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, WeaponID);
-			if (WeaponAssets)
+			// 기존 궁극기가 있다면 제거 (재초기화/리스폰 대비)
+			if (UltimateSkillHandle.IsValid())
 			{
-				// 스킬 및 애니메이션 부여
-				this->InitializeWeaponAbilities(WeaponAssets);
-				UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기(%s) 어빌리티가 성공적으로 부여되었습니다."), *WeaponID.ToString());
+				AbilitySystemComponent->ClearAbility(UltimateSkillHandle);
+				UltimateSkillHandle = FGameplayAbilitySpecHandle(); // 초기화
+			}
+
+			// 새 궁극기 부여
+			if (Assets->UltimateAbility)
+			{
+				// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
+				FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
+
+				UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
+
+				UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
 			}
 		}
 	}
-	
 
 }
 
@@ -360,20 +346,6 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
-
-	// ---------------------------------------------------------
-	// 무기 FX 데이터 캐싱 (새로 추가!)
-	// ---------------------------------------------------------
-	if (WeaponData)
-	{
-		CachedActionFX = WeaponData->ActionFX;
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
-	}
-	else
-	{
-		// 무기를 해제했을 경우 비워줌
-		CachedActionFX = FActionFXSettings();
-	}
 }
 
 
@@ -390,44 +362,27 @@ void APlayerData::InitPlayerData(FName HeroID)
 	this->CharacterID = HeroID;
 	UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
 
-	UInventorySystem* InvSys = GI->GetMainInventory();
-	if (InvSys)
+	//스탯 데이터 조회 및 적용
+	FCharacterStats* Stats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, HeroID);
+	if (Stats)
 	{
-		const FOwnedCharacterData* MyData;
-		bool bFound = false;
-		MyData = InvSys->GetCharacterDataByID(HeroID);// 함수명은 실제 구현에 맞게 변경하세요.
+		InitCombatAttributes(Stats);
 
-		if (MyData) {
-			bFound = true;
-		}
-
-		if (bFound)
-		{
-			// 인벤토리의 진짜 성장 데이터를 내 변수에 복사
-			this->CurrentLevel = MyData->Level;
-			this->CurrentAwakenLevel = MyData->AwakeningLevel;
-
-			// 인벤토리에 저장된 진짜 장착 장비 맵을 장비 컴포넌트에 넘겨줌!
-			if (EquipmentComponent)
-			{
-				EquipmentComponent->InitializeEquipment(MyData->EquipmentMap);
-			}
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerData] 인벤토리에서 %s 데이터를 못 찾음. 1레벨 기본값 적용."), *HeroID.ToString());
-		}
+		this->FactionTag = Stats->FactionTag;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ 스탯 데이터를 찾을 수 없습니다: %s"), *HeroID.ToString());
 	}
 
-	//전투 스탯 초기화 (내부에서 스스로 테이블 조회)
-	InitCombatAttributes();
+	//에셋 데이터 조회 및 적용
+	FCharacterAssets* Assets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, HeroID);
+	if (Assets)
+	{
+		InitPlayerAssets(Assets);
 
-	//시각적 에셋 초기화 (내부에서 스스로 테이블 조회)
-	InitPlayerAssets();
-
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
-	
+		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 완료"));
+	}
 }
 
 void APlayerData::OnDeath()
@@ -453,43 +408,4 @@ void APlayerData::OnRespawnFinished()
 {
 	bIsDead = false;
 	UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
-}
-
-FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
-{
-	UFXDataAsset* TargetAsset = nullptr;
-	FGameplayTag TargetTag;
-
-	// 요청 타입(Enum)에 따라 알맞은 에셋과 태그를 매핑 (라우팅)
-	switch (EventType)
-	{
-	case EFXEventType::Hit:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.HitTag;
-		break;
-	case EFXEventType::Death:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.DeathTag;
-		break;
-	case EFXEventType::BasicAttack:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.BasicAttackTag;
-		break;
-	case EFXEventType::Skill:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.SkillTag;
-		break;
-	case EFXEventType::Ultimate:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedUltimateFXTag;
-		break;
-	}
-
-	// 에셋이 있고, 태그가 유효하다면 직접 검색해서 보따리(Payload) 반환
-	if (TargetAsset && TargetTag.IsValid())
-	{
-		return TargetAsset->FindEffect(TargetTag);
-	}
-
-	return nullptr;
 }

@@ -51,8 +51,18 @@ private:
 	UFUNCTION()
 	void OnClickEnterBattle();
 
+	/** @brief 서브시스템의 슬롯 변경 신호를 받아 UI를 즉시 갱신하는 핸들러 */
+	UFUNCTION()
+	void OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID);
+
+	UFUNCTION()
+	void OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID);
+
 	/** @brief 데이터 테이블에서 적 정보를 읽어와 WrapBox에 뿌려줌 */
 	void SetupEnemyList(FName InStageID);
+
+	/** @brief 현재 편성된 스쿼드 데이터를 서브시스템에서 가져와 프리뷰 UI에 세팅합니다. */
+	void SetupSquadPreview();
 #pragma endregion 내부 로직
 
 #pragma region UI 컴포넌트

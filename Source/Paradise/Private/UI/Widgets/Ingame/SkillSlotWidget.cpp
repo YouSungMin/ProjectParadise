@@ -3,7 +3,7 @@
 
 #include "UI/Widgets/Ingame/SkillSlotWidget.h"
 
-#include "CommonButtonBase.h"
+#include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"

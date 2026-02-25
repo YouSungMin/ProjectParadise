@@ -8,7 +8,7 @@
 #include "ActionControlPanel.generated.h"
 
 #pragma region 전방 선언
-class UCommonButtonBase;
+class UParadiseCommonButton;
 class USkillSlotWidget;
 class APlayerBase;
 class AInGameController;
@@ -35,6 +35,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void InitActionPanel(FName WeaponActionID, FName UltimateActionID);
+
+	/**
+	 * @brief 로비 편성 데이터(SquadSubsystem)를 읽어와 태그 버튼의 얼굴 이미지를 세팅합니다.
+	 * @details 버튼 초기화 시 호출되며, 편성되지 않은 슬롯은 UI에서 숨깁니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void InitTagButtons();
 
 	/**
 	 * @brief 특정 스킬 슬롯의 쿨타임 데이터를 갱신합니다. (Optimization: 가상함수 방지)
@@ -86,7 +93,7 @@ private:
 #pragma region 위젯 바인딩
 	/** @brief 기본 공격 버튼 (Common UI) */
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> AttackBtn = nullptr;
+	TObjectPtr<UParadiseCommonButton> AttackBtn = nullptr;
 
 	/** @brief 액티브 스킬 슬롯 */
 	UPROPERTY(meta = (BindWidget))
@@ -98,19 +105,19 @@ private:
 
 	/** @brief 캐릭터 교체 버튼 리스트 (배열화하여 최적화) */
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> TagBtn_A = nullptr;
+	TObjectPtr<UParadiseCommonButton> TagBtn_A = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> TagBtn_B = nullptr;
+	TObjectPtr<UParadiseCommonButton> TagBtn_B = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> TagBtn_C = nullptr;
+	TObjectPtr<UParadiseCommonButton> TagBtn_C = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 내부 데이터
 	/** @brief 버튼 일괄 처리를 위한 내부 캐싱 배열 */
 	UPROPERTY()
-	TArray<TObjectPtr<UCommonButtonBase>> TagButtons;
+	TArray<TObjectPtr<UParadiseCommonButton>> TagButtons;
 
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
 	TWeakObjectPtr<APlayerBase> CachedPlayer;

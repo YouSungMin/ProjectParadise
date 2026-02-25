@@ -5,7 +5,6 @@
 #include "Framework/Lobby/LobbySetupActor.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/System/SquadSubsystem.h"
-#include "Framework/System/GrowthSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -116,9 +115,10 @@ void ALobbyPlayerController::CheatAddExp(FName CharacterID, int32 ExpAmount)
 {
 	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 	{
-		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
 		{
-			GrowthSys->AddCharacterExp(CharacterID, ExpAmount);
+			InvSys->AddCharacterExp(CharacterID, ExpAmount);
+			// 로그는 시스템 내부에서 출력되므로 생략
 		}
 	}
 }

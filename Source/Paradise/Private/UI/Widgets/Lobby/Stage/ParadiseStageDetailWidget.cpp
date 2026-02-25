@@ -13,9 +13,11 @@
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Framework/System/SquadSubsystem.h"
 
 #include "Data/Structs/StageStructs.h" 
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/ItemStructs.h"
 
 void UParadiseStageDetailWidget::NativeConstruct()
 {
@@ -27,10 +29,24 @@ void UParadiseStageDetailWidget::NativeConstruct()
 	if (Btn_Close) Btn_Close->OnClicked.AddDynamic(this, &UParadiseStageDetailWidget::OnClickClose);
 	if (Btn_Formation) Btn_Formation->OnClicked.AddDynamic(this, &UParadiseStageDetailWidget::OnClickFormation);
 	if (Btn_EnterBattle) Btn_EnterBattle->OnClicked.AddDynamic(this, &UParadiseStageDetailWidget::OnClickEnterBattle);
+
+	// 서브시스템의 변화를 감시하기 시작합니다!
+	if (auto* SquadSys = GetGameInstance()->GetSubsystem<USquadSubsystem>())
+	{
+		SquadSys->OnPlayerSlotChanged.AddDynamic(this, &UParadiseStageDetailWidget::OnPlayerSlotUpdated);
+		SquadSys->OnFamiliarSlotChanged.AddDynamic(this, &UParadiseStageDetailWidget::OnFamiliarSlotUpdated);
+	}
 }
 
 void UParadiseStageDetailWidget::NativeDestruct()
 {
+	// 메모리 누수 방지를 위해 해제는 필수!
+	if (auto* SquadSys = GetGameInstance()->GetSubsystem<USquadSubsystem>())
+	{
+		SquadSys->OnPlayerSlotChanged.RemoveAll(this);
+		SquadSys->OnFamiliarSlotChanged.RemoveAll(this);
+	}
+
 	if (Btn_Close) Btn_Close->OnClicked.RemoveAll(this);
 	if (Btn_Formation) Btn_Formation->OnClicked.RemoveAll(this);
 	if (Btn_EnterBattle) Btn_EnterBattle->OnClicked.RemoveAll(this);
@@ -54,6 +70,7 @@ void UParadiseStageDetailWidget::InitDetailPopup(FName InStageID)
 		UI_SquadPreview->SetPreviewMode(true);
 
 		UI_SquadPreview->SetVisibility(ESlateVisibility::HitTestInvisible);
+		SetupSquadPreview();
 	}
 
 	// 3. 적 리스트 표기 (데이터 테이블 연동)
@@ -107,6 +124,54 @@ void UParadiseStageDetailWidget::SetupEnemyList(FName InStageID)
 	}
 }
 
+void UParadiseStageDetailWidget::SetupSquadPreview()
+{
+	if (!UI_SquadPreview) return;
+
+	USquadSubsystem* SquadSys = GetGameInstance()->GetSubsystem<USquadSubsystem>();
+	if (!SquadSys || !CachedGI.IsValid()) return;
+
+	// 1. 플레이어(캐릭터) 스쿼드 세팅 (슬롯 0~2)
+	TArray<FName> PlayerIDs = SquadSys->GetPlayerSquad();
+	for (int32 i = 0; i < PlayerIDs.Num(); ++i)
+	{
+		FSquadItemUIData UIData;
+		FName CharID = PlayerIDs[i];
+
+		if (!CharID.IsNone())
+		{
+			UIData.ID = CharID;
+			// 캐릭터는 스쿼드 프리뷰이므로 FaceIcon(false)을 사용!
+			if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, CharID))
+			{
+				UIData.Icon = Asset->FaceIcon.LoadSynchronous();
+			}
+		}
+		// 뷰(FormationWidget) 업데이트
+		UI_SquadPreview->UpdateSlot(i, UIData);
+	}
+
+	// 2. 퍼밀리어(유닛) 스쿼드 세팅 (슬롯 3~7)
+	TArray<FName> FamiliarIDs = SquadSys->GetFamiliarSquad();
+	for (int32 i = 0; i < FamiliarIDs.Num(); ++i)
+	{
+		FSquadItemUIData UIData;
+		FName FamiliarID = FamiliarIDs[i];
+
+		if (!FamiliarID.IsNone())
+		{
+			UIData.ID = FamiliarID;
+			// 유닛도 FaceIcon 사용!
+			if (FFamiliarAssets* Asset = CachedGI->GetDataTableRow<FFamiliarAssets>(CachedGI->FamiliarAssetsDataTable, FamiliarID))
+			{
+				UIData.Icon = Asset->FaceIcon.LoadSynchronous();
+			}
+		}
+		// 유닛은 UI 인덱스가 3부터 시작하므로 i + 3
+		UI_SquadPreview->UpdateSlot(i + 3, UIData);
+	}
+}
+
 void UParadiseStageDetailWidget::OnClickClose()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
@@ -154,4 +219,38 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 	}
 
 	UE_LOG(LogTemp, Error, TEXT("스테이지 진입 실패. 데이터가 없거나 로딩 서브시스템 누락됨."));
+}
+
+void UParadiseStageDetailWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID)
+{
+	if (!UI_SquadPreview || !CachedGI.IsValid()) return;
+
+	FSquadItemUIData UIData;
+	if (!NewPlayerID.IsNone())
+	{
+		UIData.ID = NewPlayerID;
+		if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, NewPlayerID))
+		{
+			// 여기도 FaceIcon 정책 유지 (false)
+			UIData.Icon = Asset->FaceIcon.LoadSynchronous();
+		}
+	}
+	UI_SquadPreview->UpdateSlot(SlotIndex, UIData);
+}
+
+void UParadiseStageDetailWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID)
+{
+	if (!UI_SquadPreview || !CachedGI.IsValid()) return;
+
+	const int32 FormationIndex = SlotIndex + 3; // 유닛은 인덱스 3번부터
+	FSquadItemUIData UIData;
+	if (!NewFamiliarID.IsNone())
+	{
+		UIData.ID = NewFamiliarID;
+		if (FFamiliarAssets* Asset = CachedGI->GetDataTableRow<FFamiliarAssets>(CachedGI->FamiliarAssetsDataTable, NewFamiliarID))
+		{
+			UIData.Icon = Asset->FaceIcon.LoadSynchronous();
+		}
+	}
+	UI_SquadPreview->UpdateSlot(FormationIndex, UIData);
 }

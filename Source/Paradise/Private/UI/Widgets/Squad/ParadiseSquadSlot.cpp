@@ -99,7 +99,7 @@ void UParadiseSquadSlot::UpdateSlot(const FSquadItemUIData& InData)
 			}
 			else
 			{
-				Text_Level->SetText(FText::AsNumber(InData.Level));
+				Text_Level->SetText(FText::Format(FText::FromString(TEXT("Lv.{0}")), InData.Level));
 				Text_Level->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			}
 		}
