@@ -27,7 +27,7 @@ protected:
 	/*
 	 * @brief 현재 이동 속도 (BlendSpace에서 사용)
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Locomotion")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
 	float CurrentSpeed;
 
 	/*
