@@ -159,6 +159,21 @@ public:
 	const FOwnedCharacterData* GetCharacterDataByID(FName CharacterID) const;
 
 	/**
+	 * @brief 캐릭터 정보 수정을 위한 Mutable 데이터 반환 (성장 시스템 전용)
+	 */
+	FOwnedCharacterData* GetMutableCharacterDataByID(FName CharacterID)
+	{
+		for (FOwnedCharacterData& CharData : OwnedCharacters)
+		{
+			if (CharData.CharacterID == CharacterID)
+			{
+				return &CharData;
+			}
+		}
+		return nullptr;
+	}
+
+	/**
 	 * @brief 아이템 ID를 기반으로 장착되어야 할 슬롯을 찾습니다.
 	 * @details 무기/방어구 테이블을 조회하고 태그를 비교합니다.
 	 */

@@ -3,9 +3,10 @@
 
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Lobby/LobbySetupActor.h"
-#include "Framework/System/InventorySystem.h"
+#include "Framework/System/InventorySystem.h" //0226 김성현 - 시스템 헤더들 치트함수 때문에 추가 이후 삭제예정
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/GrowthSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -186,6 +187,78 @@ void ALobbyPlayerController::CheatEquipItem(FName CharacterID, FName ItemID)
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장착 실패: 인벤토리에서 %s 캐릭터나 %s 아이템을 찾지 못했습니다."), *CharacterID.ToString(), *ItemID.ToString());
+			}
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddGold(int32 Amount)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+			EconSys->AddCurrency(ECurrencyType::Gold, Amount);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 골드 %d 획득! (현재 총 골드: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAwakenCharacter(FName CharacterID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
+		{
+			bool bSuccess = GrowthSys->AwakenCharacter(CharacterID);
+			if (bSuccess)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 각성 성공: %s"), *CharacterID.ToString());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 캐릭터 각성 실패: %s (조각/골드 부족 또는 최대 레벨)"), *CharacterID.ToString());
+			}
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		UInventorySystem* InvSys = GI->GetMainInventory();
+		UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>();
+
+		if (InvSys && GrowthSys)
+		{
+			FGuid TargetItemUID;
+
+			// 내 인벤토리에서 해당 ID를 가진 아이템의 실제 GUID 찾기
+			for (const auto& Item : InvSys->GetOwnedItems())
+			{
+				if (Item.ItemID == ItemID)
+				{
+					TargetItemUID = Item.ItemUID;
+					break;
+				}
+			}
+
+			if (TargetItemUID.IsValid())
+			{
+				bool bSuccess = GrowthSys->EnhanceEquipment(TargetItemUID);
+				if (bSuccess)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 강화 성공: %s"), *ItemID.ToString());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장비 강화 실패: %s (골드 부족 또는 최대 레벨)"), *ItemID.ToString());
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 인벤토리에서 %s 아이템을 찾지 못했습니다."), *ItemID.ToString());
 			}
 		}
 	}
