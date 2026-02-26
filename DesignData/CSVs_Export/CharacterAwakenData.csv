@@ -1,4 +1,4 @@
-Name,RequiredSoulstone,RequiredGold,MaxLevelCap,BonusStatMultiplier
+Name,RequiredAwakeningPieces,RequiredGold,MaxLevelCap,BonusStatMultiplier
 1,1,0,35,1.025
 2,1,0,40,1.05
 3,1,0,45,1.085

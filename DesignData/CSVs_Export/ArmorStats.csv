@@ -1,19 +1,19 @@
-Name,DefensePower,MaxHP,MaxMana,DisplayName,Description,Rarity,SetID,LevelUpCostId
-Armor_Displacer,90,450,30,디스플레이서의 갑옷,공간을 일그러뜨려 공격을 빗나가게 만드는 신비한 갑옷입니다.,Epic,None,Cost_Epic
-Armor_Rescue,70,400,0,구조대원의 방호복,극한의 환경에서도 생존할 수 있도록 튼튼하게 설계되었습니다.,Rare,None,Cost_Rare
-Armor_HazmatSuit,65,350,0,위험물 처리복,유독 물질과 물리적 충격으로부터 몸을 보호합니다.,Rare,None,Cost_Rare
-Armor_Raiders,45,250,0,레이더의 가죽 갑옷,거친 황무지를 누비는 자들이 입는 질긴 가죽옷입니다.,Common,None,Cost_Normal
-Armor_BishopsRobe,60,300,150,주교의 로브,성스러운 기운이 서려 있어 정신력을 크게 높여줍니다.,Epic,None,Cost_Epic
-Armor_Webrunner,55,200,50,웹러너의 재킷,사이버 스페이스를 유영하는 해커들이 즐겨 입는 기능성 재킷입니다.,Rare,None,Cost_Rare
-Hat_Bluerose,30,150,40,푸른 장미의 모자,밤의 귀족들이 쓰던 우아한 장식이 달린 모자입니다.,Rare,None,Cost_Rare
-Hat_Angela,45,200,60,안젤라의 리본,천사의 날개깃으로 엮어 만든 성스러운 리본입니다.,Epic,None,Cost_Epic
-Hat_Tiara,50,250,50,왕녀의 티아라,잊혀진 왕국의 후계자가 쓰던 찬란한 티아라입니다.,Epic,None,Cost_Epic
-Hat_FeliceHat,35,180,20,펠리체의 챙 모자,행운을 부른다고 알려진 마법사의 챙 넓은 모자입니다.,Rare,None,Cost_Rare
-Necklace_ButterflyDance,20,150,80,나비춤의 목걸이,은은한 빛무리가 나비처럼 춤추는 환상적인 목걸이입니다.,Epic,None,Cost_Epic
-Necklace_NecklaceOfGuide,15,100,50,인도자의 목걸이,길 잃은 자들을 올바른 곳으로 이끌어주는 나침반 목걸이입니다.,Rare,None,Cost_Rare
-Necklace_NecklaceOfAmplify,15,80,150,증폭의 목걸이,착용자의 마력을 극한으로 끌어올리는 위험한 장신구입니다.,Epic,None,Cost_Epic
-Necklace_PendantOfPassion,25,200,0,정열의 펜던트,가슴속에 뜨거운 투지를 불어넣는 붉은 보석 펜던트입니다.,Rare,None,Cost_Rare
-Ring_RingOfWarrior,25,150,0,전사의 반지,수많은 전장을 헤쳐온 노련한 전사들의 상징입니다.,Rare,None,Cost_Rare
-Ring_RingOfAssassin,15,80,20,암살자의 반지,어둠 속에서 은밀하게 움직이는 자들을 위한 가벼운 반지입니다.,Rare,None,Cost_Rare
-Ring_RingOfHunter,30,120,30,사냥꾼의 반지,먹잇감을 절대 놓치지 않는 예리한 사냥꾼의 반지입니다.,Epic,None,Cost_Epic
-Ring_RingOfCommander,40,250,50,지휘관의 반지,군대를 호령하던 위대한 지휘관의 권위가 담겨 있습니다.,Epic,None,Cost_Epic
+Name,DisplayName,Description,Rarity,SetID,LevelUpCostId,DefensePower,MaxHP,MaxMana
+Armor_Raiders,레이더의 가죽 갑옷,거친 황무지를 누비는 자들이 입는 질긴 가죽옷입니다.,Common,None,Cost_Common,45,250,0
+Armor_Webrunner,웹러너의 재킷,사이버 스페이스를 유영하는 해커들이 즐겨 입는 기능성 재킷입니다.,Rare,None,Cost_Rare,55,200,50
+Armor_HazmatSuit,위험물 처리복,유독 물질과 물리적 충격으로부터 몸을 보호합니다.,Rare,None,Cost_Rare,65,350,0
+Armor_Rescue,구조대원의 방호복,극한의 환경에서도 생존할 수 있도록 튼튼하게 설계되었습니다.,Rare,None,Cost_Rare,70,400,0
+Armor_BishopsRobe,주교의 로브,성스러운 기운이 서려 있어 정신력을 크게 높여줍니다.,Epic,None,Cost_Epic,60,300,150
+Armor_Displacer,디스플레이서의 갑옷,공간을 일그러뜨려 공격을 빗나가게 만드는 신비한 갑옷입니다.,Legendary,None,Cost_Legendary,120,600,50
+Hat_Bluerose,푸른 장미의 모자,밤의 귀족들이 쓰던 우아한 장식이 달린 모자입니다.,Rare,None,Cost_Rare,30,150,40
+Hat_FeliceHat,펠리체의 챙 모자,행운을 부른다고 알려진 마법사의 챙 넓은 모자입니다.,Rare,None,Cost_Rare,35,180,20
+Hat_Angela,안젤라의 리본,천사의 날개깃으로 엮어 만든 성스러운 리본입니다.,Epic,None,Cost_Epic,45,200,60
+Hat_Tiara,왕녀의 티아라,잊혀진 왕국의 후계자가 쓰던 찬란한 티아라입니다.,Legendary,None,Cost_Legendary,70,350,80
+Necklace_NecklaceOfGuide,인도자의 목걸이,길 잃은 자들을 올바른 곳으로 이끌어주는 나침반 목걸이입니다.,Rare,None,Cost_Rare,15,100,50
+Necklace_PendantOfPassion,정열의 펜던트,가슴속에 뜨거운 투지를 불어넣는 붉은 보석 펜던트입니다.,Rare,None,Cost_Rare,25,200,0
+Necklace_NecklaceOfAmplify,증폭의 목걸이,착용자의 마력을 극한으로 끌어올리는 위험한 장신구입니다.,Epic,None,Cost_Epic,15,80,150
+Necklace_ButterflyDance,나비춤의 목걸이,은은한 빛무리가 나비처럼 춤추는 환상적인 목걸이입니다.,Legendary,None,Cost_Legendary,30,250,120
+Ring_RingOfAssassin,암살자의 반지,어둠 속에서 은밀하게 움직이는 자들을 위한 가벼운 반지입니다.,Rare,None,Cost_Rare,15,80,20
+Ring_RingOfWarrior,전사의 반지,수많은 전장을 헤쳐온 노련한 전사들의 상징입니다.,Rare,None,Cost_Rare,25,150,0
+Ring_RingOfHunter,사냥꾼의 반지,먹잇감을 절대 놓치지 않는 예리한 사냥꾼의 반지입니다.,Epic,None,Cost_Epic,30,120,30
+Ring_RingOfCommander,지휘관의 반지,군대를 호령하던 위대한 지휘관의 권위가 담겨 있습니다.,Legendary,None,Cost_Legendary,60,350,80

@@ -38,7 +38,8 @@ public:
 
 /**
  * @struct FEquipmentEnhanceData
- * @brief 장비 강화 1회 시도에 필요한 비용 및 증가하는 스탯 배율을 정의합니다.
+ * @brief 장비 등급별 최대 강화 수치 및 성장 공식을 정의합니다.
+ * @note RowName은 반드시 장비의 등급(예: "Normal", "Rare", "Epic")으로 작성해야 합니다.
  */
 USTRUCT(BlueprintType)
 struct FEquipmentEnhanceData : public FTableRowBase
@@ -46,21 +47,23 @@ struct FEquipmentEnhanceData : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	/** @brief 강화 비용 (골드) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance")
-	int32 RequiredGold = 0;
+	/** @brief 해당 등급 장비의 최대 강화 도달 수치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance|Limit")
+	int32 MaxEnhanceLevel = 10;
 
-	/** @brief 요구 강화석 개수 */
-	//일단 강화석 아이템 같은 건 없지만 0으로 해두고 추후 기능 확장시 구현
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance")
-	int32 RequiredMaterialCount = 0;
+	/** @brief 기본 강화 비용 (0강 -> 1강 갈 때 필요한 골드) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance|Cost")
+	int32 BaseGoldCost = 1000;
 
-	/** * @brief 스탯 증가 배율 (누적)
-	 * @details 무기의 기본 스탯에 곱해질 최종 배율입니다.
-	 * 예: 1강(1.1) -> 기본 능력치의 110%, 2강(1.25) -> 기본 능력치의 125%
+	/** @brief 레벨당 추가 요구 골드 (예: 500이면, 1->2강은 1500G, 2->3강은 2000G) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance|Cost")
+	int32 GoldCostPerLevel = 500;
+
+	/** * @brief 1강 당 증가하는 스탯 배율 (선형 증가)
+	 * @details 예: 0.1f로 설정하면 1강당 기본 스탯의 10%씩 꾸준히 증가합니다. (5강 = +50%)
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhance|Stats")
-	float StatMultiplier = 1.0f;
+	float StatBonusPerLevel = 0.1f;
 };
 
 /**

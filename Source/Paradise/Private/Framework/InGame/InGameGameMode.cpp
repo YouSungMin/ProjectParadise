@@ -378,6 +378,7 @@ void AInGameGameMode::DistributeStageRewards()
 
 		// 다음 스테이지 해금 및 현재 스테이지 별점 기록
 		StageSys->UnlockStage(CurrentStageData.NextStageID);
+		//TODO : 스테이지 별 갯수 판단 로직 추가 필요
 		StageSys->RecordStageClearStar(CurrentStageID, 3); // 임시 3별
 	}
 

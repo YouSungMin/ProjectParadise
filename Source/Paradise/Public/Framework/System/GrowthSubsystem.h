@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Data/Structs/GrowthStruct.h"
 #include "GrowthSubsystem.generated.h"
 
 /**

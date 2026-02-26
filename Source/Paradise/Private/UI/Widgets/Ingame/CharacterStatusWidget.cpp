@@ -2,7 +2,6 @@
 
 
 #include "UI/Widgets/Ingame/CharacterStatusWidget.h"
-
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "AbilitySystemComponent.h"
