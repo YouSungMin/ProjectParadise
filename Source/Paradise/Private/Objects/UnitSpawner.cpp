@@ -5,6 +5,7 @@
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/MyAIController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/StageSubsystem.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "NavigationSystem.h"
@@ -21,39 +22,39 @@ void AUnitSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 1. GameInstance를 통해 테이블 데이터 자동 로드
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-	if (GI && GI->StageWaveDetailDataTable && !TargetStageID.IsNone())
+	if (!GI) return;
+
+	// 1. StageSubsystem에서 현재 선택된 StageID 자동으로 가져오기
+	if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+	{
+		TargetStageID = StageSys->GetSelectedStageID();
+
+		UE_LOG(LogTemp, Log, TEXT("🚀 [Spawner] 선택된 스테이지 '%s'를 서브시스템에서 로드했습니다."), *TargetStageID.ToString());
+	}
+
+	// 2. 로드된 ID를 바탕으로 웨이브 테이블 구성
+	if (GI->StageWaveDetailDataTable && !TargetStageID.IsNone())
 	{
 		WaveConfigs.Empty();
-
 		TArray<FStageWaveDetail*> AllRows;
-		// GI_Paradise에 할당된 테이블에서 모든 행을 가져옴
 		GI->StageWaveDetailDataTable->GetAllRows<FStageWaveDetail>(TEXT(""), AllRows);
 
 		for (FStageWaveDetail* Row : AllRows)
 		{
-			// TargetStageID가 일치하는 웨이브만 필터링
 			if (Row && Row->TargetStageID == TargetStageID)
 			{
 				FWaveConfig NewConfig;
-				NewConfig.UnitRowName = Row->MonsterID;      // MonsterID 매핑
-				NewConfig.SpawnCount = Row->SpawnCount;      // SpawnCount 매핑
-				NewConfig.SpawnInterval = Row->SpawnInterval;// SpawnInterval 매핑
-				NewConfig.NextWaveDelay = Row->PreWaveDelay; // PreWaveDelay를 딜레이로 사용
-
+				NewConfig.UnitRowName = Row->MonsterID;
+				NewConfig.SpawnCount = Row->SpawnCount;
+				NewConfig.SpawnInterval = Row->SpawnInterval;
+				NewConfig.NextWaveDelay = Row->PreWaveDelay;
 				WaveConfigs.Add(NewConfig);
 			}
 		}
-
-		UE_LOG(LogTemp, Log, TEXT("✅ [Spawner] 스테이지 '%s' 데이터 로드 완료 (%d 웨이브)"), *TargetStageID.ToString(), WaveConfigs.Num());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [Spawner] 데이터 로드 실패! GI 또는 Table이 유효하지 않거나 TargetStageID가 없습니다."));
 	}
 
-	// 2. 오브젝트 풀 초기화
+	// 3. 오브젝트 풀링 및 타이머 시작
 	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
 	if (PoolSubsystem && UnitClass)
 	{
@@ -64,10 +65,8 @@ void AUnitSpawner::BeginPlay()
 		}
 	}
 
-	// 3. 첫 웨이브 시작
 	if (WaveConfigs.Num() > 0)
 	{
-		// 첫 소환은 PreWaveDelay만큼 대기 후 시작하도록 타이머 설정
 		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
 			WaveConfigs[0].SpawnInterval, true, WaveConfigs[0].NextWaveDelay);
 	}
