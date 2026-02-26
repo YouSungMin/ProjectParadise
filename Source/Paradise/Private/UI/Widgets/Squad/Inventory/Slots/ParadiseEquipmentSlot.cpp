@@ -1,21 +1,22 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/Widgets/Squad/Inventory/Slots/ParadiseCharacterSlot.h"
+#include "UI/Widgets/Squad/Inventory/Slots/ParadiseEquipmentSlot.h"
 #include "Components/TextBlock.h"
 
 #pragma region 로직 구현
-void UParadiseCharacterSlot::UpdateSlot(const FSquadItemUIData& InData)
+void UParadiseEquipmentSlot::UpdateSlot(const FSquadItemUIData& InData)
 {
-	// 1. 부모 클래스의 공통 로직(아이콘, 테두리 등) 우선 실행
+	// 1. 부모 클래스의 공통 로직 실행
 	Super::UpdateSlot(InData);
 
-	// 2. 캐릭터 고유 로직: 레벨 텍스트 처리 (단일 책임)
+	// 2. 장비 고유 로직: 강화 수치(레벨) 처리
 	if (Text_Level)
 	{
 		if (InData.Level > 0)
 		{
-			Text_Level->SetText(FText::Format(FText::FromString(TEXT("Lv.{0}")), InData.Level));
+			// 장비 특성에 맞춰 +기호 표기
+			Text_Level->SetText(FText::Format(FText::FromString(TEXT("+{0}")), InData.Level));
 			Text_Level->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 		else
