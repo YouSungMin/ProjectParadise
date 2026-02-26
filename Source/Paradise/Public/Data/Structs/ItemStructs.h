@@ -224,18 +224,11 @@ public:
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 기본 공격 몽타주 (BasicAttack Montage)
-	 * @details 이 무기를 장착했을 때 재생할 기본 공격 애니메이션 몽타주입니다.
+	 * @brief 무기 타입
+	 * @details 무기 타입을 통해 캐릭터마다 무기에 맞는 몽타주를 재생합니다.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TSoftObjectPtr<UAnimMontage> BasicAttackMontage;
-
-	/**
-	 * @brief 스킬 몽타주 (Attack Montage)
-	 * @details 이 무기를 장착했을 때 재생할 스킬 공격 애니메이션 몽타주입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TSoftObjectPtr<UAnimMontage> SkillMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Type")
+	EWeaponType WeaponType;
 
 	// -----------------------------------------------------------------
 	// [GAS & Logic] 로직 연결
