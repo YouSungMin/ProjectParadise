@@ -12,6 +12,9 @@ class UWidgetSwitcher;
 class UWrapBox;
 class UScrollBox;
 class UParadiseItemSlot;
+class UParadiseCharacterSlot;   
+class UParadiseEquipmentSlot;   
+class UParadiseUnitSlot;        
 #pragma endregion 전방 선언
 
 /** @brief 아이템 클릭 시 메인 위젯으로 알림 */
@@ -63,11 +66,22 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWrapBox> Wrap_Unit = nullptr;
-
-	/** @brief 슬롯 위젯 클래스 (BP 할당) */
-	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	TSubclassOf<UUserWidget> ItemSlotClass;
 #pragma endregion UI 바인딩
+
+#pragma region 슬롯 설정 데이터 (Config)
+protected:
+	/** @brief 캐릭터 탭에 표시할 전용 슬롯 클래스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
+	TSubclassOf<UParadiseCharacterSlot> CharacterSlotClass = nullptr;
+
+	/** @brief 무기/방어구 탭에 표시할 전용 슬롯 클래스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
+	TSubclassOf<UParadiseEquipmentSlot> EquipmentSlotClass = nullptr;
+
+	/** @brief 유닛 탭에 표시할 전용 슬롯 클래스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
+	TSubclassOf<UParadiseUnitSlot> UnitSlotClass = nullptr;
+#pragma endregion 슬롯 설정 데이터 (Config)
 
 #pragma region 이벤트 델리게이트
 public:
