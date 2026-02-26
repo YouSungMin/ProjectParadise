@@ -6,6 +6,7 @@
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "GAS/Attributes/BaseAttributeSet.h"
 #include "Kismet/GameplayStatics.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
@@ -83,6 +84,67 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCooldown] 어빌리티에 Cooldown GE가 설정되지 않았습니다!"));
+	}
+}
+
+bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	// 기본 검사 (부모 로직)
+	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	// 엑셀에서 읽어둔 내 스킬 데이터 가져오기
+	FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+
+	// 소모 마나가 없으면(0이면) 무조건 패스 (평타 등)
+	if (CombatData.ManaCost <= 0.0f)
+	{
+		return true;
+	}
+
+	// 현재 내 마나량과 비교
+	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+	{
+		float CurrentMana = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+
+		if (CurrentMana < CombatData.ManaCost)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("❌ 마나가 부족합니다! (현재: %.1f / 필요: %.1f)"), CurrentMana, CombatData.ManaCost);
+			return false; // 발동 실패!
+		}
+	}
+	return true;
+}
+
+void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	UGameplayEffect* CostGE = GetCostGameplayEffect();
+	if (CostGE)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CostGE->GetClass(), GetAbilityLevel());
+		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+
+		if (CombatData.ManaCost > 0.0f)
+		{
+			// SetByCaller를 통해 엑셀의 마나 코스트 수치를 GE로 전송
+			FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(FName("Data.Cost.Mana"));
+
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.ManaCost);
+		}
+
+		// 나 자신(Owner)에게 마나 차감 GE 적용
+		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
+	}
+	else
+	{
+		// 마나가 드는 스킬인데 블루프린트에서 Cost GE를 빼먹은 경우 에러 로그 출력
+		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+		if (CombatData.ManaCost > 0.0f)
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCost] 엑셀에 마나 소모량이 기입되었으나, 블루프린트의 Cost GE Class가 설정되지 않았습니다!"));
+		}
 	}
 }
 

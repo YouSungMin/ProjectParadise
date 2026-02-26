@@ -46,7 +46,7 @@ void ULevelLoadingSubsystem::Deinitialize()
 }
 
 #pragma region 외부 인터페이스
-void ULevelLoadingSubsystem::StartLevelTransition(FName InTargetLevelName, FName InLoadingMapName, const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload)
+void ULevelLoadingSubsystem::StartLevelTransition(FName InTargetLevelName, FName InLoadingMapName, const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload, TSoftObjectPtr<UTexture2D> InLoadingImage)
 {
 	if (InTargetLevelName.IsNone())
 	{
@@ -61,6 +61,8 @@ void ULevelLoadingSubsystem::StartLevelTransition(FName InTargetLevelName, FName
 	LoadingMapName = (InLoadingMapName.IsNone()) ? FName("L_Loading") : InLoadingMapName;
 
 	PendingAssetsToLoad = InAssetsToPreload;
+	PendingLoadingImage = InLoadingImage;
+
 	bIsLoadingInProgress = true;
 
 	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 전이 시작: 현재 레벨 -> %s (Target: %s)"), *LoadingMapName.ToString(), *TargetLevelName.ToString());
@@ -121,6 +123,15 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 		{
 			CurrentLoadingWidget->AddToViewport(9999); // 최상위 Z-Order
 			CurrentLoadingWidget->SetLoadingPercent(0.0f);
+
+			// 캐싱해둔 커스텀 배경 이미지가 있다면 텍스처를 로드하여 UI에 적용합니다.
+			if (!PendingLoadingImage.IsNull())
+			{
+				if (UTexture2D* LoadedTex = PendingLoadingImage.LoadSynchronous())
+				{
+					CurrentLoadingWidget->SetBackgroundImage(LoadedTex);
+				}
+			}
 		}
 	}
 	else

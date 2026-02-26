@@ -11,7 +11,7 @@ UBaseAttributeSet::UBaseAttributeSet()
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
 	InitMana(0.0f);
-	InitMaxMana(0.0f);
+	InitMaxMana(20.0f);
 
 	InitAttackPower(10.0f);
 	InitDefense(0.0f);

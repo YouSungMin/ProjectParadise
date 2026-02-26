@@ -3,6 +3,9 @@
 
 #include "UI/Widgets/Squad/Inventory/ParadiseSquadInventoryWidget.h"
 #include "UI/Widgets/Squad/Inventory/ParadiseItemSlot.h"
+#include "UI/Widgets/Squad/Inventory/Slots/ParadiseCharacterSlot.h"
+#include "UI/Widgets/Squad/Inventory/Slots/ParadiseEquipmentSlot.h"
+#include "UI/Widgets/Squad/Inventory/Slots/ParadiseUnitSlot.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/WrapBox.h"
 
@@ -16,33 +19,51 @@ void UParadiseSquadInventoryWidget::UpdateList(int32 TabIndex, const TArray<FSqu
 
 	// 2. 현재 탭에 맞는 WrapBox 찾기
 	UWrapBox* TargetWrap = nullptr;
+	TSubclassOf<UParadiseItemSlot> TargetSlotClass = nullptr;
+
 	switch (TabIndex)
 	{
-	case SquadTabs::Character: TargetWrap = Wrap_Character; break;
-	case SquadTabs::Weapon:    TargetWrap = Wrap_Weapon; break;
-	case SquadTabs::Armor:     TargetWrap = Wrap_Armor; break;
-	case SquadTabs::Unit:      TargetWrap = Wrap_Unit; break;
+	case SquadTabs::Character:
+		TargetWrap = Wrap_Character;
+		TargetSlotClass = CharacterSlotClass;
+		break;
+	case SquadTabs::Weapon:
+		TargetWrap = Wrap_Weapon;
+		TargetSlotClass = EquipmentSlotClass;
+		break;
+	case SquadTabs::Armor:
+		TargetWrap = Wrap_Armor;
+		TargetSlotClass = EquipmentSlotClass; // 장비 슬롯 공유
+		break;
+	case SquadTabs::Unit:
+		TargetWrap = Wrap_Unit;
+		TargetSlotClass = UnitSlotClass;
+		break;
 	}
 
-	// 방어 코드: WrapBox나 슬롯 클래스가 없으면 중단
-	if (!TargetWrap || !ItemSlotClass) return;
+	// 3. 방어 코드: WrapBox나 슬롯 클래스가 할당되지 않았으면 즉시 중단
+	if (!TargetWrap || !TargetSlotClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [InventoryWidget] WrapBox 또는 슬롯 클래스가 누락되었습니다. BP 설정을 확인하세요."));
+		return;
+	}
 
-	// 3. 기존 슬롯 제거 (초기화)
+	// 4. 기존 슬롯 제거 (초기화)
 	TargetWrap->ClearChildren();
 
-	// 4. 데이터 기반 슬롯 생성 (Loop)
+	// 5. 데이터 기반 슬롯 생성 (Loop 최적화)
 	for (const auto& Data : ListData)
 	{
-		// 슬롯 생성 (UUserWidget을 상속받은 커스텀 슬롯으로 캐스팅하여 사용)
-		if (UParadiseItemSlot* NewSlot = CreateWidget<UParadiseItemSlot>(this, ItemSlotClass))
+		// 부모 클래스 포인터 타입으로 위젯 생성
+		if (UParadiseItemSlot* NewSlot = CreateWidget<UParadiseItemSlot>(this, TargetSlotClass))
 		{
-			// (1) 데이터 주입
+			// (1) 가상 함수 호출: C++이 런타임에 어떤 자식인지 스스로 판단하여 알맞은 UpdateSlot을 실행함.
 			NewSlot->UpdateSlot(Data);
 
-			// (2) 클릭 이벤트 바인딩 (내부 핸들러로 연결)
+			// (2) 클릭 이벤트 바인딩 (부모에 구현된 델리게이트를 바로 사용)
 			NewSlot->OnSlotClicked.AddDynamic(this, &UParadiseSquadInventoryWidget::HandleSlotClick);
 
-			// (3) 화면(WrapBox)에 추가
+			// (3) 화면에 추가
 			TargetWrap->AddChildToWrapBox(NewSlot);
 		}
 	}

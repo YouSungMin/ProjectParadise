@@ -211,7 +211,7 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 				if (auto* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
 				{
 					TArray<TSoftObjectPtr<UObject>> EmptyPreloadAssets;
-					LoadingSys->StartLevelTransition(LevelToOpen, NAME_None, EmptyPreloadAssets);
+					LoadingSys->StartLevelTransition(LevelToOpen, NAME_None, EmptyPreloadAssets, Assets->LoadingImage);
 					return;
 				}
 			}

@@ -58,6 +58,11 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void UpdateTagButtons(int32 ActiveCharIndex);
+
+	/** @brief 외부(컨트롤러나 HUD)에서 플레이어를 직접 꽂아주는 함수 */ 
+	void SetOwningPlayerBase(APlayerBase* InPlayer);
+
+
 #pragma endregion 외부 인터페이스
 private:
 #pragma region 내부 로직
