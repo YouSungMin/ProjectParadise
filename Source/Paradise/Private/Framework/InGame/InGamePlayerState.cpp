@@ -55,8 +55,6 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 
 		if (NewSoul)
 		{
-			NewSoul->InitPlayerData(HeroID);
-
 			//장비 컴포넌트 초기화
 			if (UEquipmentComponent* EquipComp = NewSoul->GetEquipmentComponent())
 			{
@@ -72,6 +70,8 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 					UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadInit] 인벤토리에 %s 데이터가 없습니다."), *HeroID.ToString());
 				}
 			}
+			//캐릭터 데이터 초기화
+			NewSoul->InitPlayerData(HeroID);
 
 			//정확한 슬롯 위치[i]에 저장합니다.
 			SquadMembers[i] = NewSoul;
