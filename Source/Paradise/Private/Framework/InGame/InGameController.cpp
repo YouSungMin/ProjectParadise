@@ -3,7 +3,8 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
-#include "Framework/Core/ParadiseGameInstance.h" //디버그함수때문에 추가 이후 삭제
+#include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
 #include "Components/EquipmentComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -588,3 +589,18 @@ void AInGameController::UpdateActionPanelUI(int32 PlayerIndex)
 }
 
 
+void AInGameController::CheatStageClear()
+{
+    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        gamemode->EndStage(true);
+    }
+}
+
+void AInGameController::CheatStageFail()
+{
+    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        gamemode->EndStage(false);
+    }
+}

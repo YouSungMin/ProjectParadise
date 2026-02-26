@@ -3,10 +3,13 @@
 
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Lobby/LobbySetupActor.h"
+
 #include "Framework/System/InventorySystem.h" //0226 김성현 - 시스템 헤더들 치트함수 때문에 추가 이후 삭제예정
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/GrowthSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
+
+
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -263,6 +266,8 @@ void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
 		}
 	}
 }
+
+
 
 void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 {

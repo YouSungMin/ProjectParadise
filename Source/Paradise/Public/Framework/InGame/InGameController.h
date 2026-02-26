@@ -33,6 +33,18 @@ public:
 	//  스쿼드 제어 (Squad Control)
 public:
 
+#pragma region 0226 김성현 - 디버그 치트 함수 추가
+
+	UFUNCTION(Exec)
+	void CheatStageClear();
+
+	UFUNCTION(Exec)
+	void CheatStageFail();
+
+#pragma endregion 0226 김성현 - 디버그 치트 함수 추가
+
+public:
+
 	/**
 	 * @brief OverViewCamera를 찾아서 초기화해두는 함수
 	 */
