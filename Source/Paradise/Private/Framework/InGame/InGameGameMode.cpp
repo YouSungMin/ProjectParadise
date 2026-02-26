@@ -68,7 +68,7 @@ void AInGameGameMode::BeginPlay()
 	{
 		if (UObjectPoolSubsystem* PoolSystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
 		{
-			PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
+			//PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
 		}
 	}
 
