@@ -83,6 +83,8 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 	// 3. 결과 처리
 	if (bHit)
 	{
+		//UE_LOG(LogTemp, Warning, TEXT("[트레이스 적중!] 스피어에 뭔가 닿았습니다. 총 %d개"), HitResults.Num());
+
 		for (const FHitResult& Result : HitResults)
 		{
 			AActor* HitActor = Result.GetActor();
@@ -94,7 +96,7 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			// 캐스팅 실패 시 (바닥, 배경 프랍 등) 무시하고 다음 타겟으로 넘어감
 			if (HitChar == nullptr)
 			{
-				// UE_LOG(LogTemp, Log, TEXT("Skipping non-character actor: %s"), *HitActor->GetName());
+				//UE_LOG(LogTemp, Warning, TEXT("⚠️ [CheckHit] 캐릭터가 아닌 대상(%s)을 쳤습니다. 무시합니다."), *HitActor->GetName());
 				continue;
 			}
 
@@ -108,6 +110,8 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			// 피아 식별 (이미 위에서 HitChar를 구했으므로 바로 사용)
 			if (!IsHostile(HitChar))
 			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [CheckHit] 아군 판정되어 무시합니다! (내 태그: %s vs 적 태그: %s)"),
+					*this->FactionTag.ToString(), *HitChar->FactionTag.ToString());
 				continue;
 			}
 

@@ -27,19 +27,6 @@ USTRUCT(BlueprintType)
 struct FUnitBaseStats : public FTableRowBase
 {
 	GENERATED_BODY()
-
-	// =========================================================
-	//  기본 정보 (Basic Info) 
-	// =========================================================
-
-	/**
-	 * @brief 소속 진영 (Faction)
-	 * @details 피아식별(아군/적군)의 기준이 되는 핵심 태그입니다.
-	 * 예: Unit.Faction.Friendly.Player, Unit.Faction.Enemy, Unit.Faction.Friendly.Familiar
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info", meta = (Categories = "Unit.Faction"))
-	FGameplayTag FactionTag;
-
 	// =========================================================
 	//  전투 스탯 (Combat Stats)
 	// =========================================================
@@ -100,14 +87,6 @@ struct FCharacterStats : public FUnitBaseStats
 	GENERATED_BODY()
 
 public:
-
-	/**
-	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Player'로 설정함
-	*/
-	FCharacterStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Player"));
-	}
 
 	// =========================================================
 	//  성장 스탯 (Combat Stats)
@@ -230,13 +209,6 @@ struct FEnemyStats : public FAIUnitStats
 
 public:
 
-	/**
-	*@brief 적 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
-	*/
-	FEnemyStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
-	}
 };
 
 /**
@@ -249,16 +221,6 @@ struct FFamiliarStats : public FAIUnitStats
 	GENERATED_BODY()
 
 public:
-
-	/**
-	*@brief 패밀리어 전용 : 태그를 자동으로 'Friendly.Familiar'와 Rank.Normal로 설정함
-	*/
-	FFamiliarStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Familiar"));
-		RankTypeTag = FGameplayTag::RequestGameplayTag(FName("Unit.Rank.Normal"));
-	}
-
 	/** @brief 소환 코스트 (재화) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
 	int32 SummonCost;
@@ -275,6 +237,18 @@ struct FUnitBaseAssets : public FTableRowBase
 	GENERATED_BODY()
 
 public:
+	// =========================================================
+	//  기본 정보 (Basic Info) 
+	// =========================================================
+
+	/**
+	 * @brief 소속 진영 (Faction)
+	 * @details 피아식별(아군/적군)의 기준이 되는 핵심 태그입니다.
+	 * 예: Unit.Faction.Friendly.Player, Unit.Faction.Enemy, Unit.Faction.Friendly.Familiar
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info", meta = (Categories = "Unit.Faction"))
+	FGameplayTag FactionTag;
+
 	// =========================================================
 	//  Visual & Anim (Common)
 	// =========================================================
@@ -294,13 +268,6 @@ public:
 	// =========================================================
 	//  Reaction Animation
 	// =========================================================
-
-	/**
-	 * @brief 기본 공격 몽타주
-	 * @details 가장 기초적인 공격 모션입니다. (플레이어는 콤보의 시작, AI는 기본 평타)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
-	TSoftObjectPtr<UAnimMontage> AttackMontage;
 
 	/**
 	 * @brief 피격(Hit) 리액션 몽타주
@@ -326,6 +293,22 @@ public:
 };
 
 /**
+ * @struct FWeaponAnimSet
+ * @brief 특정 무기 타입을 들었을 때 재생할 애니메이션 세트
+ */
+USTRUCT(BlueprintType)
+struct FWeaponAnimSet
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TSoftObjectPtr<UAnimMontage> BasicAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TSoftObjectPtr<UAnimMontage> SkillMontage;
+};
+
+/**
  * @struct FCharacterAssets
  * @brief 플레이어 캐릭터 전용 리소스 (UI, 스킬 슬롯 등)
  */
@@ -334,6 +317,14 @@ struct FCharacterAssets : public FUnitBaseAssets
 {
 	GENERATED_BODY()
 public:
+	/**
+	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Player'로 설정함
+	*/
+	FCharacterAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Player"));
+	}
+
 	// =========================================================
 	//  UI (Player Only)
 	// =========================================================
@@ -372,6 +363,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Skill")
 	TSoftObjectPtr<UAnimMontage> UltimateMontage;
 
+	/** @brief 장착한 무기 종류에 따라 달라지는 몽타주 세트 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Weapon")
+	TMap<EWeaponType, FWeaponAnimSet> WeaponAnimMap;
+
 	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
 	FGameplayTag UltimateEffectTag;
@@ -385,6 +380,8 @@ USTRUCT(BlueprintType)
 struct FAIUnitAssets : public FUnitBaseAssets
 {
 	GENERATED_BODY()
+
+public:
 
 	/**
 	 * @brief UI 표현을 위한 아이콘
@@ -402,6 +399,13 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual", meta = (ClampMin = "0.1"))
 	float Scale = 1.0f; // 초기화 필수
+
+	/**
+	 * @brief 기본 공격 몽타주
+	 * @details 가장 기초적인 공격 모션입니다. (플레이어는 콤보의 시작, AI는 기본 평타)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
+	TSoftObjectPtr<UAnimMontage> AttackMontage;
 
 	// =========================================================
 	//  인공지능 (AI)
@@ -479,6 +483,15 @@ struct FEnemyAssets : public FAIUnitAssets
 {
 	GENERATED_BODY()
 
+public:
+	/**
+	 *@brief 적 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
+	 */
+	FEnemyAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+	}
+
 	/**
 	 * @brief 스킬 연출 태그 목록
 	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
@@ -496,4 +509,12 @@ USTRUCT(BlueprintType)
 struct FFamiliarAssets : public FAIUnitAssets
 {
 	GENERATED_BODY()
+
+	/**
+	 *@brief 패밀리어 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
+	 */
+	FFamiliarAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Familiar"));
+	}
 };
