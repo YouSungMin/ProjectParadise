@@ -66,16 +66,43 @@ void UGrowthSubsystem::HandleDuplicateCharacter(FName CharacterID)
 	const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharacterID);
 	if (!CharData) return;
 
-	//최대 각성(6돌) 미만이면 조각 추가
-	if (CharData->AwakeningPieces < 6)
+	//현재 각성 레벨에서 최대 각성(Max Level)까지 가기 위해 '추가로 필요한 총 조각 수' 계산
+	int32 TotalRequiredPieces = 0;
+	int32 CheckLevel = CharData->AwakeningLevel + 1;
+
+	while (true)
+	{
+		FName RowName = FName(*FString::FromInt(CheckLevel));
+		FCharacterAwakenData* AwakenInfo = GI->GetDataTableRow<FCharacterAwakenData>(GI->CharacterAwakenDataTable, RowName);
+
+		// 데이터 테이블에 다음 레벨이 없다면 최대 레벨(Max)이므로 루프 종료
+		if (!AwakenInfo) break;
+
+		TotalRequiredPieces += AwakenInfo->RequiredAwakeningPieces;
+		CheckLevel++;
+	}
+
+	//현재 보유 중인 조각이 앞으로 필요한 조각의 총합보다 적을 때만 조각 지급
+	if (CharData->AwakeningPieces < TotalRequiredPieces)
 	{
 		InvSys->AddAwakeningPiece(CharacterID, 1);
-		UE_LOG(LogTemp, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 6)"), *CharacterID.ToString(), CharData->AwakeningPieces);
+
+		// 갱신된 데이터를 다시 가져와서 로그에 출력
+		const FOwnedCharacterData* UpdatedCharData = InvSys->GetCharacterDataByID(CharacterID);
+
+		UE_LOG(LogTemp, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 필요 총량: %d)"),
+			*CharacterID.ToString(), UpdatedCharData->AwakeningPieces, TotalRequiredPieces);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 이미 최대 돌파 조각을 보유 중입니다!"), *CharacterID.ToString());
-		//대체 재화 지급? 일단 로그만 찍음
+		//이미 최대 각성이거나, 최대 각성까지 가기 위한 조각을 미리 다 모아둔 경우
+		UE_LOG(LogTemp, Warning, TEXT("👑 [%s] 이미 최대 각성 상태이거나 필요한 조각을 모두 보유 중입니다! (마일리지 등 대체 재화 지급)"), *CharacterID.ToString());
+
+		//최대각성이므로 범용재화 에테르 지급
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+		    EconSys->AddCurrency(ECurrencyType::Aether, 1000); // 잉여 조각 대신 에테르 지급 등
+		}
 	}
 }
 
