@@ -100,6 +100,8 @@ void USkillSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
 #pragma region 내부 로직 구현
 void USkillSlotWidget::OnSkillButtonClicked()
 {
+	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
+
 	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
 	if (CurrentCooldown <= 0.0f)
 	{

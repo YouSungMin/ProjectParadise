@@ -186,6 +186,7 @@ void APlayerData::InitCombatAttributes()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
+
 }
 
 void APlayerData::InitPlayerAssets()
@@ -199,6 +200,7 @@ void APlayerData::InitPlayerAssets()
 
 	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
+	this->FactionTag = Assets->FactionTag;
 	this->CachedReactionFX = Assets->ReactionFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
@@ -309,33 +311,40 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 		Result.ProjectileClass = WeaponAssets->ProjectileClass;
 		FName TargetActionID = NAME_None;
 
-		switch (ActionType)
-		{
-		case ECombatActionType::BasicAttack:
-			Result.MontageToPlay = WeaponAssets->BasicAttackMontage.LoadSynchronous();
-			TargetActionID = WeaponStats->BasicAttackActionID;
-			break;
+		FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID);
 
-		case ECombatActionType::WeaponSkill:
-			Result.MontageToPlay = WeaponAssets->SkillMontage.LoadSynchronous();
-			TargetActionID = WeaponStats->SkillActionID;
-			break;
-		}
-
-		if (!TargetActionID.IsNone())
+		if (CharAssets && CharAssets->WeaponAnimMap.Contains(WeaponAssets->WeaponType))
 		{
-			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+			FWeaponAnimSet MyAnimSet = CharAssets->WeaponAnimMap[WeaponAssets->WeaponType];
+			switch (ActionType)
 			{
-				Result.DamageMultiplier = ActionRow->DamageMultiplier;
-				Result.AttackRange = ActionRow->AttackRange;
-				Result.AttackRadius = ActionRow->AttackRadius;
-				Result.ForwardOffset = ActionRow->ForwardOffset;
-				Result.Cooldown = ActionRow->Cooldown;
-				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+			case ECombatActionType::BasicAttack:
+				Result.MontageToPlay = MyAnimSet.BasicAttackMontage.LoadSynchronous();
+				TargetActionID = WeaponStats->BasicAttackActionID;
+				break;
+
+			case ECombatActionType::WeaponSkill:
+				Result.MontageToPlay = MyAnimSet.SkillMontage.LoadSynchronous();
+				TargetActionID = WeaponStats->SkillActionID;
+				break;
 			}
-			else
+
+			if (!TargetActionID.IsNone())
 			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 ActionID(%s)를 찾을 수 없습니다!"), *TargetActionID.ToString());
+				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+				{
+					Result.DamageMultiplier = ActionRow->DamageMultiplier;
+					Result.AttackRange = ActionRow->AttackRange;
+					Result.AttackRadius = ActionRow->AttackRadius;
+					Result.ForwardOffset = ActionRow->ForwardOffset;
+					Result.Cooldown = ActionRow->Cooldown;
+					Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+					Result.ManaCost = ActionRow->ManaCost;
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 ActionID(%s)를 찾을 수 없습니다!"), *TargetActionID.ToString());
+				}
 			}
 		}
 	}

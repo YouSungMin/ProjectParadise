@@ -9,6 +9,7 @@
 #pragma region 전방 선언
 class UProgressBar;
 class UTextBlock;
+class UImage;
 #pragma endregion 전방 선언
 
 /**
@@ -42,6 +43,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
 	void SetLoadingText(FText NewText);
+
+	/**
+	 * @brief 로딩 배경 이미지를 교체합니다.
+	 * @param InTexture 교체할 배경 텍스처 (nullptr이면 기본 설정 유지)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void SetBackgroundImage(UTexture2D* InTexture);
 #pragma endregion 외부 인터페이스
 
 #pragma region 이벤트 (블루프린트 확장)
@@ -60,8 +68,8 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> PB_LoadingBar = nullptr;
 
-	///** @brief 로딩 퍼센트 텍스트 (예: "75%") (굳이 없어도 되어서 일단 주석 처리 함) */
-	//UPROPERTY(meta = (BindWidgetOptional))
-	//TObjectPtr<UTextBlock> Text_Percent = nullptr;
+	/** @brief 커스텀 로딩 배경 이미지 (선택 바인딩) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Background = nullptr;
 #pragma endregion 위젯 바인딩
 };

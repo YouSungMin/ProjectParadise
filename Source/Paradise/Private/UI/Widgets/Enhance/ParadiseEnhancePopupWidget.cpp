@@ -186,7 +186,7 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 		if (auto* Stat = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			Result.RankTag = ConvertRarityToTag(Stat->Rarity); // 헬퍼 함수 필요(SquadMain 참조)
+			Result.Rarity = Stat->Rarity;
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FWeaponAssets>(CachedGI->WeaponAssetsDataTable, ID))
 		{
@@ -198,7 +198,7 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 		if (auto* Stat = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, ID))
 		{
 			Result.Name = Stat->DisplayName;
-			Result.RankTag = ConvertRarityToTag(Stat->Rarity);
+			Result.Rarity = Stat->Rarity;
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FArmorAssets>(CachedGI->ArmorAssetsDataTable, ID))
 		{

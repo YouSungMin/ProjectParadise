@@ -151,9 +151,6 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 			}
 		}
 
-		// ✅ [Tag] 소속 태그 적용 (데이터 테이블 -> 멤버 변수)
-		this->FactionTag = InStats->FactionTag;
-
 		// ⭐ 중요: GAS 시스템에도 태그 등록 (타겟팅/필터링용)
 		if (AbilitySystemComponent && FactionTag.IsValid())
 		{
@@ -194,6 +191,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
 		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
+		this->FactionTag = InAssets->FactionTag;
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)
