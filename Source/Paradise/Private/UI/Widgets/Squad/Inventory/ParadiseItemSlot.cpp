@@ -42,7 +42,7 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 	}
 
 	// 2. 공통 등급 테두리 갱신
-	UpdateRankColor(InData.RankTag);
+	UpdateRankColor(InData.Rarity);
 
 	// 3. 공통 장착 마크 갱신
 	if (Img_EquippedMark)
@@ -59,9 +59,11 @@ void UParadiseItemSlot::OnButtonClicked()
 	}
 }
 
-void UParadiseItemSlot::UpdateRankColor(FGameplayTag RankTag)
+void UParadiseItemSlot::UpdateRankColor(EItemRarity Rarity)
 {
 	if (!Img_RankBorder) return;
-	FLinearColor* FoundColor = RankColorMap.Find(RankTag);
+
+	// Map에서 Enum 값으로 색상을 찾습니다.
+	FLinearColor* FoundColor = RankColorMap.Find(Rarity);
 	Img_RankBorder->SetColorAndOpacity(FoundColor ? *FoundColor : DefaultRankColor);
 }

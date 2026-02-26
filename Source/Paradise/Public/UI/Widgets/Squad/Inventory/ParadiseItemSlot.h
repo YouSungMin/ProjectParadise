@@ -46,7 +46,7 @@ protected:
 	virtual void OnButtonClicked();
 
 	/** @brief 등급 태그에 따라 테두리 색상을 변경 */
-	void UpdateRankColor(FGameplayTag RankTag);
+	void UpdateRankColor(EItemRarity Rarity);
 #pragma endregion 내부 로직
 
 #pragma region 공통 UI 바인딩
@@ -66,13 +66,13 @@ protected:
 
 #pragma region 데이터 (Config)
 protected:
+	/** @brief 등급(Enum)에 따른 테두리 색상 맵 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI", meta = (DisplayName = "등급별 색상 맵"))
-	TMap<FGameplayTag, FLinearColor> RankColorMap;
+	TMap<EItemRarity, FLinearColor> RankColorMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI", meta = (DisplayName = "기본 테두리 색상"))
 	FLinearColor DefaultRankColor = FLinearColor::White;
 
-	/** @brief 현재 슬롯이 들고 있는 데이터 캐싱 */
 	FSquadItemUIData CachedData;
 #pragma endregion 데이터 (Config)
 

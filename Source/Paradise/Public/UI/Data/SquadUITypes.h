@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Data/Enums/GameEnums.h"
 #include "SquadUITypes.generated.h"
 
 class UTexture2D;
@@ -16,6 +17,21 @@ enum class ESquadUIState : uint8
 	Normal,			// 일반 상태 (상세 정보만 표시)
 	CharacterSwap,	// 캐릭터/유닛 교체 모드
 	EquipmentSwap	// 장비 교체 모드
+};
+
+/**
+ * @enum ESquadDetailContext
+ * @brief 상세 정보창이 어떤 슬롯을 클릭해서 열렸는지 정의하는 컨텍스트
+ */
+UENUM(BlueprintType)
+enum class ESquadDetailContext : uint8
+{
+	FormationCharacter,  /**< 편성창 메인/서브 캐릭터 슬롯 */
+	FormationUnit,       /**< 편성창 유닛 슬롯 */
+	InventoryCharacter,  /**< 인벤토리 캐릭터 슬롯 */
+	InventoryWeapon,     /**< 인벤토리 무기 슬롯 */
+	InventoryArmor,      /**< 인벤토리 방어구 슬롯 */
+	InventoryUnit        /**< 인벤토리 유닛 슬롯 */
 };
 
 /** @brief 탭 인덱스 상수 (가독성용) */
@@ -57,9 +73,9 @@ struct FSquadItemUIData
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTexture2D> Icon = nullptr;
 
-	/** @brief 등급 태그 (테두리 색상 결정용) */
-	UPROPERTY(BlueprintReadOnly)
-	FGameplayTag RankTag;
+	/** @brief 아이템/유닛의 등급 (UI 테두리 색상 결정에 사용) */
+	UPROPERTY(BlueprintReadWrite, Category = "UI")
+	EItemRarity Rarity = EItemRarity::Common;
 
 	/** @brief 레벨 */
 	UPROPERTY(BlueprintReadOnly)

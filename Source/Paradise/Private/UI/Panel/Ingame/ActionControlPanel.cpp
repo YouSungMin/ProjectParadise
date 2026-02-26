@@ -17,13 +17,6 @@ void UActionControlPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 생성 시점에서 플레이어 폰을 캐싱한다.
-	CachedPlayer = Cast<APlayerBase>(GetOwningPlayerPawn());
-	if (!CachedPlayer.IsValid())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ActionControlPanel] 플레이어 폰을 찾을 수 없어 캐싱에 실패했습니다."));
-	}
-
 #pragma region 태그 버튼 배열화 및 캐싱
 
 	// 최적화: 루프 처리를 위해 개별 바인딩된 버튼들을 배열에 담습니다.
@@ -187,6 +180,11 @@ void UActionControlPanel::UpdateTagButtons(int32 ActiveCharIndex)
 		}
 	}
 }
+void UActionControlPanel::SetOwningPlayerBase(APlayerBase* InPlayer)
+{
+	CachedPlayer = InPlayer;
+	UE_LOG(LogTemp, Log, TEXT("✅ [ActionPanel] 플레이어 폰 주입 완료!"));
+}
 void UActionControlPanel::OnAttackButtonClicked()
 {
 	ProcessAbilityInput(EInputID::Attack);
@@ -194,19 +192,30 @@ void UActionControlPanel::OnAttackButtonClicked()
 
 void UActionControlPanel::OnActiveSkillRequested()
 {
+	UE_LOG(LogTemp, Log, TEXT("스킬키 입력 들어옴"));
 	ProcessAbilityInput(EInputID::Skill);
 }
 
 void UActionControlPanel::OnUltimateSkillRequested()
 {
+	UE_LOG(LogTemp, Log, TEXT("궁극키 입력 들어옴"));
 	ProcessAbilityInput(EInputID::Ultimate);
 }
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 {
+	// 이제 확실하게 찾았으니 명령을 내립니다.
+	if (!CachedPlayer.IsValid())
+	{
+		CachedPlayer = Cast<APlayerBase>(GetOwningPlayerPawn());
+	}
 	if (CachedPlayer.IsValid())
 	{
 		CachedPlayer->SendAbilityInputToASC(InputID, true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 아직도 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제 확인 필요)"));
 	}
 }
 
