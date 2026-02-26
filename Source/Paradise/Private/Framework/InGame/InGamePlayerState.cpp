@@ -34,20 +34,23 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 		return;
 	}
 
-	for (const FName& HeroID : StartingHeroIDs)
+	//배열 크기를 편성창에서 넘어온 크기로 초기화 (3으로 설정)
+	SquadMembers.Init(nullptr, StartingHeroIDs.Num());
+
+	//스쿼드 영웅 최대치 크기(3)만큼 for문
+	for (int32 i = 0; i < StartingHeroIDs.Num(); ++i)
 	{
+		FName HeroID = StartingHeroIDs[i];
+
+		// 빈 슬롯이면 스폰하지 않고 넘어가기
 		if (HeroID.IsNone()) continue;
 
-		UClass* SpawnClass = nullptr;
-		//(PlayerData) 스폰
+		UClass* SpawnClass = APlayerData::StaticClass();
+
 		if (PlayerDataClass)
 		{
 			SpawnClass = PlayerDataClass;
 		}
-		else {
-			SpawnClass= APlayerData::StaticClass();
-		}
-		 
 		APlayerData* NewSoul = GetWorld()->SpawnActor<APlayerData>(SpawnClass);
 
 		if (NewSoul)
@@ -62,7 +65,6 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 				{
 					// 찾은 데이터의 장비 맵으로 초기화
 					EquipComp->InitializeEquipment(CharData->EquipmentMap);
-
 					UE_LOG(LogTemp, Log, TEXT("🔗 [SquadInit] %s 장비 데이터 동기화 완료"), *HeroID.ToString());
 				}
 				else
@@ -71,11 +73,12 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 				}
 			}
 
-			SquadMembers.Add(NewSoul);
+			//정확한 슬롯 위치[i]에 저장합니다.
+			SquadMembers[i] = NewSoul;
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (%d명)"), SquadMembers.Num());
+	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (크기: %d)"), SquadMembers.Num());
 }
 
 UInventorySystem* AInGamePlayerState::GetInventorySystem() const

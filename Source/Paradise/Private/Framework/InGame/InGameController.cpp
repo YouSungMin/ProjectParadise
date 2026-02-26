@@ -88,9 +88,10 @@ void AInGameController::SetAutoBattleMode(bool bEnable)
 
 void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
 {
-    if (!ActiveSquadPawns.IsValidIndex(PlayerIndex))
+    //인덱스가 범위를 벗어났거나, 해당 슬롯이 비어있으면(nullptr) 무시
+    if (!ActiveSquadPawns.IsValidIndex(PlayerIndex) || ActiveSquadPawns[PlayerIndex] == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ [Controller] 잘못된 인덱스 요청: %d"), PlayerIndex);
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Controller] 잘못된 인덱스 요청이거나 빈 슬롯입니다: %d"), PlayerIndex);
         return;
     }
 
@@ -342,7 +343,14 @@ void AInGameController::InitializeSquadPawns()
 
     UE_LOG(LogTemp, Warning, TEXT("🎮 [Controller] 육체(Pawn) 소환 시작..."));
 
-    for (int32 i = 0; i < PS->GetSquadSize(); i++)
+    int32 SquadSize = PS->GetSquadSize();
+
+    //배열을 미리 3칸(SquadSize)으로 만들고 nullptr로 채워둡니다.
+    ActiveSquadPawns.Init(nullptr, SquadSize);
+
+    int32 FirstValidIndex = -1; // 처음 조종할 캐릭터 인덱스 찾기용
+
+    for (int32 i = 0; i < SquadSize; i++)
     {
         APlayerData* Soul = PS->GetSquadMemberData(i);
         if (Soul)
@@ -350,19 +358,11 @@ void AInGameController::InitializeSquadPawns()
             FVector SpawnLoc = FVector(0, i * 200.0f, 100.0f);
             FRotator SpawnRot = FRotator::ZeroRotator;
 
-            //에디터에서 지정한 TestPlayerClass가 있으면 그걸 쓰고, 없으면 기본 C++ 클래스 사용
-            UClass* SpawnClass = nullptr;
+            UClass* SpawnClass = APlayerBase::StaticClass();
 
-            if (TestPlayerClass) {
-                SpawnClass = TestPlayerClass;
-            }
-            else {
-                SpawnClass = APlayerBase::StaticClass();
-            }
-
-            if (!TestPlayerClass)
+            if (TestPlayerClass)
             {
-                UE_LOG(LogTemp, Error, TEXT("⚠️ TestPlayerClass가 설정되지 않았습니다! 입력이 작동하지 않을 수 있습니다."));
+                SpawnClass = TestPlayerClass;
             }
 
             APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot);
@@ -370,25 +370,40 @@ void AInGameController::InitializeSquadPawns()
             if (NewBody)
             {
                 NewBody->InitializePlayer(Soul);
-                ActiveSquadPawns.Add(NewBody);
-                DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
 
+                //슬롯 번호(i)에 설정
+                ActiveSquadPawns[i] = NewBody;
+
+                // 가장 처음으로 발견된 유효한 캐릭터 인덱스 저장
+                if (FirstValidIndex == -1)
+                {
+                    FirstValidIndex = i;
+                }
+
+                DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
                 BindPlayerToUI(i, Soul);
             }
         }
     }
 
+    // AI 빙의
     for (APlayerBase* Member : ActiveSquadPawns)
     {
-        if (Member)
+        if (Member) // nullptr(빈 슬롯)이 아닐 때만 AI 빙의
         {
-            //일단 전부 AI컨트롤러 Possess
             PossessAI(Member);
         }
     }
 
-    //첫번째 캐릭터에 변경요청
-    RequestSwitchPlayer(0);
+    // 편성된 캐릭터 중 가장 앞번호(FirstValidIndex)로 스위치
+    if (FirstValidIndex != -1)
+    {
+        RequestSwitchPlayer(FirstValidIndex);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ [Controller] 스폰된 캐릭터가 아무도 없습니다!"));
+    }
 }
 
 void AInGameController::PossessAI(APlayerBase* TargetCharacter)
