@@ -5,6 +5,7 @@
 
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 
 ULoadingWidget::ULoadingWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -48,4 +49,16 @@ void ULoadingWidget::SetLoadingPercent(float Percent)
 void ULoadingWidget::SetLoadingText(FText NewText)
 {
 	// 추후에 로딩 팁 텍스트 바인딩이 있다면 여기서 처리
+}
+
+void ULoadingWidget::SetBackgroundImage(UTexture2D* InTexture)
+{
+	// 바인딩된 이미지가 있고, 전달받은 텍스처가 유효할 때만 교체
+	if (Img_Background && InTexture)
+	{
+		Img_Background->SetBrushFromTexture(InTexture);
+
+		// 배경은 클릭 이벤트를 막아야 하므로 HitTestInvisible 처리 (최적화)
+		Img_Background->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
 }

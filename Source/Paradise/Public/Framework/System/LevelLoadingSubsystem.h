@@ -10,6 +10,7 @@
 #pragma region 전방 선언
 class ULoadingWidget;
 class UUserWidget;
+class UTexture2D;
 #pragma endregion 전방 선언
 
 /**
@@ -44,7 +45,8 @@ public:
 	void StartLevelTransition(
 		FName InTargetLevelName, 
 		FName InLoadingMapName, 
-		const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload);
+		const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload,
+		TSoftObjectPtr<UTexture2D> InLoadingImage = nullptr);
 
 	/**
 	 * @brief 로딩 위젯 클래스를 설정합니다 (GameInstance 초기화 시 호출 권장).
@@ -107,5 +109,9 @@ private:
 
 	/** @brief 현재 로딩 시퀀스가 진행 중인지 여부. */
 	bool bIsLoadingInProgress = false;
+
+	/** @brief 현재 로딩에 사용할 커스텀 배경 이미지 캐싱 */
+	UPROPERTY()
+	TSoftObjectPtr<UTexture2D> PendingLoadingImage = nullptr;
 #pragma endregion 데이터 및 상태
 };
