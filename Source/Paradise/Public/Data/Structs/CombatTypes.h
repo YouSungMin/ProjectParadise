@@ -46,6 +46,10 @@ struct FActionStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
 	float Cooldown;
 
+	/** @brief 스킬 사용 시 소모되는 마나량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
+	float ManaCost = 0.0f;
+
 	/** * @brief 투사체 비행 속도
 	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
 	 */
@@ -117,6 +121,10 @@ public:
 	/** @brief 엑셀에서 읽어온 스킬 쿨타임 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float Cooldown = 0.0f;
+
+	/** @brief 엑셀에서 읽어온 소모되는 마나량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
+	float ManaCost = 0.0f;
 
 	// =====================================
 	//  원거리 전용 (Ranged)

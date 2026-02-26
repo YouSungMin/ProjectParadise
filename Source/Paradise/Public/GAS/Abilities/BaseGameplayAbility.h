@@ -67,6 +67,12 @@ public:
 
 	/** @brief 엑셀 데이터의 쿨타임을 적용하기 위해 오버라이드 */
 	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+	/** @brief 코스트(마나)가 충분한지 검사하는 함수 */
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	/** @brief 코스트(마나)를 실제로 깎는 함수 */
+	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 protected:
 	/**
 	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수

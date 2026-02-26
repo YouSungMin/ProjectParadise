@@ -32,7 +32,11 @@ APlayerData::APlayerData()
 
 void APlayerData::InitCombatAttributes()
 {
-	if (!CombatAttributeSet) return;
+	if (!CombatAttributeSet) 
+	{
+		UE_LOG(LogTemp, Log, TEXT("[PlayerData] CombatAttributeSet is null"));
+		return;
+	}
 
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
@@ -163,6 +167,7 @@ void APlayerData::InitCombatAttributes()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
+
 }
 
 void APlayerData::InitPlayerAssets()
@@ -315,6 +320,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 					Result.ForwardOffset = ActionRow->ForwardOffset;
 					Result.Cooldown = ActionRow->Cooldown;
 					Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+					Result.ManaCost = ActionRow->ManaCost;
 				}
 				else
 				{
