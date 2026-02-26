@@ -1,18 +1,19 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
-#include "FamiliarAnimInstance.generated.h"
+#include "Data/Enums/GameEnums.h"
+#include "PlayerAnimInstance.generated.h"
 
-class APawn;
+class ACharacterBase;
 
 /**
- * 퍼밀리어 및 일반 몬스터 공용 애니메이션 인스턴스
+ * 
  */
 UCLASS()
-class PARADISE_API UFamiliarAnimInstance : public UAnimInstance
+class PARADISE_API UPlayerAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 	
@@ -24,6 +25,8 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
+	TObjectPtr<APawn> OwnerPawn;
 	/*
 	 * @brief 현재 이동 속도 (BlendSpace에서 사용)
 	 */
@@ -31,8 +34,8 @@ protected:
 	float CurrentSpeed;
 
 	/*
-	 * @brief 최적화를 위해 매번 찾지 않고 캐싱해두는 주인 폰(Pawn)
+	 * 캐릭터가 현재 들고 있는 무기 타입 (검, 활 등 무기에 따른 애니메이션 분기용)
 	 */
-	UPROPERTY()
-	TObjectPtr<APawn> OwnerPawn;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	EWeaponType CurrentWeaponType;
 };
