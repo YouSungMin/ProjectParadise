@@ -6,16 +6,23 @@
 #include "UI/Panel/Ingame/ActionControlPanel.h"
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "UI/Panel/Ingame/SummonControlPanel.h"
+
 #include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "UI/Widgets/Ingame/VirtualJoystickWidget.h"
 #include "UI/Widgets/Ingame/CharacterStatusWidget.h"
 #include "UI/Widgets/Ingame/GameTimerWidget.h"
-
 #include "UI/Widgets/Ingame/Popup/VictoryPopupWidget.h"
 #include "UI/Widgets/Ingame/Popup/DefeatPopupWidget.h"
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
+#include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/InventorySystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+
+#include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/GrowthStruct.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
@@ -47,7 +54,7 @@ void UInGameHUDWidget::NativeConstruct()
 		VirtualJoystick->OnJoystickInput.AddDynamic(this, &UInGameHUDWidget::OnJoystickInput);
 	}
 
-	/** @section 설정 팝업 사전 생성 (캐싱) */
+	// 4. 설정 팝업 객체 풀링(캐싱)
 	if (SettingsPopupClass && !SettingsPopupInstance)
 	{
 		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
@@ -58,11 +65,11 @@ void UInGameHUDWidget::NativeConstruct()
 		}
 	}
 
-	// 4. GameState 연결 및 델리게이트 구독 (핵심)
+	// 5. 시스템 초기화 및 데이터 동기화
 	InitializeHUD();
 #pragma endregion 초기화
 
-	// 5. 타이머 UI 갱신 (0.5초마다 남은 시간만 갱신)
+	// 6. UI 갱신 타이머 시작 (최적화를 위해 0.5초 간격 유지)
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(
@@ -106,105 +113,133 @@ void UInGameHUDWidget::InitializeHUD()
 
 		// 현재 상태 즉시 반영 (이미 게임 진행 중일 경우 대비)
 		HandleGamePhaseChanged(GS->CurrentPhase);
-
-		UE_LOG(LogTemp, Log, TEXT("[InGameHUD] GameState 연결 완료."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[InGameHUD] GameState를 찾을 수 없습니다."));
 	}
 }
 
 void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 {
+	if (!CachedGameState.IsValid()) return;
+
 	UE_LOG(LogTemp, Log, TEXT("[InGameHUD] 페이즈 변경 감지: %d"), (int32)NewPhase);
 
-	// 결과 화면인가? (승리 혹은 패배)
-	bool bIsResultPhase = (NewPhase == EGamePhase::Victory || NewPhase == EGamePhase::Defeat || NewPhase == EGamePhase::Result);
+	// 1. 결과 관련 상태 판별 (정산 혹은 종료 단계인지 확인)
+	const bool bIsFinishing = (NewPhase == EGamePhase::Victory || NewPhase == EGamePhase::Defeat || NewPhase == EGamePhase::Result);
 
-	// 1. 인게임 UI (조이스틱, 타이머 등) 제어
-	// 결과창이 뜨면 조작 UI는 숨긴다.
-	ESlateVisibility InGameUIVisibility = bIsResultPhase ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
+	// 2. 인게임 조작 인터페이스 일괄 가시성 제어 (최적화)
+	ESlateVisibility ControlUIVis = bIsFinishing ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
 
-	if (VirtualJoystick) VirtualJoystick->SetVisibility(InGameUIVisibility);
-	if (GameTimerWidget) GameTimerWidget->SetVisibility(InGameUIVisibility);
-	if (ActionControlPanel) ActionControlPanel->SetVisibility(InGameUIVisibility);
-	if (SummonControlPanel) SummonControlPanel->SetVisibility(InGameUIVisibility);
-	if (PartyStatusPanel) PartyStatusPanel->SetVisibility(InGameUIVisibility);
+	if (VirtualJoystick)   VirtualJoystick->SetVisibility(ControlUIVis);
+	if (GameTimerWidget)   GameTimerWidget->SetVisibility(ControlUIVis);
+	if (ActionControlPanel) ActionControlPanel->SetVisibility(ControlUIVis);
+	if (SummonControlPanel) SummonControlPanel->SetVisibility(ControlUIVis);
+	if (PartyStatusPanel)  PartyStatusPanel->SetVisibility(ControlUIVis);
+	if (Btn_AutoMode)      Btn_AutoMode->SetVisibility(ControlUIVis);
+	if (Btn_Setting)       Btn_Setting->SetVisibility(ControlUIVis);
 
-	if (Btn_AutoMode) Btn_AutoMode->SetVisibility(InGameUIVisibility);
-	if (Btn_Setting) Btn_Setting->SetVisibility(InGameUIVisibility);
-
-	// 2. 팝업 표시 로직
+	// 3. 단계별 팝업 노출 처리 (상태 머신)
 	switch (NewPhase)
 	{
 	case EGamePhase::Victory:
-		if (Widget_VictoryPopup && CachedGameState.IsValid())
-		{
-			// TODO: 나중에는 GameState나 StageDataTable에서 실제 현재 스테이지 이름을 가져와야 함.
-			// 지금은 테스트용으로 하드코딩.
-			FText CurrentStageName = FText::FromString(TEXT("STAGE 1-1"));
-
-			// 1. 재화 정보
-			int32 Gold = CachedGameState->AcquiredGold;
-			int32 Exp = CachedGameState->AcquiredExp;
-			int32 Stars = 3;
-
-			// 2. 캐릭터 데이터 구성 (여기서 데이터를 만드는 건 필수입니다. 나중에 GameState에서 가져오더라도요.)
-			// 다만, 이제 이 데이터를 위젯이 직접 파싱하는 게 아니라 구조체로 묶어서 통째로 넘깁니다.
-			TArray<FResultCharacterData> CharResults;
-
-			// TODO: 실제로는 GameState->GetParticipatedCharacters() 등으로 루프를 돌며 채워야 함
-			for (int i = 0; i < 3; i++)
-			{
-				FResultCharacterData DummyData;
-				DummyData.CharacterName = FText::FromString(FString::Printf(TEXT("Hero %d"), i + 1));
-				DummyData.GainedExp = 150;
-				DummyData.ExpPercent = 0.5f;
-				CharResults.Add(DummyData);
-			}
-
-			// 3. 팝업 호출 (팝업 -> 패널 -> 슬롯 순으로 데이터가 전파됨)
-			Widget_VictoryPopup->SetVictoryData(
-				CurrentStageName,
-				Stars,
-				Gold,
-				Exp,
-				CharResults
-			);
-
-			// 4. 표시
-			Widget_VictoryPopup->SetVisibility(ESlateVisibility::Visible);
-		}
-		break;
-
 	case EGamePhase::Defeat:
-		// 패배 팝업 표시
-		if (Widget_DefeatPopup)
-		{
-			Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
-
-			// 승리 팝업은 확실히 끄기
-			if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		// 연출 대기 시간(3초) 동안에는 팝업을 띄우지 않고 확실히 숨겨둡니다.
+		if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
+		if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Collapsed);
 		break;
+
 	case EGamePhase::Result:
-		// Result 페이즈는 승리/패배 팝업이 계속 떠 있어야 하는 상태이므로
-		// 아무것도 숨기지 않고 그대로 둡니다.
+		// 모든 정산이 끝난 '진짜' 결과 시점
+		if (CachedGameState.IsValid())
+		{
+			// 골드 보상이 0보다 크면 승리로 간주 (또는 별점 로직 연동)
+			bool bIsActuallyVictory = (CachedGameState->AcquiredGold > 0);
+
+			if (bIsActuallyVictory)
+			{
+				if (Widget_VictoryPopup)
+				{
+					// 유지된 정산 함수 호출!
+					UpdateVictoryPopupData();
+					Widget_VictoryPopup->SetVisibility(ESlateVisibility::Visible);
+				}
+				if (Widget_DefeatPopup) Widget_DefeatPopup->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			else
+			{
+				// 패배 시 정산 없이 패배창만 띄움
+				if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+				if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
 		break;
 
 	default:
-		// 전투 중이거나 준비 상태 등에서는 팝업을 모두 숨김
+		// 전투 중 혹은 대기 중에는 모든 결과창 강제 숨김
 		if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
-		if (Widget_DefeatPopup) Widget_DefeatPopup->SetVisibility(ESlateVisibility::Collapsed);
+		if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Collapsed);
 		break;
 	}
 }
 
+void UInGameHUDWidget::UpdateVictoryPopupData()
+{
+	if (!Widget_VictoryPopup || !CachedGameState.IsValid()) return;
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	// 1. 게임 스테이트에서 최종 확정된 보상값 추출
+	FText StageName = FText::FromString(CachedGameState->DisplayStageName);
+	int32 Gold = CachedGameState->AcquiredGold;
+	int32 Aether = CachedGameState->AcquiredAether;
+	int32 Exp = CachedGameState->AcquiredExp;
+	FName NextStage = CachedGameState->NextStageID;
+	int32 StarCount = 3; // TODO: GameState의 별점 로직 연동 예정
+
+	// 2. 참여한 캐릭터 데이터 수집 (최신 인벤토리 동기화)
+	TArray<FResultCharacterData> CharResults;
+	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+
+	if (SquadSys && InvSys)
+	{
+		for (const FName& HeroID : SquadSys->GetPlayerSquad())
+		{
+			if (HeroID.IsNone()) continue;
+
+			FResultCharacterData Result;
+			Result.CharacterName = FText::FromName(HeroID);
+			Result.GainedExp = Exp;
+
+			// 초상화 데이터 로드
+			if (auto* AssetData = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, HeroID))
+			{
+				Result.PortraitImage = AssetData->FaceIcon.LoadSynchronous();
+			}
+
+			// 최신 경험치 반영율(%) 계산 (Data-Driven)
+			if (const FOwnedCharacterData* OwnedData = InvSys->GetCharacterDataByID(HeroID))
+			{
+				FName NextRow = FName(*FString::FromInt(OwnedData->Level + 1));
+				if (auto* LvData = GI->GetDataTableRow<FCharacterLevelUpData>(GI->CharacterLevelUpDataTable, NextRow))
+				{
+					float SafeRequired = FMath::Max(1.0f, (float)LvData->RequiredExp);
+					Result.ExpPercent = FMath::Clamp((float)OwnedData->CurrentExp / SafeRequired, 0.0f, 1.0f);
+				}
+				else
+				{
+					Result.ExpPercent = 1.0f; // 만렙 도달 시
+				}
+			}
+			CharResults.Add(Result);
+		}
+	}
+
+	// 3. 조립된 데이터를 뷰(Popup)에 전달
+	Widget_VictoryPopup->SetVictoryData(StageName, StarCount, Gold, Aether, CharResults, NextStage);
+}
+
 void UInGameHUDWidget::OnSettingButtonClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("Setting Button Clicked"));
-
 	/** @section 팝업 열기 (인게임은 열릴 때 시간이 멈춥니다!) */
 	if (SettingsPopupInstance)
 	{

@@ -109,6 +109,10 @@ protected:
 	UPROPERTY()
 	FTimerHandle StageTimerHandle;
 
+	/** @brief [타이머] 결과 창 뜨기 전에 연출을 위한 타이머 핸들*/
+	UPROPERTY()
+	FTimerHandle ResultTimerHandle;
+
 protected:
 	/** @brief 전투 전 미리 생성해둘 데미지 텍스트 블루프린트 클래스 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Pool")

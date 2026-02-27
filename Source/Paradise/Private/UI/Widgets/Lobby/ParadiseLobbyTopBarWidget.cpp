@@ -41,9 +41,6 @@ void UParadiseLobbyTopBarWidget::NativeConstruct()
 			UpdateCurrencyUI(CurrentGold, CurrentAether);
 		}
 	}
-	
-	// 서브시스템에서 받아서 옴
-	UpdateCurrencyUI(0, 0);
 }
 
 void UParadiseLobbyTopBarWidget::NativeDestruct()
