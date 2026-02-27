@@ -7,22 +7,24 @@
 #include "Components/Button.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/GrowthSubsystem.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/GrowthStruct.h"
 
-#pragma region 헬퍼 함수
-/** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
-static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
-{
-	switch (Rarity)
-	{
-	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
-	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
-	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
-	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
-	}
-}
-#pragma endregion 헬퍼 함수
+//#pragma region 헬퍼 함수
+///** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
+//static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
+//{
+//	switch (Rarity)
+//	{
+//	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
+//	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
+//	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
+//	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
+//	}
+//}
+//#pragma endregion 헬퍼 함수
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -209,36 +211,182 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 	return Result;
 }
 
+void UParadiseEnhancePopupWidget::ProcessWeaponStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedItem || !CachedGI.IsValid()) return;
+
+	int32 CurLv = OwnedItem->EnhancementLevel;
+	if (auto* WpnStats = CachedGI.Get()->GetDataTableRow<FWeaponStats>(CachedGI.Get()->WeaponStatsDataTable, OwnedItem->ItemID))
+	{
+		FName TargetCostID = WpnStats->LevelUpCostId;
+		if (auto* EnhData = CachedGI.Get()->GetDataTableRow<FEquipmentEnhanceData>(CachedGI.Get()->EquipmentEnhanceDataTable, TargetCostID))
+		{
+			// 현재 스탯 조립
+			float CurMultiplier = 1.0f + (CurLv * EnhData->StatBonusPerLevel);
+			OutCurrentStat = FString::Printf(TEXT("[강화 +%d]\n공격력: %d\n공격속도: %.2f\n치명타 확률: %.1f%%\n치명타 피해: %d%%"),
+				CurLv,
+				FMath::RoundToInt(WpnStats->AttackPower * CurMultiplier),
+				WpnStats->AttackSpeed,
+				WpnStats->CritRate * 100.0f,
+				FMath::RoundToInt(WpnStats->CritDamage * 100.0f));
+
+			// 만렙 vs 다음 레벨 스탯 조립
+			if (CurLv >= EnhData->MaxEnhanceLevel)
+			{
+				OutNextStat = TEXT("최대 강화 도달");
+				OutCost = 0;
+			}
+			else
+			{
+				float NxtMultiplier = 1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel);
+				OutNextStat = FString::Printf(TEXT("[강화 +%d]\n공격력: %d\n공격속도: %.2f\n치명타 확률: %.1f%%\n치명타 피해: %d%%"),
+					CurLv + 1,
+					FMath::RoundToInt(WpnStats->AttackPower * NxtMultiplier),
+					WpnStats->AttackSpeed,
+					WpnStats->CritRate * 100.0f,
+					FMath::RoundToInt(WpnStats->CritDamage * 100.0f));
+
+				OutCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
+			}
+		}
+	}
+}
+
+void UParadiseEnhancePopupWidget::ProcessArmorStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedItem || !CachedGI.IsValid()) return;
+
+	int32 CurLv = OwnedItem->EnhancementLevel;
+	if (auto* ArmorStats = CachedGI.Get()->GetDataTableRow<FArmorStats>(CachedGI.Get()->ArmorStatsDataTable, OwnedItem->ItemID))
+	{
+		FName TargetCostID = ArmorStats->LevelUpCostId;
+		if (auto* EnhData = CachedGI.Get()->GetDataTableRow<FEquipmentEnhanceData>(CachedGI.Get()->EquipmentEnhanceDataTable, TargetCostID))
+		{
+			float CurMultiplier = 1.0f + (CurLv * EnhData->StatBonusPerLevel);
+			OutCurrentStat = FString::Printf(TEXT("[강화 +%d]\n방어력: %d\n최대 체력: %d\n최대 마나: %d"),
+				CurLv,
+				FMath::RoundToInt(ArmorStats->DefensePower * CurMultiplier),
+				FMath::RoundToInt(ArmorStats->MaxHP * CurMultiplier),
+				FMath::RoundToInt(ArmorStats->MaxMana * CurMultiplier));
+
+			if (CurLv >= EnhData->MaxEnhanceLevel)
+			{
+				OutNextStat = TEXT("최대 강화 도달");
+				OutCost = 0;
+			}
+			else
+			{
+				float NxtMultiplier = 1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel);
+				OutNextStat = FString::Printf(TEXT("[강화 +%d]\n방어력: %d\n최대 체력: %d\n최대 마나: %d"),
+					CurLv + 1,
+					FMath::RoundToInt(ArmorStats->DefensePower * NxtMultiplier),
+					FMath::RoundToInt(ArmorStats->MaxHP * NxtMultiplier),
+					FMath::RoundToInt(ArmorStats->MaxMana * NxtMultiplier));
+
+				OutCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
+			}
+		}
+	}
+}
+
+void UParadiseEnhancePopupWidget::ProcessCharacterStats(const FOwnedCharacterData* OwnedChar, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedChar || !CachedGI.IsValid()) return;
+
+	int32 CurAwaken = OwnedChar->AwakeningLevel;
+	int32 CurLevelCap = 30;
+	float CurMultiplier = 1.0f;
+
+	FName CurRow = FName(*FString::FromInt(CurAwaken));
+	if (auto* CurAwkData = CachedGI.Get()->GetDataTableRow<FCharacterAwakenData>(CachedGI.Get()->CharacterAwakenDataTable, CurRow))
+	{
+		CurLevelCap = CurAwkData->MaxLevelCap;
+		CurMultiplier = CurAwkData->BonusStatMultiplier;
+	}
+
+	OutCurrentStat = FString::Printf(TEXT("[%d단계 돌파]\n최대 레벨 상한: %d\n전체 스탯 증가: %d%%"),
+		CurAwaken, CurLevelCap, FMath::RoundToInt((CurMultiplier - 1.0f) * 100.0f));
+
+	FName NextRow = FName(*FString::FromInt(CurAwaken + 1));
+	if (auto* NextAwkData = CachedGI.Get()->GetDataTableRow<FCharacterAwakenData>(CachedGI.Get()->CharacterAwakenDataTable, NextRow))
+	{
+		OutNextStat = FString::Printf(TEXT("[%d단계 돌파]\n최대 레벨 상한: %d\n전체 스탯 증가: %d%%"),
+			CurAwaken + 1,
+			NextAwkData->MaxLevelCap,
+			FMath::RoundToInt((NextAwkData->BonusStatMultiplier - 1.0f) * 100.0f));
+
+		OutCost = NextAwkData->RequiredAwakeningPieces;
+	}
+	else
+	{
+		OutNextStat = TEXT("최대 돌파 도달");
+		OutCost = 0;
+	}
+}
+
 void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
 {
 	SelectedItem = ItemData;
+	if (!Panel_Detail || !CachedGI.IsValid() || !CachedInventorySys.IsValid()) return;
 
-	if (!Panel_Detail) return;
+	int32 RequiredCost = 0;
+	FString CurrentStatStr = TEXT("");
+	FString NextStatStr = TEXT("");
 
-	/**
-	 * @todo 나중에 InventorySystem에서 진짜 스탯/비용 계산 함수를 제공하면 아래 코드를 교체합니다.
-	 * 현재는 아키텍처 흐름 확인용 임시 연산입니다.
-	 */
-	int32 RequiredCost = ItemData.Level * 150;
-	FString CurrentStat = FString::Printf(TEXT("레벨 %d\n공격력 %d"), ItemData.Level, ItemData.Level * 10);
-	FString NextStat = FString::Printf(TEXT("레벨 %d\n공격력 %d"), ItemData.Level + 1, (ItemData.Level + 1) * 10);
+	// 1. 탭 상태에 맞춰 각 분야 전문 헬퍼 함수로 데이터 처리를 위임 (SRP 준수)
+	if (CurrentTabIndex == SquadTabs::Weapon)
+	{
+		if (const FOwnedItemData* OwnedItem = CachedInventorySys.Get()->GetItemByGUID(ItemData.InstanceUID))
+		{
+			ProcessWeaponStats(OwnedItem, RequiredCost, CurrentStatStr, NextStatStr);
+		}
+	}
+	else if (CurrentTabIndex == SquadTabs::Armor)
+	{
+		if (const FOwnedItemData* OwnedItem = CachedInventorySys.Get()->GetItemByGUID(ItemData.InstanceUID))
+		{
+			ProcessArmorStats(OwnedItem, RequiredCost, CurrentStatStr, NextStatStr);
+		}
+	}
+	else if (CurrentTabIndex == SquadTabs::Character)
+	{
+		if (const FOwnedCharacterData* OwnedChar = CachedInventorySys.Get()->GetCharacterDataByID(ItemData.ID))
+		{
+			ProcessCharacterStats(OwnedChar, RequiredCost, CurrentStatStr, NextStatStr);
+		}
+	}
 
-	// 팝업이 데이터를 조립해서 디테일 패널에 "그려!" 라고만 명령합니다.
-	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStat, NextStat);
+	// 2. 가공이 끝난 깔끔한 데이터를 디테일 뷰에 한 번에 렌더링 지시!
+	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStatStr, NextStatStr);
 }
 
 void UParadiseEnhancePopupWidget::RequestEnhance()
 {
-	if (!CachedInventorySys.IsValid()) return;
-	UE_LOG(LogTemp, Log, TEXT("시스템에 [무기/장비 강화] 요청: UID %s"), *SelectedItem.InstanceUID.ToString());
-	// CachedInventorySys->EnhanceItem(SelectedItem.InstanceUID);
+	if (!CachedGI.IsValid() || !SelectedItem.InstanceUID.IsValid()) return;
+
+	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
+	if (GrowthSys)
+	{
+		bool bSuccess = GrowthSys->EnhanceEquipment(SelectedItem.InstanceUID);
+
+		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
+		if (bSuccess) RefreshAfterEnhancement();
+	}
 }
 
 void UParadiseEnhancePopupWidget::RequestBreakthrough()
 {
-	if (!CachedInventorySys.IsValid()) return;
-	UE_LOG(LogTemp, Log, TEXT("시스템에 [캐릭터 돌파] 요청: UID %s"), *SelectedItem.InstanceUID.ToString());
-	// CachedInventorySys->BreakthroughCharacter(SelectedItem.InstanceUID);
+	if (!CachedGI.IsValid() || SelectedItem.ID.IsNone()) return;
+
+	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
+	if (GrowthSys)
+	{
+		// 돌파는 InstanceUID가 아닌 원본 FName(ID)로 요청합니다.
+		bool bSuccess = GrowthSys->AwakenCharacter(SelectedItem.ID);
+
+		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
+		if (bSuccess) RefreshAfterEnhancement();
+	}
 }
 void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }

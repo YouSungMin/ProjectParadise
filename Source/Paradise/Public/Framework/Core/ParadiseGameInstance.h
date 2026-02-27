@@ -206,6 +206,4 @@ private:
 
 #pragma endregion 데이터 테이블
 
-
-
 };

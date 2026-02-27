@@ -20,6 +20,7 @@ class UResultCharacterPanelWidget;
  * @details
  * 1. 보상(골드, 경험치, 별)을 표시합니다.
  * 2. 캐릭터 목록 표시는 하위 컴포넌트인 ResultCharacterPanelWidget에게 위임합니다.
+ * 3. 다음 스테이지 ID를 캐싱하여, 클릭 시 데이터테이블을 조회해 알맞은 맵으로 이동시킵니다.
  */
 UCLASS()
 class PARADISE_API UVictoryPopupWidget : public UGameResultWidgetBase
@@ -28,24 +29,27 @@ class PARADISE_API UVictoryPopupWidget : public UGameResultWidgetBase
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 #pragma region 외부 인터페이스
 public:
 	/**
-	 * @brief 승리 데이터를 설정합니다.
-	 * @param InStageName 스테이지 이름
-	 * @param InStarCount 별 개수
-	 * @param InEarnedGold 획득 골드
-	 * @param InEarnedAether 획득 에테르
-	 * @param InCharacterResults 캐릭터별 결과 데이터 배열
+	 * @brief 승리 데이터를 UI에 반영하고 상태를 캐싱합니다.
+	 * @param InStageName 현재 스테이지 이름 (UI 표시용)
+	 * @param InStarCount 획득한 별 개수 (1~3)
+	 * @param InEarnedGold 이번 판에 획득한 골드
+	 * @param InEarnedAether 이번 판에 획득한 에테르(최초 클리어 보상)
+	 * @param InCharacterResults 캐릭터별 경험치 정산 데이터 배열
+	 * @param InNextStageID 다음으로 이동할 스테이지의 고유 ID (테이블 조회용)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Result")
 	void SetVictoryData(
 		FText InStageName,
-		int32 InStarCount, 
+		int32 InStarCount,
+		int32 InEarnedGold,
 		int32 InEarnedAether,
-		int32 InEarnedExp, 
-		const TArray<FResultCharacterData>& InCharacterResults);
+		const TArray<FResultCharacterData>& InCharacterResults,
+		FName InNextStageID);
 #pragma endregion 외부 인터페이스
 
 #pragma region 승리 전용 UI
@@ -62,13 +66,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_GoldValue = nullptr;
 
-	/** @brief 스테이지 이름 텍스트. */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_Stage = nullptr;
-
 	/** @brief 획득 보석 표시 텍스트. */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_AetherValue = nullptr;
+
+	/** @brief 스테이지 이름 텍스트. */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_Stage = nullptr;
 
 	/** @brief 첫 번째 별 이미지. */
 	UPROPERTY(meta = (BindWidget))
@@ -92,10 +96,6 @@ protected:
 	/** @brief 별 비활성화 시 사용할 텍스처 (회색 별). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Paradise|Resource")
 	TObjectPtr<UTexture2D> StarOffTexture = nullptr;
-
-	/** @brief 다음 스테이지 레벨 이름 (기획 데이터 연동 필요). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Paradise|Config")
-	FName NextStageLevelName = NAME_None;
 #pragma endregion 리소스 설정
 
 #pragma region 내부 로직
@@ -103,5 +103,8 @@ private:
 	/** @brief 다음 스테이지 버튼 클릭 핸들러. */
 	UFUNCTION()
 	void OnNextStageClicked();
+
+	/** @brief GameMode로부터 전달받은 다음 스테이지의 식별자(ID) */
+	FName CachedNextStageID = NAME_None;
 #pragma endregion 내부 로직
 };

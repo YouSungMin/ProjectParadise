@@ -73,6 +73,12 @@ private:
 	UFUNCTION()
 	void HandleGamePhaseChanged(EGamePhase NewPhase);
 
+	/**
+	 * @brief 승리 팝업에 필요한 정산 영수증(최신 데이터)을 구성하여 전달합니다.
+	 */
+	UFUNCTION()
+	void UpdateVictoryPopupData();
+
 	/** @brief 설정 버튼 클릭 처리 */
 	UFUNCTION()
 	void OnSettingButtonClicked();

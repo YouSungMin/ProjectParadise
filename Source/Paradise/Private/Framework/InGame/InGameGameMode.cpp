@@ -274,6 +274,8 @@ void AInGameGameMode::OnPhaseVictory()
 {
 	// 승리했을 떄 타이머 정지 
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
+	// 이전 타이머가 있다면 확실히 제거 (상태 중첩 방지)
+	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
 
 	UE_LOG(LogTemp, Log, TEXT("Phase: Victory! 보상 지급 준비"));
 	if (CachedGameState)
@@ -295,8 +297,7 @@ void AInGameGameMode::OnPhaseVictory()
 
 
 	//3. 3초 후 결과 단계(Result)로 전환
-	FTimerHandle ResultTimer;
-	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
+	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
 		}, 3.0f, false);
 }
@@ -304,6 +305,8 @@ void AInGameGameMode::OnPhaseVictory()
 void AInGameGameMode::OnPhaseDefeat()
 {
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
+
+	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
 
 	if(CachedGameState) CachedGameState->bIsTimerActive = false;
 	UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
@@ -317,8 +320,7 @@ void AInGameGameMode::OnPhaseDefeat()
 	}
 	
 	//3초 후 결과 단계(Result)로 전환
-	FTimerHandle ResultTimer;
-	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
+	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
 		}, 3.0f, false);
 	
@@ -333,6 +335,7 @@ void AInGameGameMode::OnPhaseResult()
 
 void AInGameGameMode::DistributeStageRewards()
 {
+
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
 
