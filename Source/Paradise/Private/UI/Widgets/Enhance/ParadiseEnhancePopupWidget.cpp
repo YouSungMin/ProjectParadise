@@ -7,22 +7,24 @@
 #include "Components/Button.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/GrowthSubsystem.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/GrowthStruct.h"
 
-#pragma region 헬퍼 함수
-/** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
-static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
-{
-	switch (Rarity)
-	{
-	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
-	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
-	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
-	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
-	}
-}
-#pragma endregion 헬퍼 함수
+//#pragma region 헬퍼 함수
+///** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
+//static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
+//{
+//	switch (Rarity)
+//	{
+//	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
+//	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
+//	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
+//	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
+//	}
+//}
+//#pragma endregion 헬퍼 함수
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -212,33 +214,112 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
 {
 	SelectedItem = ItemData;
+	if (!Panel_Detail || !CachedGI.IsValid() || !CachedInventorySys.IsValid()) return;
 
-	if (!Panel_Detail) return;
+	int32 RequiredCost = 0;
+	FString CurrentStatStr = TEXT("");
+	FString NextStatStr = TEXT("");
 
-	/**
-	 * @todo 나중에 InventorySystem에서 진짜 스탯/비용 계산 함수를 제공하면 아래 코드를 교체합니다.
-	 * 현재는 아키텍처 흐름 확인용 임시 연산입니다.
-	 */
-	int32 RequiredCost = ItemData.Level * 150;
-	FString CurrentStat = FString::Printf(TEXT("레벨 %d\n공격력 %d"), ItemData.Level, ItemData.Level * 10);
-	FString NextStat = FString::Printf(TEXT("레벨 %d\n공격력 %d"), ItemData.Level + 1, (ItemData.Level + 1) * 10);
+	// 1. 장비 (무기/방어구) 연산
+	if (CurrentTabIndex == SquadTabs::Weapon || CurrentTabIndex == SquadTabs::Armor)
+	{
+		if (const FOwnedItemData* OwnedItem = CachedInventorySys->GetItemByGUID(ItemData.InstanceUID))
+		{
+			FName TargetCostID = NAME_None;
+			float BaseStatValue = 0.0f;
+			FString StatName = (CurrentTabIndex == SquadTabs::Weapon) ? TEXT("공격력") : TEXT("방어력");
 
-	// 팝업이 데이터를 조립해서 디테일 패널에 "그려!" 라고만 명령합니다.
-	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStat, NextStat);
+			if (CurrentTabIndex == SquadTabs::Weapon)
+			{
+				if (auto* WpnStats = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, OwnedItem->ItemID))
+				{
+					TargetCostID = WpnStats->LevelUpCostId;
+					BaseStatValue = WpnStats->AttackPower;
+				}
+			}
+			else
+			{
+				if (auto* ArmorStats = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, OwnedItem->ItemID))
+				{
+					TargetCostID = ArmorStats->LevelUpCostId;
+					BaseStatValue = ArmorStats->DefensePower;
+				}
+			}
+
+			if (auto* EnhData = CachedGI->GetDataTableRow<FEquipmentEnhanceData>(CachedGI->EquipmentEnhanceDataTable, TargetCostID))
+			{
+				int32 CurLv = OwnedItem->EnhancementLevel;
+
+				float CurStat = BaseStatValue * (1.0f + (CurLv * EnhData->StatBonusPerLevel));
+				CurrentStatStr = FString::Printf(TEXT("강화 +%d\n%s: %d"), CurLv, *StatName, FMath::RoundToInt(CurStat));
+
+				if (CurLv >= EnhData->MaxEnhanceLevel)
+				{
+					NextStatStr = TEXT("최대 강화 도달");
+					RequiredCost = 0; // 최대 레벨일 경우 Cost를 0으로 설정
+				}
+				else
+				{
+					float NxtStat = BaseStatValue * (1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel));
+					NextStatStr = FString::Printf(TEXT("강화 +%d\n%s: %d"), CurLv + 1, *StatName, FMath::RoundToInt(NxtStat));
+					RequiredCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
+				}
+			}
+		}
+	}
+	// 2. 캐릭터 (돌파) 연산
+	else if (CurrentTabIndex == SquadTabs::Character)
+	{
+		if (const FOwnedCharacterData* OwnedChar = CachedInventorySys->GetCharacterDataByID(ItemData.ID))
+		{
+			int32 CurAwaken = OwnedChar->AwakeningLevel;
+			CurrentStatStr = FString::Printf(TEXT("%d단계 돌파"), CurAwaken);
+
+			FName NextRow = FName(*FString::FromInt(CurAwaken + 1));
+			if (auto* NextAwkData = CachedGI->GetDataTableRow<FCharacterAwakenData>(CachedGI->CharacterAwakenDataTable, NextRow))
+			{
+				NextStatStr = FString::Printf(TEXT("%d단계 돌파\n(최대 레벨 %d 확장)"), CurAwaken + 1, NextAwkData->MaxLevelCap);
+				RequiredCost = NextAwkData->RequiredAwakeningPieces;
+			}
+			else
+			{
+				NextStatStr = TEXT("최대 돌파 도달");
+				RequiredCost = 0; // 최대 레벨일 경우 Cost를 0으로 설정
+			}
+		}
+	}
+
+	// 3. UI 갱신 명령 하달 (Cost 0 전달 시 버튼이 알아서 비활성화됨)
+	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStatStr, NextStatStr);
 }
 
 void UParadiseEnhancePopupWidget::RequestEnhance()
 {
-	if (!CachedInventorySys.IsValid()) return;
-	UE_LOG(LogTemp, Log, TEXT("시스템에 [무기/장비 강화] 요청: UID %s"), *SelectedItem.InstanceUID.ToString());
-	// CachedInventorySys->EnhanceItem(SelectedItem.InstanceUID);
+	if (!CachedGI.IsValid() || !SelectedItem.InstanceUID.IsValid()) return;
+
+	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
+	if (GrowthSys)
+	{
+		bool bSuccess = GrowthSys->EnhanceEquipment(SelectedItem.InstanceUID);
+
+		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
+		if (bSuccess) RefreshAfterEnhancement();
+	}
 }
 
 void UParadiseEnhancePopupWidget::RequestBreakthrough()
 {
-	if (!CachedInventorySys.IsValid()) return;
-	UE_LOG(LogTemp, Log, TEXT("시스템에 [캐릭터 돌파] 요청: UID %s"), *SelectedItem.InstanceUID.ToString());
-	// CachedInventorySys->BreakthroughCharacter(SelectedItem.InstanceUID);
+	if (!CachedGI.IsValid() || SelectedItem.ID.IsNone()) return;
+
+	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
+	if (GrowthSys)
+	{
+		// 돌파는 InstanceUID가 아닌 원본 FName(ID)로 요청합니다.
+		bool bSuccess = GrowthSys->AwakenCharacter(SelectedItem.ID);
+
+		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
+		if (bSuccess) RefreshAfterEnhancement();
+	}
 }
 void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }

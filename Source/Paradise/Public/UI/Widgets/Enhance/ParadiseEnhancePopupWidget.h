@@ -13,6 +13,7 @@ class UParadiseEnhanceDetailWidget;
 class UButton;
 class UInventorySystem;
 class UParadiseGameInstance;
+class UGrowthSubsystem;
 #pragma endregion 전방 선언
 
 /** @brief 팝업 닫기 요청을 처리하기 위한 델리게이트 */
