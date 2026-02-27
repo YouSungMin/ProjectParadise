@@ -211,6 +211,119 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 	return Result;
 }
 
+void UParadiseEnhancePopupWidget::ProcessWeaponStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedItem || !CachedGI.IsValid()) return;
+
+	int32 CurLv = OwnedItem->EnhancementLevel;
+	if (auto* WpnStats = CachedGI.Get()->GetDataTableRow<FWeaponStats>(CachedGI.Get()->WeaponStatsDataTable, OwnedItem->ItemID))
+	{
+		FName TargetCostID = WpnStats->LevelUpCostId;
+		if (auto* EnhData = CachedGI.Get()->GetDataTableRow<FEquipmentEnhanceData>(CachedGI.Get()->EquipmentEnhanceDataTable, TargetCostID))
+		{
+			// 현재 스탯 조립
+			float CurMultiplier = 1.0f + (CurLv * EnhData->StatBonusPerLevel);
+			OutCurrentStat = FString::Printf(TEXT("[강화 +%d]\n공격력: %d\n공격속도: %.2f\n치명타 확률: %.1f%%\n치명타 피해: %d%%"),
+				CurLv,
+				FMath::RoundToInt(WpnStats->AttackPower * CurMultiplier),
+				WpnStats->AttackSpeed,
+				WpnStats->CritRate * 100.0f,
+				FMath::RoundToInt(WpnStats->CritDamage * 100.0f));
+
+			// 만렙 vs 다음 레벨 스탯 조립
+			if (CurLv >= EnhData->MaxEnhanceLevel)
+			{
+				OutNextStat = TEXT("최대 강화 도달");
+				OutCost = 0;
+			}
+			else
+			{
+				float NxtMultiplier = 1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel);
+				OutNextStat = FString::Printf(TEXT("[강화 +%d]\n공격력: %d\n공격속도: %.2f\n치명타 확률: %.1f%%\n치명타 피해: %d%%"),
+					CurLv + 1,
+					FMath::RoundToInt(WpnStats->AttackPower * NxtMultiplier),
+					WpnStats->AttackSpeed,
+					WpnStats->CritRate * 100.0f,
+					FMath::RoundToInt(WpnStats->CritDamage * 100.0f));
+
+				OutCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
+			}
+		}
+	}
+}
+
+void UParadiseEnhancePopupWidget::ProcessArmorStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedItem || !CachedGI.IsValid()) return;
+
+	int32 CurLv = OwnedItem->EnhancementLevel;
+	if (auto* ArmorStats = CachedGI.Get()->GetDataTableRow<FArmorStats>(CachedGI.Get()->ArmorStatsDataTable, OwnedItem->ItemID))
+	{
+		FName TargetCostID = ArmorStats->LevelUpCostId;
+		if (auto* EnhData = CachedGI.Get()->GetDataTableRow<FEquipmentEnhanceData>(CachedGI.Get()->EquipmentEnhanceDataTable, TargetCostID))
+		{
+			float CurMultiplier = 1.0f + (CurLv * EnhData->StatBonusPerLevel);
+			OutCurrentStat = FString::Printf(TEXT("[강화 +%d]\n방어력: %d\n최대 체력: %d\n최대 마나: %d"),
+				CurLv,
+				FMath::RoundToInt(ArmorStats->DefensePower * CurMultiplier),
+				FMath::RoundToInt(ArmorStats->MaxHP * CurMultiplier),
+				FMath::RoundToInt(ArmorStats->MaxMana * CurMultiplier));
+
+			if (CurLv >= EnhData->MaxEnhanceLevel)
+			{
+				OutNextStat = TEXT("최대 강화 도달");
+				OutCost = 0;
+			}
+			else
+			{
+				float NxtMultiplier = 1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel);
+				OutNextStat = FString::Printf(TEXT("[강화 +%d]\n방어력: %d\n최대 체력: %d\n최대 마나: %d"),
+					CurLv + 1,
+					FMath::RoundToInt(ArmorStats->DefensePower * NxtMultiplier),
+					FMath::RoundToInt(ArmorStats->MaxHP * NxtMultiplier),
+					FMath::RoundToInt(ArmorStats->MaxMana * NxtMultiplier));
+
+				OutCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
+			}
+		}
+	}
+}
+
+void UParadiseEnhancePopupWidget::ProcessCharacterStats(const FOwnedCharacterData* OwnedChar, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat)
+{
+	if (!OwnedChar || !CachedGI.IsValid()) return;
+
+	int32 CurAwaken = OwnedChar->AwakeningLevel;
+	int32 CurLevelCap = 30;
+	float CurMultiplier = 1.0f;
+
+	FName CurRow = FName(*FString::FromInt(CurAwaken));
+	if (auto* CurAwkData = CachedGI.Get()->GetDataTableRow<FCharacterAwakenData>(CachedGI.Get()->CharacterAwakenDataTable, CurRow))
+	{
+		CurLevelCap = CurAwkData->MaxLevelCap;
+		CurMultiplier = CurAwkData->BonusStatMultiplier;
+	}
+
+	OutCurrentStat = FString::Printf(TEXT("[%d단계 돌파]\n최대 레벨 상한: %d\n전체 스탯 증가: %d%%"),
+		CurAwaken, CurLevelCap, FMath::RoundToInt((CurMultiplier - 1.0f) * 100.0f));
+
+	FName NextRow = FName(*FString::FromInt(CurAwaken + 1));
+	if (auto* NextAwkData = CachedGI.Get()->GetDataTableRow<FCharacterAwakenData>(CachedGI.Get()->CharacterAwakenDataTable, NextRow))
+	{
+		OutNextStat = FString::Printf(TEXT("[%d단계 돌파]\n최대 레벨 상한: %d\n전체 스탯 증가: %d%%"),
+			CurAwaken + 1,
+			NextAwkData->MaxLevelCap,
+			FMath::RoundToInt((NextAwkData->BonusStatMultiplier - 1.0f) * 100.0f));
+
+		OutCost = NextAwkData->RequiredAwakeningPieces;
+	}
+	else
+	{
+		OutNextStat = TEXT("최대 돌파 도달");
+		OutCost = 0;
+	}
+}
+
 void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
 {
 	SelectedItem = ItemData;
@@ -220,76 +333,30 @@ void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData It
 	FString CurrentStatStr = TEXT("");
 	FString NextStatStr = TEXT("");
 
-	// 1. 장비 (무기/방어구) 연산
-	if (CurrentTabIndex == SquadTabs::Weapon || CurrentTabIndex == SquadTabs::Armor)
+	// 1. 탭 상태에 맞춰 각 분야 전문 헬퍼 함수로 데이터 처리를 위임 (SRP 준수)
+	if (CurrentTabIndex == SquadTabs::Weapon)
 	{
-		if (const FOwnedItemData* OwnedItem = CachedInventorySys->GetItemByGUID(ItemData.InstanceUID))
+		if (const FOwnedItemData* OwnedItem = CachedInventorySys.Get()->GetItemByGUID(ItemData.InstanceUID))
 		{
-			FName TargetCostID = NAME_None;
-			float BaseStatValue = 0.0f;
-			FString StatName = (CurrentTabIndex == SquadTabs::Weapon) ? TEXT("공격력") : TEXT("방어력");
-
-			if (CurrentTabIndex == SquadTabs::Weapon)
-			{
-				if (auto* WpnStats = CachedGI->GetDataTableRow<FWeaponStats>(CachedGI->WeaponStatsDataTable, OwnedItem->ItemID))
-				{
-					TargetCostID = WpnStats->LevelUpCostId;
-					BaseStatValue = WpnStats->AttackPower;
-				}
-			}
-			else
-			{
-				if (auto* ArmorStats = CachedGI->GetDataTableRow<FArmorStats>(CachedGI->ArmorStatsDataTable, OwnedItem->ItemID))
-				{
-					TargetCostID = ArmorStats->LevelUpCostId;
-					BaseStatValue = ArmorStats->DefensePower;
-				}
-			}
-
-			if (auto* EnhData = CachedGI->GetDataTableRow<FEquipmentEnhanceData>(CachedGI->EquipmentEnhanceDataTable, TargetCostID))
-			{
-				int32 CurLv = OwnedItem->EnhancementLevel;
-
-				float CurStat = BaseStatValue * (1.0f + (CurLv * EnhData->StatBonusPerLevel));
-				CurrentStatStr = FString::Printf(TEXT("강화 +%d\n%s: %d"), CurLv, *StatName, FMath::RoundToInt(CurStat));
-
-				if (CurLv >= EnhData->MaxEnhanceLevel)
-				{
-					NextStatStr = TEXT("최대 강화 도달");
-					RequiredCost = 0; // 최대 레벨일 경우 Cost를 0으로 설정
-				}
-				else
-				{
-					float NxtStat = BaseStatValue * (1.0f + ((CurLv + 1) * EnhData->StatBonusPerLevel));
-					NextStatStr = FString::Printf(TEXT("강화 +%d\n%s: %d"), CurLv + 1, *StatName, FMath::RoundToInt(NxtStat));
-					RequiredCost = EnhData->BaseGoldCost + (EnhData->GoldCostPerLevel * CurLv);
-				}
-			}
+			ProcessWeaponStats(OwnedItem, RequiredCost, CurrentStatStr, NextStatStr);
 		}
 	}
-	// 2. 캐릭터 (돌파) 연산
+	else if (CurrentTabIndex == SquadTabs::Armor)
+	{
+		if (const FOwnedItemData* OwnedItem = CachedInventorySys.Get()->GetItemByGUID(ItemData.InstanceUID))
+		{
+			ProcessArmorStats(OwnedItem, RequiredCost, CurrentStatStr, NextStatStr);
+		}
+	}
 	else if (CurrentTabIndex == SquadTabs::Character)
 	{
-		if (const FOwnedCharacterData* OwnedChar = CachedInventorySys->GetCharacterDataByID(ItemData.ID))
+		if (const FOwnedCharacterData* OwnedChar = CachedInventorySys.Get()->GetCharacterDataByID(ItemData.ID))
 		{
-			int32 CurAwaken = OwnedChar->AwakeningLevel;
-			CurrentStatStr = FString::Printf(TEXT("%d단계 돌파"), CurAwaken);
-
-			FName NextRow = FName(*FString::FromInt(CurAwaken + 1));
-			if (auto* NextAwkData = CachedGI->GetDataTableRow<FCharacterAwakenData>(CachedGI->CharacterAwakenDataTable, NextRow))
-			{
-				NextStatStr = FString::Printf(TEXT("%d단계 돌파\n(최대 레벨 %d 확장)"), CurAwaken + 1, NextAwkData->MaxLevelCap);
-				RequiredCost = NextAwkData->RequiredAwakeningPieces;
-			}
-			else
-			{
-				NextStatStr = TEXT("최대 돌파 도달");
-				RequiredCost = 0; // 최대 레벨일 경우 Cost를 0으로 설정
-			}
+			ProcessCharacterStats(OwnedChar, RequiredCost, CurrentStatStr, NextStatStr);
 		}
 	}
 
-	// 3. UI 갱신 명령 하달 (Cost 0 전달 시 버튼이 알아서 비활성화됨)
+	// 2. 가공이 끝난 깔끔한 데이터를 디테일 뷰에 한 번에 렌더링 지시!
 	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStatStr, NextStatStr);
 }
 
