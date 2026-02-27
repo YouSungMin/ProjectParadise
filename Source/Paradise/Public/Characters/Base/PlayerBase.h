@@ -125,16 +125,7 @@ protected:
 
 	/**  모듈형 캐릭터 파츠(Body는 ACharacter의 Mesh 사용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> HelmetMesh = nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> ChestMesh= nullptr; // 상의+하의 통합형이면 이것만 사용
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> GlovesMesh=nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> BootsMesh= nullptr;
+	TObjectPtr<USkeletalMeshComponent> HatMesh = nullptr;
 
 	/** 
 	  * @brief 무기 전용 메쉬 컴포넌트

@@ -338,10 +338,10 @@ EEquipmentSlot UInventorySystem::FindEquipmentSlot(FName ItemID) const
 		// 태그 비교 로직
 		const FGameplayTag& Tag = ArmorRow->ArmorTag;
 
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Helmet"))) return EEquipmentSlot::Helmet;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Chest")))  return EEquipmentSlot::Chest;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Gloves"))) return EEquipmentSlot::Gloves;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Boots")))  return EEquipmentSlot::Boots;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Hat"))) return EEquipmentSlot::Hat;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Armor")))  return EEquipmentSlot::Armor;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Necklace"))) return EEquipmentSlot::Necklace;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Ring")))  return EEquipmentSlot::Ring;
 
 		// 매칭되는 태그가 없으면 경고
 		UE_LOG(LogTemp, Warning, TEXT("⚠️ [FindSlot] 알 수 없는 방어구 태그: %s"), *Tag.ToString());

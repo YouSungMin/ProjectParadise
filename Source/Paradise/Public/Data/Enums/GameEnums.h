@@ -113,17 +113,17 @@ enum class EEquipmentSlot : uint8
 {
 	/** @brief 장착 슬롯 : 무기 */
 	Weapon		UMETA(DisplayName = "장착 슬롯 : 무기"),
-	/** @brief 장착 슬롯 : 투구 */
-	Helmet		UMETA(DisplayName = "장착 슬롯 : 투구"),
-	/** @brief 장착 슬롯 : 갑옷 */
-	Chest		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
-	/** @brief 장착 슬롯 : 장갑 */
-	Gloves		UMETA(DisplayName = "장착 슬롯 : 장갑"),
-	/** @brief 장착 슬롯 : 신발 */
-	Boots		UMETA(DisplayName = "장착 슬롯 : 신발"),
+	/** @brief 장착 슬롯 : 모자  */
+	Hat		UMETA(DisplayName = "장착 슬롯 : 모자"),
+	/** @brief 장착 슬롯 : 갑옷  */
+	Armor		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
+	/** @brief 장착 슬롯 : 목걸이 */
+	Necklace		UMETA(DisplayName = "장착 슬롯 : 목걸이"),
+	/** @brief 장착 슬롯 : 반지  */
+	Ring		UMETA(DisplayName = "장착 슬롯 : 반지"),
 	/** @brief 장착 슬롯 : 없음 */
 	None		UMETA(DisplayName = "장착 슬롯 : 없음"),
-	/** @brief 장착 슬롯 : 없음 */
+	/** @brief 장착 슬롯 : 오류 */
 	Unknown		UMETA(DisplayName = "장착 슬롯 : 오류")
 };
 
