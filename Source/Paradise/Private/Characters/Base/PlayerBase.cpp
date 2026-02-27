@@ -334,4 +334,8 @@ void APlayerBase::SendAbilityInputToASC(EInputID InputId, bool bIsPressed)
     }
 }
 
+USceneComponent* APlayerBase::GetWeaponMesh() const
+{
+    return WeaponMesh;
+}
 

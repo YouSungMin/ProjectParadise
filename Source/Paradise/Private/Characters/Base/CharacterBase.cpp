@@ -38,23 +38,34 @@ void ACharacterBase::TestKillSelf()
 	Die();
 }
 
-void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset)
+void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType)
 {
 	FVector TraceStart;
 
-	// 소켓 위치 찾기 시도
-	if (GetMesh()->DoesSocketExist(SocketName))
+	USceneComponent* TargetMesh = GetMesh();
+
+	// 2노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
+	if (TargetType == ESocketTargetType::EquippedWeapon)
 	{
-		TraceStart = GetMesh()->GetSocketLocation(SocketName);
+		if (USceneComponent* WpnMesh = GetWeaponMesh())
+		{
+			TargetMesh = WpnMesh; // 타겟 성공적 교체
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 소켓을 찾으려 했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
+		}
+	}
+
+	// 3결정된 TargetMesh에서 소켓 위치 찾기
+	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+	{
+		TraceStart = TargetMesh->GetSocketLocation(SocketName);
 	}
 	else
 	{
-		// ⚠️ 예외 처리: 소켓이 없거나 이름이 틀렸을 때
-		// 캐릭터의 위치 + 전방 100cm 앞을 타격 지점으로 설정
+		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
 		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
-
-		// 디버그용 로그
-		// UE_LOG(LogTemp, Warning, TEXT("[%s] 소켓(%s)을 찾을 수 없어 전방 위치를 사용합니다."), *GetName(), *SocketName.ToString());
 	}
 
 	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
@@ -177,6 +188,15 @@ FVector ACharacterBase::GetMuzzleLocation(FName SocketName) const
 
 	// 둘 다 없으면 기본 높이(가슴/배꼽) 반환
 	return GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+}
+
+USceneComponent* ACharacterBase::GetWeaponMesh() const
+{
+	if (CurrentWeaponActor)
+	{
+		return CurrentWeaponActor->GetComponentByClass<UMeshComponent>();
+	}
+	return nullptr;
 }
 
 void ACharacterBase::BeginPlay()

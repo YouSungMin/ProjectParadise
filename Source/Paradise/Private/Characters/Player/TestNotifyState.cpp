@@ -33,6 +33,6 @@ void UTestNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenc
 		float FinalRadius = (CurrentData.AttackRadius > 0.0f) ? CurrentData.AttackRadius : 40.0f; // 두께 기본값 40
 		float FinalOffset = CurrentData.ForwardOffset;
 
-		Character->CheckHit(SocketName, FinalRange, FinalRadius, FinalOffset);
+		Character->CheckHit(SocketName, FinalRange, FinalRadius, FinalOffset, SocketTarget);
 	}
 }

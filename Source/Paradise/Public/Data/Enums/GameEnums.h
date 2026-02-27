@@ -168,3 +168,14 @@ enum class EFXEventType : uint8
 	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
 	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
 };
+
+/**
+ * @enum ESocketTargetType
+ * @brief 소켓을 찾을 대상을 지정하는 Enum 선언
+ */
+UENUM(BlueprintType)
+enum class ESocketTargetType : uint8
+{
+	CharacterBody UMETA(DisplayName = "캐릭터 본체 (Character Body)"),
+	EquippedWeapon UMETA(DisplayName = "장착된 무기 (Equipped Weapon)")
+};
