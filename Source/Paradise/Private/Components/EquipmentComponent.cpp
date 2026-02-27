@@ -112,15 +112,12 @@ void UEquipmentComponent::UpdateVisuals(APlayerBase* TargetCharacter)
 	UE_LOG(LogTemp, Log, TEXT("🎨 [Visual] 캐릭터 외형 업데이트 시작... (Optimized)"));
 
 	//무기(Weapon)를 포함한 모든 슬롯을 하나의 배열로 관리
-	const TArray<EEquipmentSlot> AllSlots = {
+	const TArray<EEquipmentSlot> VisualSlots = {
 		EEquipmentSlot::Weapon,
-		EEquipmentSlot::Helmet,
-		EEquipmentSlot::Chest,
-		EEquipmentSlot::Gloves,
-		EEquipmentSlot::Boots
+		EEquipmentSlot::Hat,
 	};
 
-	for (EEquipmentSlot Slot : AllSlots)
+	for (EEquipmentSlot Slot : VisualSlots)
 	{
 		FOwnedItemData ItemData;
 

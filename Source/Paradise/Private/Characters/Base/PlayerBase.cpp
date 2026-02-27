@@ -46,21 +46,9 @@ APlayerBase::APlayerBase()
 
 void APlayerBase::InitializeComponents()
 {
-    HelmetMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
-    HelmetMesh->SetupAttachment(GetMesh()); // 부모 메쉬에 붙임
-    HelmetMesh->SetLeaderPoseComponent(GetMesh()); // 애니메이션 동기화
-
-    ChestMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ChestMesh"));
-    ChestMesh->SetupAttachment(GetMesh());
-    ChestMesh->SetLeaderPoseComponent(GetMesh());
-
-    GlovesMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GlovesMesh"));
-    GlovesMesh->SetupAttachment(GetMesh());
-    GlovesMesh->SetLeaderPoseComponent(GetMesh());
-
-    BootsMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BootsMesh"));
-    BootsMesh->SetupAttachment(GetMesh());
-    BootsMesh->SetLeaderPoseComponent(GetMesh());
+    HatMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
+    HatMesh->SetupAttachment(GetMesh()); // 부모 메쉬에 붙임
+    HatMesh->SetLeaderPoseComponent(GetMesh()); // 애니메이션 동기화
 
     WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMeshComp"));
     WeaponMesh->SetupAttachment(GetMesh(), TEXT("hand_r")); // 기본 소켓
@@ -182,10 +170,7 @@ USkeletalMeshComponent* APlayerBase::GetArmorComponent(EEquipmentSlot Slot) cons
 {
     switch (Slot)
     {
-    case EEquipmentSlot::Helmet: return HelmetMesh;
-    case EEquipmentSlot::Chest:  return ChestMesh;
-    case EEquipmentSlot::Gloves: return GlovesMesh;
-    case EEquipmentSlot::Boots:  return BootsMesh;
+    case EEquipmentSlot::Hat: return HatMesh;
     case EEquipmentSlot::Weapon:  return WeaponMesh;
     default: return nullptr;
     }
@@ -334,4 +319,8 @@ void APlayerBase::SendAbilityInputToASC(EInputID InputId, bool bIsPressed)
     }
 }
 
+USceneComponent* APlayerBase::GetWeaponMesh() const
+{
+    return WeaponMesh;
+}
 

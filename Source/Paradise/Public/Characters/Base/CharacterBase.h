@@ -74,7 +74,7 @@ public:
 	 * @param ForwardOffset : 타격 시작점을 앞으로 얼마나 밀어낼 것인가
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset);
+	void CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType);
 
 	/*
 	 * @brief 새로운 공격이 시작될 때 타격 목록 초기화
@@ -109,6 +109,10 @@ public:
 	/** @brief 무기 또는 몸통에서 소켓 위치를 찾아 반환합니다. */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	FVector GetMuzzleLocation(FName SocketName) const;
+
+	/** @brief 자식 클래스들이 무기 메쉬를 던져줄 수 있도록 가상 함수 선언 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual USceneComponent* GetWeaponMesh() const;
 protected:
 	virtual void BeginPlay() override;
 

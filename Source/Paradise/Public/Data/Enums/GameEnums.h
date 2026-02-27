@@ -113,17 +113,17 @@ enum class EEquipmentSlot : uint8
 {
 	/** @brief 장착 슬롯 : 무기 */
 	Weapon		UMETA(DisplayName = "장착 슬롯 : 무기"),
-	/** @brief 장착 슬롯 : 투구 */
-	Helmet		UMETA(DisplayName = "장착 슬롯 : 투구"),
-	/** @brief 장착 슬롯 : 갑옷 */
-	Chest		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
-	/** @brief 장착 슬롯 : 장갑 */
-	Gloves		UMETA(DisplayName = "장착 슬롯 : 장갑"),
-	/** @brief 장착 슬롯 : 신발 */
-	Boots		UMETA(DisplayName = "장착 슬롯 : 신발"),
+	/** @brief 장착 슬롯 : 모자  */
+	Hat		UMETA(DisplayName = "장착 슬롯 : 모자"),
+	/** @brief 장착 슬롯 : 갑옷  */
+	Armor		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
+	/** @brief 장착 슬롯 : 목걸이 */
+	Necklace		UMETA(DisplayName = "장착 슬롯 : 목걸이"),
+	/** @brief 장착 슬롯 : 반지  */
+	Ring		UMETA(DisplayName = "장착 슬롯 : 반지"),
 	/** @brief 장착 슬롯 : 없음 */
 	None		UMETA(DisplayName = "장착 슬롯 : 없음"),
-	/** @brief 장착 슬롯 : 없음 */
+	/** @brief 장착 슬롯 : 오류 */
 	Unknown		UMETA(DisplayName = "장착 슬롯 : 오류")
 };
 
@@ -167,4 +167,15 @@ enum class EFXEventType : uint8
 	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
 	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
 	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
+};
+
+/**
+ * @enum ESocketTargetType
+ * @brief 소켓을 찾을 대상을 지정하는 Enum 선언
+ */
+UENUM(BlueprintType)
+enum class ESocketTargetType : uint8
+{
+	CharacterBody UMETA(DisplayName = "캐릭터 본체 (Character Body)"),
+	EquippedWeapon UMETA(DisplayName = "장착된 무기 (Equipped Weapon)")
 };

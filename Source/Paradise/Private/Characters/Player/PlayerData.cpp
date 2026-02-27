@@ -24,7 +24,7 @@ APlayerData::APlayerData()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	
-    CombatAttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
+    CombatAttributeSet2 = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("CombatAttributeSet"));
 
 
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
@@ -32,7 +32,7 @@ APlayerData::APlayerData()
 
 void APlayerData::InitCombatAttributes()
 {
-	if (!CombatAttributeSet) {
+	if (!CombatAttributeSet2) {
 		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] CombatAttributeSet가 없습니다."));
 		return;
 	} 
@@ -168,21 +168,21 @@ void APlayerData::InitCombatAttributes()
 	float FinalDefense = CharDefense + EquipDefense;
 	float FinalCritRate = CharCritRate + EquipCritRate;
 
-	CombatAttributeSet->InitMaxHealth(FinalMaxHP);
-	CombatAttributeSet->InitHealth(FinalMaxHP); // 현재 체력도 최대로 갱신
-	CombatAttributeSet->InitMaxMana(FinalMaxMP);
-	CombatAttributeSet->InitMana(FinalMaxMP);   // 현재 마나도 최대로 갱신
-	CombatAttributeSet->InitAttackPower(FinalAttack);
-	CombatAttributeSet->InitDefense(FinalDefense);
-	CombatAttributeSet->InitCritRate(FinalCritRate);
-	CombatAttributeSet->InitMoveSpeed(CharMoveSpeed);
+	CombatAttributeSet2->InitMaxHealth(FinalMaxHP);
+	CombatAttributeSet2->InitHealth(FinalMaxHP); // 현재 체력도 최대로 갱신
+	CombatAttributeSet2->InitMaxMana(FinalMaxMP);
+	CombatAttributeSet2->InitMana(FinalMaxMP);   // 현재 마나도 최대로 갱신
+	CombatAttributeSet2->InitAttackPower(FinalAttack);
+	CombatAttributeSet2->InitDefense(FinalDefense);
+	CombatAttributeSet2->InitCritRate(FinalCritRate);
+	CombatAttributeSet2->InitMoveSpeed(CharMoveSpeed);
 
-	CombatAttributeSet->InitCritDamage(EquipCritDamage); // 캐릭터 기본 크뎀이 있다면 CharCritDamage + EquipCritDamage로 합산 필요
-	CombatAttributeSet->InitAttackSpeed(EquipAttackSpeed);
+	CombatAttributeSet2->InitCritDamage(EquipCritDamage); // 캐릭터 기본 크뎀이 있다면 CharCritDamage + EquipCritDamage로 합산 필요
+	CombatAttributeSet2->InitAttackSpeed(EquipAttackSpeed);
 
 	if (FinalAttackRange > 0.0f)
 	{
-		CombatAttributeSet->InitAttackRange(FinalAttackRange);
+		CombatAttributeSet2->InitAttackRange(FinalAttackRange);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);

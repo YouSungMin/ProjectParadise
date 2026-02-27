@@ -338,10 +338,10 @@ EEquipmentSlot UInventorySystem::FindEquipmentSlot(FName ItemID) const
 		// 태그 비교 로직
 		const FGameplayTag& Tag = ArmorRow->ArmorTag;
 
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Helmet"))) return EEquipmentSlot::Helmet;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Chest")))  return EEquipmentSlot::Chest;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Gloves"))) return EEquipmentSlot::Gloves;
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Boots")))  return EEquipmentSlot::Boots;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Hat"))) return EEquipmentSlot::Hat;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Armor")))  return EEquipmentSlot::Armor;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Necklace"))) return EEquipmentSlot::Necklace;
+		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Ring")))  return EEquipmentSlot::Ring;
 
 		// 매칭되는 태그가 없으면 경고
 		UE_LOG(LogTemp, Warning, TEXT("⚠️ [FindSlot] 알 수 없는 방어구 태그: %s"), *Tag.ToString());
@@ -381,9 +381,45 @@ void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)
 	EEquipmentSlot TargetSlot = FindEquipmentSlot(ItemData->ItemID);
 	if (TargetSlot == EEquipmentSlot::Unknown) return;
 
+
+	//다른 캐릭터가 장착 중일 경우
+	if (ItemData->EquippedCharacterUID.IsValid() && ItemData->EquippedCharacterUID != CharacterUID)
+	{
+		// 전 주인(캐릭터)의 데이터 찾기
+		for (auto& OldOwner : OwnedCharacters)
+		{
+			if (OldOwner.CharacterUID == ItemData->EquippedCharacterUID)
+			{
+				// 전 주인의 장비창(EquipmentMap)에서 이 아이템을 제거
+				for (auto It = OldOwner.EquipmentMap.CreateIterator(); It; ++It)
+				{
+					if (It.Value() == ItemUID)
+					{
+						It.RemoveCurrent();
+						UE_LOG(LogTemp, Warning, TEXT("🔄 [%s]가 끼고 있던 장비를 교체합니다!"), *OldOwner.CharacterID.ToString());
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	//타겟 캐릭터가 이전에 장착하고있던 장비가 있을경우 
+	if (TargetChar->EquipmentMap.Contains(TargetSlot))
+	{
+		FGuid OldItemUID = TargetChar->EquipmentMap[TargetSlot];
+		if (FOwnedItemData* OldItem = GetItemByGUID(OldItemUID))
+		{
+			// 벗겨지는 옛날 장비의 '주인 UID'를 빈 값으로 초기화 (해제 상태로 만듦)
+			OldItem->EquippedCharacterUID = FGuid();
+		}
+	}
+
+
 	//덮어쓰기
 	TargetChar->EquipmentMap.Add(TargetSlot, ItemUID);
-
+	ItemData->EquippedCharacterUID = CharacterUID;
 	//장비 변경 델리게이트 발송
 	if (OnInventoryUpdated.IsBound())
 	{
@@ -399,6 +435,14 @@ void UInventorySystem::UnEquipItemFromCharacter(FGuid CharacterUID, EEquipmentSl
 	{
 		if (Char.CharacterUID == CharacterUID)
 		{
+			FGuid ItemUIDToRemove = Char.EquipmentMap[Slot];
+
+			//아이템 데이터에서 오너 정보를 빈 값으로 초기화
+			if (FOwnedItemData* ItemData = GetItemByGUID(ItemUIDToRemove))
+			{
+				ItemData->EquippedCharacterUID = FGuid();
+			}
+
 			Char.EquipmentMap.Remove(Slot);
 
 			if (OnInventoryUpdated.IsBound())

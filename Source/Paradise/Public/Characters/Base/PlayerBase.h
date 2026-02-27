@@ -108,6 +108,8 @@ public:
 	 */
 	void SendAbilityInputToASC(EInputID InputId, bool bIsPressed);
 
+	/** @brief 소켓 이름을 주면 위치(좌표)를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual USceneComponent* GetWeaponMesh() const override;
 protected:
 
 	/*
@@ -125,16 +127,7 @@ protected:
 
 	/**  모듈형 캐릭터 파츠(Body는 ACharacter의 Mesh 사용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> HelmetMesh = nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> ChestMesh= nullptr; // 상의+하의 통합형이면 이것만 사용
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> GlovesMesh=nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> BootsMesh= nullptr;
+	TObjectPtr<USkeletalMeshComponent> HatMesh = nullptr;
 
 	/** 
 	  * @brief 무기 전용 메쉬 컴포넌트
