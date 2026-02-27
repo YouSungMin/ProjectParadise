@@ -89,12 +89,6 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 
 bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// 기본 검사 (부모 로직)
-	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
-	{
-		return false;
-	}
-
 	// 엑셀에서 읽어둔 내 스킬 데이터 가져오기
 	FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
 
@@ -132,10 +126,9 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 			FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(FName("Data.Cost.Mana"));
 
 			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.ManaCost);
+			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
+			UE_LOG(LogTemp,Log,TEXT("ApplyCost %.1f"), -CombatData.ManaCost);
 		}
-
-		// 나 자신(Owner)에게 마나 차감 GE 적용
-		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 	else
 	{
