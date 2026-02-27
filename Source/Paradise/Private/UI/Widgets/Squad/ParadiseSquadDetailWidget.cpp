@@ -105,6 +105,10 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 				UpdateEquipmentIcon(EEquipmentSlot::Weapon, Img_EquipWeapon, CharData->EquipmentMap);
 				UpdateEquipmentIcon(EEquipmentSlot::Helmet, Img_EquipHelmet, CharData->EquipmentMap);
 				UpdateEquipmentIcon(EEquipmentSlot::Chest, Img_EquipChest, CharData->EquipmentMap);
+
+				// [TODO] 악세서리 슬롯 추가 기획 시 주석 해제 요망
+				// UpdateEquipmentIcon(EEquipmentSlot::Accessory1, Img_EquipAcc1, CharData->EquipmentMap);
+				// UpdateEquipmentIcon(EEquipmentSlot::Accessory2, Img_EquipAcc2, CharData->EquipmentMap);
 			}
 		}
 	}

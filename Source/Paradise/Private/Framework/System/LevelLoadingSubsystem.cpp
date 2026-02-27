@@ -19,7 +19,6 @@ void ULevelLoadingSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// 맵 로드 완료 델리게이트 바인딩 (레벨 이동 감지용)
 	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &ULevelLoadingSubsystem::OnMapLoadComplete);
 
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 서브시스템 초기화 완료."));
 }
 
 void ULevelLoadingSubsystem::Deinitialize()
@@ -46,28 +45,36 @@ void ULevelLoadingSubsystem::Deinitialize()
 }
 
 #pragma region 외부 인터페이스
-void ULevelLoadingSubsystem::StartLevelTransition(FName InTargetLevelName, FName InLoadingMapName, const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload, TSoftObjectPtr<UTexture2D> InLoadingImage)
+void ULevelLoadingSubsystem::StartLevelTransition(
+	FName InTargetLevelName, 
+	FName InLoadingMapName, 
+	const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload, 
+	TSoftObjectPtr<UTexture2D> InLoadingImage, 
+	FText InStageName, 
+	FText InStageDesc)
 {
-	if (InTargetLevelName.IsNone())
+	if (InTargetLevelName.IsNone()) return;
+
+	// 떠나기 전, 현재 월드의 이름을 '출발지'로 저장합니다.
+	if (UWorld* World = GetWorld())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[LoadingSystem] 목표 레벨 이름이 유효하지 않습니다."));
-		return;
+		FString CurrentWorldName = World->GetMapName();
+		CurrentWorldName.RemoveFromStart(World->StreamingLevelsPrefix);
+		OriginLevelName = FName(*CurrentWorldName);
 	}
 
-	// 1. 데이터 캐싱
+	// 1. 상태 및 텍스트 캐싱
 	TargetLevelName = InTargetLevelName;
-
-	// [수정] 만약 InLoadingMapName이 None이면 기본값 "L_Loading" 사용
 	LoadingMapName = (InLoadingMapName.IsNone()) ? FName("L_Loading") : InLoadingMapName;
-
 	PendingAssetsToLoad = InAssetsToPreload;
 	PendingLoadingImage = InLoadingImage;
 
+	PendingStageName = InStageName; 
+	PendingStageDesc = InStageDesc; 
+
 	bIsLoadingInProgress = true;
+	// 이미지는 위젯 내부의 InitLoadingImage에서 스스로 판단합니다.
 
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 전이 시작: 현재 레벨 -> %s (Target: %s)"), *LoadingMapName.ToString(), *TargetLevelName.ToString());
-
-	// 2. 로딩 맵(전이 맵)으로 이동
 	UGameplayStatics::OpenLevel(this, LoadingMapName);
 }
 
@@ -102,110 +109,63 @@ void ULevelLoadingSubsystem::OnMapLoadComplete(UWorld* World)
 void ULevelLoadingSubsystem::BeginAsyncLoading()
 {
 	UWorld* World = GetWorld();
-	if (!World) return;
+	if (!World || !LoadingWidgetClass) return;
 
-	// 1. 데이터 초기화
 	TotalElapsedTime = 0.0f;
 
-	// 2. 로딩 위젯 생성 및 부착
-	if (LoadingWidgetClass)
+	// 1. 위젯 생성 및 부착
+	CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
+	if (CurrentLoadingWidget)
 	{
-		// 혹시 모를 이전 위젯 정리
-		if (CurrentLoadingWidget)
-		{
-			CurrentLoadingWidget->RemoveFromParent();
-			CurrentLoadingWidget = nullptr;
-		}
+		CurrentLoadingWidget->AddToViewport(9999);
 
-		// 위젯 생성
-		CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
-		if (CurrentLoadingWidget)
-		{
-			CurrentLoadingWidget->AddToViewport(9999); // 최상위 Z-Order
-			CurrentLoadingWidget->SetLoadingPercent(0.0f);
+		CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
 
-			// 캐싱해둔 커스텀 배경 이미지가 있다면 텍스처를 로드하여 UI에 적용합니다.
-			if (!PendingLoadingImage.IsNull())
-			{
-				if (UTexture2D* LoadedTex = PendingLoadingImage.LoadSynchronous())
-				{
-					CurrentLoadingWidget->SetBackgroundImage(LoadedTex);
-				}
-			}
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[LoadingSystem] LoadingWidgetClass가 설정되지 않았습니다! GameInstance Init을 확인하세요."));
+		CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
 	}
 
-	// 3. 비동기 로딩 요청 (에셋 프리로딩)
-	// Target Level 자체는 OpenLevel로 열지만, 그 전에 무거운 에셋들을 메모리에 올립니다.
+	// 비동기 로딩 요청
 	if (PendingAssetsToLoad.Num() > 0)
 	{
 		TArray<FSoftObjectPath> AssetPaths;
 		for (const auto& AssetPtr : PendingAssetsToLoad)
 		{
-			if (!AssetPtr.IsNull())
-			{
-				AssetPaths.Add(AssetPtr.ToSoftObjectPath());
-			}
+			if (!AssetPtr.IsNull()) AssetPaths.Add(AssetPtr.ToSoftObjectPath());
 		}
-
-		if (AssetPaths.Num() > 0)
-		{
-			CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
-		}
+		if (AssetPaths.Num() > 0) CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
 	}
 
-	// 에셋이 없어도 로딩 바 연출을 위해 핸들 리셋
-	if (!CurrentLoadHandle.IsValid())
-	{
-		CurrentLoadHandle.Reset();
-	}
-
-	// 4. 타이머 시작 (0.05초 간격)
-	World->GetTimerManager().SetTimer(
-		ProgressTimerHandle,
-		this,
-		&ULevelLoadingSubsystem::UpdateLoadingProgress,
-		0.05f,
-		true
-	);
+	World->GetTimerManager().SetTimer(ProgressTimerHandle, this, &ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
 }
 
 void ULevelLoadingSubsystem::UpdateLoadingProgress()
 {
-	// 1. 시간 누적 (0.05초)
 	TotalElapsedTime += 0.05f;
 
-	// 2. 시간 기반 진행률 (MinLoadingTime 기준)
-	// 2초 동안 0 -> 1로 선형 보간
-	const float TimeProgress = (MinLoadingTime > 0.0f) ? (TotalElapsedTime / MinLoadingTime) : 1.0f;
+	// 1. 시간 비율 (2초 기준)
+	const float TimeRatio = FMath::Clamp(TotalElapsedTime / MinLoadingTime, 0.0f, 1.0f);
+	// 2. 가짜 진행률 (0~70%)
+	const float FakeProgress = TimeRatio * MaxFakePercent;
 
-	// 3. 실제 에셋 로딩 진행률
+	// 3. 실제 로딩 비율
 	float RealProgress = 1.0f;
-	if (CurrentLoadHandle.IsValid())
-	{
-		RealProgress = CurrentLoadHandle->GetProgress();
-	}
+	if (CurrentLoadHandle.IsValid()) RealProgress = CurrentLoadHandle->GetProgress();
 
-	// 4. UI 갱신: (실제 로딩)과 (시간 흐름) 중 '더 느린 쪽'을 보여줌 -> 급발진 방지
-	const float FinalDisplayPercent = FMath::Min(RealProgress, TimeProgress);
+	// 4. 최종 퍼센트: Fake(0~0.7) + (Real(0~1) * 0.3)
+	float FinalDisplayPercent = FakeProgress + (RealProgress * (1.0f - MaxFakePercent));
 
-	if (CurrentLoadingWidget)
-	{
-		CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
-	}
-
-	// 5. 완료 조건 체크
-	// (실제 로딩 완료) AND (최소 시간 2초 경과)
 	const bool bIsRealLoadingFinished = (!CurrentLoadHandle.IsValid() || CurrentLoadHandle->HasLoadCompleted());
-	const bool bIsTimeFinished = (TimeProgress >= 1.0f);
+	const bool bIsTimeFinished = (TimeRatio >= 1.0f);
 
 	if (bIsRealLoadingFinished && bIsTimeFinished)
 	{
+		FinalDisplayPercent = 1.0f;
+		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
 		FinishLoading();
+	}
+	else
+	{
+		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
 	}
 }
 

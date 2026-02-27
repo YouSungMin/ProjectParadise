@@ -190,35 +190,40 @@ void UParadiseStageDetailWidget::OnClickFormation()
 
 void UParadiseStageDetailWidget::OnClickEnterBattle()
 {
-	if (CachedStageID.IsNone()) return;
+	if (CachedStageID.IsNone() || !CachedGI.IsValid()) return;
 
-	if (UParadiseGameInstance* GI = GetGameInstance<UParadiseGameInstance>())
+	// 1. 스테이지 데이터 조회 (Stats & Assets)
+	FStageStats* Stats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID);
+	FStageAssets* Assets = CachedGI->GetDataTableRow<FStageAssets>(CachedGI->StageAssetsDataTable, CachedStageID);
+
+	if (!Stats || !Assets || Assets->MapAsset.IsNull())
 	{
-		// 1. 서브시스템에 현재 스테이지 ID 등록
-		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
-		{
-			StageSys->SetSelectedStageID(CachedStageID);
-		}
-
-		// 2. 맵 에셋 추출 및 로딩 시작
-		if (GI->StageAssetsDataTable)
-		{
-			FStageAssets* Assets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, CachedStageID);
-			if (Assets && !Assets->MapAsset.IsNull())
-			{
-				FName LevelToOpen = FName(*Assets->MapAsset.GetAssetName());
-
-				if (auto* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
-				{
-					TArray<TSoftObjectPtr<UObject>> EmptyPreloadAssets;
-					LoadingSys->StartLevelTransition(LevelToOpen, NAME_None, EmptyPreloadAssets, Assets->LoadingImage);
-					return;
-				}
-			}
-		}
+		UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 스테이지 데이터 누락: %s"), *CachedStageID.ToString());
+		return;
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("스테이지 진입 실패. 데이터가 없거나 로딩 서브시스템 누락됨."));
+	// 2. 서브시스템 상태 업데이트
+	if (UStageSubsystem* StageSys = CachedGI->GetSubsystem<UStageSubsystem>())
+	{
+		StageSys->SetSelectedStageID(CachedStageID);
+	}
+
+	// 3. 로딩 서브시스템을 통한 전이 시작
+	if (ULevelLoadingSubsystem* LoadingSys = CachedGI->GetSubsystem<ULevelLoadingSubsystem>())
+	{
+		FName LevelToOpen = FName(*Assets->MapAsset.GetAssetName());
+		TArray<TSoftObjectPtr<UObject>> EmptyPreloadAssets;
+
+		// 테이지 이름(Stats->StageName)과 설명(Stats->Description)을 로딩 시스템으로 전파
+		LoadingSys->StartLevelTransition(
+			LevelToOpen,
+			FName("L_Loading"),
+			EmptyPreloadAssets,
+			Assets->LoadingImage,
+			Stats->StageName,
+			Stats->Description
+		);
+	}
 }
 
 void UParadiseStageDetailWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID)
