@@ -195,5 +195,6 @@ void ULevelLoadingSubsystem::FinishLoading()
 
 	// 최종 레벨로 이동
 	UGameplayStatics::OpenLevel(this, TargetLevelName);
+
 }
 #pragma endregion 내부 로직
