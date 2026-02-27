@@ -8,6 +8,7 @@
 #include "Components/Image.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/StageSubsystem.h"
 #include "Data/Structs/StageStructs.h"
 
 #pragma region 생명주기
@@ -87,24 +88,42 @@ void UVictoryPopupWidget::OnNextStageClicked()
 	if (!GI) return;
 
 	// 1. 데이터 테이블에서 다음 스테이지의 에셋(Assets) 정보 조회
-	FStageAssets* NextStageAssets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, CachedNextStageID);
-	if (!NextStageAssets || NextStageAssets->MapAsset.IsNull())
+	// [A] 리소스 정보 (맵 경로, 로딩 이미지 등)
+	FStageAssets* NextAssets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, CachedNextStageID);
+	// [B] 규칙 및 텍스트 정보 (스테이지 이름, 설명 등)
+	FStageStats* NextStats = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, CachedNextStageID);
+
+	// 유효성 검사 (맵 에셋이 반드시 있어야 함)
+	if (!NextAssets || NextAssets->MapAsset.IsNull())
 	{
-		UE_LOG(LogTemp, Error, TEXT("[VictoryPopup] 다음 스테이지(%s)의 에셋(MapAsset) 정보를 찾을 수 없습니다!"), *CachedNextStageID.ToString());
+		UE_LOG(LogTemp, Error, TEXT("[VictoryPopup] 다음 스테이지(%s)의 MapAsset 정보를 찾을 수 없습니다!"), *CachedNextStageID.ToString());
 		return;
 	}
 
-	// 2. TSoftObjectPtr에서 실제 맵(Level) 이름 추출
-	FName TargetLevelName = FName(*NextStageAssets->MapAsset.GetAssetName());
+	// 3. 목적지 레벨 이름 추출
+	FName TargetLevelName = FName(*NextAssets->MapAsset.GetAssetName());
 
-	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 다음 스테이지 맵으로 이동 시작: %s"), *TargetLevelName.ToString());
+	if (UStageSubsystem* StageSubsystem = GI->GetSubsystem<UStageSubsystem>())
+	{
+		StageSubsystem->SetSelectedStageID(CachedNextStageID);
+		UE_LOG(LogTemp, Log, TEXT("✅ [VictoryPopup] StageSubsystem ID 업데이트 완료: %s"), *CachedNextStageID.ToString());
+	}
 
-	// 3. 로딩 서브시스템을 통한 레벨 이동 처리
+	// 4. 로딩 서브시스템 호출
 	if (ULevelLoadingSubsystem* LoadingSystem = GI->GetSubsystem<ULevelLoadingSubsystem>())
 	{
-		TArray<TSoftObjectPtr<UObject>> EmptyAssets;
-		// 시스템에 로딩 스크린과 함께 타겟 맵 이름 전달
-		LoadingSystem->StartLevelTransition(TargetLevelName, FName("L_Loading"), EmptyAssets);
+		// 프리로드할 에셋 배열 (필요 시 추가 가능)
+		TArray<TSoftObjectPtr<UObject>> AssetsToPreload;
+
+		// 순서: 타겟맵, 로딩맵, 프리로드배열, 로딩이미지, 스테이지이름, 스테이지설명
+		LoadingSystem->StartLevelTransition(
+			TargetLevelName,
+			FName("L_Loading"),
+			AssetsToPreload,
+			NextAssets->LoadingImage,
+			(NextStats ? NextStats->StageName : FText::GetEmpty()),
+			(NextStats ? NextStats->Description : FText::GetEmpty())
+		);
 	}
 }
 #pragma endregion 내부 로직
