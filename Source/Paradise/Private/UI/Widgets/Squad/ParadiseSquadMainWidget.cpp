@@ -32,13 +32,7 @@ void UParadiseSquadMainWidget::NativeConstruct()
 	if (UInventorySystem* InvSys = GetInventorySystem())
 	{
 		InvSys->OnInventoryUpdated.AddDynamic(this, &UParadiseSquadMainWidget::RefreshInventoryUI);
-		UE_LOG(LogTemp, Log, TEXT("[SquadMain] 인벤토리 델리게이트 바인딩 완료"));
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[SquadMain] InventorySystem을 찾을 수 없습니다!"));
-	}
-
 	// 편성이 확정되는 순간 FormationWidget을 즉시 갱신할 수 있도록 구독합니다.
 	BindSquadSubsystemDelegates();
 
@@ -111,20 +105,12 @@ void UParadiseSquadMainWidget::NativeDestruct()
 #pragma region 데이터 소스 Getter
 UInventorySystem* UParadiseSquadMainWidget::GetInventorySystem() const
 {
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		return GI->GetSubsystem<UInventorySystem>();
-	}
-	return nullptr;
+	return GetGameInstance() ? GetGameInstance()->GetSubsystem<UInventorySystem>() : nullptr;
 }
 
 USquadSubsystem* UParadiseSquadMainWidget::GetSquadSubsystem() const
 {
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		return GI->GetSubsystem<USquadSubsystem>();
-	}
-	return nullptr;
+	return GetGameInstance() ? GetGameInstance()->GetSubsystem<USquadSubsystem>() : nullptr;
 }
 #pragma endregion 데이터 소스 Getter
 
@@ -132,11 +118,7 @@ USquadSubsystem* UParadiseSquadMainWidget::GetSquadSubsystem() const
 void UParadiseSquadMainWidget::BindSquadSubsystemDelegates()
 {
 	USquadSubsystem* SquadSys = GetSquadSubsystem();
-	if (!SquadSys)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[SquadMain] SquadSubsystem을 찾을 수 없어 델리게이트 바인딩을 생략합니다."));
-		return;
-	}
+	if (!SquadSys) return;
 
 	// 플레이어 슬롯(0~2) 변경 이벤트 구독
 	if (!SquadSys->OnPlayerSlotChanged.IsAlreadyBound(this, &UParadiseSquadMainWidget::OnPlayerSlotUpdated))
@@ -155,25 +137,17 @@ void UParadiseSquadMainWidget::BindSquadSubsystemDelegates()
 
 void UParadiseSquadMainWidget::UnbindSquadSubsystemDelegates()
 {
-	USquadSubsystem* SquadSys = GetSquadSubsystem();
-	if (!SquadSys) return;
-
-	SquadSys->OnPlayerSlotChanged.RemoveAll(this);
-	SquadSys->OnFamiliarSlotChanged.RemoveAll(this);
-
-	UE_LOG(LogTemp, Log, TEXT("[SquadMain] SquadSubsystem 델리게이트 해제 완료"));
+	if (USquadSubsystem* SquadSys = GetSquadSubsystem())
+	{
+		SquadSys->OnPlayerSlotChanged.RemoveAll(this);
+		SquadSys->OnFamiliarSlotChanged.RemoveAll(this);
+	}
 }
 
 void UParadiseSquadMainWidget::InitFormationFromSubsystem()
 {
 	USquadSubsystem* SquadSys = GetSquadSubsystem();
-	if (!SquadSys || !WBP_FormationPanel)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[SquadMain] InitFormationFromSubsystem 실패: SquadSubsystem 또는 FormationPanel 없음"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 편성 서브시스템 → FormationWidget 초기화 시작"));
+	if (!SquadSys || !WBP_FormationPanel) return;
 
 	// --- 플레이어 캐릭터 슬롯 (0~2) 동기화 ---
 	const TArray<FName>& PlayerIDs = SquadSys->GetPlayerSquad();
@@ -201,9 +175,6 @@ void UParadiseSquadMainWidget::InitFormationFromSubsystem()
 
 		WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[SquadMain] FormationWidget 초기화 완료 (캐릭터 %d슬롯, 유닛 %d슬롯)"),
-		PlayerIDs.Num(), FamiliarIDs.Num());
 }
 
 void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID)
@@ -216,9 +187,6 @@ void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPla
 		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, false);
 
 	WBP_FormationPanel->UpdateSlot(SlotIndex, UIData);
-
-	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 플레이어 슬롯[%d] 업데이트: %s"),
-		SlotIndex, *NewPlayerID.ToString());
 }
 
 void UParadiseSquadMainWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID)
@@ -233,9 +201,6 @@ void UParadiseSquadMainWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewF
 		: MakeUIData(NewFamiliarID, 1, SquadTabs::Unit);
 
 	WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
-
-	UE_LOG(LogTemp, Log, TEXT("[SquadMain] 퍼밀리어 슬롯[%d](Formation[%d]) 업데이트: %s"),
-		SlotIndex, FormationIndex, *NewFamiliarID.ToString());
 }
 #pragma endregion SquadSubsystem 연동
 
@@ -352,7 +317,22 @@ void UParadiseSquadMainWidget::UpdateDetailPanelState()
 void UParadiseSquadMainWidget::RefreshInventoryUI()
 {
 	UInventorySystem* InvSys = GetInventorySystem();
-	if (!InvSys || !CachedGI.IsValid() || !WBP_InventoryPanel) return;
+	USquadSubsystem* SquadSys = GetSquadSubsystem();
+	if (!InvSys || !SquadSys || !CachedGI.IsValid() || !WBP_InventoryPanel) return;
+
+	// 최적화: 장착 마크(bIsEquipped) 판별용 Hash Set 캐싱
+	TSet<FName> EquippedCharAndUnitIDs;
+	EquippedCharAndUnitIDs.Append(SquadSys->GetPlayerSquad());
+	EquippedCharAndUnitIDs.Append(SquadSys->GetFamiliarSquad());
+
+	TSet<FGuid> EquippedItemUIDs;
+	for (const auto& CharData : InvSys->GetOwnedCharacters())
+	{
+		for (const auto& EquipPair : CharData.EquipmentMap)
+		{
+			if (EquipPair.Value.IsValid()) EquippedItemUIDs.Add(EquipPair.Value);
+		}
+	}
 
 	TArray<FSquadItemUIData> ListData;
 
@@ -366,6 +346,7 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			FSquadItemUIData UIData = MakeUIData(Data.CharacterID, Data.Level, SquadTabs::Character, true);
 			// [수정] 시스템 제어용 고유 식별자(GUID) 주입
 			UIData.InstanceUID = Data.CharacterUID;
+			UIData.bIsEquipped = EquippedCharAndUnitIDs.Contains(Data.CharacterID);
 			ListData.Add(UIData);
 		}
 		break;
@@ -380,6 +361,7 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
 				UIData.InstanceUID = Data.ItemUID;
 				UIData.Quantity = Data.Quantity;
+				UIData.bIsEquipped = EquippedItemUIDs.Contains(Data.ItemUID);
 				ListData.Add(UIData);
 			}
 		}
@@ -395,6 +377,7 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 				// [수정] 시스템 제어용 고유 식별자(GUID) 및 수량 주입
 				UIData.InstanceUID = Data.ItemUID;
 				UIData.Quantity = Data.Quantity;
+				UIData.bIsEquipped = EquippedItemUIDs.Contains(Data.ItemUID);
 				ListData.Add(UIData);
 			}
 		}
@@ -406,6 +389,7 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 			FSquadItemUIData UIData = MakeUIData(Data.FamiliarID, Data.Level, SquadTabs::Unit);
 			// [수정] 시스템 제어용 고유 식별자(GUID)주입
 			UIData.InstanceUID = Data.FamiliarUID;
+			UIData.bIsEquipped = EquippedCharAndUnitIDs.Contains(Data.FamiliarID);
 			ListData.Add(UIData);
 		}
 		break;
@@ -414,9 +398,6 @@ void UParadiseSquadMainWidget::RefreshInventoryUI()
 	/** @section 데이터 후처리 (장착 여부 및 선택 상태 표시) */
 	for (auto& Item : ListData)
 	{
-		// TODO: CurrentEquippedIDs에 포함되어 있으면 테두리 표시
-		// if (CurrentEquippedIDs.Contains(Item.ID)) Item.bIsEquipped = true;
-
 		// [수정] 동일한 아이템이 여러 개일 수 있으므로, 단순 ID(RowName)가 아닌 고유 GUID로 비교합니다.
 		if (Item.InstanceUID.IsValid() && Item.InstanceUID == PendingSelection.InstanceUID)
 		{
@@ -688,86 +669,38 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 
 void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
 {
-	if (CurrentState != ESquadUIState::Normal)
+	// 1. Context 한 번만 깔끔하게 판별
+	ESquadDetailContext TargetContext = ESquadDetailContext::InventoryCharacter;
+	switch (CurrentTabIndex)
 	{
-		// 교체 모드
-		PendingSelection = ItemData;
-		RefreshInventoryUI();
-
-		if (WBP_DetailPanel)
-		{
-			// [수정] 올바른 Context 전달
-			ESquadDetailContext ContextToUse = ESquadDetailContext::InventoryCharacter;
-
-			// 현재 탭에 따라 Context 결정
-			switch (CurrentTabIndex)
-			{
-			case SquadTabs::Character:
-				ContextToUse = ESquadDetailContext::InventoryCharacter;
-				break;
-			case SquadTabs::Weapon:
-				ContextToUse = ESquadDetailContext::InventoryWeapon;
-				break;
-			case SquadTabs::Armor:
-				ContextToUse = ESquadDetailContext::InventoryArmor;
-				break;
-			case SquadTabs::Unit:
-				ContextToUse = ESquadDetailContext::InventoryUnit;
-				break;
-			}
-
-			WBP_DetailPanel->ShowInfo(ItemData, ContextToUse);
-			UpdateDetailPanelState();
-		}
+	case SquadTabs::Weapon: TargetContext = ESquadDetailContext::InventoryWeapon; break;
+	case SquadTabs::Armor:  TargetContext = ESquadDetailContext::InventoryArmor;  break;
+	case SquadTabs::Unit:   TargetContext = ESquadDetailContext::InventoryUnit;   break;
 	}
-	else
+
+	// 2. 무조건 데이터 저장
+	PendingSelection = ItemData;
+
+	// 3. 일반 모드일 경우에만 편성창 하이라이트 해제 추가 로직 실행
+	if (CurrentState == ESquadUIState::Normal)
 	{
-		// [일반 모드도 수정]
 		SelectedFormationSlotIndex = -1;
-		if (WBP_FormationPanel)
-		{
-			WBP_FormationPanel->HighlightSlot(-1);
-		}
-
-		if (WBP_DetailPanel)
-		{
-			ESquadDetailContext ContextToUse = ESquadDetailContext::InventoryCharacter;
-
-			switch (CurrentTabIndex)
-			{
-			case SquadTabs::Character:
-				ContextToUse = ESquadDetailContext::InventoryCharacter;
-				break;
-			case SquadTabs::Weapon:
-				ContextToUse = ESquadDetailContext::InventoryWeapon;
-				break;
-			case SquadTabs::Armor:
-				ContextToUse = ESquadDetailContext::InventoryArmor;
-				break;
-			case SquadTabs::Unit:
-				ContextToUse = ESquadDetailContext::InventoryUnit;
-				break;
-			}
-
-			WBP_DetailPanel->ShowInfo(ItemData, ContextToUse);
-		}
+		if (WBP_FormationPanel) WBP_FormationPanel->HighlightSlot(-1);
 	}
+
+	// 4. 공통 렌더링 지시 (중복 제거)
+	RefreshInventoryUI();
+	if (WBP_DetailPanel)
+	{
+		WBP_DetailPanel->ShowInfo(ItemData, TargetContext);
+	}
+	UpdateDetailPanelState();
 }
 
 void UParadiseSquadMainWidget::HandleBackClicked()
 {
 	ResetPanelState();
 
-	//if (WBP_DetailPanel)
-	//{
-	//	WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
-	//}
-	//SelectedFormationSlotIndex = -1;
-	//PendingSelection = FSquadItemUIData();
-	//if (WBP_FormationPanel)
-	//{
-	//	WBP_FormationPanel->HighlightSlot(-1); // ← Img_SelectionBorder 끄기!
-	//}
 	if (bAutoSaveOnBack)
 	{
 		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))

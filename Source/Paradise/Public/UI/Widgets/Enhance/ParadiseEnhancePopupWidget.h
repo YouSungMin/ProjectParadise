@@ -13,6 +13,9 @@ class UParadiseEnhanceDetailWidget;
 class UButton;
 class UInventorySystem;
 class UParadiseGameInstance;
+class UGrowthSubsystem;
+struct FOwnedItemData;
+struct FOwnedCharacterData;
 #pragma endregion 전방 선언
 
 /** @brief 팝업 닫기 요청을 처리하기 위한 델리게이트 */
@@ -76,6 +79,16 @@ private:
 
 	/** @brief ID와 레벨 정보를 받아 UI 표시용 데이터로 변환합니다. */
 	FSquadItemUIData MakeUIData(FName ID, int32 InLevel, int32 TabType, bool bUseBodyIcon = false);
+
+protected:
+	/** @brief 무기 스탯 및 강화 비용을 계산하여 Out 매개변수에 할당합니다. */
+	void ProcessWeaponStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat);
+
+	/** @brief 방어구 스탯 및 강화 비용을 계산하여 Out 매개변수에 할당합니다. */
+	void ProcessArmorStats(const FOwnedItemData* OwnedItem, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat);
+
+	/** @brief 캐릭터(돌파) 배율 및 비용을 계산하여 Out 매개변수에 할당합니다. */
+	void ProcessCharacterStats(const FOwnedCharacterData* OwnedChar, int32& OutCost, FString& OutCurrentStat, FString& OutNextStat);
 #pragma endregion 시스템 연동 및 이벤트
 
 #pragma region UI 컴포넌트 바인딩
