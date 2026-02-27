@@ -44,29 +44,30 @@ void AHomeBase::Die()
 
     if (GM)
     {
-        // 1. 승리 여부를 결정할 변수 초기화
         bool bIsVictory = false;
 
-        // 2. 태그를 직접적으로 체크
-        if (ActorHasTag(FName("Unit.Faction.Enemy")))
+        // 1. UnitBase의 FactionTag 변수를 가져옵니다.
+        FGameplayTag MyTag = GetFactionTag();
+
+        // 2. GameplayTag 매칭 검사
+        // 적군 태그를 가지고 있다면 (Unit.Faction.Enemy)
+        if (MyTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"))))
         {
-            // 적군 기지가 파괴되었으므로 승리
             bIsVictory = true;
-            UE_LOG(LogTemp, Warning, TEXT("✅ 적군 기지 파괴 감지: 승리 판정"));
+            UE_LOG(LogTemp, Warning, TEXT("✅ 적군 기지(%s) 파괴 감지: 승리 판정"), *MyTag.ToString());
         }
-        else if (ActorHasTag(FName("Unit.Faction.Friendly")))
+        // 아군 태그를 가지고 있다면 (Unit.Faction.Friendly)
+        else if (MyTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly"))))
         {
-            // 아군 기지가 파괴되었으므로 패배
             bIsVictory = false;
-            UE_LOG(LogTemp, Warning, TEXT("❌ 아군 기지 파괴 감지: 패배 판정"));
+            UE_LOG(LogTemp, Warning, TEXT("❌ 아군 기지(%s) 파괴 감지: 패배 판정"), *MyTag.ToString());
         }
         else
         {
-            // 디버깅용
-            UE_LOG(LogTemp, Error, TEXT("⚠️ 기지에 Faction 태그가 없습니다! 이름: %s"), *GetName());
+            // 못 찾는 경우를 위한 디버깅용
+            UE_LOG(LogTemp, Error, TEXT("⚠️ 기지에 유효한 FactionTag가 없습니다! 현재 태그: %s"), *MyTag.ToString());
         }
 
-        // 3. 판정 결과 전달
         GM->EndStage(bIsVictory);
     }
 }
