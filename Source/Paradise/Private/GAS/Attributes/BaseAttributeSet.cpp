@@ -37,7 +37,19 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	// 마나 (Mana)
 	else if (Attribute == GetManaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+		float CurrentMana = GetMana();
+
+		// 2. 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한합니다.
+		float ClampedNewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+
+		// 3. 💡 마나가 깎였을 때만(ClampedNewValue가 CurrentMana보다 작을 때만) 로그를 출력합니다.
+		if (ClampedNewValue < CurrentMana)
+		{
+			// 사용한(깎인) 마나 계산
+			float UsedMana = CurrentMana - ClampedNewValue;
+
+			UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
+		}
 	}
 	// 치명타 확률 (CritRate)
 	else if (Attribute == GetCritRateAttribute())
