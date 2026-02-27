@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
+#include "Data/Enums/GameEnums.h"
 #include "TestNotifyState.generated.h"
 
 /**
@@ -20,6 +21,10 @@ public:
 
 	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference) override;
 protected:
+	/** @brief 소켓을 어디서 찾을 것인가? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ESocketTargetType SocketTarget = ESocketTargetType::CharacterBody;
+
 	/**
 	 * @brief 공격 판정 기준 소켓 이름 (예: hand_r, Muzzle_01, Jaw 등)
 	 */
