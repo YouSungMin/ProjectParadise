@@ -85,6 +85,10 @@ struct FOwnedItemData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity = 1; // 갯수
 
+	/** @brief 현재 이 장비를 착용 중인 캐릭터 ID (장착 중이 아니면 NAME_None) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	FGuid EquippedCharacterUID;
+
 	FOwnedItemData()
 	{
 		ItemUID = FGuid();
