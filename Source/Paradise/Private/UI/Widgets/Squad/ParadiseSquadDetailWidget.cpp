@@ -69,70 +69,96 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	// 3. 컨텍스트(Context)에 따른 동적 레이아웃 활성화 및 스탯 문자열 조립 (Data-Driven)
 	FString FinalStatString = TEXT("");
+	FString SkillInfoString = TEXT("스킬 정보가 없습니다."); // 기본값
 	bool bShowActionButtons = false;
+
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	UInventorySystem* InvSys = GI ? GI->GetSubsystem<UInventorySystem>() : nullptr;
 
 	switch (InContext)
 	{
 	case ESquadDetailContext::FormationCharacter:
-		if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	case ESquadDetailContext::InventoryCharacter:
+	{
+		if (Container_EquippedItems) Container_EquippedItems->SetVisibility(InContext == ESquadDetailContext::FormationCharacter ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-		FinalStatString = FString::Printf(TEXT("Lv.%d\n캐릭터 기본 스탯 반영"), FMath::Max(1, InData.Level));
-		bShowActionButtons = true;
+		bShowActionButtons = (InContext == ESquadDetailContext::FormationCharacter);
 
-		// 장착된 무기/방어구 5개의 아이콘을 실시간 바인딩
-		if (InvSys)
+		// [Data-Driven] 캐릭터 스탯 및 스킬 연동
+		if (FCharacterStats* CharStat = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InData.ID))
+		{
+			// 레벨에 따른 최종 스탯 계산 (기본 스탯 + 레벨업 성장치)
+			int32 Level = FMath::Max(1, InData.Level);
+			float CurHP = CharStat->BaseMaxHP + (CharStat->GrowthHPPerLevel * (Level - 1));
+			float CurAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
+
+			FinalStatString = FString::Printf(TEXT("Lv.%d\n체력: %d / 공격력: %d"), Level, FMath::RoundToInt(CurHP), FMath::RoundToInt(CurAtk));
+			SkillInfoString = FString::Printf(TEXT("고유 스킬: %s"), *CharStat->SkillActionID.ToString());
+		}
+
+		// 편성창일 경우 장비 아이콘 업데이트 (기존 로직)
+		if (InContext == ESquadDetailContext::FormationCharacter && InvSys)
 		{
 			if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(InData.ID))
 			{
 				UpdateEquipmentIcon(EEquipmentSlot::Weapon, Img_EquipWeapon, CharData->EquipmentMap);
 				UpdateEquipmentIcon(EEquipmentSlot::Helmet, Img_EquipHelmet, CharData->EquipmentMap);
 				UpdateEquipmentIcon(EEquipmentSlot::Chest, Img_EquipChest, CharData->EquipmentMap);
-
-				// [TODO] 악세서리 슬롯 추가 기획 시 주석 해제 요망
-				// UpdateEquipmentIcon(EEquipmentSlot::Accessory1, Img_EquipAcc1, CharData->EquipmentMap);
-				// UpdateEquipmentIcon(EEquipmentSlot::Accessory2, Img_EquipAcc2, CharData->EquipmentMap);
 			}
 		}
-
-		// 캐릭터 궁극기 아이콘 바인딩 (추후 ActionStats 테이블 연동)
-		if (Img_SkillIcon && GI)
-		{
-			// if (FCharacterStats* CharStat = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InData.ID)) { ... }
-		}
-		break;
-
-	case ESquadDetailContext::InventoryCharacter:
-		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		FinalStatString = FString::Printf(TEXT("Lv.%d\n체력: -- / 공격력: --"), FMath::Max(1, InData.Level));
-		break;
+	}
+	break;
 
 	case ESquadDetailContext::InventoryWeapon:
+	{
 		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		FinalStatString = FString::Printf(TEXT("강화 +%d\n공격력: -- / 치명타: --"), InData.Level);
-		break;
+
+		if (FWeaponStats* WpnStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, InData.ID))
+		{
+			// 강화 수치 반영 (10%씩 선형 증가 가정 - 기획에 따라 변경 가능)
+			float AtkBonus = 1.0f + (InData.Level * 0.1f);
+			FinalStatString = FString::Printf(TEXT("강화 +%d\n공격력: %d / 치명타: %d%%"),
+				InData.Level, FMath::RoundToInt(WpnStat->AttackPower * AtkBonus), FMath::RoundToInt(WpnStat->CritRate * 100.0f));
+
+			SkillInfoString = FString::Printf(TEXT("무기 스킬: %s"), *WpnStat->SkillActionID.ToString());
+		}
+	}
+	break;
 
 	case ESquadDetailContext::InventoryArmor:
-		FinalStatString = FString::Printf(TEXT("강화 +%d\n방어력: --"), InData.Level);
-		break;
+	{
+		if (FArmorStats* ArmStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, InData.ID))
+		{
+			float DefBonus = 1.0f + (InData.Level * 0.1f);
+			FinalStatString = FString::Printf(TEXT("강화 +%d\n방어력: %d / 추가 HP: %d"),
+				InData.Level, FMath::RoundToInt(ArmStat->DefensePower * DefBonus), FMath::RoundToInt(ArmStat->MaxHP));
+			SkillInfoString = TEXT("방어구는 고유 스킬이 없습니다.");
+		}
+	}
+	break;
 
 	case ESquadDetailContext::FormationUnit:
 		bShowActionButtons = true;
 	case ESquadDetailContext::InventoryUnit:
-		FinalStatString = TEXT("체력: -- / 공격력: --\n(유닛 특수 능력치)");
-		break;
+	{
+		if (FFamiliarStats* UnitStat = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, InData.ID))
+		{
+			FinalStatString = FString::Printf(TEXT("체력: %d / 공격력: %d\n소환 코스트: %d"),
+				FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower), UnitStat->SummonCost);
+
+			SkillInfoString = UnitStat->SkillActionIDs.Num() > 0 ? FString::Printf(TEXT("주요 스킬: %s"), *UnitStat->SkillActionIDs[0].ToString()) : TEXT("스킬 없음");
+		}
+	}
+	break;
 	}
 
-	// 4. 최종 스탯 텍스트 적용
+	// 4. 최종 텍스트 적용 (Text_Desc와 Text_SkillInfo 분리 적용)
 	if (Text_Desc) Text_Desc->SetText(FText::FromString(FinalStatString));
+	if (Text_SkillInfo) Text_SkillInfo->SetText(FText::FromString(SkillInfoString));
 
 	// 5. 하단 버튼 노출 제어
-	if (HBox_ButtonRoot)
-	{
-		HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
+	if (HBox_ButtonRoot) HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, bool bIsUnitTab, bool bHasPendingSelection)
