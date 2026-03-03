@@ -204,19 +204,35 @@ void UActionControlPanel::OnUltimateSkillRequested()
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 {
+
+	//0303 김성현 - Fix 스위치 한 영웅이 어빌리티를 발동하지 않는 문제 수정
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+
+	if (CurrentActivePawn)
+	{
+		CurrentActivePawn->SendAbilityInputToASC(InputID, true);
+		UE_LOG(LogTemp, Warning, TEXT("[ActionPanel] 현재 빙의된 %s가 어빌리티를 발동합니다."), *CurrentActivePawn->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 현재 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제)"));
+	}
+
 	// 이제 확실하게 찾았으니 명령을 내립니다.
-	if (!CachedPlayer.IsValid())
+	/*if (!CachedPlayer.IsValid())
 	{
 		CachedPlayer = Cast<APlayerBase>(GetOwningPlayerPawn());
+		UE_LOG(LogTemp, Error, TEXT("[ActionPanel] %s가 어빌리티를 발동 합니다."), *CachedPlayer->GetName());
 	}
 	if (CachedPlayer.IsValid())
 	{
 		CachedPlayer->SendAbilityInputToASC(InputID, true);
+		UE_LOG(LogTemp, Error, TEXT("[ActionPanel] %s가 어빌리티를 발동 합니다."), *CachedPlayer->GetName());
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 아직도 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제 확인 필요)"));
-	}
+	}*/
 }
 
 void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
