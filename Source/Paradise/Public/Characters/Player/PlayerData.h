@@ -49,6 +49,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
+	/*
+	 * @brief 사망 몽타주 Getter함수
+	 * @return 캐싱된 사망 몽타주 
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	UAnimMontage* GetDeathMontage() const { return CachedDeathMontage; }
+
 	/**
 	 * @brief 무기 데이터(FWeaponAssets)를 받아 관련 어빌리티(평타, 스킬)를 부여합니다.
 	 * @details 기존에 장착된 무기 어빌리티가 있다면 제거 후 새로 부여합니다.
@@ -101,6 +108,10 @@ public:
 	/** @brief 미리 로드된 애니메이션 블루프린트 클래스 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
 	TSubclassOf<UAnimInstance> CachedAnimBP = nullptr;
+
+	/** @brief 미리 로드된 사망 몽타주 포인터 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TObjectPtr<UAnimMontage> CachedDeathMontage = nullptr;
 
 	/** @brief 미리 로드된 피격/사망 등 생존 반응 연출 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")

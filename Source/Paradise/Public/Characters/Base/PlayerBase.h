@@ -110,6 +110,10 @@ public:
 
 	/** @brief 소켓 이름을 주면 위치(좌표)를 반환하는 부모의 가상 함수 오버라이드*/
 	virtual USceneComponent* GetWeaponMesh() const override;
+
+	/** @brief 사망 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual UAnimMontage* GetDeathMontage() const override;
+
 protected:
 
 	/*

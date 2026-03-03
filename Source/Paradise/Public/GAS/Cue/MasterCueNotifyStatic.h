@@ -25,7 +25,7 @@ public:
 	 */
 	virtual bool OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
 public:
-	// 💡 언리얼 에디터 디테일 패널에서 이 큐가 어떤 이벤트를 요청할지 선택하게 합니다.
+	// 언리얼 에디터 디테일 패널에서 이 큐가 어떤 이벤트를 요청할지 선택하게 합니다.
 	UPROPERTY(EditDefaultsOnly, Category = "FX Setup")
 	EFXEventType TargetEventType = EFXEventType::Hit;
 };

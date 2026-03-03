@@ -199,11 +199,11 @@ void APlayerData::InitPlayerAssets()
 	if (!Assets) return;
 
 	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
+	this->CachedDeathMontage = Assets->DeathMontage.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
 	this->FactionTag = Assets->FactionTag;
 	this->CachedReactionFX = Assets->ReactionFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
-
 
 	//ASC 세팅
 	if (AbilitySystemComponent)
@@ -394,7 +394,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
 
 	// ---------------------------------------------------------
-	// 무기 FX 데이터 캐싱 (새로 추가!)
+	// 무기 FX 데이터 캐싱
 	// ---------------------------------------------------------
 	if (WeaponData)
 	{
