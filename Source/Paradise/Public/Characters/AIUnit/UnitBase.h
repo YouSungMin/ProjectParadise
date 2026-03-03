@@ -50,6 +50,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	float GetAttackRange() const { return BasicAttackData.AttackRange; }
 
+	/** @brief 부모의 가상 함수 오버라이드 */
+	virtual UAnimMontage* GetDeathMontage() const override;
+protected:
+	// 사망 애니메이션 종료 시 호출됨
+	virtual void OnDeathAnimationFinished() override;
+
+	// 실제 풀 반환 로직
+	UFUNCTION()
+	void ExecuteReturnToPool();
 protected:
 	/** @brief 데이터 테이블 조회를 위한 RowName 저장 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
@@ -64,12 +73,15 @@ protected:
 	FName CachedSkillActionID;
 
 	/** @brief 피격/사망 등 생존 반응 연출 캐싱 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FReactionFXSettings CachedReactionFX;
 
 	/** @brief 평타/스킬 등 공격 행동 연출 캐싱 (몬스터 본체용) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Cached")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FActionFXSettings CachedActionFX;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TObjectPtr<UAnimMontage> CachedDeathMontage = nullptr;
 
 	// =========================================================
 	// GAS Handles (어빌리티 관리)
@@ -83,4 +95,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
 	void SetAvoidanceEnabled(bool bEnable);
+
+	/** @brief 몽타주 끝의 Notify가 호출되지 않는 버그 방지용 타이머*/
+	FTimerHandle FailSafeDestroyTimerHandle;
 };

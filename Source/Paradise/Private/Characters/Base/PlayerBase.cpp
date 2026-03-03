@@ -324,3 +324,12 @@ USceneComponent* APlayerBase::GetWeaponMesh() const
     return WeaponMesh;
 }
 
+UAnimMontage* APlayerBase::GetDeathMontage() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        return LinkedPlayerData->GetDeathMontage();
+    }
+    return nullptr; // 데이터가 없으면 예외처리
+}
+

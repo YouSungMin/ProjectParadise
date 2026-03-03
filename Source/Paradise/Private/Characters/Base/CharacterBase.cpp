@@ -86,7 +86,7 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);
@@ -197,6 +197,21 @@ USceneComponent* ACharacterBase::GetWeaponMesh() const
 		return CurrentWeaponActor->GetComponentByClass<UMeshComponent>();
 	}
 	return nullptr;
+}
+
+void ACharacterBase::ActivateRagdoll()
+{
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
+		UE_LOG(LogTemp, Log, TEXT("🦴 래그돌(Ragdoll) 물리 전환 완료"));
+	}
+}
+
+void ACharacterBase::OnDeathAnimationFinished()
+{
+	ActivateRagdoll();
 }
 
 void ACharacterBase::BeginPlay()
@@ -321,27 +336,26 @@ void ACharacterBase::Die()
 	if (bIsDead) return;
 	bIsDead = true;
 
-	UE_LOG(LogTemp, Error, TEXT("☠️ [CharacterBase] Die() 로직 시작 - 래그돌 전환"));
-
-	//물리적 처리 (서 있는 캡슐은 끄고, 메쉬는 흐물거리는 래그돌로)
+	// 충돌 해제 및 조작 불가 처리
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (GetMesh())
-	{
-		// 래그돌 프리셋 적용 (PhysicsAsset이 설정되어 있어야 함)
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-		GetMesh()->SetSimulatePhysics(true);
-	}
-
-	//조작 차단
 	if (Controller)
 	{
-		Controller->UnPossess(); // 영혼 이탈
+		Controller->UnPossess();
 	}
 
-	//시체 청소 (5초 뒤에 액터 삭제)
-	SetLifeSpan(5.0f);
+	// 몽타주 재생
+	UAnimMontage* DeathMontage = GetDeathMontage();
+	if (DeathMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->Montage_Play(DeathMontage);
+	}
+	else
+	{
+		// 몽타주가 없다면 예외 처리로 즉시 종료 함수 호출
+		OnDeathAnimationFinished();
+	}
 }
