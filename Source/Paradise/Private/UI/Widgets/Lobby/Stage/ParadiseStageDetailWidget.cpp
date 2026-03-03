@@ -14,7 +14,9 @@
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/InventorySystem.h"
 
+#include "Data/Structs/InventoryStruct.h"
 #include "Data/Structs/StageStructs.h" 
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
@@ -141,7 +143,18 @@ void UParadiseStageDetailWidget::SetupSquadPreview()
 		if (!CharID.IsNone())
 		{
 			UIData.ID = CharID;
-			// 캐릭터는 스쿼드 프리뷰이므로 FaceIcon(false)을 사용!
+
+			// 🚨 [핵심 버그 수정] 인벤토리에서 실제 레벨을 조회하여 대입합니다.
+			UIData.Level = 1; // 기본값
+			if (UInventorySystem* InvSys = GetGameInstance()->GetSubsystem<UInventorySystem>())
+			{
+				if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharID))
+				{
+					UIData.Level = CharData->Level;
+				}
+			}
+
+			// 캐릭터는 스쿼드 프리뷰이므로 FaceIcon을 사용!
 			if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, CharID))
 			{
 				UIData.Icon = Asset->FaceIcon.LoadSynchronous();
@@ -234,9 +247,19 @@ void UParadiseStageDetailWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewP
 	if (!NewPlayerID.IsNone())
 	{
 		UIData.ID = NewPlayerID;
+
+		// 슬롯이 갱신될 때도 실제 레벨을 조회하여 대입합니다.
+		UIData.Level = 1;
+		if (UInventorySystem* InvSys = GetGameInstance()->GetSubsystem<UInventorySystem>())
+		{
+			if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(NewPlayerID))
+			{
+				UIData.Level = CharData->Level;
+			}
+		}
+
 		if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, NewPlayerID))
 		{
-			// 여기도 FaceIcon 정책 유지 (false)
 			UIData.Icon = Asset->FaceIcon.LoadSynchronous();
 		}
 	}
@@ -252,6 +275,8 @@ void UParadiseStageDetailWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName Ne
 	if (!NewFamiliarID.IsNone())
 	{
 		UIData.ID = NewFamiliarID;
+		// 유닛은 레벨 표기가 없으므로 연산 생략 (최적화)
+
 		if (FFamiliarAssets* Asset = CachedGI->GetDataTableRow<FFamiliarAssets>(CachedGI->FamiliarAssetsDataTable, NewFamiliarID))
 		{
 			UIData.Icon = Asset->FaceIcon.LoadSynchronous();

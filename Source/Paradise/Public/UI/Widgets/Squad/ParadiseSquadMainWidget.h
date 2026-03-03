@@ -14,7 +14,6 @@ class UParadiseSquadDetailWidget;
 class UButton;
 class UInventorySystem;
 class UParadiseGameInstance;
-class UDataTable;
 class USquadSubsystem;
 #pragma endregion 전방 선언
 

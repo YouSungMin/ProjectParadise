@@ -192,10 +192,19 @@ void UParadiseSquadMainWidget::OnPlayerSlotUpdated(int32 SlotIndex, FName NewPla
 {
 	if (!WBP_FormationPanel) return;
 
-	// SquadSubsystem 플레이어 슬롯(0~2)은 FormationWidget과 인덱스가 동일합니다.
+	// 🚨 [수정] 캐릭터 슬롯이므로 인라인으로 실제 레벨 추출
+	int32 RealLevel = 1;
+	if (UInventorySystem* InvSys = GetInventorySystem())
+	{
+		if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(NewPlayerID))
+		{
+			RealLevel = CharData->Level;
+		}
+	}
+
 	FSquadItemUIData UIData = NewPlayerID.IsNone()
 		? FSquadItemUIData()
-		: MakeUIData(NewPlayerID, 1, SquadTabs::Character, false);
+		: MakeUIData(NewPlayerID, RealLevel, SquadTabs::Character, false);
 
 	WBP_FormationPanel->UpdateSlot(SlotIndex, UIData);
 }
@@ -204,12 +213,12 @@ void UParadiseSquadMainWidget::OnFamiliarSlotUpdated(int32 SlotIndex, FName NewF
 {
 	if (!WBP_FormationPanel) return;
 
-	// 퍼밀리어 서브시스템 인덱스(0~4) → FormationWidget 인덱스(3~7) 변환
 	const int32 FormationIndex = SlotIndex + 3;
 
+	// 🚨 [수정] 퍼밀리어 슬롯은 레벨이 필요 없으므로 연산 없이 무조건 0 전달 (최적화)
 	FSquadItemUIData UIData = NewFamiliarID.IsNone()
 		? FSquadItemUIData()
-		: MakeUIData(NewFamiliarID, 1, SquadTabs::Unit);
+		: MakeUIData(NewFamiliarID, 0, SquadTabs::Unit);
 
 	WBP_FormationPanel->UpdateSlot(FormationIndex, UIData);
 }
@@ -553,11 +562,26 @@ void UParadiseSquadMainWidget::HandleFormationSlotSelected(int32 SlotIndex)
 		if (!EquippedID.IsNone())
 		{
 			const int32 TargetTab = bIsUnitSlot ? SquadTabs::Unit : SquadTabs::Character;
-			RealData = MakeUIData(EquippedID, 1, TargetTab, !bIsUnitSlot);
+
+			// 🚨 [수정] 유닛이면 0, 캐릭터면 실제 레벨을 가져옵니다.
+			int32 RealLevel = 0;
+
+			if (!bIsUnitSlot) // 캐릭터 슬롯(0~2)인 경우에만 레벨 연산 수행 (최적화)
+			{
+				RealLevel = 1; // 기본값
+				if (UInventorySystem* InvSys = GetInventorySystem())
+				{
+					if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(EquippedID))
+					{
+						RealLevel = CharData->Level;
+					}
+				}
+			}
+
+			RealData = MakeUIData(EquippedID, RealLevel, TargetTab, !bIsUnitSlot);
 		}
 		else
 		{
-			// 빈 슬롯 처리: 테이블 조회를 완벽하게 스킵하고 하드코딩된 기본값만 전달
 			RealData.Name = FText::FromString(TEXT("비어있음"));
 			RealData.Level = 0;
 		}
