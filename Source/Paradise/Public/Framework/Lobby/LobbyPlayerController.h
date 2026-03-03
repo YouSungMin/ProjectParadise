@@ -26,9 +26,7 @@ protected:
 #pragma region 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
 
 public:
-	// ==========================================
 	// 디버그 / 치트 명령어 (콘솔창에 입력 가능)
-	// ==========================================
 	UFUNCTION(Exec)
 	void CheatAddCharacter(FName CharacterID);
 
@@ -59,6 +57,9 @@ public:
 	UFUNCTION(Exec)
 	void CheatEnhanceEquipment(FName ItemID);
 
+	//모든 아이템, 캐릭터, 퍼밀리어, 돈을 얻는 치트
+	UFUNCTION(Exec)
+	void CheatGrantAll();
 
 #pragma endregion 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
 

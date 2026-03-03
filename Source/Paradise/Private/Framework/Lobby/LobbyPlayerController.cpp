@@ -267,6 +267,69 @@ void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
 	}
 }
 
+void ALobbyPlayerController::CheatGrantAll()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	UInventorySystem* InvSys = GI->GetMainInventory();
+	UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>();
+
+	//골드 9999999 지급
+	if (EconSys)
+	{
+		EconSys->AddCurrency(ECurrencyType::Gold, 9999999);
+		UE_LOG(LogTemp, Warning, TEXT("💰 [Cheat] 9,999,999 골드 지급 완료!"));
+	}
+
+	//모든 데이터 지급
+	if (InvSys)
+	{
+		//모든 캐릭터 지급
+		if (GI->CharacterStatsDataTable)
+		{
+			for (const FName& RowName : GI->CharacterStatsDataTable->GetRowNames())
+			{
+				InvSys->AddCharacter(RowName);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("👥 [Cheat] 모든 캐릭터 지급 완료!"));
+		}
+
+		//모든 퍼밀리어 지급
+		if (GI->FamiliarStatsDataTable)
+		{
+			for (const FName& RowName : GI->FamiliarStatsDataTable->GetRowNames())
+			{
+				InvSys->AddFamiliar(RowName);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🐾 [Cheat] 모든 퍼밀리어 지급 완료!"));
+		}
+
+		//모든 무기 지급
+		if (GI->WeaponStatsDataTable)
+		{
+			for (const FName& RowName : GI->WeaponStatsDataTable->GetRowNames())
+			{
+				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
+			}
+			UE_LOG(LogTemp, Warning, TEXT("⚔️ [Cheat] 모든 무기 지급 완료!"));
+		}
+
+		//모든 방어구/장신구 지급
+		if (GI->ArmorStatsDataTable)
+		{
+			for (const FName& RowName : GI->ArmorStatsDataTable->GetRowNames())
+			{
+				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🛡️ [Cheat] 모든 방어구 및 장신구 지급 완료!"));
+		}
+
+		//지급이 끝난 후 UI 갱신
+		InvSys->OnInventoryUpdated.Broadcast();
+	}
+}
+
 
 
 void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
