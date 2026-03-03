@@ -155,7 +155,7 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 		// 몽타주의 모든 종료 상황에 대해 공용 종료 함수(OnMontageCompleted) 연결
 		MontageTask->OnCompleted.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
 		MontageTask->OnInterrupted.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
-		MontageTask->OnBlendOut.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
+		//MontageTask->OnBlendOut.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
 		MontageTask->OnCancelled.AddDynamic(this, &UBaseGameplayAbility::OnMontageCompleted);
 
 		MontageTask->ReadyForActivation();

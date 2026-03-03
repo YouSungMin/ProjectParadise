@@ -189,6 +189,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.DamageEffectClass = InAssets->BasicAttackEffect;
 		BasicAttackData.MontageToPlay = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
 		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
+		CachedDeathMontage = InAssets->DeathMontage.Get();
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
 		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
 		this->FactionTag = InAssets->FactionTag;
@@ -231,17 +232,16 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 
 void AUnitBase::Die()
 {
-	if (bIsDead) return;
-	bIsDead = true;
+	Super::Die();
 
-	if (UWorld* World = GetWorld())
-	{
-		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
-		{
-			// 사망 시 풀로 반환
-			PoolSubsystem->ReturnToPool(this);
-		}
-	}
+	// 안전장치 타이머 가동
+	GetWorldTimerManager().SetTimer(
+		FailSafeDestroyTimerHandle,
+		this,
+		&AUnitBase::ExecuteReturnToPool,
+		5.0f,
+		false
+	);
 }
 
 bool AUnitBase::IsEnemy(AUnitBase* OtherUnit)
@@ -255,6 +255,32 @@ void AUnitBase::PlayRangeAttack()
 {
 	// 공격 몽타주 실행 또는 발사체 생성 로직
 	UE_LOG(LogTemp, Log, TEXT("%s 유닛이 원거리 공격을 수행합니다."), *GetName());
+}
+
+UAnimMontage* AUnitBase::GetDeathMontage() const
+{
+	return CachedDeathMontage;
+}
+
+void AUnitBase::OnDeathAnimationFinished()
+{
+	Super::OnDeathAnimationFinished();
+
+	ExecuteReturnToPool();
+}
+
+void AUnitBase::ExecuteReturnToPool()
+{
+	GetWorldTimerManager().ClearTimer(FailSafeDestroyTimerHandle);
+
+	// 풀 반환 (오브젝트 풀링 서브시스템 활용)
+	if (UWorld* World = GetWorld())
+	{
+		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
+		{
+			PoolSubsystem->ReturnToPool(this);
+		}
+	}
 }
 
 void AUnitBase::SetAvoidanceEnabled(bool bEnable)

@@ -12,6 +12,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
+#include "Kismet/GameplayStatics.h"
 
 void AInGameGameMode::ForceVictory()
 {
@@ -292,7 +293,6 @@ void AInGameGameMode::OnPhaseVictory()
 
 		//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장 함수
 		DistributeStageRewards();
-
 	}
 
 
@@ -331,6 +331,12 @@ void AInGameGameMode::OnPhaseResult()
 	//UE_LOG(LogTemp, Log, TEXT("Phase: Result (최종 결과 화면 출력)"));
 
 	//버튼생성 후 로비로 레벨이동
+
+	//0223 김성현 - 게임 정지
+	if (UWorld* world = GetWorld())
+	{
+		UGameplayStatics::SetGamePaused(world,true);
+	}
 }
 
 void AInGameGameMode::DistributeStageRewards()

@@ -10,6 +10,8 @@
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/ItemStructs.h"  
+#include "Data/Structs/GrowthStruct.h"
 
 #pragma region 생명주기
 void UParadiseSquadDetailWidget::NativeConstruct()

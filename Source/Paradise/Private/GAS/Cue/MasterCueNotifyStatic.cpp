@@ -24,10 +24,9 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 
 	UE_LOG(LogTemp, Log, TEXT("🎯 GameplayCue UnitHit 실행됨: 대상 %s"), *MyTarget->GetName());
 
-	// 핵심 로직: 맞은 대상에게 ICombatInterface를 구현했는지 물어봄
+	// 맞은 대상에게 ICombatInterface를 구현했는지 물어봄
 	if (ICombatInterface* CombatInterface = Cast<ICombatInterface>(MyTarget))
 	{
-		// 💡 단 한 줄로 축약! "너 맞았으니까(Hit) 어떻게 아파해야 하는지 보따리 좀 줘"
 		if (FFXPayload* Payload = CombatInterface->GetFXPayload(TargetEventType))
 		{
 			// 위치값 계산 (파라미터가 비어있으면 타겟의 현재 위치 사용)
@@ -41,7 +40,7 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 			// =========================================================
 
 			// 1. 나이아가라 파티클 재생
-			if (!Payload->VisualEffect.IsNull()) // 구조체 포인터이므로 -> 로 접근합니다.
+			if (!Payload->VisualEffect.IsNull())
 			{
 				if (UNiagaraSystem* LoadedNiagara = Payload->VisualEffect.LoadSynchronous())
 				{

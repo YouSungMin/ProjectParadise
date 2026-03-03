@@ -113,6 +113,18 @@ public:
 	/** @brief 자식 클래스들이 무기 메쉬를 던져줄 수 있도록 가상 함수 선언 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual USceneComponent* GetWeaponMesh() const;
+
+	/** @brief 사망 몽타주를 반환하는 가상 함수 (자식 클래스에서 오버라이드) */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual UAnimMontage* GetDeathMontage() const { return nullptr; }
+
+	/** @brief 애니메이션 종료 후 래그돌 상태로 전환하는 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ActivateRagdoll();
+
+	/** @brief 애니메이션이 끝나거나 노티파이에서 호출될 가상 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void OnDeathAnimationFinished();
 protected:
 	virtual void BeginPlay() override;
 

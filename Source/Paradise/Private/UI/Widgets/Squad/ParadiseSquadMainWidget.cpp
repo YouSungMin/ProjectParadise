@@ -154,10 +154,21 @@ void UParadiseSquadMainWidget::InitFormationFromSubsystem()
 	for (int32 i = 0; i < PlayerIDs.Num(); ++i)
 	{
 		FName PlayerID = PlayerIDs[i];
+
+		//0303 김성현 - 하드코딩 된 레벨변수 가져오도록 변경
+		int32 CurrentLevel = 1;
+		if (UInventorySystem* InvSys = GetInventorySystem())
+		{
+			if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(PlayerID))
+			{
+				CurrentLevel = CharData->Level;
+			}
+		}
+
 		// 여기 마지막 인자를 false로 (FaceIcon 사용)
 		FSquadItemUIData UIData = PlayerID.IsNone()
 			? FSquadItemUIData()
-			: MakeUIData(PlayerID, 1, SquadTabs::Character, false);
+			: MakeUIData(PlayerID, CurrentLevel, SquadTabs::Character, false);
 
 		WBP_FormationPanel->UpdateSlot(i, UIData);
 	}
