@@ -91,7 +91,6 @@ void UParadiseSquadSlot::UpdateSlot(const FSquadItemUIData& InData)
 
 		if (Text_Level)
 		{
-			// 여기서도 이중 체크 (안전장치)
 			const bool bIsUnitSlot = (SlotIndex >= 3);
 			if (bIsUnitSlot)
 			{
@@ -99,7 +98,10 @@ void UParadiseSquadSlot::UpdateSlot(const FSquadItemUIData& InData)
 			}
 			else
 			{
-				Text_Level->SetText(FText::Format(FText::FromString(TEXT("Lv.{0}")), InData.Level));
+				// 가장 안전하고 명확한 C++ 포맷팅 방식 적용 (하드코딩 및 에러 방지)
+				FString LevelString = FString::Printf(TEXT("Lv.%d"), InData.Level);
+				Text_Level->SetText(FText::FromString(LevelString));
+
 				Text_Level->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			}
 		}
