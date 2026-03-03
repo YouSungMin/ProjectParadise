@@ -2,7 +2,21 @@
 
 
 #include "Characters/Player/TestNotifyState.h"
-#include "Characters/Base/PlayerBase.h"
+#include "Characters/Base/CharacterBase.h"
+#include "GAS/Attributes/BaseAttributeSet.h"
+
+void UTestNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
+{
+    Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
+
+    if (MeshComp)
+    {
+        if (ACharacterBase* Character = Cast<ACharacterBase>(MeshComp->GetOwner()))
+        {
+            Character->ResetHitActors();
+        }
+    }
+}
 
 void UTestNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
 {
@@ -10,10 +24,15 @@ void UTestNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenc
 
 	if (!MeshComp) return;
 
-	// 메시의 주인(캐릭터)를 찾아서
-	if (APlayerBase* Player = Cast<APlayerBase>(MeshComp->GetOwner()))
+	if (ACharacterBase* Character = Cast<ACharacterBase>(MeshComp->GetOwner()))
 	{
-		// "판정 검사해줘!" 라고 요청 (이 함수는 아래에서 만들 겁니다)
-		Player->CheckHit();
+		FCombatActionData CurrentData = Character->GetCurrentActionData();
+
+		// 안전 장치 
+		float FinalRange = (CurrentData.AttackRange > 0.0f) ? CurrentData.AttackRange : AttackRadius; // 기존 노티파이의 AttackRadius 변수를 임시로 길이에 매핑
+		float FinalRadius = (CurrentData.AttackRadius > 0.0f) ? CurrentData.AttackRadius : 40.0f; // 두께 기본값 40
+		float FinalOffset = CurrentData.ForwardOffset;
+
+		Character->CheckHit(SocketName, FinalRange, FinalRadius, FinalOffset, SocketTarget);
 	}
 }

@@ -12,6 +12,7 @@ class UTextBlock;
 class UButton;
 class UHorizontalBox;
 class UImage;
+class UWidget;
 #pragma endregion 전방 선언
 
 /** @brief 상세창 액션 델리게이트 */
@@ -38,7 +39,7 @@ public:
 	 * @param bIsUnit 유닛인지 여부 (true: 장비버튼 숨김)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DetailView")
-	void ShowInfo(const FSquadItemUIData& InData, bool bIsFormationContext, bool bIsUnit);
+	void ShowInfo(const FSquadItemUIData& InData, ESquadDetailContext Context);
 
 	/**
 	 * @brief 현재 상태에 따라 버튼의 가시성을 갱신합니다.
@@ -52,6 +53,15 @@ public:
 	/** @brief 정보를 비웁니다. */
 	void ClearInfo();
 #pragma endregion 로직
+
+private:
+	/**
+	 * @brief 캐릭터의 장비 맵에서 특정 부위의 장착 아이템 아이콘을 찾아 UI에 세팅합니다.
+	 * @param InSlot 찾고자 하는 장비 부위 (Weapon, Helmet 등)
+	 * @param TargetImage 세팅할 대상 UI 이미지 컴포넌트
+	 * @param EquipmentMap 캐릭터가 현재 장착 중인 아이템 GUID 맵
+	 */
+	void UpdateEquipmentIcon(EEquipmentSlot InSlot, UImage* TargetImage, const TMap<EEquipmentSlot, FGuid>& EquipmentMap);
 
 #pragma region 핸들러
 private:
@@ -67,53 +77,72 @@ private:
 	void HandleConfirm();
 #pragma endregion 핸들러
 
-#pragma region UI 바인딩
+#pragma region UI 바인딩 (공통)
 protected:
 	/** @brief 대상 이름 텍스트 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Name = nullptr;
 
-	/** @brief 대상 설명 또는 스탯 텍스트 */
+	/** @brief 대상 스탯 및 상세 설명  */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Desc = nullptr;
 
-	/** @brief 캐릭터 교체 버튼 */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> Btn_SwapCharacter = nullptr;
+	/** @brief 메인 아이콘 이미지 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Icon = nullptr;
 
-	/** @brief 장비 교체 버튼 */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> Btn_SwapEquipment = nullptr;
-
-	/** @brief 장비 교체 모드 취소/완료 버튼 (초기엔 숨김) */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> Btn_CancelEquipMode = nullptr;
-
-	// 교체 확정 버튼 (교체 모드에서만 보임, 처음엔 비활성)
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> Btn_Confirm = nullptr;
-
-	// 버튼들을 담는 가로 박스 (인벤토리 클릭 시 통째로 숨기기 위함)
+	/** @brief 하단 액션 버튼 그룹 (편성창 클릭 시에만 활성화) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> HBox_ButtonRoot = nullptr;
-#pragma endregion UI 바인딩
+#pragma endregion UI 바인딩 (공통)
 
-#pragma region 이벤트
+#pragma region UI 바인딩 (동적 레이아웃 영역)
+	/** * @brief [편성 캐릭터 전용] 장착 중인 5개의 장비(무기1, 방어구/악세4)를 묶어둔 컨테이너
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> Container_EquippedItems = nullptr;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_EquipWeapon = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_EquipHelmet = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_EquipChest = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_EquipAcc1 = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_EquipAcc2 = nullptr;
+
+	/** * @brief [캐릭터 궁극기 & 무기 스킬 전용] 스킬 정보를 묶어둔 컨테이너
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> Container_Skill = nullptr;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Img_SkillIcon = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_SkillInfo = nullptr;
+#pragma endregion UI 바인딩 (동적 레이아웃 영역)
+
+#pragma region UI 바인딩 (버튼)
+	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_SwapCharacter = nullptr;
+	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_SwapEquipment = nullptr;
+	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_CancelEquipMode = nullptr;
+	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Confirm = nullptr;
+#pragma endregion UI 바인딩 (버튼)
+
+#pragma region 기본 에셋 (Fallback)
+protected:
+	/**
+	 * @brief 데이터 테이블에 메인 아이콘 이미지가 없을 때 띄워줄 기본(물음표/실루엣) 아이콘
+	 * @details 블루프린트 에디터 우측 디테일 패널에서 디자이너가 직접 세팅합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI|Fallback")
+	TObjectPtr<UTexture2D> DefaultMainIcon = nullptr;
+
+	/** @brief 장착된 장비 이미지가 없을 때 빈칸 대신 채워줄 기본 아이콘 (선택 사항) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI|Fallback")
+	TObjectPtr<UTexture2D> DefaultEquipIcon = nullptr;
+#pragma endregion 기본 에셋 (Fallback)
+
+#pragma region 델리게이트 이벤트
 public:
-	/** @brief 캐릭터 교체 버튼 클릭 알림 */
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnDetailAction OnSwapCharacterClicked;
-
-	/** @brief 장비 교체 버튼 클릭 알림 */
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnDetailAction OnSwapEquipmentClicked;
-
-	/** @brief 취소 버튼 클릭 알림 */
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnDetailAction OnCancelClicked;
-
-	// 확인 버튼 클릭 알림
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnDetailAction OnConfirmClicked;
-#pragma endregion 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnSwapCharacterClicked;
+	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnSwapEquipmentClicked;
+	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnCancelClicked;
+	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnConfirmClicked;
+#pragma endregion 델리게이트 이벤트
 };

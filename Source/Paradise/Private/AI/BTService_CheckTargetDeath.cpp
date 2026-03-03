@@ -3,7 +3,7 @@
 
 #include "AI/BTService_CheckTargetDeath.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Characters/AIUnit/BaseUnit.h" // ABaseUnit 헤더 경로 확인
+#include "Characters/AIUnit/UnitBase.h"
 #include "AIController.h"
 
 UBTService_CheckTargetDeath::UBTService_CheckTargetDeath()
@@ -26,8 +26,8 @@ void UBTService_CheckTargetDeath::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	if (TargetActor)
 	{
 		// 2. 타겟이 BaseUnit인지 확인하고 죽었는지 체크
-		ABaseUnit* BaseUnit = Cast<ABaseUnit>(TargetActor);
-		if (BaseUnit && BaseUnit->bIsDead)
+		AUnitBase* UnitBase = Cast<AUnitBase>(TargetActor);
+		if (UnitBase && UnitBase->IsDead())
 		{
 			// 3. 죽었다면 블랙보드 키를 비워줌
 			BB->ClearValue(TargetActorKey.SelectedKeyName);

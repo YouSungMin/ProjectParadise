@@ -115,7 +115,10 @@ void UVirtualJoystickWidget::ProcessInput(const FVector2D& TouchPosition)
 	}
 
 	// 3. 정규화된 입력 값 계산 (-1.0 ~ 1.0)
-	CurrentInput = ClampedDir / JoystickRadius;
+	FVector2D NormalizedInput = ClampedDir / JoystickRadius;
+
+	CurrentInput= NormalizedInput;
+
 
 	// 4. Thumb 이미지 이동 (Render Translation 활용 - 성능 최적화)
 	if (Img_Thumb)

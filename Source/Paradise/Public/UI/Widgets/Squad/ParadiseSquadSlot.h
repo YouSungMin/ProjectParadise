@@ -87,7 +87,7 @@ protected:
 	TObjectPtr<UImage> Img_SelectionBorder = nullptr;
 
 	/** @brief 레벨 표시 텍스트 */
-	UPROPERTY(meta = (BindWidgetOptional))
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Level = nullptr;
 
 	/** @brief 클릭 버튼 */

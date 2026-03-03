@@ -4,6 +4,7 @@
 #include "Data/Enums/GameEnums.h"
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
+#include "Data/Structs/FXStructs.h"
 #include "UnitStructs.generated.h"
 
 class USkeletalMesh;
@@ -15,7 +16,6 @@ class AAIController;
 class UBehaviorTree;
 class UBlackboardData;
 class USoundBase;
-class UFXDataAsset;
 
 /**
  * @struct FUnitBaseStats
@@ -27,19 +27,6 @@ USTRUCT(BlueprintType)
 struct FUnitBaseStats : public FTableRowBase
 {
 	GENERATED_BODY()
-
-	// =========================================================
-	//  기본 정보 (Basic Info) 
-	// =========================================================
-
-	/**
-	 * @brief 소속 진영 (Faction)
-	 * @details 피아식별(아군/적군)의 기준이 되는 핵심 태그입니다.
-	 * 예: Unit.Faction.Friendly.Player, Unit.Faction.Enemy, Unit.Faction.Friendly.Familiar
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info", meta = (Categories = "Unit.Faction"))
-	FGameplayTag FactionTag;
-
 	// =========================================================
 	//  전투 스탯 (Combat Stats)
 	// =========================================================
@@ -101,14 +88,6 @@ struct FCharacterStats : public FUnitBaseStats
 
 public:
 
-	/**
-	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Character'로 설정함
-	*/
-	FCharacterStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Player"));
-	}
-
 	// =========================================================
 	//  성장 스탯 (Combat Stats)
 	// =========================================================
@@ -147,19 +126,11 @@ public:
 	// =========================================================
 
 	/**
-	 * @brief 궁극기 재사용 대기시간 (Ultimate Cooldown)
-	 * @details 궁극기 (어빌리티) 의 재사용 대기시간의 값입니다.
+	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Ultimate", meta = (ClampMin = "0.0"))
-	float UltimateCooldown;
-
-	/**
-	 * @brief 궁극기 데미지 배율 (Ultimate Damage Rate)
-	 * @details 공격력의 몇 퍼센트로 피해를 입힐지 결정합니다.
-	 * 예: 1.5 = 150% 데미지 (기본 100 + 추가 50). 2.0 = 200% 데미지.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Ultimate", meta = (ClampMin = "1.0"))
-	float UltimateDamageRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName SkillActionID;
 };
 
 /**
@@ -213,20 +184,18 @@ struct FAIUnitStats : public FUnitBaseStats
 	float AttackSpeed;
 
 	/**
-	 * @brief 사거리 (Attack Range)
-	 * @details 이 거리 안에 타겟이 들어오면 이동을 멈추고 공격을 시도합니다.
-	 * @note 근거리는 보통 100~150, 원거리는 600~1000 정도를 사용합니다.
+	 * @brief AI 기본 공격 액션 ID
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.0"))
-	float AttackRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName BasicAttackActionID;
 
 	/**
-	 * @brief 스킬 재사용 대기시간 (Cooldown)
-	 * @details 단위: 초 (Seconds).
-	 * GAS의 Cooldown GameplayEffect(GE_Cooldown)에 적용될 지속 시간(Duration)입니다.
+	 * @brief AI 스킬 액션 ID 목록
+	 * @details FAIUnitAssets의 SkillAbilities 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
+	 * 예: 인덱스 0 = 돌진 스킬, 인덱스 1 = 브레스 스킬
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.0"))
-	float Cooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	TArray<FName> SkillActionIDs;
 };
 
 /**
@@ -240,13 +209,6 @@ struct FEnemyStats : public FAIUnitStats
 
 public:
 
-	/**
-	*@brief 적 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
-	*/
-	FEnemyStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
-	}
 };
 
 /**
@@ -259,16 +221,6 @@ struct FFamiliarStats : public FAIUnitStats
 	GENERATED_BODY()
 
 public:
-
-	/**
-	*@brief 패밀리어 전용 : 태그를 자동으로 'Friendly.Familiar'와 Rank.Normal로 설정함
-	*/
-	FFamiliarStats()
-	{
-		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Familiar"));
-		RankTypeTag = FGameplayTag::RequestGameplayTag(FName("Unit.Rank.Normal"));
-	}
-
 	/** @brief 소환 코스트 (재화) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
 	int32 SummonCost;
@@ -285,6 +237,18 @@ struct FUnitBaseAssets : public FTableRowBase
 	GENERATED_BODY()
 
 public:
+	// =========================================================
+	//  기본 정보 (Basic Info) 
+	// =========================================================
+
+	/**
+	 * @brief 소속 진영 (Faction)
+	 * @details 피아식별(아군/적군)의 기준이 되는 핵심 태그입니다.
+	 * 예: Unit.Faction.Friendly.Player, Unit.Faction.Enemy, Unit.Faction.Friendly.Familiar
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info", meta = (Categories = "Unit.Faction"))
+	FGameplayTag FactionTag;
+
 	// =========================================================
 	//  Visual & Anim (Common)
 	// =========================================================
@@ -306,13 +270,6 @@ public:
 	// =========================================================
 
 	/**
-	 * @brief 기본 공격 몽타주
-	 * @details 가장 기초적인 공격 모션입니다. (플레이어는 콤보의 시작, AI는 기본 평타)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
-	TSoftObjectPtr<UAnimMontage> AttackMontage;
-
-	/**
 	 * @brief 피격(Hit) 리액션 몽타주
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
@@ -324,19 +281,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
 
+	// =========================================================
+	//  Audio & FX (Physical Reaction)
+	// =========================================================
 	/**
-	 * @brief 유닛 전용 목소리/이펙트 데이터 에셋 (Voice Pack)
-	 * @detail 사망(State.Dead), 기합(State.Attack), 피격(State.Hit) 사운드를 담고 있는 에셋입니다.
+	 * @brief 피격 및 생존 반응 전용 FX, Tag 구조체
+	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Common")
-	TSoftObjectPtr<UFXDataAsset> VoiceDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FReactionFXSettings ReactionFX;
+};
 
-	/**
-	 * @brief 피격 이펙트 태그
-	 * @detail 이 유닛을 때리면 무슨 효과가 나나요?" (예: Effect.Hit.Flesh.Small)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Hit"))
-	FGameplayTag HitReactionTag;
+/**
+ * @struct FWeaponAnimSet
+ * @brief 특정 무기 타입을 들었을 때 재생할 애니메이션 세트
+ */
+USTRUCT(BlueprintType)
+struct FWeaponAnimSet
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TSoftObjectPtr<UAnimMontage> BasicAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TSoftObjectPtr<UAnimMontage> SkillMontage;
 };
 
 /**
@@ -348,6 +317,14 @@ struct FCharacterAssets : public FUnitBaseAssets
 {
 	GENERATED_BODY()
 public:
+	/**
+	*@brief 캐릭터 전용 : 태그를 자동으로 'Friendly.Player'로 설정함
+	*/
+	FCharacterAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Player"));
+	}
+
 	// =========================================================
 	//  UI (Player Only)
 	// =========================================================
@@ -386,10 +363,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Skill")
 	TSoftObjectPtr<UAnimMontage> UltimateMontage;
 
-	/**
-	 * 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Skill.Ultimate.Meteor)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Skill"))
+	/** @brief 장착한 무기 종류에 따라 달라지는 몽타주 세트 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Weapon")
+	TMap<EWeaponType, FWeaponAnimSet> WeaponAnimMap;
+
+	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
 	FGameplayTag UltimateEffectTag;
 };
 
@@ -402,6 +381,14 @@ struct FAIUnitAssets : public FUnitBaseAssets
 {
 	GENERATED_BODY()
 
+public:
+
+	/**
+	 * @brief UI 표현을 위한 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
+
 	// =========================================================
 	//  Visual (AI Specific)
 	// =========================================================
@@ -412,6 +399,13 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual", meta = (ClampMin = "0.1"))
 	float Scale = 1.0f; // 초기화 필수
+
+	/**
+	 * @brief 기본 공격 몽타주
+	 * @details 가장 기초적인 공격 모션입니다. (플레이어는 콤보의 시작, AI는 기본 평타)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
+	TSoftObjectPtr<UAnimMontage> AttackMontage;
 
 	// =========================================================
 	//  인공지능 (AI)
@@ -464,11 +458,20 @@ struct FAIUnitAssets : public FUnitBaseAssets
 	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
 
 	/**
-	 * @brief 평타 연출 태그
-	 * @details 몬스터가 평타를 칠 때 재생할 이펙트/사운드 (예: Effect.Attack.Claw)
+	 * @brief 투사체 클래스 (Projectile Class)
+	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
+	 * @note 근거리 무기일 경우 비워둡니다 (None).
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Attack", meta = (Categories = "Effect.Attack"))
-	FGameplayTag BasicAttackEffectTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	TSubclassOf<AActor> ProjectileClass;
+
+	/**
+	 * @brief 공격 행동 전용, FX, Tags
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FActionFXSettings ActionFX;
+
+
 };
 
 /**
@@ -479,6 +482,15 @@ USTRUCT(BlueprintType)
 struct FEnemyAssets : public FAIUnitAssets
 {
 	GENERATED_BODY()
+
+public:
+	/**
+	 *@brief 적 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
+	 */
+	FEnemyAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+	}
 
 	/**
 	 * @brief 스킬 연출 태그 목록
@@ -497,4 +509,12 @@ USTRUCT(BlueprintType)
 struct FFamiliarAssets : public FAIUnitAssets
 {
 	GENERATED_BODY()
+
+	/**
+	 *@brief 패밀리어 전용 : 태그를 자동으로 'Friendly.Familiar'로 설정함
+	 */
+	FFamiliarAssets()
+	{
+		FactionTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly.Familiar"));
+	}
 };

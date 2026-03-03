@@ -4,23 +4,24 @@
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Components/EquipmentComponent.h"
-#include "Components/InventoryComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Framework/System/ParadiseSaveGame.h"
-#include "AbilitySystemComponent.h"
-#include "Camera/CameraComponent.h"
+#include "Framework/System/InventorySystem.h"
 #include "Framework/InGame/InGameController.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "GAS/Attributes/BaseAttributeSet.h"
+#include "Camera/CameraComponent.h"
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Framework/Core/ParadiseGameInstance.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/InputStructs.h"
 #include "Data/Assets/ParadiseInputConfig.h" 
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "AbilitySystemBlueprintLibrary.h"
+#include "Data/Assets/FXDataAsset.h"
 
 APlayerBase::APlayerBase()
 {
@@ -36,25 +37,23 @@ APlayerBase::APlayerBase()
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false; // 카메라는 스프링암만 따라감
 
-    HelmetMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
-    HelmetMesh->SetupAttachment(GetMesh()); // 부모 메쉬에 붙임
-    HelmetMesh->SetLeaderPoseComponent(GetMesh()); // 애니메이션 동기화
-
-    ChestMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ChestMesh"));
-    ChestMesh->SetupAttachment(GetMesh());
-    ChestMesh->SetLeaderPoseComponent(GetMesh());
-
-    GlovesMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GlovesMesh"));
-    GlovesMesh->SetupAttachment(GetMesh());
-    GlovesMesh->SetLeaderPoseComponent(GetMesh());
-
-    BootsMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BootsMesh"));
-    BootsMesh->SetupAttachment(GetMesh());
-    BootsMesh->SetLeaderPoseComponent(GetMesh());
+    InitializeComponents();
 
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+}
+
+void APlayerBase::InitializeComponents()
+{
+    HatMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
+    HatMesh->SetupAttachment(GetMesh()); // 부모 메쉬에 붙임
+    HatMesh->SetLeaderPoseComponent(GetMesh()); // 애니메이션 동기화
+
+    WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMeshComp"));
+    WeaponMesh->SetupAttachment(GetMesh(), TEXT("hand_r")); // 기본 소켓
+    WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 무기 자체 충돌은 끔
+    WeaponMesh->SetComponentTickEnabled(false); // 무기 자체 틱은 불필요하므로 끔 (최적화)
 }
 
 void APlayerBase::PossessedBy(AController* NewController)
@@ -131,12 +130,15 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
     InPlayerData->CurrentAvatar = this;
 
     // GAS 연결
-    // Owner(APlayerData): HeroDataActor (데이터/로직의 주체)
-    // Avatar(APlayerBase): This Character (애니메이션/물리의 주체)
-    UAbilitySystemComponent* ASC = InPlayerData->GetAbilitySystemComponent();
-    if (ASC)
+    // Owner(APlayerData): 데이터/로직의 주체
+    // Avatar(APlayerBase): 애니메이션/물리의 주체
+    AbilitySystemComponent = InPlayerData->GetAbilitySystemComponent();
+    AttributeSet = InPlayerData->GetAttributeSet();
+
+    if (AbilitySystemComponent)
     {
-        ASC->InitAbilityActorInfo(InPlayerData, this);
+        AbilitySystemComponent->InitAbilityActorInfo(InPlayerData, this);
+        UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] GAS 초기화 완료!"));
     }
 
     // 캐릭터 에셋 외형 업데이트
@@ -147,82 +149,16 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
         Mymesh->SetAnimInstanceClass(LinkedPlayerData->CachedAnimBP);
     }
 
-        // 외형 업데이트 (장비 동기화)
-        // APlayerData가 가진 장비 컴포넌트를 확인해서 내 몸에 메시를 입힘
+     // 데이터 동기화(장비 동기화)
     if (UEquipmentComponent* EquipComp = InPlayerData->GetEquipmentComponent())
     {
-        // 1. GameInstance와 메인 인벤토리 가져오기
-        UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-        if (GI && GI->GetMainInventory())
-        {
-            //인벤토리(보유 캐릭터 목록)에서 내 데이터 구조체 찾기
-            //UID를 적용했다면 InPlayerData->CharacterUID 로 비교하세요.
-            for (const auto& CharData : GI->GetMainInventory()->GetOwnedCharacters())
-            {
-                if (CharData.CharacterID == InPlayerData->CharacterID)
-                {
-                    //찾은 데이터(EquipmentMap)를 장비 컴포넌트에 주입 -> 내부에서 자동으로 캐시 덮어쓰고 메쉬 생성!
-                    EquipComp->InitializeEquipment(CharData.EquipmentMap, GI->GetMainInventory());
-                    UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 장비 데이터 연동 및 UpdateVisuals 완료!"));
-                    break;
-                }
-            }
-        }
+        EquipComp->UpdateVisuals(this);
     }
+
+    // 소속 태그 적용
+    this->FactionTag = InPlayerData->FactionTag;
 
     UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 육체 초기화 완료!"));
-}
-
-void APlayerBase::CheckHit()
-{
-    FVector SocketLocation = GetMesh()->GetSocketLocation(TEXT("hand_r")); // 무기 소켓 이름
-
-    // 2. 트레이스 설정 (반경 50cm짜리 구체를 그림)
-    TArray<AActor*> ActorsToIgnore;
-    ActorsToIgnore.Add(this); // 나는 때리면 안 됨
-
-    FHitResult HitResult;
-    bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-        GetWorld(),
-        SocketLocation,      // 시작점
-        SocketLocation,      // 끝점 (제자리에서 구체 검사)
-        50.0f,               // 반경 (큐브 크기에 맞춰 조절)
-        UEngineTypes::ConvertToTraceType(ECC_Pawn), // 폰(캐릭터)만 검사
-        false,               // 복잡한 충돌(Mesh) 말고 단순 캡슐 충돌 검사
-        ActorsToIgnore,
-        EDrawDebugTrace::ForDuration, // 디버그 선 그리기 (빨간 공 보임)
-        HitResult,
-        true
-    );
-
-    // 3. 무언가 맞았다면?
-    if (bHit && HitResult.GetActor())
-    {
-        AActor* HitActor = HitResult.GetActor();
-
-        // 4. 이미 때린 놈이면 패스 (다단히트 방지)
-        if (HitActors.Contains(HitActor)) return;
-        HitActors.Add(HitActor); // 목록에 추가
-
-        // 5. [핵심] GAS로 "나 때렸어!" 신호 보내기
-        // MeleeBase.cpp에서 기다리는 태그: "Event.Montage.Hit"
-        FGameplayEventData Payload;
-        Payload.Instigator = this;
-        Payload.Target = HitActor;
-
-        // 태그: MeleeBase의 HitEventTag와 똑같아야 함!
-        FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));
-
-        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, HitTag, Payload);
-
-        UE_LOG(LogTemp, Warning, TEXT("👊 [PlayerBase] 타격 성공! 대상: %s"), *HitActor->GetName());
-
-    }
-}
-
-UAbilitySystemComponent* APlayerBase::GetAbilitySystemComponent() const
-{
-	return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetAbilitySystemComponent() : nullptr;
 }
 
 void APlayerBase::BeginPlay()
@@ -234,11 +170,8 @@ USkeletalMeshComponent* APlayerBase::GetArmorComponent(EEquipmentSlot Slot) cons
 {
     switch (Slot)
     {
-    case EEquipmentSlot::Helmet: return HelmetMesh;
-    case EEquipmentSlot::Chest:  return ChestMesh;
-    case EEquipmentSlot::Gloves: return GlovesMesh;
-    case EEquipmentSlot::Boots:  return BootsMesh;
-    // Weapon은 별도 액터로 붙이므로 여기선 nullptr 반환
+    case EEquipmentSlot::Hat: return HatMesh;
+    case EEquipmentSlot::Weapon:  return WeaponMesh;
     default: return nullptr;
     }
 }
@@ -252,6 +185,11 @@ FCombatActionData APlayerBase::GetCombatActionData(ECombatActionType ActionType)
     }
 
     return LinkedPlayerData->GetCombatActionData(ActionType);
+}
+
+FFXPayload* APlayerBase::GetFXPayload(EFXEventType EventType) const
+{
+    return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetFXPayload(EventType) : nullptr;
 }
 
 void APlayerBase::SetCamera_Default()
@@ -369,17 +307,29 @@ void APlayerBase::OnMoveInput(const FInputActionValue& InValue)
 
 void APlayerBase::SendAbilityInputToASC(EInputID InputId, bool bIsPressed)
 {
-    UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-    if (!ASC) return;
+    if (!AbilitySystemComponent) return;;
 
     if (bIsPressed)
     {
-        ASC->AbilityLocalInputPressed(static_cast<int32>(InputId));
+        AbilitySystemComponent->AbilityLocalInputPressed(static_cast<int32>(InputId));
     }
     else
     {
-        ASC->AbilityLocalInputReleased(static_cast<int32>(InputId));
+        AbilitySystemComponent->AbilityLocalInputReleased(static_cast<int32>(InputId));
     }
 }
 
+USceneComponent* APlayerBase::GetWeaponMesh() const
+{
+    return WeaponMesh;
+}
+
+UAnimMontage* APlayerBase::GetDeathMontage() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        return LinkedPlayerData->GetDeathMontage();
+    }
+    return nullptr; // 데이터가 없으면 예외처리
+}
 

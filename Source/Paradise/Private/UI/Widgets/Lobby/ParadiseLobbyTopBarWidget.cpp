@@ -2,70 +2,115 @@
 
 
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Kismet/KismetSystemLibrary.h" // 종료 기능을 위해 필요
+#include "Framework/System/EconomySubsystem.h"
 
 void UParadiseLobbyTopBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	// 1. 버튼 이벤트 바인딩
-	if (Btn_Settings)
+	if (Btn_Settings) Btn_Settings->OnClicked.AddDynamic(this, &UParadiseLobbyTopBarWidget::OnSettingsClicked);
+	if (Btn_QuitGame) Btn_QuitGame->OnClicked.AddDynamic(this, &UParadiseLobbyTopBarWidget::OnQuitGameClicked);
+
+	// 2. 설정 팝업 사전 생성 및 캐싱
+	if (SettingsPopupClass && !SettingsPopupInstance)
 	{
-		Btn_Settings->OnClicked.AddDynamic(this, &UParadiseLobbyTopBarWidget::OnSettingsClicked);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[TopBar] Btn_Settings가 바인딩되지 않았습니다."));
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100);
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 
-	if (Btn_QuitGame)
+	// 3. 경제 서브시스템 연동 (초기 데이터 로드 및 델리게이트 구독)
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		Btn_QuitGame->OnClicked.AddDynamic(this, &UParadiseLobbyTopBarWidget::OnQuitGameClicked);
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+			// 이벤트 구독
+			EconSys->OnCurrencyChanged.AddDynamic(this, &UParadiseLobbyTopBarWidget::HandleCurrencyChanged);
+
+			// 현재 지갑 상태를 읽어와서 최초 1회 화면 갱신
+			int32 CurrentGold = EconSys->GetCurrency(ECurrencyType::Gold);
+			int32 CurrentAether = EconSys->GetCurrency(ECurrencyType::Aether);
+			UpdateCurrencyUI(CurrentGold, CurrentAether);
+		}
 	}
-	else
+}
+
+void UParadiseLobbyTopBarWidget::NativeDestruct()
+{
+	if (Btn_Settings) Btn_Settings->OnClicked.RemoveAll(this);
+	if (Btn_QuitGame) Btn_QuitGame->OnClicked.RemoveAll(this);
+
+	// 메모리 누수 방지: 델리게이트 구독 해제
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[TopBar] Btn_QuitGame이 바인딩되지 않았습니다."));
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+			EconSys->OnCurrencyChanged.RemoveDynamic(this, &UParadiseLobbyTopBarWidget::HandleCurrencyChanged);
+		}
 	}
 
-	// 2. 초기화 시 임시 데이터로 갱신 (테스트용)
-	// 실제 게임에서는 PlayerState나 GameInstance에서 데이터를 받아와야 합니다.
-	UpdateCurrencyUI(0, 0);
+	Super::NativeDestruct();
 }
 
 #pragma region 로직 구현
-void UParadiseLobbyTopBarWidget::UpdateCurrencyUI(int32 InGold, int32 InEther)
+void UParadiseLobbyTopBarWidget::UpdateCurrencyUI(int32 InGold, int32 InAether)
 {
-	// 골드 텍스트 갱신
-	if (Text_GoldAmount)
-	{
-		// 3자리마다 콤마(,)를 찍는 서식 적용 (ex: 1,000,000)
-		FNumberFormattingOptions NumberFormat;
-		NumberFormat.UseGrouping = true;
+	UpdateGoldText(InGold);
+	UpdateAetherText(InAether);
+}
 
-		Text_GoldAmount->SetText(FText::AsNumber(InGold, &NumberFormat));
+void UParadiseLobbyTopBarWidget::UpdateGoldText(int32 Amount)
+{
+	if (!Text_GoldAmount) return;
+
+	// 3자리마다 콤마(,)를 찍는 서식 적용 (ex: 1,000,000)
+	FNumberFormattingOptions NumberFormat;
+	NumberFormat.UseGrouping = true;
+	Text_GoldAmount->SetText(FText::AsNumber(Amount, &NumberFormat));
+}
+
+void UParadiseLobbyTopBarWidget::UpdateAetherText(int32 Amount)
+{
+	if (!Text_AetherAmount) return;
+
+	// 에테르도 골드처럼 콤마를 찍고 싶다면 동일하게 적용 가능
+	FNumberFormattingOptions NumberFormat;
+	NumberFormat.UseGrouping = true;
+	Text_AetherAmount->SetText(FText::AsNumber(Amount, &NumberFormat));
+}
+
+void UParadiseLobbyTopBarWidget::HandleCurrencyChanged(ECurrencyType CurrencyType, int32 OldAmount, int32 NewAmount)
+{
+	// [최적화] 변경된 재화의 종류를 판별하여 필요한 텍스트 위젯만 갱신합니다.
+	if (CurrencyType == ECurrencyType::Gold)
+	{
+		UpdateGoldText(NewAmount);
 	}
-
-	// 에테르 텍스트 갱신
-	if (Text_AetherAmount)
+	else if (CurrencyType == ECurrencyType::Aether)
 	{
-		Text_AetherAmount->SetText(FText::AsNumber(InEther));
+		UpdateAetherText(NewAmount);
 	}
 }
 
 void UParadiseLobbyTopBarWidget::OnSettingsClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("[TopBar] 설정 버튼 클릭됨 (기능 구현 예정)"));
-
-	// TODO: WBP_SettingsPopup을 띄우는 로직 추가
-	// 예: GetOwningPlayer()->GetHUD()->ShowSettings();
+	/** @section 팝업 열기 */
+	if (SettingsPopupInstance)
+	{
+		SettingsPopupInstance->OpenSettings();
+	}
 }
 
 void UParadiseLobbyTopBarWidget::OnQuitGameClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("[TopBar] 게임 종료 버튼 클릭됨"));
-
 	// 에디터에서는 시뮬레이션 종료, 빌드에서는 게임 종료
 	if (APlayerController* PC = GetOwningPlayer())
 	{

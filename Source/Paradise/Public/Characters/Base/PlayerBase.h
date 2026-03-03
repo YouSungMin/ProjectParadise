@@ -16,7 +16,7 @@ struct FInputActionValue;
  * 
  */
 UCLASS()
-class PARADISE_API APlayerBase : public ACharacterBase, public IAbilitySystemInterface, public ICombatInterface
+class PARADISE_API APlayerBase : public ACharacterBase
 {
 	GENERATED_BODY()
 	
@@ -28,9 +28,13 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
 	virtual void BeginPlay() override;
+
+	/**
+	 * @brief 생성자에서 컴포넌트를 생성합니다.
+	 */
+	void InitializeComponents();
+
 	/**
 	 * @brief 슬롯에 해당하는 스켈레탈 메쉬 컴포넌트를 반환합니다.
 	 * @details EquipmentComponent에서 외형 변경 시 호출합니다.
@@ -48,6 +52,9 @@ public:
 	 * @return FCombatActionData 몽타주, 데미지 이펙트 클래스, 데미지 계수가 포함된 구조체. (무기가 없으면 빈 구조체 반환)
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
+
+	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
 
 	UFUNCTION(BlueprintCallable)
 	class APlayerData* GetPlayerData() const { return LinkedPlayerData.Get(); }
@@ -85,18 +92,27 @@ public:
 	*/
 	virtual void Die() override;
 
-	/*
-	 * @brief 스폰 직후 PlayerState가 이 함수를 호출해 외형등 데이터연결
+	/**
+	 * @brief 캐릭터 스폰 직후, 영혼(PlayerData)과 육체를 연결하고 외형을 초기화합니다.
+	 * @details
+	 * - GAS의 오너(Owner)와 아바타(Avatar) 관계를 설정합니다.
+	 * - 연결된 영혼이 보유한 장비 데이터를 기반으로 즉시 비주얼을 렌더링합니다.
+	 * @param InPlayerData 이 육체를 제어할 데이터 주체(영혼) 액터
 	 */
 	void InitializePlayer(APlayerData* InPlayerData);
-	/*
-	 * @brief GAS 필수 인터페이스 
-	 */
 
-	/*
-	 * @brief 애니메이션 노티파이에서 매 프레임 호출할 함수
+	/**
+	 * @brief 입력 액션이 들어오면 ASC로 신호를 보내는 배달부 함수
+	 * @param InputId : 어떤 키인가? (Enum)
+	 * @param bIsPressed : 눌렀는가(true), 뗐는가(false)
 	 */
-	void CheckHit();
+	void SendAbilityInputToASC(EInputID InputId, bool bIsPressed);
+
+	/** @brief 소켓 이름을 주면 위치(좌표)를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual USceneComponent* GetWeaponMesh() const override;
+
+	/** @brief 사망 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual UAnimMontage* GetDeathMontage() const override;
 
 protected:
 
@@ -107,17 +123,6 @@ protected:
 	UFUNCTION()
 	void OnMoveInput(const FInputActionValue& InValue);
 
-	/*
-	 * @brief 공격이 새로 시작될 때 목록 비우기 (NotifyBegin 같은 곳에서 호출 필요, 혹은 몽타주 시작 시)
-	 */
-	void ResetHitActors() { HitActors.Empty(); }
-
-	/**
-	 * @brief 입력 액션이 들어오면 ASC로 신호를 보내는 배달부 함수
-	 * @param InputId : 어떤 키인가? (Enum)
-	 * @param bIsPressed : 눌렀는가(true), 뗐는가(false)
-	 */
-	void SendAbilityInputToASC(EInputID InputId, bool bIsPressed);
 
 protected:
 
@@ -126,16 +131,13 @@ protected:
 
 	/**  모듈형 캐릭터 파츠(Body는 ACharacter의 Mesh 사용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> HelmetMesh = nullptr;
+	TObjectPtr<USkeletalMeshComponent> HatMesh = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> ChestMesh= nullptr; // 상의+하의 통합형이면 이것만 사용
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> GlovesMesh=nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	TObjectPtr<USkeletalMeshComponent> BootsMesh= nullptr;
+	/** 
+	  * @brief 무기 전용 메쉬 컴포넌트
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual|Weapon")
+	TObjectPtr<USkeletalMeshComponent> WeaponMesh = nullptr;
 
 	/*
 	 * @brief 입력 액션 Move
@@ -148,27 +150,27 @@ protected:
 	 * @brief 전투 스킬(GAS)용 입력 설정 데이터 에셋
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	TObjectPtr<class UParadiseInputConfig> InputConfig;
+	TObjectPtr<class UParadiseInputConfig> InputConfig = nullptr;
 
 	/*
 	 * @brief 스프링암 컴포넌트
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	TObjectPtr<class USpringArmComponent> CameraBoom;
+	TObjectPtr<class USpringArmComponent> CameraBoom = nullptr;
 
 
 	/*
 	 * @brief 카메라 컴포넌트
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	TObjectPtr<class UCameraComponent> FollowCamera;
+	TObjectPtr<class UCameraComponent> FollowCamera = nullptr;
 
 	
 	/*
 	 * @brief 클래스 타입 변경예정 ,실제 데이터를 가진 액터
 	 */
 	UPROPERTY()
-	TWeakObjectPtr<class APlayerData> LinkedPlayerData;
+	TWeakObjectPtr<class APlayerData> LinkedPlayerData = nullptr;
 
 	/*
 	 * @brief 무기 붙일 소켓 이름
@@ -176,10 +178,4 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	FName WeaponSocketName;
-
-	/*
-	 * @brief 이미 때린 적을 중복 타격하지 않게 저장하는 목록
-	 */
-	UPROPERTY()
-	TArray<AActor*> HitActors;
 };

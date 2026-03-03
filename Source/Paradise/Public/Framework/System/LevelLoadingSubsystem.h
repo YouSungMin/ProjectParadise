@@ -10,6 +10,7 @@
 #pragma region 전방 선언
 class ULoadingWidget;
 class UUserWidget;
+class UTexture2D;
 #pragma endregion 전방 선언
 
 /**
@@ -35,21 +36,25 @@ public:
 #pragma region 외부 인터페이스
 public:
 	/**
-	 * @brief 레벨 이동 함수. (C++ 기본값 할당 제거 -> 문법 오류 해결)
+	 * @brief 레벨 전이 시작
 	 * @param InTargetLevelName 목표 레벨
-	 * @param InLoadingMapName 로딩 맵 이름 (None을 넣으면 내부에서 L_Loading으로 처리)
-	 * @param InAssetsToPreload 미리 로딩할 에셋 목록
+	 * @param InLoadingMapName 로딩 맵 이름
+	 * @param InAssetsToPreload 프리로드 에셋
+	 * @param InLoadingImage 데이터테이블용 로딩 이미지
+	 * @param InStageName 스테이지 이름 (로딩창 표시용)
+	 * @param InStageDesc 스테이지 설명 (로딩창 표시용)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|System|Loading", meta = (AutoCreateRefTerm = "InAssetsToPreload, InLoadingMapName"))
 	void StartLevelTransition(
-		FName InTargetLevelName, 
-		FName InLoadingMapName, 
-		const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload);
+		FName InTargetLevelName,
+		FName InLoadingMapName,
+		const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload,
+		TSoftObjectPtr<UTexture2D> InLoadingImage = nullptr,
+		FText InStageName = FText::GetEmpty(), 
+		FText InStageDesc = FText::GetEmpty()  
+	);
 
-	/**
-	 * @brief 로딩 위젯 클래스를 설정합니다 (GameInstance 초기화 시 호출 권장).
-	 * @param NewLoadingWidgetClass 사용할 위젯 클래스 (BP_LoadingWidget)
-	 */
+	/** @brief 로딩 위젯 클래스 설정 (GameInstance 호출용) */
 	void SetLoadingWidgetClass(TSubclassOf<UUserWidget> NewLoadingWidgetClass);
 #pragma endregion 외부 인터페이스
 
@@ -90,6 +95,9 @@ private:
 	/** @brief 타이머 핸들. */
 	FTimerHandle ProgressTimerHandle;
 
+	/** @brief 전이 시작 전의 실제 출발지 레벨 이름 (예: L_Title, L_Stage1) */
+	FName OriginLevelName = NAME_None;
+
 	/** @brief 이동해야 할 최종 목표 레벨 이름. */
 	FName TargetLevelName = NAME_None;
 
@@ -105,7 +113,18 @@ private:
 	/** @brief 최소 로딩 보장 시간 (초). */
 	const float MinLoadingTime = 2.0f;
 
+	/** @brief 가짜 로딩(시간 기반)이 도달할 수 있는 최대 퍼센트 (70%) */
+	const float MaxFakePercent = 0.7f;
+
 	/** @brief 현재 로딩 시퀀스가 진행 중인지 여부. */
 	bool bIsLoadingInProgress = false;
+
+	/** @brief 현재 로딩에 사용할 커스텀 배경 이미지 캐싱 */
+	UPROPERTY()
+	TSoftObjectPtr<UTexture2D> PendingLoadingImage = nullptr;
+
+	/** @brief 로딩 위젯에 표시할 텍스트 캐싱 */
+	FText PendingStageName;
+	FText PendingStageDesc;
 #pragma endregion 데이터 및 상태
 };

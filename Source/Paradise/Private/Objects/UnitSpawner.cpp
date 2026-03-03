@@ -1,12 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Objects/UnitSpawner.h"
-#include "Characters/AIUnit/BaseUnit.h"
+#include "Characters/AIUnit/UnitBase.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/MyAIController.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/StageSubsystem.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "NavigationSystem.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "Objects/HomeBase.h"
 
 AUnitSpawner::AUnitSpawner()
 {
@@ -17,19 +22,53 @@ void AUnitSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	// 1. StageSubsystem에서 현재 선택된 StageID 자동으로 가져오기
+	if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+	{
+		TargetStageID = StageSys->GetSelectedStageID();
+
+		UE_LOG(LogTemp, Log, TEXT("🚀 [Spawner] 선택된 스테이지 '%s'를 서브시스템에서 로드했습니다."), *TargetStageID.ToString());
+	}
+
+	// 2. 로드된 ID를 바탕으로 웨이브 테이블 구성
+	if (GI->StageWaveDetailDataTable && !TargetStageID.IsNone())
+	{
+		WaveConfigs.Empty();
+		TArray<FStageWaveDetail*> AllRows;
+		GI->StageWaveDetailDataTable->GetAllRows<FStageWaveDetail>(TEXT(""), AllRows);
+
+		for (FStageWaveDetail* Row : AllRows)
+		{
+			if (Row && Row->TargetStageID == TargetStageID)
+			{
+				FWaveConfig NewConfig;
+				NewConfig.UnitRowName = Row->MonsterID;
+				NewConfig.SpawnCount = Row->SpawnCount;
+				NewConfig.SpawnInterval = Row->SpawnInterval;
+				NewConfig.NextWaveDelay = Row->PreWaveDelay;
+				WaveConfigs.Add(NewConfig);
+			}
+		}
+	}
+
+	// 3. 오브젝트 풀링 및 타이머 시작
 	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
 	if (PoolSubsystem && UnitClass)
 	{
 		for (int32 i = 0; i < PreSpawnCount; i++)
 		{
-			ABaseUnit* TempUnit = PoolSubsystem->SpawnPoolActor<ABaseUnit>(UnitClass, GetActorLocation(), GetActorRotation(), this, nullptr);
+			AUnitBase* TempUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, GetActorLocation(), GetActorRotation(), this, nullptr);
 			if (TempUnit) PoolSubsystem->ReturnToPool(TempUnit);
 		}
 	}
 
 	if (WaveConfigs.Num() > 0)
 	{
-		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit, WaveConfigs[0].SpawnInterval, true, 1.0f);
+		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
+			WaveConfigs[0].SpawnInterval, true, WaveConfigs[0].NextWaveDelay);
 	}
 }
 
@@ -43,63 +82,84 @@ void AUnitSpawner::SpawnUnit()
 
 	EnemyRowName = WaveConfigs[CurrentWaveIndex].UnitRowName;
 	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 
-	if (!PoolSubsystem || !UnitClass || !StatsDataTable || !AssetsDataTable || EnemyRowName.IsNone())
-	{
-		return;
-	}
+	if (!PoolSubsystem || !UnitClass || EnemyRowName.IsNone() || !GI) return;
 
 	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 100.0f);
 	FRotator SpawnRotation = FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f);
 
-	ABaseUnit* NewUnit = PoolSubsystem->SpawnPoolActor<ABaseUnit>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
+	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
 
 	if (NewUnit)
 	{
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
-
-		// 스폰된 유닛에게 UnitID 부여
 		NewUnit->SetUnitID(EnemyRowName);
 
-		FEnemyStats* StatData = StatsDataTable->FindRow<FEnemyStats>(EnemyRowName, TEXT(""));
-		FEnemyAssets* AssetData = AssetsDataTable->FindRow<FEnemyAssets>(EnemyRowName, TEXT(""));
-
-		if (StatData && AssetData)
+		// 유닛 데이터 로드 (GI 참조)
+		if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
 		{
-			NewUnit->InitializeUnit(StatData, AssetData);
+			FEnemyStats* StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, NewUnit->GetUnitID());
+			FEnemyAssets* AssetData = GI->GetDataTableRow<FEnemyAssets>(GI->EnemyAssetsDataTable, NewUnit->GetUnitID());
 
-			// AI 컨트롤러 확인
-			AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
-
-			// 컨트롤러가 없다면 생성
-			if (!AIC)
+			if (StatData && AssetData)
 			{
-				NewUnit->SpawnDefaultController();
-				AIC = Cast<AMyAIController>(NewUnit->GetController());
-			}
+				NewUnit->InitializeUnit(StatData, AssetData);
 
-			if (AIC)
-			{
-				/** * [핵심 수정] AIC->Possess(NewUnit) 수동 호출을 제거합니다.
-				 */
-
-				 // 1. 블랙보드에 데이터 테이블 스탯 주입
-				AIC->LoadUnitStatsFromTable();
-
-				// 2. 비헤이비어 트리 실행
-				if (!AssetData->BehaviorTree.IsNull())
+				AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
+				if (!AIC)
 				{
-					UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
-					if (BT)
+					NewUnit->SpawnDefaultController();
+					AIC = Cast<AMyAIController>(NewUnit->GetController());
+				}
+
+				if (AIC)
+				{
+					AIC->Possess(NewUnit);
+
+					if (!AssetData->BehaviorTree.IsNull())
 					{
-						AIC->RunBehaviorTree(BT);
-						UE_LOG(LogTemp, Log, TEXT("🚀 [%s] Behavior Tree Started Successfully."), *NewUnit->GetName());
+						UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
+						if (BT)
+						{
+							AIC->RunBehaviorTree(BT);
+
+							UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+							if (BB)
+							{
+								TArray<AActor*> FoundBases;
+								UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
+
+								AHomeBase* TargetFriendlyBase = nullptr;
+								for (AActor* BaseActor : FoundBases)
+								{
+									AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
+									if (HomeBase && NewUnit->IsHostile(HomeBase))
+									{
+										TargetFriendlyBase = HomeBase;
+										break;
+									}
+								}
+
+								if (TargetFriendlyBase)
+								{
+									BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
+									FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
+									FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
+									FVector TargetLocation = BaseLoc + (Dir * 200.0f);
+
+									BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
+									BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
+	// 웨이브 진행 체크
 	CurrentSpawnCountInWave++;
 	if (CurrentSpawnCountInWave >= WaveConfigs[CurrentWaveIndex].SpawnCount)
 	{
@@ -111,9 +171,9 @@ void AUnitSpawner::SpawnUnit()
 
 		if (WaveConfigs.IsValidIndex(CurrentWaveIndex))
 		{
-			float NextDelay = WaveConfigs[FinishedIdx].NextWaveDelay;
+			// 다음 웨이브로 전환 시 간격과 딜레이 적용
 			GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
-				WaveConfigs[CurrentWaveIndex].SpawnInterval, true, NextDelay);
+				WaveConfigs[CurrentWaveIndex].SpawnInterval, true, WaveConfigs[FinishedIdx].NextWaveDelay);
 		}
 	}
 }
@@ -136,7 +196,6 @@ FVector AUnitSpawner::GetRandomSpawnLocation()
 void AUnitSpawner::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
-
 	DrawDebugBox(GetWorld(), GetActorLocation(), SpawnExtent, FColor::Cyan, false, 2.0f, 0, 5.0f);
 }
 #endif

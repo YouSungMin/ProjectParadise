@@ -3,6 +3,7 @@
 
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "GameplayEffectExtension.h"
+#include "Characters/Base/CharacterBase.h"
 
 UBaseAttributeSet::UBaseAttributeSet()
 {
@@ -10,7 +11,7 @@ UBaseAttributeSet::UBaseAttributeSet()
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
 	InitMana(0.0f);
-	InitMaxMana(0.0f);
+	InitMaxMana(20.0f);
 
 	InitAttackPower(10.0f);
 	InitDefense(0.0f);
@@ -36,7 +37,19 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	// 마나 (Mana)
 	else if (Attribute == GetManaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+		float CurrentMana = GetMana();
+
+		// 2. 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한합니다.
+		float ClampedNewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+
+		// 3. 💡 마나가 깎였을 때만(ClampedNewValue가 CurrentMana보다 작을 때만) 로그를 출력합니다.
+		if (ClampedNewValue < CurrentMana)
+		{
+			// 사용한(깎인) 마나 계산
+			float UsedMana = CurrentMana - ClampedNewValue;
+
+			UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
+		}
 	}
 	// 치명타 확률 (CritRate)
 	else if (Attribute == GetCritRateAttribute())
@@ -86,6 +99,22 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			AActor* MyOwner = GetOwningActor();
 			FString OwnerName = MyOwner ? MyOwner->GetName() : TEXT("Unknown");
 			UE_LOG(LogTemp, Log, TEXT("[%s] HP 변경 : %.2f"), *OwnerName, NewHealth);
+
+			if (NewHealth <= 0.0f)
+			{
+				// 데이터(Effect)의 대상(Target) 액터를 가져옴
+				AActor* TargetActor = Data.Target.GetAvatarActor();
+
+				// 캐릭터 베이스로 캐스팅해서 Die() 호출
+				if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
+				{
+					// 이미 죽어있지 않을 때만 죽음 처리 (중복 사망 방지)
+					if (!Character->IsDead())
+					{
+						Character->Die();
+					}
+				}
+			}
 		}
 	}
 }

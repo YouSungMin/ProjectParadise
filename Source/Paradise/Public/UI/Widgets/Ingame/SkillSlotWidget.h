@@ -7,12 +7,15 @@
 #include "SkillSlotWidget.generated.h"
 
 #pragma region 전방 선언
-class UCommonButtonBase;
+class UParadiseCommonButton;
 class UImage;
 class UProgressBar;
 class UTextBlock;
 class UTexture2D;
 #pragma endregion 전방 선언
+
+// 쿨타임이 없을 때 스킬 사용을 부모에게 요청하는 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
 
 /**
  * @class USkillSlotWidget
@@ -49,6 +52,15 @@ public:
 	void RefreshCooldown(float CurrentTime, float MaxTime);
 #pragma endregion 데이터 업데이트
 
+#pragma region Getter
+	/**
+	 * @brief 내부 버튼에 접근하기 위한 Getter입니다.
+	 * @return 버튼 위젯의 포인터를 반환합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	UParadiseCommonButton* GetSlotButton() const { return Btn_SkillAction; }
+#pragma endregion Getter
+
 private:
 #pragma region 내부 로직 (최적화)
 	/** @brief 버튼 클릭 시 호출될 델리게이트 바인딩 함수입니다. */
@@ -60,6 +72,11 @@ private:
 	/** @brief 쿨타임 UI를 비활성화하고 초기 상태로 되돌립니다. */
 	void ClearCooldownVisual();
 #pragma endregion 내부 로직 (최적화)
+
+public:
+	/** @brief 스킬 사용 조건이 충족되었을 때 발생 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnSkillActionRequested OnSkillActionRequested;
 
 private:
 #pragma region 쿨타임 설정
@@ -74,7 +91,7 @@ private:
 #pragma region 위젯 바인딩
 	/** @brief 스킬 클릭을 담당하는 Common UI 버튼입니다. */
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> Btn_SkillAction = nullptr;
+	TObjectPtr<UParadiseCommonButton> Btn_SkillAction = nullptr;
 
 	/** @brief 스킬 아이콘을 표시하는 이미지입니다. */
 	UPROPERTY(meta = (BindWidget))

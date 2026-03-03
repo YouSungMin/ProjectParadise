@@ -3,7 +3,7 @@
 #include "AI/BTTask_RangeAttack.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Characters/AIUnit/BaseUnit.h"
+#include "Characters/AIUnit/UnitBase.h"
 
 UBTTask_RangeAttack::UBTTask_RangeAttack()
 {
@@ -14,7 +14,7 @@ EBTNodeResult::Type UBTTask_RangeAttack::ExecuteTask(UBehaviorTreeComponent& Own
 {
     AAIController* AIC = OwnerComp.GetAIOwner();
     APawn* SelfPawn = AIC->GetPawn();
-    ABaseUnit* SelfUnit = Cast<ABaseUnit>(SelfPawn);
+    AUnitBase* SelfUnit = Cast<AUnitBase>(SelfPawn);
     UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 
     if (!SelfUnit || !BB) return EBTNodeResult::Failed;

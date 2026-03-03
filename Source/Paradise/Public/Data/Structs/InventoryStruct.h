@@ -25,6 +25,13 @@ struct FOwnedCharacterData
 	int32 Level = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentExp = 0;
+
+	/** * @brief 중복 획득 시 누적되는 돌파 재화 조각 (최대 6개) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Growth")
+	int32 AwakeningPieces = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AwakeningLevel = 0; // 초월/각성 단계
 
 	// Key: 장비 슬롯 (Weapon, Helmet 등)
@@ -77,6 +84,10 @@ struct FOwnedItemData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity = 1; // 갯수
+
+	/** @brief 현재 이 장비를 착용 중인 캐릭터 ID (장착 중이 아니면 NAME_None) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	FGuid EquippedCharacterUID;
 
 	FOwnedItemData()
 	{

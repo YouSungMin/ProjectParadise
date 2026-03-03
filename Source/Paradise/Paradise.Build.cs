@@ -41,6 +41,12 @@ public class Paradise : ModuleRules
 		"Niagara"
 		});
 
+        //  Cinematics & Sequence (가챠 연출용)
+        PublicDependencyModuleNames.AddRange(new string[] {
+            "LevelSequence",
+            "MovieScene"
+        });
+
         // Private 의존성 (구현부에서만 필요한 모듈)
         PrivateDependencyModuleNames.AddRange(new string[] {
 			"Slate",

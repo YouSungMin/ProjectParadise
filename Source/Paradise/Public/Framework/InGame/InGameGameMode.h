@@ -20,16 +20,41 @@ class PARADISE_API AInGameGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	/**
+	* @brief 디버그 테스트 함수 콘솔창에서 호출시 강제 승리
+	*/
+	UFUNCTION(Exec)
+	void ForceVictory();
+
 	AInGameGameMode();
 
 	virtual void BeginPlay() override;
-	
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 	/** 
 	* @brief 스테이지 타이머가 1초 경과할 때마다 호출되는 함수
 	*/
 	void OnStageTimerElapsed();
 	
 public:
+
+#pragma region PlayerSquad 셋업
+
+	//0220 김성현 - 스쿼드 시스템 셋업 함수 추가
+private:
+	/** * @brief 접속한 플레이어의 편성(Squad) 데이터를 읽어와 인게임 육체와 영혼을 스폰합니다.
+	 * @param NewPlayer 방금 접속을 완료한 플레이어 컨트롤러
+	 */
+	void SetupPlayerSquad(APlayerController* NewPlayer);
+
+#pragma endregion PlayerSquad 셋업
+
+#pragma region 스테이지 클리어 보상
+
+	/** 스테이지 클리어 보상 지급 함수 */
+	void DistributeStageRewards();
+
+#pragma endregion 스테이지 클리어 보상
 
 	/**
 	 * @brief 게임 페이즈를 변경하고 관련 이벤트를 트리거합니다.
@@ -38,6 +63,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetGamePhase(EGamePhase NewPhase);
 
+public:
 	/**
 	 * @brief 게임 승패가 결정되었을 때 호출하는 함수
 	 * @details 타임오버, 기지 파괴 등 모든 게임 종료 상황에서 이 함수를 호출합니다.
@@ -68,6 +94,10 @@ protected:
 	UPROPERTY()
 	class AInGameGameState* CachedGameState;
 
+	/** @brief 현재 진행중인 스테이지 ID */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	FName CurrentStageID;
+
 	/** @brief [데이터] 현재 진행 중인 스테이지의 상세 스탯(시간, 보상 등) */
 	FStageStats CurrentStageData;
 
@@ -78,4 +108,18 @@ protected:
 	/** @brief [타이머] 스테이지 진행을 위한 타이머 핸들 */
 	UPROPERTY()
 	FTimerHandle StageTimerHandle;
+
+	/** @brief [타이머] 결과 창 뜨기 전에 연출을 위한 타이머 핸들*/
+	UPROPERTY()
+	FTimerHandle ResultTimerHandle;
+
+protected:
+	/** @brief 전투 전 미리 생성해둘 데미지 텍스트 블루프린트 클래스 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Pool")
+	TSubclassOf<class ADamageTextActor> DamageTextClass;
+
+	/** @brief 사전 생성 개수 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Pool", meta = (ClampMin = "10"))
+	int32 PreSpawnDamageTextCount = 30;
+
 };

@@ -8,7 +8,10 @@
 
 
 class APlayerBase;
+class APlayerData;
 class AAIController;
+class UParadiseGameInstance;
+class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -28,9 +31,19 @@ public:
 	virtual void SetupInputComponent() override;
 
 	//  스쿼드 제어 (Squad Control)
-
 public:
 
+#pragma region 0226 김성현 - 디버그 치트 함수 추가
+
+	UFUNCTION(Exec)
+	void CheatStageClear();
+
+	UFUNCTION(Exec)
+	void CheatStageFail();
+
+#pragma endregion 0226 김성현 - 디버그 치트 함수 추가
+
+public:
 
 	/**
 	 * @brief OverViewCamera를 찾아서 초기화해두는 함수
@@ -67,26 +80,36 @@ public:
 	 */
 	void UpdateCameraSystem();
 
-private:
 	/*
 	 * @brief 게임 시작 시 스쿼드 3명을 월드에 스폰하고 초기화하는 함수
 	 * @details PlayerState의 데이터를 기반으로 실제 육체(Pawn)를 생성합니다.
 	 */
 	void InitializeSquadPawns();
 
+
+private:
+	
 	/*
 	 * @brief 현재 조종하지 않는 캐릭터에게 AI 컨트롤러를 빙의시키는 함수
 	 */
 	void PossessAI(APlayerBase* TargetCharacter);
 
+	/**
+	 * @brief [단일 책임 원칙(SRP) 핵심] 생성된 캐릭터(데이터)를 UI와 연동합니다.
+	 * @param PlayerIndex 파티 내 인덱스 (0~2)
+	 * @param InPlayerData 연동할 데이터(영혼) 객체
+	 */
+	void BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData);
+
 #pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
 public:
-	/** 
+	/**
 	 * @brief 생성된 HUD 위젯 인스턴스를 반환합니다.
-	 * @return UInGameHUDWidget* 
+	 * @details 초기화 타이밍이 꼬여서 HUD가 없다면, 지연 초기화(Lazy Init)를 통해 즉시 생성합니다.
+	 * @return UInGameHUDWidget 포인터
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	UInGameHUDWidget* GetInGameHUD() const { return InGameHUDInstance; }
+	UInGameHUDWidget* GetOrCreateInGameHUD();
 
 protected:
 	/** 
@@ -107,6 +130,16 @@ private:
 	void OnInputSwitchHero1(const FInputActionValue& Value);
 	void OnInputSwitchHero2(const FInputActionValue& Value);
 	void OnInputSwitchHero3(const FInputActionValue& Value);
+
+#pragma region 내부 헬퍼 함수
+private:
+	/**
+	 * @brief 캐릭터 교체 후 스킬 및 궁극기 UI를 갱신합니다.
+	 * @details 준수를 위해 RequestSwitchPlayer에서 UI 데이터 추출 및 갱신 로직
+	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
+	 */
+	void UpdateActionPanelUI(int32 PlayerIndex);
+#pragma endregion 내부 헬퍼 함수
 
 protected:
 	//  데이터 및 설정 (Data & Config)
@@ -173,4 +206,16 @@ protected:
 
 	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
 	FRotator LastDeathRotation = FRotator::ZeroRotator;
+
+private:
+	/**
+	 * @brief 게임 인스턴스 캐싱
+	 * @details BeginPlay에서 1회만 초기화합니다.
+	 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGameInstance = nullptr;
+
+	/** 
+	 * @brief 플레이어 스테이트 캐싱
+	 */
+	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
 };

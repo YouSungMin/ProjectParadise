@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Characters/AIUnit/BaseUnit.h"
+#include "Characters/AIUnit/UnitBase.h"
 #include "HomeBase.generated.h"
 
 UCLASS()
-class PARADISE_API AHomeBase : public ABaseUnit
+class PARADISE_API AHomeBase : public AUnitBase
 {
 	GENERATED_BODY()
 

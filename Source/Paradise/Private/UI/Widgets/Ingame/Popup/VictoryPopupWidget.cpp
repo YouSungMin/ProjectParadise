@@ -7,74 +7,123 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/StageSubsystem.h"
+#include "Data/Structs/StageStructs.h"
 
+#pragma region 생명주기
 void UVictoryPopupWidget::NativeConstruct()
 {
-	Super::NativeConstruct(); // 부모의 버튼(Home, Retry) 바인딩 실행
+	Super::NativeConstruct(); // 부모(UGameResultWidgetBase)의 버튼(Home, Retry) 바인딩 실행
 
-#pragma region 이벤트 바인딩
 	if (Btn_NextStage)
 	{
 		Btn_NextStage->OnClicked.AddUniqueDynamic(this, &UVictoryPopupWidget::OnNextStageClicked);
 	}
-#pragma endregion 이벤트 바인딩
 }
 
-#pragma region 데이터 설정
-void UVictoryPopupWidget::SetVictoryData(FText InStageName, int32 InStarCount, int32 InEarnedGold, int32 InEarnedAether, const TArray<FResultCharacterData>& InCharacterResults)
+void UVictoryPopupWidget::NativeDestruct()
 {
-	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 경험치:%d"), InStarCount, InEarnedGold, InEarnedAether);
+	if (Btn_NextStage)
+	{
+		Btn_NextStage->OnClicked.RemoveAll(this);
+	}
+	Super::NativeDestruct();
+}
+#pragma endregion 생명주기
 
-	// 1. 텍스트 갱신
-	if (Text_Stage)
-	{
-		Text_Stage->SetText(InStageName);
-	}
-	if (Text_GoldValue)
-	{
-		Text_GoldValue->SetText(FText::AsNumber(InEarnedGold));
-	}
-	if (Text_AetherValue)
-	{
-		Text_AetherValue->SetText(FText::AsNumber(InEarnedAether));
-	}
+#pragma region 데이터 설정 로직 (View Rendering)
+void UVictoryPopupWidget::SetVictoryData(
+	FText InStageName,
+	int32 InStarCount,
+	int32 InEarnedGold,
+	int32 InEarnedAether,
+	const TArray<FResultCharacterData>& InCharacterResults,
+	FName InNextStageID)
+{
+	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
+		InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
 
-	// 2. 별 이미지 갱신 (리소스가 설정된 경우에만)
+	// 1. 내부 상태 캐싱
+	CachedNextStageID = InNextStageID;
+
+	// 2. 텍스트 위젯 갱신 (SRP: 숫자는 콤마 처리 등 서식을 적용)
+	if (Text_Stage)      Text_Stage->SetText(InStageName);
+	if (Text_GoldValue)  Text_GoldValue->SetText(FText::AsNumber(InEarnedGold));
+	if (Text_AetherValue)Text_AetherValue->SetText(FText::AsNumber(InEarnedAether));
+
+	// 3. 별 이미지 갱신 (최적화: 분기문을 삼항 연산자로 깔끔하게 처리)
 	if (StarOnTexture && StarOffTexture)
 	{
-		// 삼항 연산자를 사용하여 가독성 확보
 		if (Img_Star1) Img_Star1->SetBrushFromTexture(InStarCount >= 1 ? StarOnTexture : StarOffTexture);
 		if (Img_Star2) Img_Star2->SetBrushFromTexture(InStarCount >= 2 ? StarOnTexture : StarOffTexture);
 		if (Img_Star3) Img_Star3->SetBrushFromTexture(InStarCount >= 3 ? StarOnTexture : StarOffTexture);
 	}
+
+	// 4. 캐릭터 슬롯 렌더링을 자식 패널에게 위임 (SRP 준수)
 	if (WBP_CharacterResultPanel)
 	{
-		// 팝업은 더 이상 슬롯을 직접 생성하지 않습니다. 패널에게 데이터만 넘깁니다.
 		WBP_CharacterResultPanel->UpdateCharacterSlots(InCharacterResults);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel이 바인딩되지 않았습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel 바인딩 누락."));
+	}
+
+	// 5. 다음 스테이지가 없다면(마지막 스테이지) 다음 버튼을 숨기거나 비활성화 처리
+	if (Btn_NextStage)
+	{
+		Btn_NextStage->SetVisibility(CachedNextStageID.IsNone() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	}
 }
-#pragma endregion 데이터 설정
+#pragma endregion 데이터 설정 로직 (View Rendering)
 
 #pragma region 내부 로직
 void UVictoryPopupWidget::OnNextStageClicked()
 {
-	if (NextStageLevelName.IsNone())
+	// 방어 코드: 다음 스테이지가 비어있으면 무시 (버튼이 숨겨지겠지만 혹시 모를 클릭 방지)
+	if (CachedNextStageID.IsNone()) return;
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	// 1. 데이터 테이블에서 다음 스테이지의 에셋(Assets) 정보 조회
+	// [A] 리소스 정보 (맵 경로, 로딩 이미지 등)
+	FStageAssets* NextAssets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, CachedNextStageID);
+	// [B] 규칙 및 텍스트 정보 (스테이지 이름, 설명 등)
+	FStageStats* NextStats = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, CachedNextStageID);
+
+	// 유효성 검사 (맵 에셋이 반드시 있어야 함)
+	if (!NextAssets || NextAssets->MapAsset.IsNull())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] 다음 스테이지 이름이 설정되지 않았습니다."));
+		UE_LOG(LogTemp, Error, TEXT("[VictoryPopup] 다음 스테이지(%s)의 MapAsset 정보를 찾을 수 없습니다!"), *CachedNextStageID.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 다음 스테이지로 이동: %s"), *NextStageLevelName.ToString());
+	// 3. 목적지 레벨 이름 추출
+	FName TargetLevelName = FName(*NextAssets->MapAsset.GetAssetName());
 
-	// 서브시스템을 통한 이동
-	if (ULevelLoadingSubsystem* LoadingSystem = GetGameInstance()->GetSubsystem<ULevelLoadingSubsystem>())
+	if (UStageSubsystem* StageSubsystem = GI->GetSubsystem<UStageSubsystem>())
 	{
-		TArray<TSoftObjectPtr<UObject>> EmptyAssets;
-		LoadingSystem->StartLevelTransition(NextStageLevelName, FName("L_Loading"), EmptyAssets);
+		StageSubsystem->SetSelectedStageID(CachedNextStageID);
+		UE_LOG(LogTemp, Log, TEXT("✅ [VictoryPopup] StageSubsystem ID 업데이트 완료: %s"), *CachedNextStageID.ToString());
+	}
+
+	// 4. 로딩 서브시스템 호출
+	if (ULevelLoadingSubsystem* LoadingSystem = GI->GetSubsystem<ULevelLoadingSubsystem>())
+	{
+		// 프리로드할 에셋 배열 (필요 시 추가 가능)
+		TArray<TSoftObjectPtr<UObject>> AssetsToPreload;
+
+		// 순서: 타겟맵, 로딩맵, 프리로드배열, 로딩이미지, 스테이지이름, 스테이지설명
+		LoadingSystem->StartLevelTransition(
+			TargetLevelName,
+			FName("L_Loading"),
+			AssetsToPreload,
+			NextAssets->LoadingImage,
+			(NextStats ? NextStats->StageName : FText::GetEmpty()),
+			(NextStats ? NextStats->Description : FText::GetEmpty())
+		);
 	}
 }
 #pragma endregion 내부 로직

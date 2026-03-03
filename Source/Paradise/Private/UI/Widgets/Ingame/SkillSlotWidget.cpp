@@ -3,7 +3,7 @@
 
 #include "UI/Widgets/Ingame/SkillSlotWidget.h"
 
-#include "CommonButtonBase.h"
+#include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -100,11 +100,15 @@ void USkillSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
 #pragma region 내부 로직 구현
 void USkillSlotWidget::OnSkillButtonClicked()
 {
+	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
+
 	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
 	if (CurrentCooldown <= 0.0f)
 	{
-		// TODO: 실제 스킬 사용 요청을 상위 컨트롤러나 GAS Component로 전달하는 델리게이트 호출
-		// 예: OnSkillActionRequested.Broadcast(SkillId);
+		if (OnSkillActionRequested.IsBound())
+		{
+			OnSkillActionRequested.Broadcast();
+		}
 	}
 }
 

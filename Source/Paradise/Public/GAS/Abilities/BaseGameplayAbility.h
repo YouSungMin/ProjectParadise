@@ -27,22 +27,6 @@ public:
 	UBaseGameplayAbility();
 
 	// =========================================================================
-	// Data Retrieval Helpers
-	// =========================================================================
-
-	/**
-	 * @brief 현재 캐릭터가 장착 중인 무기의 전체 데이터(FWeaponAssets)를 가져옵니다.
-	 * * @details
-	 * 1. 실행한 캐릭터의 ICombatInterface를 통해 WeaponID(RowName)를 얻습니다.
-	 * 2. UDataManagerSubsystem에 접근하여 해당 ID로 데이터 테이블을 검색합니다.
-	 * 3. 검색된 데이터를 반환합니다.
-	 * * @return 찾은 무기 데이터 구조체. 실패 시 빈 구조체를 반환합니다.
-	 * @see ICombatInterface::GetCurrentWeaponID, UDataManagerSubsystem::GetWeaponDataByID
-	 */
-	//UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Ability|Helper")
-	//FWeaponAssets GetEquippedWeaponAssets() const;
-
-	// =========================================================================
 	// Actor Helpers
 	// =========================================================================
 
@@ -81,7 +65,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Effect")
 	void ApplySpecHandleToTarget(AActor* TargetActor, const FGameplayEffectSpecHandle& SpecHandle);
 
+	/** @brief 엑셀 데이터의 쿨타임을 적용하기 위해 오버라이드 */
+	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+	/** @brief 코스트(마나)가 충분한지 검사하는 함수 */
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	/** @brief 코스트(마나)를 실제로 깎는 함수 */
+	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 protected:
+	/**
+	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수
+	 * @param MontageToPlay 재생할 몽타주
+	 * @param TaskInstanceName 태스크 이름 (보통 NAME_None)
+	 * @return 생성된 Montage Task (추가적인 바인딩이 필요할 경우 사용)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Animation")
+	class UAbilityTask_PlayMontageAndWait* PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName = NAME_None);
+
 	/**
 	 * @brief 이 어빌리티의 정체성 (평타 vs 스킬)
 	 * @details 블루프린트에서 설정합니다. (기본값: BasicAttack)
@@ -96,7 +97,14 @@ protected:
 	 * @details "무기가 바뀌지 않는다"는 전제 하에, 최초 1회만 검색하고 이후엔 저장된 값을 씁니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	const FCombatActionData& GetCombatDataFromActor(); // const 제거 & 참조 반환
+	const FCombatActionData& GetCombatDataFromActor();
+
+	/**
+	 * @brief 몽타주 재생이 끝났거나, 중단되었을 때 호출됩니다.
+	 * 어빌리티를 종료(EndAbility)시킵니다.
+	 */
+	UFUNCTION()
+	virtual void OnMontageCompleted();
 private:
 	/** @brief 데이터를 이미 가져왔는지 확인하는 플래그 */
 	bool bIsDataCached = false;

@@ -8,8 +8,32 @@
 
 #pragma region 전방 선언
 class UProgressBar;
+class UTexture2D;
+class UImage;
 class UTextBlock;
 #pragma endregion 전방 선언
+
+/**
+ * @struct FSpecialLoadingImages
+ * @brief 상황별 로딩 배경 이미지 세트 구조체
+ */
+USTRUCT(BlueprintType)
+struct FSpecialLoadingImages
+{
+	GENERATED_BODY()
+
+	/** @brief 타이틀에서 로비로 진입할 때 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loading")
+	TSoftObjectPtr<UTexture2D> TitleToLobby = nullptr;
+
+	/** @brief 인게임(스테이지)에서 로비로 복귀할 때 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loading")
+	TSoftObjectPtr<UTexture2D> StageToLobby = nullptr;
+
+	/** @brief 그 외 일반 상황 및 폴백 배경 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loading")
+	TSoftObjectPtr<UTexture2D> DefaultBackground = nullptr;
+};
 
 /**
  * @class ULoadingWidget
@@ -30,6 +54,15 @@ protected:
 #pragma region 외부 인터페이스
 public:
 	/**
+	 * @brief 현재 맵과 목표 맵 정보를 바탕으로 최적의 배경 이미지를 초기화합니다.
+	 * @param CurrentLevel 현재 맵 이름
+	 * @param TargetLevel 목표 맵 이름
+	 * @param InDefaultStageImage 스테이지 데이터 테이블에서 넘어온 로딩 이미지
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void InitLoadingImage(FName CurrentLevel, FName TargetLevel, TSoftObjectPtr<UTexture2D> InDefaultStageImage);
+
+	/**
 	 * @brief 로딩 진행률을 설정하고 UI를 갱신합니다.
 	 * @param Percent 진행률 (0.0 ~ 1.0 범위)
 	 */
@@ -41,7 +74,14 @@ public:
 	 * @param NewText 표시할 텍스트
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
-	void SetLoadingText(FText NewText);
+	void SetLoadingText(FText InName, FText InDesc);
+
+	/**
+	 * @brief 로딩 배경 이미지를 교체합니다.
+	 * @param InTexture 교체할 배경 텍스처 (nullptr이면 기본 설정 유지)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void SetBackgroundImage(UTexture2D* InTexture);
 #pragma endregion 외부 인터페이스
 
 #pragma region 이벤트 (블루프린트 확장)
@@ -52,16 +92,28 @@ protected:
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Paradise|UI|Loading")
 	void OnLoadingComplete();
+
+	/** @brief 기획자가 WBP_Loading 디테일 패널에서 직접 설정할 이미지 뭉치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Loading")
+	FSpecialLoadingImages SpecialImages;
 #pragma endregion 이벤트 (블루프린트 확장)
 
 #pragma region 위젯 바인딩
 private:
+	/** @brief 스테이지 이름 표시용 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_StageName = nullptr;
+
+	/** @brief 스테이지 설명/팁 표시용 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_StageDesc = nullptr;
+
 	/** @brief 로딩 진행 바 (필수 바인딩) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> PB_LoadingBar = nullptr;
 
-	///** @brief 로딩 퍼센트 텍스트 (예: "75%") (굳이 없어도 되어서 일단 주석 처리 함) */
-	//UPROPERTY(meta = (BindWidgetOptional))
-	//TObjectPtr<UTextBlock> Text_Percent = nullptr;
+	/** @brief 커스텀 로딩 배경 이미지 (선택 바인딩) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Background = nullptr;
 #pragma endregion 위젯 바인딩
 };

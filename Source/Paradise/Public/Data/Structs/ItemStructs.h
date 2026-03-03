@@ -4,6 +4,7 @@
 #include "GameplayTagContainer.h"
 #include "Data/Enums/GameEnums.h"
 #include "GameplayEffect.h"
+#include "Data/Structs/FXStructs.h"
 #include "ItemStructs.generated.h"
 
 class USkeletalMesh;
@@ -13,6 +14,7 @@ class UGameplayAbility;
 class UAnimMontage;
 class USoundBase;
 class UNiagaraSystem;
+class UFXDataAsset;
 
 /**
  * @struct FItemBaseStats
@@ -110,29 +112,18 @@ public:
 	float CritDamage;
 
 	/**
-	 * @brief 공격 사거리 (Attack Range)
-	 * @details 단위: cm (Unreal Unit).
-	 * 근거리 무기의 경우 충돌(Trace) 검사 길이로 사용됩니다.
+	 * @brief 평타 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float AttackRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName BasicAttackActionID; // 예: "Sword_BasicCombo"
 
 	/**
-	 * @brief 무기 스킬 데미지 계수 (Skill Damage Multiplier)
-	 * @details 무기 고유 스킬(WeaponSkillAbility) 사용 시 적용될 데미지 배율입니다.
-	 * 예: 1.5 = 공격력의 150% 데미지.
-	 * 평타(1.0)와 달리 스킬은 더 강해야 하므로 이 값으로 조절합니다.
+	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float SkillDamageRate = 1.5f;
-
-	/**
-	 * @brief 스킬 재사용 대기시간 (Cooldown)
-	 * @details 단위: 초 (Seconds).
-	 * GAS의 Cooldown GameplayEffect(GE_Cooldown)에 적용될 지속 시간(Duration)입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float Cooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
+	FName SkillActionID;
 };
 
 /**
@@ -233,18 +224,11 @@ public:
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 기본 공격 몽타주 (BasicAttack Montage)
-	 * @details 이 무기를 장착했을 때 재생할 기본 공격 애니메이션 몽타주입니다.
+	 * @brief 무기 타입
+	 * @details 무기 타입을 통해 캐릭터마다 무기에 맞는 몽타주를 재생합니다.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TSoftObjectPtr<UAnimMontage> BasicAttackMontage;
-
-	/**
-	 * @brief 스킬 몽타주 (Attack Montage)
-	 * @details 이 무기를 장착했을 때 재생할 스킬 공격 애니메이션 몽타주입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TSoftObjectPtr<UAnimMontage> SkillMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Type")
+	EWeaponType WeaponType;
 
 	// -----------------------------------------------------------------
 	// [GAS & Logic] 로직 연결
@@ -286,18 +270,10 @@ public:
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 평타 연출 태그
-	 * @details 태그를 통해 이펙트와 사운드를 불러와 사용
+	 * @brief 공격 행동 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Weapon"))
-	FGameplayTag BasicEffectTag;
-
-	/**
-	 * @brief 스킬 연출 태그
-	 * @details 태그를 통해 이펙트와 사운드를 불러와 사용
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "Effect.Skill"))
-	FGameplayTag SkillEffectTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|FX")
+	FActionFXSettings ActionFX;
 };
 
 /**

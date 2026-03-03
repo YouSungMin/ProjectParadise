@@ -1,2 +1,46 @@
----,WeaponTag,AttackPower,AttackSpeed,CritRate,CritDamage,Range,Cooldown,DisplayName,Description,Rarity,SetID,LevelUpCostId
-Iron_Sword,Item.Type.Weapon.Melee.Sword,10,1,0.5,1.1,1,0.2,철검,철검이다,Common,,
+Name,DisplayName,Description,Rarity,SetID,LevelUpCostId,AttackPower,AttackSpeed,CritRate,CritDamage,BasicAttackActionID,SkillActionID
+Blunt_DefaultBlunt,기본 둔기,편하게 쓸 수 있는 나무 몽둥이입니다.,Common,None,Cost_Common,55,0.8,0.05,1.5,W_Blunt_DefaultBlunt_Atk,W_Blunt_DefaultBlunt_Skl
+Blunt_Wrench,렌치,공구함에서 꺼낸 묵직한 렌치입니다.,Common,None,Cost_Common,60,0.85,0.05,1.6,W_Blunt_Wrench_Atk,W_Blunt_Wrench_Skl
+Blunt_Cleaner,청소부의 빗자루,먼지 대신 적을 쓸어버리는 빗자루입니다.,Rare,None,Cost_Rare,75,0.9,0.05,1.8,W_Blunt_Cleaner_Atk,W_Blunt_Cleaner_Skl
+Blunt_Nobel,노벨의 망치,화약 냄새가 나는 위험한 망치입니다.,Rare,None,Cost_Rare,85,0.75,0.1,2,W_Blunt_Nobel_Atk,W_Blunt_Nobel_Skl
+Blunt_Nurse,간호사의 주사기,거대한 주사기 형태의 무기입니다.,Rare,None,Cost_Rare,70,0.95,0.08,1.7,W_Blunt_Nurse_Atk,W_Blunt_Nurse_Skl
+Blunt_Tuner,조율자의 해머,불협화음을 부수는 거대한 해머입니다.,Rare,None,Cost_Rare,80,0.8,0.05,2.1,W_Blunt_Tuner_Atk,W_Blunt_Tuner_Skl
+Blunt_DevilBat,악마의 방망이,악마의 기운이 깃든 가시 박힌 배트입니다.,Epic,None,Cost_Epic,110,0.8,0.15,2.2,W_Blunt_DevilBat_Atk,W_Blunt_DevilBat_Skl
+Blunt_Outsider,이방인의 곡괭이,알 수 없는 재질로 만들어진 무거운 곡괭이입니다.,Epic,None,Cost_Epic,115,0.75,0.05,2.5,W_Blunt_Outsider_Atk,W_Blunt_Outsider_Skl
+Blunt_Event_01,황금 뿅망치 (이벤트),맞으면 기분이 묘하게 상하는 뿅망치입니다.,Epic,None,Cost_Epic,95,1.2,0.2,1.5,W_Blunt_Event_01_Atk,W_Blunt_Event_01_Skl
+Blunt_TreasureChest,보물상자 철퇴,금화가 쏟아져 나올 것 같은 철퇴입니다.,Legendary,None,Cost_Legendary,140,0.7,0.1,2.8,W_Blunt_TreasureChest_Atk,W_Blunt_TreasureChest_Skl
+Book_DefaultBook,기본 마도서,마법의 기초가 적혀있는 낡은 책입니다.,Common,None,Cost_Common,35,1,0.05,1.5,W_Book_DefaultBook_Atk,W_Book_DefaultBook_Skl
+Book_CookingForDummies,요리 기초 책,마법에 쓰기 좋은 레시피북입니다.,Common,None,Cost_Common,38,1,0.05,1.5,W_Book_CookingForDummies_Atk,W_Book_CookingForDummies_Skl
+Book_Dictionary,두꺼운 사전,물리적으로 때려도 아플 것 같은 사전입니다.,Common,None,Cost_Common,45,0.9,0.05,1.5,W_Book_Dictionary_Atk,W_Book_Dictionary_Skl
+Book_DeckCase,덱 케이스,마법 카드가 가득 들어있는 케이스입니다.,Rare,None,Cost_Rare,55,1.1,0.1,1.5,W_Book_DeckCase_Atk,W_Book_DeckCase_Skl
+Book_HologramHud,홀로그램 HUD,첨단 기술의 집약체 정보 투영기입니다.,Rare,None,Cost_Rare,50,1.2,0.15,1.5,W_Book_HologramHud_Atk,W_Book_HologramHud_Skl
+Book_PerfectHarmony,완벽한 조화,자연의 이치가 담긴 신비한 책입니다.,Rare,None,Cost_Rare,58,1,0.08,1.6,W_Book_PerfectHarmony_Atk,W_Book_PerfectHarmony_Skl
+Book_BookOfRed,붉은 책,핏빛 마력이 흐르는 마도서입니다.,Epic,None,Cost_Epic,80,1.1,0.15,1.8,W_Book_BookOfRed_Atk,W_Book_BookOfRed_Skl
+Book_MementoMori,메멘토 모리,죽음을 기억하게 만드는 불길한 서적입니다.,Epic,None,Cost_Epic,85,0.9,0.2,2,W_Book_MementoMori_Atk,W_Book_MementoMori_Skl
+Book_Event_01,축제의 마도서 (이벤트),폭죽 마법이 무한히 쏟아집니다.,Epic,None,Cost_Epic,75,1.3,0.1,1.5,W_Book_Event_01_Atk,W_Book_Event_01_Skl
+Book_FlawlessPlaying,완벽한 연주,세계를 연주할 수 있는 신비적인 악보입니다.,Legendary,None,Cost_Legendary,105,1.2,0.15,2,W_Book_FlawlessPlaying_Atk,W_Book_FlawlessPlaying_Skl
+Gun_BlackNose,블랙 노즈,화약 냄새가 짙게 밴 권총입니다.,Epic,None,Cost_Epic,75,1.2,0.25,1.8,W_Gun_BlackNose_Atk,W_Gun_BlackNose_Skl
+Gun_Smithers,경비병의 총,평범한 경비병들이 사용하는 총입니다.,Common,None,Cost_Common,40,1.1,0.1,1.5,W_Gun_Smithers_Atk,W_Gun_Smithers_Skl
+Gun_Nail_Gun,네일 건,공사장에서 쓰던 못 박는 기계입니다.,Common,None,Cost_Common,35,1.3,0.15,1.5,W_Gun_Nail_Gun_Atk,W_Gun_Nail_Gun_Skl
+Gun_LovelyCoil,러블리 코일,귀여운 외형과 달리 살상력이 높습니다.,Rare,None,Cost_Rare,55,1.4,0.15,1.6,W_Gun_LovelyCoil_Atk,W_Gun_LovelyCoil_Skl
+Gun_Mustang,머스탱,반동은 거칠지만 파괴적인 권총입니다.,Rare,None,Cost_Rare,65,1,0.2,1.8,W_Gun_Mustang_Atk,W_Gun_Mustang_Skl
+Gun_PayBack,페이백,받은 만큼 돌려주는 복수총입니다.,Epic,None,Cost_Epic,85,1.5,0.25,1.7,W_Gun_PayBack_Atk,W_Gun_PayBack_Skl
+Gun_Demonia,데모니아,마계의 금속으로 벼려낸 샷건입니다.,Epic,None,Cost_Epic,100,0.8,0.2,2.2,W_Gun_Demonia_Atk,W_Gun_Demonia_Skl
+Gun_Event_01,물총 (이벤트),생각보다 수압이 강한 장난감 물총입니다.,Epic,None,Cost_Epic,70,1.8,0.1,1.5,W_Gun_Event_01_Atk,W_Gun_Event_01_Skl
+Gun_BlackBeard,검은 수염,전설적인 해적이 사용하던 흑색 화승총입니다.,Legendary,None,Cost_Legendary,120,1.2,0.3,2.5,W_Gun_BlackBeard_Atk,W_Gun_BlackBeard_Skl
+Staff_Rogue,불량배의 막대기,길거리에서 흔히 줍는 긴 막대기입니다.,Common,None,Cost_Common,45,0.9,0.05,1.5,W_Staff_Rogue_Atk,W_Staff_Rogue_Skl
+Staff_Bard,유랑시인의 지팡이,바람 소리가 나는 가벼운 지팡이입니다.,Common,None,Cost_Common,42,1,0.05,1.5,W_Staff_Bard_Atk,W_Staff_Bard_Skl
+Staff_OneStroke,일필휘지,허공에 먹물을 흩뿌리는 거대한 붓입니다.,Rare,None,Cost_Rare,65,0.9,0.1,1.6,W_Staff_OneStroke_Atk,W_Staff_OneStroke_Skl
+Staff_Decanter,디캔터 지팡이,포도주가 끊임없이 흐르는 지팡이입니다.,Rare,None,Cost_Rare,60,1.1,0.08,1.5,W_Staff_Decanter_Atk,W_Staff_Decanter_Skl
+Staff_Merry,메리 스태프,즐거운 기운을 뿜어내는 응원용 지팡이입니다.,Rare,None,Cost_Rare,55,1.2,0.1,1.5,W_Staff_Merry_Atk,W_Staff_Merry_Skl
+Staff_DeathMatch,데스매치,피를 머금은 전투용 마법 지팡이입니다.,Epic,None,Cost_Epic,95,0.9,0.15,1.8,W_Staff_DeathMatch_Atk,W_Staff_DeathMatch_Skl
+Staff_WinterCane,겨울의 지팡이,주변을 얼어붙게 만드는 혹한의 지팡이입니다.,Epic,None,Cost_Epic,90,0.85,0.1,2,W_Staff_WinterCane_Atk,W_Staff_WinterCane_Skl
+Staff_Event_01,요술 지팡이 (이벤트),사용할 때마다 시끄러운 소리가 납니다.,Epic,None,Cost_Epic,80,1.1,0.2,1.5,W_Staff_Event_01_Atk,W_Staff_Event_01_Skl
+Sword_Army,보급형 군용검,군대에서 대량 생산하는 표준 검입니다.,Common,None,Cost_Common,50,1,0.05,1.5,W_Sword_Army_Atk,W_Sword_Army_Skl
+Sword_ButterSlayer,버터 슬레이어,버터처럼 적을 부드럽게 베어냅니다.,Common,None,Cost_Common,48,1.1,0.08,1.5,W_Sword_ButterSlayer_Atk,W_Sword_ButterSlayer_Skl
+Sword_Carver,조각가의 검,정밀한 타격이 가능한 예리한 조각도입니다.,Rare,None,Cost_Rare,65,1.2,0.15,1.6,W_Sword_Carver_Atk,W_Sword_Carver_Skl
+Sword_Maid,메이드의 장검,청소와 호신 모두 능한 메이드의 검입니다.,Rare,None,Cost_Rare,70,1.05,0.1,1.7,W_Sword_Maid_Atk,W_Sword_Maid_Skl
+Sword_BeamSword,빔 소드,고열의 플라즈마로 이루어진 검입니다.,Epic,None,Cost_Epic,95,1.2,0.15,1.8,W_Sword_BeamSword_Atk,W_Sword_BeamSword_Skl
+Sword_ChainSword,체인 소드,톱니바퀴가 돌아가며 살점을 찢어냅니다.,Epic,None,Cost_Epic,105,0.9,0.1,2,W_Sword_ChainSword_Atk,W_Sword_ChainSword_Skl
+Sword_Event_01,광선검 (이벤트),윙윙거리는 소리가 매력적인 장난감입니다.,Epic,None,Cost_Epic,85,1.3,0.15,1.5,W_Sword_Event_01_Atk,W_Sword_Event_01_Skl
+Sword_MilkyWay,은하수 검,휘두를 때마다 별빛이 쏟아지는 성검입니다.,Legendary,None,Cost_Legendary,130,1.1,0.2,2.2,W_Sword_MilkyWay_Atk,W_Sword_MilkyWay_Skl

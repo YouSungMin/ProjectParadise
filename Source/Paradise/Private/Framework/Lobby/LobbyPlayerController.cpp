@@ -3,6 +3,14 @@
 
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Lobby/LobbySetupActor.h"
+
+#include "Framework/System/InventorySystem.h" //0226 김성현 - 시스템 헤더들 치트함수 때문에 추가 이후 삭제예정
+#include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/GrowthSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
+
+
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
@@ -72,6 +80,258 @@ void ALobbyPlayerController::BeginPlay()
 	}
 }
 
+void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddCharacter(CharacterID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 획득: %s"), *CharacterID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddFamiliar(FName FamiliarID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddFamiliar(FamiliarID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 획득: %s"), *FamiliarID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddItem(FName ItemID, int32 Count)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			InvSys->AddItem(ItemID, Count, 0); // 0강 상태로 지급
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 아이템 획득: %s (%d개)"), *ItemID.ToString(), Count);
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddExp(FName CharacterID, int32 ExpAmount)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
+		{
+			GrowthSys->AddCharacterExp(CharacterID, ExpAmount);
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatSetPlayerSlot(int32 SlotIndex, FName CharacterID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>())
+		{
+			// UI 대신 직접 서브시스템에 데이터 꽂아넣기
+			SquadSys->SetPlayerToSlot(SlotIndex, CharacterID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *CharacterID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatSetFamiliarSlot(int32 SlotIndex, FName FamiliarID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>())
+		{
+			SquadSys->SetFamiliarToSlot(SlotIndex, FamiliarID);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *FamiliarID.ToString());
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatEquipItem(FName CharacterID, FName ItemID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			FGuid TargetCharUID;
+			FGuid TargetItemUID;
+
+			// 1. 내 인벤토리에서 해당 ID를 가진 캐릭터의 실제 GUID 찾기
+			for (const auto& Char : InvSys->GetOwnedCharacters())
+			{
+				if (Char.CharacterID == CharacterID)
+				{
+					TargetCharUID = Char.CharacterUID;
+					break;
+				}
+			}
+
+			// 2. 내 인벤토리에서 해당 ID를 가진 아이템의 실제 GUID 찾기
+			for (const auto& Item : InvSys->GetOwnedItems())
+			{
+				if (Item.ItemID == ItemID)
+				{
+					TargetItemUID = Item.ItemUID;
+					break;
+				}
+			}
+
+			// 3. 둘 다 찾았다면 장착 시스템 호출!
+			if (TargetCharUID.IsValid() && TargetItemUID.IsValid())
+			{
+				InvSys->EquipItemToCharacter(TargetCharUID, TargetItemUID);
+				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 장착 성공: [%s]가 [%s] 장착!"), *CharacterID.ToString(), *ItemID.ToString());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장착 실패: 인벤토리에서 %s 캐릭터나 %s 아이템을 찾지 못했습니다."), *CharacterID.ToString(), *ItemID.ToString());
+			}
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddGold(int32 Amount)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+			EconSys->AddCurrency(ECurrencyType::Gold, Amount);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 골드 %d 획득! (현재 총 골드: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAwakenCharacter(FName CharacterID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
+		{
+			bool bSuccess = GrowthSys->AwakenCharacter(CharacterID);
+			if (bSuccess)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 각성 성공: %s"), *CharacterID.ToString());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 캐릭터 각성 실패: %s (조각/골드 부족 또는 최대 레벨)"), *CharacterID.ToString());
+			}
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		UInventorySystem* InvSys = GI->GetMainInventory();
+		UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>();
+
+		if (InvSys && GrowthSys)
+		{
+			FGuid TargetItemUID;
+
+			// 내 인벤토리에서 해당 ID를 가진 아이템의 실제 GUID 찾기
+			for (const auto& Item : InvSys->GetOwnedItems())
+			{
+				if (Item.ItemID == ItemID)
+				{
+					TargetItemUID = Item.ItemUID;
+					break;
+				}
+			}
+
+			if (TargetItemUID.IsValid())
+			{
+				bool bSuccess = GrowthSys->EnhanceEquipment(TargetItemUID);
+				if (bSuccess)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 강화 성공: %s"), *ItemID.ToString());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장비 강화 실패: %s (골드 부족 또는 최대 레벨)"), *ItemID.ToString());
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 인벤토리에서 %s 아이템을 찾지 못했습니다."), *ItemID.ToString());
+			}
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatGrantAll()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	UInventorySystem* InvSys = GI->GetMainInventory();
+	UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>();
+
+	//골드 9999999 지급
+	if (EconSys)
+	{
+		EconSys->AddCurrency(ECurrencyType::Gold, 9999999);
+		UE_LOG(LogTemp, Warning, TEXT("💰 [Cheat] 9,999,999 골드 지급 완료!"));
+	}
+
+	//모든 데이터 지급
+	if (InvSys)
+	{
+		//모든 캐릭터 지급
+		if (GI->CharacterStatsDataTable)
+		{
+			for (const FName& RowName : GI->CharacterStatsDataTable->GetRowNames())
+			{
+				InvSys->AddCharacter(RowName);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("👥 [Cheat] 모든 캐릭터 지급 완료!"));
+		}
+
+		//모든 퍼밀리어 지급
+		if (GI->FamiliarStatsDataTable)
+		{
+			for (const FName& RowName : GI->FamiliarStatsDataTable->GetRowNames())
+			{
+				InvSys->AddFamiliar(RowName);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🐾 [Cheat] 모든 퍼밀리어 지급 완료!"));
+		}
+
+		//모든 무기 지급
+		if (GI->WeaponStatsDataTable)
+		{
+			for (const FName& RowName : GI->WeaponStatsDataTable->GetRowNames())
+			{
+				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
+			}
+			UE_LOG(LogTemp, Warning, TEXT("⚔️ [Cheat] 모든 무기 지급 완료!"));
+		}
+
+		//모든 방어구/장신구 지급
+		if (GI->ArmorStatsDataTable)
+		{
+			for (const FName& RowName : GI->ArmorStatsDataTable->GetRowNames())
+			{
+				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🛡️ [Cheat] 모든 방어구 및 장신구 지급 완료!"));
+		}
+
+		//지급이 끝난 후 UI 갱신
+		InvSys->OnInventoryUpdated.Broadcast();
+	}
+}
+
+
+
 void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 {
 	ACameraActor* TargetCamera = nullptr;
@@ -122,6 +382,9 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 {
     if (CurrentMenu == InNewMenu) return;
 
+	// 메뉴를 변경하기 직전에 현재 메뉴를 '이전 메뉴'로 저장합니다.
+	PreviousMenu = CurrentMenu;
+
     CurrentMenu = InNewMenu;
     UE_LOG(LogTemp, Log, TEXT("[Controller] 메뉴 변경: %d"), (int32)CurrentMenu);
 
@@ -130,4 +393,11 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
     {
         CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
+}
+
+void ALobbyPlayerController::RequestBackToPreviousMenu()
+{
+	// 저장해둔 직전 메뉴로 다시 돌아갑니다.
+	// 만약 Battle에서 왔다면 다시 Battle로, 메인에서 왔다면 메인(None)으로 갑니다.
+	SetLobbyMenu(PreviousMenu);
 }

@@ -12,10 +12,13 @@ class UParadiseSquadInventoryWidget;
 class UParadiseSquadFormationWidget;
 class UParadiseSquadDetailWidget;
 class UButton;
-class UInventoryComponent;
+class UInventorySystem;
 class UParadiseGameInstance;
-class UDataTable;
+class USquadSubsystem;
 #pragma endregion 전방 선언
+
+/** @brief 편성 화면에서 뒤로가기 요청 시 발생하는 델리게이트 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSquadBackRequested);
 
 /**
  * @class UParadiseSquadMainWidget
@@ -57,6 +60,10 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Weapon = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Armor = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Unit = nullptr;
+
+	/** @brief 뒤로가기 버튼 (로비로 복귀 + 편성 자동 저장) */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Btn_Back = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
 
 #pragma region 로직 - 탭 및 상태 제어
@@ -70,28 +77,65 @@ private:
 	 * @brief 탭을 전환하고 관련 UI를 갱신합니다.
 	 * @param NewTab 전환할 탭 인덱스 (SquadTabs 네임스페이스 참조)
 	 */
+	UFUNCTION()
 	void SwitchTab(int32 NewTab);
 
 	/** @brief 현재 상태(CurrentState)에 따라 버튼 활성/비활성 및 UI 잠금을 처리합니다. */
+	UFUNCTION()
 	void UpdateUIState();
 
 	/** @brief 상세 패널의 버튼 상태(교체 vs 확인 / 취소)를 갱신하는 헬퍼  */ 
+	UFUNCTION()
 	void UpdateDetailPanelState();
 #pragma endregion 로직 - 탭 및 상태 제어
 
 #pragma region 로직 - 데이터 처리
-private:
+public:
 	/** @brief 현재 탭에 맞는 데이터를 수집하여 인벤토리 패널을 갱신합니다. */
+	UFUNCTION()
 	void RefreshInventoryUI();
+
+	/**
+	 * @brief 패널의 상태를 초기화합니다. (뒤로가기 후 재진입 시 호출)
+	 * @details 선택된 슬롯 해제, 상세창 닫기, 탭 초기화 등을 수행합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Squad")
+	void ResetPanelState();
+
+private:
+	/**
+	 * @brief SquadSubsystem의 현재 편성 데이터를 읽어 FormationWidget 슬롯을 초기화합니다.
+	 * @details NativeConstruct 시점과 편성 변경 확정(Confirm) 이후에 호출합니다.
+	 *          캐릭터 슬롯(0~2)은 CharacterAssets/Stats 테이블을, 유닛 슬롯(3~7)은
+	 *          FamiliarAssets/Stats 테이블을 조회하여 아이콘 및 레벨 정보를 채웁니다.
+	 */
+	UFUNCTION()
+	void InitFormationFromSubsystem();
+
+	/**
+	 * @brief SquadSubsystem의 슬롯 변경 델리게이트를 구독합니다.
+	 * @details OnPlayerSlotChanged, OnFamiliarSlotChanged 이벤트에 각각 핸들러를 바인딩합니다.
+	 */
+	UFUNCTION()
+	void BindSquadSubsystemDelegates();
+
+	/**
+	 * @brief SquadSubsystem 델리게이트 구독을 해제합니다.
+	 * @details NativeDestruct에서 호출하여 메모리 누수 및 댕글링 포인터를 방지합니다.
+	 */
+	UFUNCTION()
+	void UnbindSquadSubsystemDelegates();
 
 	/** 
 	 * @brief ID와 레벨 정보를 받아 UI 표시용 데이터 구조체로 변환합니다. (Factory Method)
 	 * @param ID 대상의 ID (RowName)
 	 * @param InLevel 레벨
 	 * @param TabType 어떤 종류의 테이블을 검색할지 결정
+	 * @param bUseBodyIcon 캐릭터의 경우 BodyIcon(전신)을 사용할지 여부 (기본값: false = FaceIcon)
 	 * @return UI 표시용 데이터 구조체 (FSquadItemUIData)
 	 */
-	FSquadItemUIData MakeUIData(FName ID, int32 InLevel, int32 TabType);
+	UFUNCTION()
+	FSquadItemUIData MakeUIData(FName ID, int32 InLevel, int32 TabType, bool bUseBodyIcon = false);
 #pragma endregion 로직 - 데이터 처리
 
 #pragma region 로직 - 이벤트 핸들러
@@ -125,12 +169,44 @@ private:
 	/** @brief [확인] 버튼 클릭 시 -> 실제 교체 수행 */
 	UFUNCTION()
 	void HandleConfirmAction();
+
+	/** @brief [뒤로가기] 버튼 클릭 시 -> 상위 위젯(LobbyHUD)에 신호 전달 */
+	UFUNCTION()
+	void HandleBackClicked();
+
+	/**
+	 * @brief SquadSubsystem::OnPlayerSlotChanged 델리게이트 수신 핸들러입니다.
+	 * @details 특정 플레이어 슬롯(0~2)이 변경되었을 때 FormationWidget을 즉시 갱신합니다.
+	 * @param SlotIndex 변경된 슬롯 인덱스
+	 * @param NewPlayerID 새로 배치된 플레이어 ID
+	 */
+	UFUNCTION()
+	void OnPlayerSlotUpdated(int32 SlotIndex, FName NewPlayerID);
+
+	/**
+	 * @brief SquadSubsystem::OnFamiliarSlotChanged 델리게이트 수신 핸들러입니다.
+	 * @details 특정 퍼밀리어 슬롯(0~4)이 변경되었을 때 FormationWidget(슬롯 3~7)을 즉시 갱신합니다.
+	 * @param SlotIndex 변경된 퍼밀리어 슬롯 인덱스 (0~4 → UI에서는 3~7에 대응)
+	 * @param NewFamiliarID 새로 배치된 퍼밀리어 ID
+	 */
+	UFUNCTION()
+	void OnFamiliarSlotUpdated(int32 SlotIndex, FName NewFamiliarID);
 #pragma endregion 로직 - 이벤트 핸들러
 
 #pragma region 데이터 소스 (약한 참조)
 private:
-	/** @brief 보유 아이템 목록 접근용 (순환 참조 방지) */
-	TWeakObjectPtr<UInventoryComponent> CachedInventory = nullptr;
+	//0212 김성현 - 인벤토리 시스템 Getter 함수로 캐싱 로직 대체
+	/**
+	 * @brief 현재 게임 세션의 전역 인벤토리 서브시스템을 반환합니다.
+	 * @return UInventorySystem 포인터
+	 */
+	UInventorySystem* GetInventorySystem() const;
+
+	/**
+	 * @brief SquadSubsystem을 반환합니다. 편성 읽기/쓰기에 사용합니다.
+	 * @return USquadSubsystem 포인터 (없으면 nullptr)
+	 */
+	USquadSubsystem* GetSquadSubsystem() const;
 
 	/** @brief 데이터 테이블 접근용 (순환 참조 방지) */
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
@@ -147,11 +223,22 @@ private:
 	/** @brief 현재 선택된 편성 슬롯 인덱스 (장비 교체 시 대상 식별용) */
 	int32 SelectedFormationSlotIndex = -1;
 
-	/** [추가] 교체를 위해 인벤토리에서 선택한 아이템 (확인 버튼 누르기 전 대기 상태) */
+	/** @brief 교체를 위해 인벤토리에서 선택한 아이템 (확인 버튼 누르기 전 대기 상태) */
 	FSquadItemUIData PendingSelection;
 
-	/** [추가] 현재 편성에 장착된 ID 목록 (인벤토리 테두리 표시용) */
+	/** @brief 현재 편성에 장착된 ID 목록 (인벤토리 테두리 표시용) */
 	TArray<FName> CurrentEquippedIDs;
 #pragma endregion 내부 상태
+
+#pragma region 델리게이트
+public:
+	/** @brief 뒤로가기 요청 시 발생하는 이벤트 (LobbyHUD에서 구독) */
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnSquadBackRequested OnBackRequested;
+#pragma endregion 델리게이트
+
+private:
+	UPROPERTY()
+	bool bAutoSaveOnBack = true;
 
 };

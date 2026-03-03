@@ -174,12 +174,4 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn", meta = (ClampMin = "0.0"))
 	float SpawnInterval;
-
-	/**
-	 * @brief 스폰 포인트 태그 (Spawn Point Tag)
-	 * @details 레벨에 배치된 TargetPoint 중 이 태그를 가진 곳에서 스폰됩니다.
-	 * 예: Level.Spawn.Ground, Level.Spawn.Air
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn", meta = (Categories = "Level.Spawn"))
-	FGameplayTag SpawnPointTag;
 };

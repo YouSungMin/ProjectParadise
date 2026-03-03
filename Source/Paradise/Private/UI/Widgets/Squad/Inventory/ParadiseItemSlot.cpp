@@ -3,13 +3,11 @@
 
 #include "UI/Widgets/Squad/Inventory/ParadiseItemSlot.h"
 #include "Components/Image.h"
-#include "Components/TextBlock.h"
 #include "Components/Button.h"
 
 void UParadiseItemSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
-
 	if (Btn_Select)
 	{
 		Btn_Select->OnClicked.AddDynamic(this, &UParadiseItemSlot::OnButtonClicked);
@@ -28,9 +26,8 @@ void UParadiseItemSlot::NativeDestruct()
 void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 {
 	CachedData = InData;
-	CachedID = InData.ID;
 
-	// 1. 아이콘 설정
+	// 1. 공통 아이콘 설정
 	if (Img_Icon)
 	{
 		if (InData.Icon)
@@ -40,29 +37,14 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 		}
 		else
 		{
-			// 아이콘 없으면 투명 처리 혹은 기본 이미지
 			Img_Icon->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 
-	// 2. 레벨 텍스트
-	if (Text_Level)
-	{
-		if (InData.Level > 0)
-		{
-			Text_Level->SetText(FText::AsNumber(InData.Level));
-			Text_Level->SetVisibility(ESlateVisibility::Visible);
-		}
-		else
-		{
-			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
-		}
-	}
+	// 2. 공통 등급 테두리 갱신
+	UpdateRankColor(InData.Rarity);
 
-	// 3. 등급 테두리 색상
-	UpdateRankColor(InData.RankTag);
-
-	// 4. 장착 표시
+	// 3. 공통 장착 마크 갱신
 	if (Img_EquippedMark)
 	{
 		Img_EquippedMark->SetVisibility(InData.bIsEquipped ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -71,26 +53,17 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 
 void UParadiseItemSlot::OnButtonClicked()
 {
-	// 상위 위젯(InventoryPanel)에게 클릭 사실 전파
-	OnSlotClicked.Broadcast(CachedData);
+	if (OnSlotClicked.IsBound())
+	{
+		OnSlotClicked.Broadcast(CachedData);
+	}
 }
 
-void UParadiseItemSlot::UpdateRankColor(FGameplayTag RankTag)
+void UParadiseItemSlot::UpdateRankColor(EItemRarity Rarity)
 {
 	if (!Img_RankBorder) return;
 
-	FLinearColor BorderColor = FLinearColor::White; // 기본값
-
-	// 태그 매칭 로직 (프로젝트 규칙에 맞게 수정)
-	if (RankTag.MatchesTag(FGameplayTag::RequestGameplayTag("Unit.Rank.S")))
-	{
-		BorderColor = FLinearColor(1.0f, 0.8f, 0.0f); // Gold
-	}
-	else if (RankTag.MatchesTag(FGameplayTag::RequestGameplayTag("Unit.Rank.A")))
-	{
-		BorderColor = FLinearColor(0.8f, 0.0f, 1.0f); // Purple
-	}
-	// ... 기타 등급 처리
-
-	Img_RankBorder->SetColorAndOpacity(BorderColor);
+	// Map에서 Enum 값으로 색상을 찾습니다.
+	FLinearColor* FoundColor = RankColorMap.Find(Rarity);
+	Img_RankBorder->SetColorAndOpacity(FoundColor ? *FoundColor : DefaultRankColor);
 }

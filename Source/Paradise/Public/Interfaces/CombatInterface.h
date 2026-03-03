@@ -6,7 +6,11 @@
 #include "UObject/Interface.h"
 #include "Data/Structs/CombatTypes.h"
 #include "Data/Enums/GameEnums.h"
+#include "GameplayTagContainer.h"
 #include "CombatInterface.generated.h"
+
+
+class UFXDataAsset;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -30,4 +34,11 @@ public:
 	 * @return FCombatActionData (몽타주, GE 클래스, 데미지 계수 등)
 	 */
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const = 0;
+
+	/**
+	 * @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다.
+	 * @param EventType 피격, 공격, 사망 등 요청할 연출의 종류
+	 * @return FFXPayload* 사운드, 파티클 등이 담긴 구조체 포인터 (없으면 nullptr)
+	 */
+	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const = 0;
 };

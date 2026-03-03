@@ -11,7 +11,7 @@
 
 #pragma region 전방 선언
 class ULoadingWidget; 
-class UInventoryComponent;
+class UInventorySystem;
 #pragma endregion 전방 선언
 
 /**
@@ -27,6 +27,8 @@ class PARADISE_API UParadiseGameInstance : public UGameInstance
 public:
 	UParadiseGameInstance();
 	virtual void Init() override;
+
+	virtual void Shutdown() override;
 
 #pragma region 게임 데이터 저장 및 로드
 
@@ -63,6 +65,32 @@ protected:
 public:
 
 	/**
+	 * @brief 데이터 테이블을 조회하여 해당 플레이어 ID가 존재하는지 확인하는 헬퍼 함수
+	 * @param PlayerID 검사할 플레이어의 데이터 테이블 Row Name
+	 * @return 데이터가 존재하면 true, 없으면 false
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidPlayerID(FName PlayerID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 퍼밀리어 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidFamiliarID(FName FamiliarID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 아이템 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidItemID(FName ItemID) const;
+
+	/**
+	 * @brief 데이터 테이블을 조회하여 해당 적/유닛 ID가 존재하는지 확인하는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|DataValidation")
+	bool IsValidUnitID(FName UnitID) const;
+
+	/**
 	 * @brief [템플릿] 특정 테이블에서 ID로 데이터를 찾아 해당 구조체로 반환하는 함수
 	 * @tparam T : 찾고자 하는 구조체 타입 (예: FCharacterStats)
 	 * @param Table : 검색할 데이터 테이블 포인터
@@ -70,7 +98,7 @@ public:
 	 * @return 찾은 데이터 포인터 (없으면 nullptr)
 	 */
 	template <typename T>
-	T* GetDataTableRow(UDataTable* Table, FName RowName)
+	T* GetDataTableRow(UDataTable* Table, FName RowName) const
 	{
 		if (!Table)
 		{
@@ -137,6 +165,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.WeaponStats"))
 	TObjectPtr<class UDataTable> WeaponStatsDataTable = nullptr;
 
+	/*스킬 데미지 적용에 사용할 스탯 데이터 테이블 */
+	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.ActionStats"))
+	TObjectPtr<class UDataTable> ActionStatsDataTable = nullptr;
+
 	//스테이지 데이터 테이블
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Stage", meta = (RowType = "StatgeStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.StatgeStats"))
 	TObjectPtr<class UDataTable> StatgeStatsDataTable = nullptr;
@@ -147,37 +179,31 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Stage", meta = (RowType = "StageWaveDetail", RequiredAssetDataTags = "RowStructure=/Script/Paradise.StageWaveDetail"))
 	TObjectPtr<class UDataTable> StageWaveDetailDataTable = nullptr;
 
+	//성장시스템 데이터 테이블
+
+	/** @brief 캐릭터 레벨업 경험치 및 스탯 테이블 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterLevelUpData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterLevelUpData"))
+	TObjectPtr<class UDataTable> CharacterLevelUpDataTable = nullptr;
+
+	/** @brief 장비 강화 스탯 배율 테이블 (추가!) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "EquipmentEnhanceData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.EquipmentEnhanceData"))
+	TObjectPtr<class UDataTable> EquipmentEnhanceDataTable = nullptr;
+
+	/** @brief 캐릭터 각성/돌파 스탯 배율 테이블 (추가!) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterAwakenData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterAwakenData"))
+	TObjectPtr<class UDataTable> CharacterAwakenDataTable = nullptr;
+
 public:
 
 #pragma region 인벤토리 
 
-	/**
-	 * @brief 전역 인벤토리 컴포넌트
-	 * @details 영구적으로 관리합니다.
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Global Data")
-	TObjectPtr<UInventoryComponent> MainInventory;
-
-	/**
-	 * @brief 인벤토리 접근자
-	 */
-	UFUNCTION(BlueprintPure, Category = "Global Data")
-	UInventoryComponent* GetMainInventory() const { return MainInventory; }
+	UFUNCTION(BlueprintCallable, Category = "System")
+	UInventorySystem* GetMainInventory() const;
 
 #pragma endregion 인벤토리
 
 private:
 
 #pragma endregion 데이터 테이블
-
-
-
-#pragma region 게임 데이터
-public:
-	/** @brief 현재까지 클리어한 최고 스테이지 인덱스 (0: 1-1 도전 중). */
-	UPROPERTY(BlueprintReadWrite, Category = "Paradise|Progress")
-	int32 MaxClearedStageIndex = 0;
-
-#pragma endregion 게임 데이터
 
 };

@@ -3,7 +3,7 @@
 
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Engine/DataTable.h"
-#include "Components/InventoryComponent.h"
+#include "Framework/System/InventorySystem.h"
 #include "Components/EquipmentComponent.h"
 #include "Components/CostManageComponent.h"
 #include "Components/FamiliarSummonComponent.h"
@@ -26,42 +26,77 @@ void AInGamePlayerState::BeginPlay()
 
 void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 {
+	//인벤토리 시스템 가져오기
+	UInventorySystem* InvSys = GetInventorySystem();
+	if (!InvSys)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [SquadInit] 인벤토리 시스템을 찾을 수 없습니다!"));
+		return;
+	}
 
-    UInventoryComponent* MainInv = GetInventoryComponent();
-    if (!MainInv) return;
+	//배열 크기를 편성창에서 넘어온 크기로 초기화 (3으로 설정)
+	SquadMembers.Init(nullptr, StartingHeroIDs.Num());
 
-    for (const FName& HeroID : StartingHeroIDs)
-    {
-        if (HeroID.IsNone()) continue;
+	//스쿼드 영웅 최대치 크기(3)만큼 for문
+	for (int32 i = 0; i < StartingHeroIDs.Num(); ++i)
+	{
+		FName HeroID = StartingHeroIDs[i];
 
-        APlayerData* NewSoul = GetWorld()->SpawnActor<APlayerData>(PlayerDataClass);
-        if (NewSoul)
-        {
-            //HeroID로 초기화
-            NewSoul->InitPlayerData(HeroID);
+		// 빈 슬롯이면 스폰하지 않고 넘어가기
+		if (HeroID.IsNone()) continue;
 
-            //인벤토리 연결
-            if (UEquipmentComponent* EquipComp = NewSoul->GetEquipmentComponent())
-            {
-                EquipComp->SetLinkedInventory(MainInv);
+		UClass* SpawnClass = APlayerData::StaticClass();
 
-                UE_LOG(LogTemp, Log, TEXT("🔗 [SquadInit] %s에게 인벤토리 연결 완료"), *HeroID.ToString());
-            }
-            SquadMembers.Add(NewSoul);
-        }
-    }
+		if (PlayerDataClass)
+		{
+			SpawnClass = PlayerDataClass;
+		}
+		APlayerData* NewSoul = GetWorld()->SpawnActor<APlayerData>(SpawnClass);
 
-    UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (%d명)"), SquadMembers.Num());
+		if (NewSoul)
+		{
+			//장비 컴포넌트 초기화
+			if (UEquipmentComponent* EquipComp = NewSoul->GetEquipmentComponent())
+			{
+				//데이터 검색
+				if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(HeroID))
+				{
+					// 찾은 데이터의 장비 맵으로 초기화
+					EquipComp->InitializeEquipment(CharData->EquipmentMap);
+					UE_LOG(LogTemp, Log, TEXT("🔗 [SquadInit] %s 장비 데이터 동기화 완료"), *HeroID.ToString());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadInit] 인벤토리에 %s 데이터가 없습니다."), *HeroID.ToString());
+				}
+			}
+			//캐릭터 데이터 초기화
+			NewSoul->InitPlayerData(HeroID);
+
+			//정확한 슬롯 위치[i]에 저장합니다.
+			SquadMembers[i] = NewSoul;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (크기: %d)"), SquadMembers.Num());
 }
 
-UInventoryComponent* AInGamePlayerState::GetInventoryComponent() const
+UInventorySystem* AInGamePlayerState::GetInventorySystem() const
 {
-    if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+    UWorld* World = GetWorld();
+    if (!World)
     {
-        return GI->GetMainInventory();
+        return nullptr;
+    }
+
+    if (UGameInstance* GI = World->GetGameInstance())
+    {
+        return GI->GetSubsystem<UInventorySystem>();
     }
     return nullptr;
 }
+
+
 
 APlayerData* AInGamePlayerState::GetSquadMemberData(int32 Index) const
 {

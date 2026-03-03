@@ -48,7 +48,7 @@ public:
 	 * @brief 오브젝트 풀을 조회하여 액터를 가져오거나, 없으면 새로 생성하는 핵심 함수
 	 * @details 풀(Queue)에 유효한 액터가 있다면 재사용(Reuse)하고, 없다면 SpawnActor를 통해 새로 생성합니다.
 	 * 가져온 액터에 대해 IObjectPoolInterface::OnPoolActivate를 호출합니다.
-	 * * @param Class    스폰할 대상 UClass
+	 * @param Class    스폰할 대상 UClass
 	 * @param location 초기 위치
 	 * @param rotation 초기 회전
 	 * @param Owner    소유자 액터
@@ -58,12 +58,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
 	AActor* SpawnPooledActor(UClass* Class, FVector location, FRotator rotation, AActor* Owner, APawn* Instigator);
 
+	/**
+	 * @brief 전투 전 렉(GC) 방지를 위해 지정된 개수만큼 액터를 미리 생성하여 풀에 보관합니다.
+	 * @param Class 생성할 대상 액터의 클래스 (TSubclassOf)
+	 * @param World 스폰을 수행할 월드 컨텍스트
+	 * @param Count 미리 만들어둘 액터의 개수
+	 */
+	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
+	void PreSpawnPool(UClass* Class, UWorld* World, int32 Count);
 
 	/**
 	 * @brief 사용이 끝난 액터를 풀로 반납(비활성화)하는 함수
 	 * @details 액터를 즉시 Destroy하지 않고 숨긴 뒤, 풀 큐에 넣습니다.
 	 * 반납 전 IObjectPoolInterface::OnPoolDeactivate를 호출합니다.
-	 * * @param InActor 풀로 되돌릴 대상 액터
+	 * @param InActor 풀로 되돌릴 대상 액터
 	 */
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
 	void ReturnToPool(AActor* InActor);

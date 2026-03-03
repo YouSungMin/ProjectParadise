@@ -5,7 +5,12 @@
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "Framework/InGame/Actors/DamageTextActor.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Interfaces/ObjectPoolInterface.h"
 #include "AttributeSet.h"
+#include "AbilitySystemComponent.h"
 
 ACharacterBase::ACharacterBase()
 {
@@ -31,6 +36,182 @@ void ACharacterBase::TestKillSelf()
 
 	UE_LOG(LogTemp, Warning, TEXT("💀 [Debug] 강제 사망 명령 실행! (TestKillSelf)"));
 	Die();
+}
+
+void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType)
+{
+	FVector TraceStart;
+
+	USceneComponent* TargetMesh = GetMesh();
+
+	// 2노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
+	if (TargetType == ESocketTargetType::EquippedWeapon)
+	{
+		if (USceneComponent* WpnMesh = GetWeaponMesh())
+		{
+			TargetMesh = WpnMesh; // 타겟 성공적 교체
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 소켓을 찾으려 했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
+		}
+	}
+
+	// 3결정된 TargetMesh에서 소켓 위치 찾기
+	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+	{
+		TraceStart = TargetMesh->GetSocketLocation(SocketName);
+	}
+	else
+	{
+		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
+		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
+	}
+
+	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
+	TraceStart += GetActorForwardVector() * ForwardOffset;
+
+	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
+	FVector TraceEnd = TraceStart + (GetActorForwardVector() * AttackRange);
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this); // 나는 때리면 안 됨
+
+	TArray<FHitResult> HitResults;
+	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		TraceStart,      // 시작점
+		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
+		AttackRadius,    // 반경
+		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		HitResults,
+		true
+	);
+
+	// 3. 결과 처리
+	if (bHit)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("[트레이스 적중!] 스피어에 뭔가 닿았습니다. 총 %d개"), HitResults.Num());
+
+		for (const FHitResult& Result : HitResults)
+		{
+			AActor* HitActor = Result.GetActor();
+			if (!HitActor) continue;
+
+			// ACharacterBase로 캐스팅 시도
+			ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor);
+
+			// 캐스팅 실패 시 (바닥, 배경 프랍 등) 무시하고 다음 타겟으로 넘어감
+			if (HitChar == nullptr)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("⚠️ [CheckHit] 캐릭터가 아닌 대상(%s)을 쳤습니다. 무시합니다."), *HitActor->GetName());
+				continue;
+			}
+
+			// 중복 타격 방지 (캐릭터인 경우에만 리스트에 추가)
+			if (HitActors.Contains(HitActor))
+			{
+				continue;
+			}
+			HitActors.Add(HitActor);
+
+			// 피아 식별 (이미 위에서 HitChar를 구했으므로 바로 사용)
+			if (!IsHostile(HitChar))
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [CheckHit] 아군 판정되어 무시합니다! (내 태그: %s vs 적 태그: %s)"),
+					*this->FactionTag.ToString(), *HitChar->FactionTag.ToString());
+				continue;
+			}
+
+			// GAS 이벤트 전송
+			FGameplayEventData Payload;
+			Payload.Instigator = this;
+			Payload.Target = HitActor;
+			Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Result);
+
+			// 태그를 고정하거나, 인자로 받을 수도 있음
+			FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));
+
+			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, HitTag, Payload);
+
+			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 타격 성공! 대상: %s (소켓: %s)"), *GetName(), *HitActor->GetName(), *SocketName.ToString());
+		}
+	}
+}
+
+void ACharacterBase::ResetHitActors()
+{
+	HitActors.Empty();
+}
+
+bool ACharacterBase::IsHostile(ACharacterBase* Target) const
+{
+	if (!Target) return false;
+
+	// 태그가 완전히 똑같으면 무조건 아군
+	if (this->FactionTag == Target->FactionTag) return false;
+
+	// 상위 태그(부모 태그)를 기준으로 그룹 검사
+	FGameplayTag FriendlyTag = FGameplayTag::RequestGameplayTag("Unit.Faction.Friendly");
+
+	bool bAmIFriendly = this->FactionTag.MatchesTag(FriendlyTag);
+	bool bIsTargetFriendly = Target->FactionTag.MatchesTag(FriendlyTag);
+
+	// Friendly 그룹이고 상대도 Friendly 그룹이면 false (아군)
+	// Friendly 그룹인데 상대가 아니면(Enemy면) true (적군)
+	return bAmIFriendly != bIsTargetFriendly;
+}
+
+FVector ACharacterBase::GetMuzzleLocation(FName SocketName) const
+{
+	// 장착한 무기가 있다면 무기에서 먼저 찾기
+	if (CurrentWeaponActor)
+	{
+		// 무기 액터의 첫 번째 메쉬 컴포넌트를 가져옴
+		if (UMeshComponent* WeaponMesh = CurrentWeaponActor->GetComponentByClass<UMeshComponent>())
+		{
+			if (WeaponMesh->DoesSocketExist(SocketName))
+			{
+				return WeaponMesh->GetSocketLocation(SocketName);
+			}
+		}
+	}
+
+	// 무기가 없거나 무기에 소켓이 없다면 캐릭터 몸통에서 찾기
+	if (GetMesh() && GetMesh()->DoesSocketExist(SocketName))
+	{
+		return GetMesh()->GetSocketLocation(SocketName);
+	}
+
+	// 둘 다 없으면 기본 높이(가슴/배꼽) 반환
+	return GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+}
+
+USceneComponent* ACharacterBase::GetWeaponMesh() const
+{
+	if (CurrentWeaponActor)
+	{
+		return CurrentWeaponActor->GetComponentByClass<UMeshComponent>();
+	}
+	return nullptr;
+}
+
+void ACharacterBase::ActivateRagdoll()
+{
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
+		UE_LOG(LogTemp, Log, TEXT("🦴 래그돌(Ragdoll) 물리 전환 완료"));
+	}
+}
+
+void ACharacterBase::OnDeathAnimationFinished()
+{
+	ActivateRagdoll();
 }
 
 void ACharacterBase::BeginPlay()
@@ -114,24 +295,34 @@ void ACharacterBase::ResetHitFlash()
 	}
 }
 
-void ACharacterBase::SpawnDamagePopup(float DamageAmount)
+void ACharacterBase::SpawnDamagePopup(float DamageAmount, bool bIsCritical)
 {
-	if (DamageAmount <= 0.0f) return;
+	// 클래스가 비어있으면 안전하게 리턴
+	if (!DamageTextClass) return;
 
-	UWorld* world = GetWorld();
-
-	if (!world) return;
-
-	UObjectPoolSubsystem* subsystem = world->GetSubsystem<UObjectPoolSubsystem>();
-
-	if (subsystem && DamageTextActorClass)
+	if (UWorld* World = GetWorld())
 	{
-		//스폰 및 데미지 수치 전달 로직 
-		//subsystem->SpawnPoolActor<>();
+		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
+		{
+			// 타겟 머리 위 위치 계산 (캐릭터 Z축 위로 80cm 정도 띄움)
+			UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
+			FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+
+			ADamageTextActor* DmgText = PoolSubsystem->SpawnPoolActor<ADamageTextActor>(
+				DamageTextClass,        // 스폰할 클래스
+				SpawnLoc,               // 위치
+				FRotator::ZeroRotator,  // 회전
+				this,                   // Owner
+				this                    // Instigator
+			);
+
+			// 데미지 수치 초기화
+			if (DmgText)
+			{
+				DmgText->InitializeDamageText(DamageAmount, bIsCritical, SpawnLoc);
+			}
+		}
 	}
-
-
-
 }
 
 void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -145,27 +336,26 @@ void ACharacterBase::Die()
 	if (bIsDead) return;
 	bIsDead = true;
 
-	UE_LOG(LogTemp, Error, TEXT("☠️ [CharacterBase] Die() 로직 시작 - 래그돌 전환"));
-
-	//물리적 처리 (서 있는 캡슐은 끄고, 메쉬는 흐물거리는 래그돌로)
+	// 충돌 해제 및 조작 불가 처리
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (GetMesh())
-	{
-		// 래그돌 프리셋 적용 (PhysicsAsset이 설정되어 있어야 함)
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-		GetMesh()->SetSimulatePhysics(true);
-	}
-
-	//조작 차단
 	if (Controller)
 	{
-		Controller->UnPossess(); // 영혼 이탈
+		Controller->UnPossess();
 	}
 
-	//시체 청소 (5초 뒤에 액터 삭제)
-	SetLifeSpan(5.0f);
+	// 몽타주 재생
+	UAnimMontage* DeathMontage = GetDeathMontage();
+	if (DeathMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->Montage_Play(DeathMontage);
+	}
+	else
+	{
+		// 몽타주가 없다면 예외 처리로 즉시 종료 함수 호출
+		OnDeathAnimationFinished();
+	}
 }

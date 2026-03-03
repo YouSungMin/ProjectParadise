@@ -2,9 +2,9 @@
 
 #include "AI/BTTask_Attack.h"
 #include "AIController.h"
-#include "Kismet/GameplayStatics.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Characters/AIUnit/BaseUnit.h"
+#include "Characters/AIUnit/UnitBase.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayTagContainer.h"
 
 UBTTask_Attack::UBTTask_Attack()
 {
@@ -14,28 +14,20 @@ UBTTask_Attack::UBTTask_Attack()
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!AIController || !BB) return EBTNodeResult::Failed;
+	AUnitBase* MyUnit = Cast<AUnitBase>(AIController ? AIController->GetPawn() : nullptr);
 
-	// 내 유닛 정보
-	ABaseUnit* MyUnit = Cast<ABaseUnit>(AIController->GetPawn());
+	if (!MyUnit) return EBTNodeResult::Failed;
 
-	// 타겟 액터 확보
-	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TEXT("TargetActor")));
-	if (!Target)
+	UAbilitySystemComponent* ASC = MyUnit->GetAbilitySystemComponent();
+	if (!ASC) return EBTNodeResult::Failed;
+
+
+	FGameplayTag AttackTag = FGameplayTag::RequestGameplayTag(FName("Ability.Type.Basic"));
+
+	// 어빌리티 발동 시도
+	if (ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AttackTag)))
 	{
-		Target = Cast<AActor>(BB->GetValueAsObject(TEXT("HomeBaseActor")));
-	}
-
-	// 타겟 유닛 정보
-	ABaseUnit* TargetUnit = Cast<ABaseUnit>(Target);
-
-	// 타겟이 존재하고, 나와 적 관계일 때만 데미지 적용
-	if (MyUnit && TargetUnit && MyUnit->IsEnemy(TargetUnit))
-	{
-		float DamageAmount = 20.0f;
-		UGameplayStatics::ApplyDamage(TargetUnit, DamageAmount, AIController, MyUnit, nullptr);
-
+		// 발동 성공
 		return EBTNodeResult::Succeeded;
 	}
 

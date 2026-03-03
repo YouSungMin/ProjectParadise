@@ -22,6 +22,28 @@ enum class EGamePhase : uint8
 	Result
 };
 
+/**
+ * @enum ECurrencyType
+ * @brief 게임 내에서 사용되는 재화(Currency)의 종류를 정의하는 열거형입니다.
+ */
+UENUM(BlueprintType)
+enum class ECurrencyType : uint8
+{
+	/** * @brief 게임 플레이를 통해 주로 획득하는 기본 재화 (골드)
+	 * @details 캐릭터 레벨업, 장비 강화 등 기본적인 성장 시스템 전반에 범용적으로 소모됩니다.
+	 */
+	Gold			UMETA(DisplayName = "Gold (강화/레벨업)"),
+
+	/** * @brief보상으로 획득하는 고급/유료 재화 (다이아/보석)
+	 * @details 프리미엄 뽑기(가챠), 특수 아이템 구매, 행동력 충전 등 핵심 과금 모델에 사용됩니다.
+	 */
+	Aether				UMETA(DisplayName = "Aether (뽑기/고급재화)"),
+	/** * @brief 소환(가챠) 시스템 전용 재화 (뽑기권)
+	 * @details 이벤트 보상이나 상점 구매를 통해 얻으며, 영웅이나 퍼밀리어를 뽑을 때 1회용으로 소모됩니다.
+	 */
+	SummonTicket	UMETA(DisplayName = "Summon Ticket (뽑기권)")
+};
+
 
 /**
  * @enum EUnitType
@@ -91,17 +113,17 @@ enum class EEquipmentSlot : uint8
 {
 	/** @brief 장착 슬롯 : 무기 */
 	Weapon		UMETA(DisplayName = "장착 슬롯 : 무기"),
-	/** @brief 장착 슬롯 : 투구 */
-	Helmet		UMETA(DisplayName = "장착 슬롯 : 투구"),
-	/** @brief 장착 슬롯 : 갑옷 */
-	Chest		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
-	/** @brief 장착 슬롯 : 장갑 */
-	Gloves		UMETA(DisplayName = "장착 슬롯 : 장갑"),
-	/** @brief 장착 슬롯 : 신발 */
-	Boots		UMETA(DisplayName = "장착 슬롯 : 신발"),
+	/** @brief 장착 슬롯 : 모자  */
+	Hat		UMETA(DisplayName = "장착 슬롯 : 모자"),
+	/** @brief 장착 슬롯 : 갑옷  */
+	Armor		UMETA(DisplayName = "장착 슬롯 : 갑옷"),
+	/** @brief 장착 슬롯 : 목걸이 */
+	Necklace		UMETA(DisplayName = "장착 슬롯 : 목걸이"),
+	/** @brief 장착 슬롯 : 반지  */
+	Ring		UMETA(DisplayName = "장착 슬롯 : 반지"),
 	/** @brief 장착 슬롯 : 없음 */
 	None		UMETA(DisplayName = "장착 슬롯 : 없음"),
-	/** @brief 장착 슬롯 : 없음 */
+	/** @brief 장착 슬롯 : 오류 */
 	Unknown		UMETA(DisplayName = "장착 슬롯 : 오류")
 };
 
@@ -118,4 +140,42 @@ enum class EInputID : uint8
 	Attack,     // 3 (평타)
 	Skill,      // 4 (무기스킬)
 	Ultimate    // 5 (궁극기)
+};
+
+/**
+ * @enum EWeaponType
+ * @brief 장착한 무기에 따른 애니메이션 및 로직 분기용
+ */
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	Base	UMETA(DisplayName = "Base (맨손/기본)"),
+	Melee	UMETA(DisplayName = "Melee (근접)"),
+	Gun		UMETA(DisplayName = "Gun (총)"),
+	Book	UMETA(DisplayName = "Book (마법책/지팡이)")
+};
+
+/**
+ * @enum EFXEventType
+ * @brief 연출(FX)이 필요한 상황을 정의합니다. 큐 노티파이에서 이 값을 넘겨 페이로드를 요청합니다.
+ */
+UENUM(BlueprintType)
+enum class EFXEventType : uint8
+{
+	Hit			UMETA(DisplayName = "Hit (피격)"),
+	Death		UMETA(DisplayName = "Death (사망)"),
+	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
+	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
+	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
+};
+
+/**
+ * @enum ESocketTargetType
+ * @brief 소켓을 찾을 대상을 지정하는 Enum 선언
+ */
+UENUM(BlueprintType)
+enum class ESocketTargetType : uint8
+{
+	CharacterBody UMETA(DisplayName = "캐릭터 본체 (Character Body)"),
+	EquippedWeapon UMETA(DisplayName = "장착된 무기 (Equipped Weapon)")
 };

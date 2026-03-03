@@ -10,13 +10,17 @@
 class UAttributeSet;
 class UAbilitySystemComponent;
 class APlayerData;
-class UInventoryComponent;
+class UInventorySystem;
 class UCostManageComponent;
 class UFamiliarSummonComponent;
 
 /**
- * @brief 게임의 전반적인 상태(지휘관 정보)를 관리하는 클래스
- * @details 스쿼드(보유 영웅 3명) 데이터와, 전역 자원(코스트, 골드 등)을 GAS로 관리합니다.
+ * @class AInGamePlayerState
+ * @brief 게임 세션 동안의 지휘관(Player) 상태 및 스쿼드 데이터를 관리하는 클래스
+ * @details
+ * - **스쿼드 관리:** 전투에 참여하는 영웅(PlayerData)들의 생명주기를 관리합니다.
+ * - **자원 관리:** 전역 자원(코스트, 골드)을 GAS(Gameplay Ability System)를 통해 처리합니다.
+ * - **데이터 연동:** 전역 인벤토리 서브시스템과 통신하여 초기 스쿼드를 구성합니다.
  */
 UCLASS()
 class PARADISE_API AInGamePlayerState : public APlayerState, public IAbilitySystemInterface
@@ -41,10 +45,10 @@ public:
 	void InitSquad(const TArray<FName>& StartingHeroIDs);
 
 	/**
-	 * @brief 글로벌 인벤토리(GameInstance)에 접근하기 위한 편의성 헬퍼 함수
+	 * @brief 게임 인스턴스에 상주하는 전역 인벤토리 시스템을 반환합니다.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Inventory")
-	class UInventoryComponent* GetInventoryComponent() const;
+	UInventorySystem* GetInventorySystem() const;
 
 	/*
 	 * @brief 인덱스에 해당하는 영웅 데이터(영혼) 반환
@@ -74,22 +78,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad")
 	TArray<TObjectPtr<APlayerData>> SquadMembers;
 
-	/*영웅 생성에 사용할 스탯 데이터 테이블 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Player", meta = (RowType = "CharacterStats"))
-	TObjectPtr<class UDataTable> PlayerStatDataTable = nullptr;
-
-	/*영웅 생성에 사용할 에셋 데이터 테이블 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Player", meta = (RowType = "CharacterAssets"))
-	TObjectPtr<class UDataTable> PlayerAssetDataTabl = nullptr;
-
 	//  GAS 컴포넌트 (Commander Resources)
 	/* 지휘관용 ASC (코스트/쿨타임/패시브 효과 관리용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent = nullptr;
-
-	/** @brief 플레이어의 인벤토리 (영웅, 병사, 아이템 관리) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UInventoryComponent> InventoryComponent = nullptr;
 
 	/** @brief 코스트 관리 컴포넌트 (UI용 Getter 제공) */ 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

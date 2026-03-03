@@ -5,9 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/StageStructs.h"
 #include "UnitSpawner.generated.h"
 
-/** @brief 웨이브 설정을 위한 구조체 */
 USTRUCT(BlueprintType)
 struct FWaveConfig
 {
@@ -44,19 +44,15 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TSubclassOf<class ABaseUnit> UnitClass;
-
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-	class UDataTable* StatsDataTable;
-
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-	class UDataTable* AssetsDataTable;
+	TSubclassOf<class AUnitBase> UnitClass;
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	FVector SpawnExtent = FVector(500.f, 500.f, 0.f);
 
-	/** ⭐ 이제 UHT가 FWaveConfig를 정상적으로 인식합니다 */
-	UPROPERTY(EditAnywhere, Category = "Spawning")
+	UPROPERTY(VisibleAnywhere, Category = "Spawning|Data")
+	FName TargetStageID;
+
+	UPROPERTY(VisibleAnywhere, Category = "Spawning")
 	TArray<FWaveConfig> WaveConfigs;
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")

@@ -72,3 +72,7 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# 대용량 에셋 폴더
+Content/External_Assets/*
+Content/External_Assets

@@ -18,6 +18,7 @@ class UVictoryPopupWidget;
 class UDefeatPopupWidget;
 class UParadiseCommonButton;
 class AInGameGameState;
+class USettingsPopupWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -71,6 +72,12 @@ private:
 	 */
 	UFUNCTION()
 	void HandleGamePhaseChanged(EGamePhase NewPhase);
+
+	/**
+	 * @brief 승리 팝업에 필요한 정산 영수증(최신 데이터)을 구성하여 전달합니다.
+	 */
+	UFUNCTION()
+	void UpdateVictoryPopupData();
 
 	/** @brief 설정 버튼 클릭 처리 */
 	UFUNCTION()
@@ -135,4 +142,18 @@ private:
 	/** @brief 현재 자동 전투 활성화 여부 */
 	bool bIsAutoMode = false;
 #pragma endregion 내부 데이터
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 기획자가 에디터에서 할당할 인게임용 설정 팝업 위젯 클래스 (WBP_Settings_InGame) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI")
+	TSubclassOf<USettingsPopupWidget> SettingsPopupClass;
+#pragma endregion 데이터 드리븐 설정
+
+#pragma region 런타임 상태
+private:
+	/** @brief 화면에 미리 생성해둘 설정 팝업 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<USettingsPopupWidget> SettingsPopupInstance = nullptr;
+#pragma endregion 런타임 상태
 };

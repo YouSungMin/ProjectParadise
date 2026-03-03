@@ -23,6 +23,48 @@ class PARADISE_API ALobbyPlayerController : public APlayerController
 	
 protected:
 	virtual void BeginPlay() override;
+#pragma region 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
+
+public:
+	// 디버그 / 치트 명령어 (콘솔창에 입력 가능)
+	UFUNCTION(Exec)
+	void CheatAddCharacter(FName CharacterID);
+
+	UFUNCTION(Exec)
+	void CheatAddFamiliar(FName FamiliarID);
+
+	UFUNCTION(Exec)
+	void CheatAddItem(FName ItemID, int32 Count = 1);
+
+	UFUNCTION(Exec)
+	void CheatAddExp(FName CharacterID, int32 ExpAmount);
+
+	UFUNCTION(Exec)
+	void CheatSetPlayerSlot(int32 SlotIndex, FName CharacterID);
+
+	UFUNCTION(Exec)
+	void CheatSetFamiliarSlot(int32 SlotIndex, FName FamiliarID);
+
+	UFUNCTION(Exec)
+	void CheatEquipItem(FName CharacterID, FName ItemID);
+
+	UFUNCTION(Exec)
+	void CheatAddGold(int32 Amount);
+
+	UFUNCTION(Exec)
+	void CheatAwakenCharacter(FName CharacterID);
+
+	UFUNCTION(Exec)
+	void CheatEnhanceEquipment(FName ItemID);
+
+	//모든 아이템, 캐릭터, 퍼밀리어, 돈을 얻는 치트
+	UFUNCTION(Exec)
+	void CheatGrantAll();
+
+#pragma endregion 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
+
+
+#pragma region 카메라 설정
 
 #pragma region 카메라 설정
 public:
@@ -83,7 +125,14 @@ public:
 	/** @brief HUD 캐싱용 (필요시 구현) */
 	void SetLobbyHUD(UParadiseLobbyHUDWidget* InHUD);
 
+	/** @brief 컨텍스트를 유지한 채 직전 메뉴로 돌아갑니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Navigation")
+	void RequestBackToPreviousMenu();
+
 private:
+	/** @brief 직전 메뉴 상태를 캐싱합니다. */
+	EParadiseLobbyMenu PreviousMenu = EParadiseLobbyMenu::None;
+
 	/** @brief 현재 메뉴 상태 저장 */
 	EParadiseLobbyMenu CurrentMenu = EParadiseLobbyMenu::None;
 

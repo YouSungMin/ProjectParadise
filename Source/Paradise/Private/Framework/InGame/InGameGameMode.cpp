@@ -2,7 +2,22 @@
 
 #include "Framework/InGame/InGameGameMode.h"
 #include "Framework/InGame/InGameGameState.h"
+#include "Framework/InGame/InGameController.h"
+#include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
+#include "Framework/System/StageSubsystem.h"
+#include "Framework/System/InventorySystem.h"
+#include "Framework/System/GrowthSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/ObjectPoolSubsystem.h"
+#include "Framework/InGame/Actors/DamageTextActor.h"
+#include "Kismet/GameplayStatics.h"
+
+void AInGameGameMode::ForceVictory()
+{
+	SetGamePhase(EGamePhase::Victory);
+}
 
 AInGameGameMode::AInGameGameMode()
 {
@@ -16,14 +31,62 @@ void AInGameGameMode::BeginPlay()
 	//GameState 캐싱
 	CachedGameState = GetGameState<AInGameGameState>();
 
-	//임시로 1-1 스테이지 정보로 초기화 -> (나중에 GameInstance 연동)
-	InitializeStageData(FName("Stage1_1"));
+
+	FName TargetStageToPlay = NAME_None;
+
+
+	//0223 김성현 - 스테이지 연결 초기화 로직 연결
+	//서브시스템에서 아까 골랐던 스테이지 ID Get 
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+		{
+			TargetStageToPlay = StageSys->GetSelectedStageID();
+		}
+	}
+
+	//ID 전달
+	if (!TargetStageToPlay.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("🚀 [GameMode] 전달받은 스테이지 데이터(%s)로 게임을 세팅합니다!"), *TargetStageToPlay.ToString());
+		FString DebugMsg = FString::Printf(TEXT("🎯 [인게임] 전달받기 성공! 현재 플레이할 스테이지: %s"), *TargetStageToPlay.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, DebugMsg);
+		InitializeStageData(TargetStageToPlay); 
+	}
+	else
+	{
+		// 에러 방지용 비상 코드
+		UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
+		InitializeStageData(FName("Stage1_1"));
+		FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
+		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
+	}
+		
+	//전투 시작 전, 데미지 텍스트 미리 넣기
+	if (DamageTextClass)
+	{
+		if (UObjectPoolSubsystem* PoolSystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
+		{
+			//PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
+		}
+	}
 
 	//초기 상태 설정
 	CurrentPhase = EGamePhase::Result;
 
 	//게임 시작 상태 Ready로 설정
-	SetGamePhase(EGamePhase::Ready);
+	SetGamePhase(EGamePhase::Combat);
+
+	
+}
+
+void AInGameGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	SetupPlayerSquad(NewPlayer);
 }
 
 void AInGameGameMode::OnStageTimerElapsed()
@@ -52,6 +115,40 @@ void AInGameGameMode::OnStageTimerElapsed()
 		//타임오버 패배 처리 -> EndStage 호출
 		EndStage(false);
 		UE_LOG(LogTemp, Warning, TEXT("시간 초과! 패배 처리 로직 실행"));
+	}
+}
+
+void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
+{
+	AInGameController* PC = Cast<AInGameController>(NewPlayer);
+	if (!PC) return;
+
+	AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	USquadSubsystem* SquadSys = GI ? GI->GetSubsystem<USquadSubsystem>() : nullptr;
+
+	if (PS && SquadSys)
+	{
+		//서브시스템에서 로비에서 편성한 3인 스쿼드 배열 가져오기
+		TArray<FName> MyPlayerIDs = SquadSys->GetPlayerSquad();
+
+		// [방어 코드]
+		// 배열이 비어있거나, 3칸 다 Name_None일 경우
+		if (MyPlayerIDs.Num() == 0 || (MyPlayerIDs.IsValidIndex(0) && MyPlayerIDs[0].IsNone() && MyPlayerIDs[1].IsNone() && MyPlayerIDs[2].IsNone()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("⚠️ 편성된 플레이어가 없습니다! 기본 캐릭터(테스트용)를 강제 스폰합니다."));
+
+			MyPlayerIDs.Init(NAME_None, 3);
+			MyPlayerIDs[0] = TEXT("test1");
+		}
+
+		//(PlayerData) 3개 스폰 및 인벤토리(장비) Init
+		PS->InitSquad(MyPlayerIDs);
+
+		//(PlayerBase) 3개 스폰 및 Init
+		PC->InitializeSquadPawns();
+
+		UE_LOG(LogTemp, Log, TEXT("✅ [%s] 플레이어의 스쿼드 세팅이 성공적으로 완료되었습니다."), *PC->GetName());
 	}
 }
 
@@ -108,7 +205,7 @@ void AInGameGameMode::EndStage(bool bIsVictory)
 
 void AInGameGameMode::InitializeStageData(FName StageID)
 {
-	//0. GameInstance 가져오기
+	//GameInstance 가져오기
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
@@ -116,18 +213,11 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 		return;
 	}
 
-	//1.GameInstance에 있는 스테이지 테이블 가져오기
-	UDataTable* StageTable = GI->StatgeStatsDataTable; 
-	if (!StageTable)
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] 스테이지 데이터 테이블이 없습니다."));
-		return;
-	}
-
-	//2. 데이터 테이블에서 정보 찾기
-	FStageStats* Row = StageTable->FindRow<FStageStats>(StageID, TEXT("StageInfoContext"));
+	//0220 김성현 - GI 데이터 테이블 검색 템플릿 함수 이용 로직 변경
+	FStageStats* Row = GI->GetDataTableRow<FStageStats>(GI->StatgeStatsDataTable, StageID);
 	if (Row)
 	{
+		CurrentStageID = StageID;
 		CurrentStageData = *Row;	//데이터를 개별변수가 아닌 구조체에 한번에 복사
 
 		//2. 게임스태이트에 정보 할당
@@ -185,36 +275,29 @@ void AInGameGameMode::OnPhaseVictory()
 {
 	// 승리했을 떄 타이머 정지 
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
+	// 이전 타이머가 있다면 확실히 제거 (상태 중첩 방지)
+	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
 
 	UE_LOG(LogTemp, Log, TEXT("Phase: Victory! 보상 지급 준비"));
 	if (CachedGameState)
 	{
 		//1. 타이머 정지(GameState의 플래그 사용)
 		CachedGameState->bIsTimerActive = false;
-		
+
 		//보상 정보 캐싱
 		CachedGameState->AcquiredGold = CurrentStageData.ClearGold;
 		CachedGameState->AcquiredExp = CurrentStageData.ClearExp;
 
 		//다음 스테이지 ID 캐싱
 		CachedGameState->NextStageID = CurrentStageData.NextStageID;
+
+		//0223 김성현 - 클리어 재화 보상 적용 ,GI로 세이브 데이터 저장 함수
+		DistributeStageRewards();
 	}
-
-	// [로그 추가] 보상 및 다음 스테이지 정보 출력
-	//UE_LOG(LogTemp, Warning, TEXT("============= [VICTORY] ============="));
-	//UE_LOG(LogTemp, Log, TEXT(" $$$ Reward Gold : %d G"), CurrentStageData.ClearGold);
-	//UE_LOG(LogTemp, Log, TEXT(" +++ Reward Exp  : %d XP"), CurrentStageData.ClearExp);
-	//UE_LOG(LogTemp, Log, TEXT(" >>> Next Stage  : %s"), *CurrentStageData.NextStageID.ToString());
-	//UE_LOG(LogTemp, Warning, TEXT("====================================="));
-
-	//2. 데이터 저장 (GameInstance 연동 필요)
-	// TODO: GameInstance->AddGold(CurrentStageData.ClearGold);
-	// TODO: GameInstance->UnlockStage(CurrentStageData.NextStageID);
 
 
 	//3. 3초 후 결과 단계(Result)로 전환
-	FTimerHandle ResultTimer;
-	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
+	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
 		}, 3.0f, false);
 }
@@ -223,14 +306,21 @@ void AInGameGameMode::OnPhaseDefeat()
 {
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
 
+	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
+
 	if(CachedGameState) CachedGameState->bIsTimerActive = false;
 	UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
 
 	//패배시 보상 없음
 	
+	//GI로 세이브 데이터 저장
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		GI->SaveGameData();
+	}
+	
 	//3초 후 결과 단계(Result)로 전환
-	FTimerHandle ResultTimer;
-	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
+	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
 		}, 3.0f, false);
 	
@@ -241,5 +331,67 @@ void AInGameGameMode::OnPhaseResult()
 	//UE_LOG(LogTemp, Log, TEXT("Phase: Result (최종 결과 화면 출력)"));
 
 	//버튼생성 후 로비로 레벨이동
+
+	//0223 김성현 - 게임 정지
+	if (UWorld* world = GetWorld())
+	{
+		UGameplayStatics::SetGamePaused(world,true);
+	}
 }
 
+void AInGameGameMode::DistributeStageRewards()
+{
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+	UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>();
+	UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>();
+	UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>();
+
+	//경험치 보상 지급
+	if (SquadSys && GrowthSys)
+	{
+		const TArray<FName>& CurrentSquad = SquadSys->GetPlayerSquad();
+		for (const FName& HeroID : CurrentSquad)
+		{
+			if (!HeroID.IsNone())
+			{
+				// 인벤토리가 아닌 성장 시스템에게 경험치 계산을 지시합니다!
+				GrowthSys->AddCharacterExp(HeroID, CurrentStageData.ClearExp);
+			}
+		}
+	}
+
+	//재화 보상 및 스테이지 진행도 갱신
+	if (EconomySys && StageSys)
+	{
+		// 기본 보상 지급
+		EconomySys->AddCurrency(ECurrencyType::Gold, CurrentStageData.ClearGold);
+
+		// 최초 클리어인지 검사
+		bool bIsFirstClear = (StageSys->GetStageClearStar(CurrentStageID) == 0);
+
+		if (bIsFirstClear)
+		{
+			// 처음 깼을 때만 에테르 지급
+			EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
+
+			if (CachedGameState)
+			{
+				CachedGameState->AcquiredAether = CurrentStageData.ClearAether;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 클리어! 에테르 보상이 지급되었습니다."));
+		}
+
+		// 다음 스테이지 해금 및 현재 스테이지 별점 기록
+		StageSys->UnlockStage(CurrentStageData.NextStageID);
+		//TODO : 스테이지 별 갯수 판단 로직 추가 필요
+		StageSys->RecordStageClearStar(CurrentStageID, 3); // 임시 3별
+	}
+
+	// 세이브 파일에 저장
+	GI->SaveGameData();
+	UE_LOG(LogTemp, Log, TEXT("🎁 [보상 시스템] 스테이지 보상 지급 및 게임 저장 완료!"));
+}

@@ -2,7 +2,6 @@
 
 
 #include "UI/Widgets/Ingame/CharacterStatusWidget.h"
-
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "AbilitySystemComponent.h"
@@ -10,6 +9,7 @@
 #include "GameplayEffectTypes.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 
+#pragma region 외부 인터페이스 구현
 void UCharacterStatusWidget::SetCharacterPortrait(UTexture2D* NewPortrait)
 {
 	if (Image_Portrait && NewPortrait)
@@ -18,43 +18,55 @@ void UCharacterStatusWidget::SetCharacterPortrait(UTexture2D* NewPortrait)
 	}
 }
 
+void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
+{
+	if (!InASC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[CharacterStatusWidget] 유효하지 않은 ASC가 전달되어 바인딩을 취소합니다."));
+		return;
+	}
+
+	/** @section 1. 기존 델리게이트 안전 해제 (재바인딩 대비) */
+	if (CachedASC.IsValid())
+	{
+		CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetHealthAttribute()).RemoveAll(this);
+		CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute()).RemoveAll(this);
+	}
+
+	CachedASC = InASC;
+
+	/** @section 2. 어트리뷰트 변경 델리게이트 구독 */
+	CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetHealthAttribute())
+		.AddUObject(this, &UCharacterStatusWidget::OnHealthChanged);
+
+	CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute())
+		.AddUObject(this, &UCharacterStatusWidget::OnManaChanged);
+
+	/** @section 3. 바인딩 직후 현재 스탯으로 UI 즉시 동기화 */
+	const float CurrentHP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetHealthAttribute());
+	const float MaxHP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
+
+
+	if (PB_HealthBar && MaxHP > 0.f)
+	{
+		PB_HealthBar->SetPercent(CurrentHP / MaxHP);
+	}
+
+	const float CurrentMP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+	const float MaxMP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
+	if (PB_ManaBar && MaxMP > 0.f)
+	{
+		PB_ManaBar->SetPercent(CurrentMP / MaxMP);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[CharacterStatusWidget] ASC 바인딩 및 UI 동기화 완료"));
+}
+#pragma endregion 외부 인터페이스 구현
+
 void UCharacterStatusWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-#pragma region GAS 어트리뷰트 바인딩
-	// 플레이어 폰으로부터 ASC를 안전하게 획득
-	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwningPlayerPawn());
-
-	if (ASC)
-	{
-		CachedASC = ASC;
-
-		/** @section 어트리뷰트 변경 델리게이트 바인딩 */
-		// 체력 변경 이벤트 바인딩
-		ASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetHealthAttribute())
-			.AddUObject(this, &UCharacterStatusWidget::OnHealthChanged);
-
-		// 마나 변경 이벤트 바인딩
-		ASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute())
-			.AddUObject(this, &UCharacterStatusWidget::OnManaChanged);
-
-		// 초기 UI 갱신 (생성 시점의 값 반영)
-		const float CurrentHP = ASC->GetNumericAttribute(UBaseAttributeSet::GetHealthAttribute());
-		const float MaxHP = ASC->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
-		if (PB_HealthBar && MaxHP > 0.f)
-		{
-			PB_HealthBar->SetPercent(CurrentHP / MaxHP);
-		}
-
-		const float CurrentMP = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
-		const float MaxMP = ASC->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
-		if (PB_ManaBar && MaxMP > 0.f)
-		{
-			PB_ManaBar->SetPercent(CurrentMP / MaxMP);
-		}
-	}
-#pragma endregion GAS 어트리뷰트 바인딩
 }
 
 void UCharacterStatusWidget::NativeDestruct()

@@ -50,11 +50,4 @@ protected:
 	 */
 	UFUNCTION()
 	void OnGameplayEventReceived(FGameplayEventData Payload);
-
-	/**
-	 * @brief 몽타주 재생이 끝났거나, 중단되었을 때 호출됩니다.
-	 * 어빌리티를 종료(EndAbility)시킵니다.
-	 */
-	UFUNCTION()
-	void OnMontageCompleted();
 };
