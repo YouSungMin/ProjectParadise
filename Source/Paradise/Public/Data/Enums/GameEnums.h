@@ -197,3 +197,17 @@ enum class EGachaItemState : uint8
 	/** @brief [리빌 완료] 터치되어 폭발 이펙트와 함께 원본(캐릭터 등)이 드러난 상태 */
 	Revealed	UMETA(DisplayName = "Revealed (리빌 완료)")
 };
+
+/**
+ * @enum EGachaSequenceStep
+ * @brief 현재 재생 중인 시퀀스 단계를 나타냅니다.
+ * @details OnSequenceFinished 에서 다음 단계를 결정하는 데 사용합니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaSequenceStep : uint8
+{
+	None    UMETA(DisplayName = "없음"),
+	Intro   UMETA(DisplayName = "낙하+착지"),
+	Idle    UMETA(DisplayName = "흔들흔들 대기"),
+	Open    UMETA(DisplayName = "격렬+열림"),
+};
