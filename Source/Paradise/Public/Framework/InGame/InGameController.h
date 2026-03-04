@@ -145,17 +145,37 @@ public:
 	UFUNCTION(Exec,BlueprintCallable, Category = "Squad|Control")
 	void SetAutoBattleMode(bool bEnable);
 
+	
+protected:
 	// 0.5초마다 호출되어 1번 패밀리어를 소환할 함수
 	UFUNCTION()
 	void CheckAndAutoSummon();
 
+	/** @brief 0.2초마다 실행될 자동 전투 함수 */
+	UFUNCTION()
+	void UpdateAutoCombat();
+
+	/**  쿨타임 ,마나를 판단하여 가장 강력한 스킬부터 사용 */
+	void ExecutePrioritizedAction(APlayerBase* PlayerPawn);
+
+	/** @brief 현재 위치에서 가장 가까운 적을 찾습니다. */
+	AActor* FindNearestEnemy(APawn* PlayerPawn, float& OutDistance);
+
+	/** @brief 맵에 있는 적의 기지(HomeBase)를 찾습니다. */
+	AActor* GetEnemyBase();
+
 protected:
+
+
 	/** @brief 현재 자동 전투 모드 활성화 여부 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad|Status")
 	bool bIsAutoMode = false;
 
 	/** @brief 자동 소환을 주기적으로 체크할 타이머 핸들 */
 	FTimerHandle AutoSummonTimerHandle;
+
+	/** @brief 리더 캐릭터의 자동 이동/공격을 주기적으로 처리할 타이머 */
+	FTimerHandle AutoCombatTimerHandle;
 
 
 #pragma endregion 자동 모드 관련
