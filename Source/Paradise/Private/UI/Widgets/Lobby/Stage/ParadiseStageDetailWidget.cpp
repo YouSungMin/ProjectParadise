@@ -225,13 +225,13 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 	if (ULevelLoadingSubsystem* LoadingSys = CachedGI->GetSubsystem<ULevelLoadingSubsystem>())
 	{
 		FName LevelToOpen = FName(*Assets->MapAsset.GetAssetName());
-		TArray<TSoftObjectPtr<UObject>> EmptyPreloadAssets;
+		TArray<TSoftObjectPtr<UObject>> PreloadAssets = Assets->ExtraPreloadAssets;
 
 		// 테이지 이름(Stats->StageName)과 설명(Stats->Description)을 로딩 시스템으로 전파
 		LoadingSys->StartLevelTransition(
 			LevelToOpen,
 			FName("L_Loading"),
-			EmptyPreloadAssets,
+			PreloadAssets,
 			Assets->LoadingImage,
 			Stats->StageName,
 			Stats->Description

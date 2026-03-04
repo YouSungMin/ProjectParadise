@@ -10,6 +10,7 @@
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
+#include "UI/Widgets/Codex/ParadiseCodexMainWidget.h"
 
 void UParadiseLobbyHUDWidget::NativeConstruct()
 {
@@ -127,7 +128,14 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 			}
 			EnhanceWidget->RefreshInventory();
 		}
-
+		// [도감창 특수 처리]
+		else if (UParadiseCodexMainWidget* CodexWidget = Cast<UParadiseCodexMainWidget>(TargetWidget))
+		{
+			if (!CodexWidget->OnBackRequested.IsAlreadyBound(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby))
+			{
+				CodexWidget->OnBackRequested.AddDynamic(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby);
+			}
+		}
 		Switcher_Content->SetActiveWidget(TargetWidget);
 	}
 	else
