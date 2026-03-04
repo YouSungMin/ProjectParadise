@@ -8,10 +8,11 @@
 #include "GameplayTagContainer.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Characters/Base/PlayerBase.h"
 
-
-ASquadAIController::ASquadAIController()
+ASquadAIController::ASquadAIController(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
 	//시야 감지 
 	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
@@ -29,9 +30,9 @@ ASquadAIController::ASquadAIController()
 		AIPerception->ConfigureSense(*SightConfig);
 		AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 	}
-
-	
 }
+
+
 
 void ASquadAIController::SetLeader(AActor* CurrentLeaderActor)
 {
@@ -67,7 +68,6 @@ void ASquadAIController::OnPossess(APawn* InPawn)
 
 void ASquadAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 {
-	UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 적 발견!"));
 
 	if (!Blackboard || !Actor) return;
 

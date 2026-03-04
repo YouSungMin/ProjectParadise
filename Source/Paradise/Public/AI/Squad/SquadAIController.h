@@ -17,7 +17,7 @@ class PARADISE_API ASquadAIController : public AAIController
 	
 
 public:
-	ASquadAIController();
+	ASquadAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** @brief 인게임 컨트롤러에서 캐릭터 스위치 시 호출해 줄 리더 지정 함수 */
 	UFUNCTION(BlueprintCallable, Category = "AI")
