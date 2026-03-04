@@ -4,20 +4,27 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BTTask_SquadGASAttack.generated.h"
+#include "Data/Enums/GameEnums.h"
+#include "BTTask_SquadGASAction.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PARADISE_API UBTTask_SquadGASAttack : public UBTTaskNode
+class PARADISE_API UBTTask_SquadGASAction : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_SquadGASAttack();
+	UBTTask_SquadGASAction();
 
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+protected:
+
+	/** 발동할 GAS 어빌리티 InputID */
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	EInputID ActionInputID = EInputID::Attack;
 	
 };

@@ -1,18 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AI/BT/BTTask/BTTask_SquadGASAttack.h"
+#include "AI/BT/BTTask/BTTask_SquadGASAction.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Characters/Base/PlayerBase.h"
-#include "Data/Enums/GameEnums.h"
 
-UBTTask_SquadGASAttack::UBTTask_SquadGASAttack()
+
+UBTTask_SquadGASAction::UBTTask_SquadGASAction()
 {
-	NodeName = TEXT("Squad GAS Attack");
+	NodeName = TEXT("Squad GAS Action");
 }
 
-EBTNodeResult::Type UBTTask_SquadGASAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_SquadGASAction::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	//현재 AI가 조종 중인 캐릭터 가져오기
 	APlayerBase* SquadPawn = Cast<APlayerBase>(OwnerComp.GetAIOwner()->GetPawn());
@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTTask_SquadGASAttack::ExecuteTask(UBehaviorTreeComponent& 
 	}
 
 	//UI에서 버튼 누른 것과 완벽히 동일하게 GAS 평타 어빌리티 실행
-	SquadPawn->SendAbilityInputToASC(EInputID::Attack, true);
+	SquadPawn->SendAbilityInputToASC(ActionInputID, true);
 
 	//공격 명령을 내렸으니 Task 성공 반환
 	return EBTNodeResult::Succeeded;

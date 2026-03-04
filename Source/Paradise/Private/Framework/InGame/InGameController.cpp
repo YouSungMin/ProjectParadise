@@ -5,7 +5,12 @@
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
 #include "Framework/Core/ParadiseGameInstance.h"
-#include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "AbilitySystemComponent.h"
+#include "Characters/AIUnit/UnitBase.h"
+#include "Objects/HomeBase.h"
+#include "AI/Squad/SquadAIController.h"
+#include "Components/FamiliarSummonComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -84,8 +89,185 @@ void AInGameController::SetAutoBattleMode(bool bEnable)
     UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
     UpdateCameraSystem(); //카메라시점 전체시점으로 변경
 
-    //TODO: 이 아래에 자동모드 AI 전환 함수 구현
+    if (bIsAutoMode)
+    {
+        //자동 소환 시작
+        GetWorld()->GetTimerManager().SetTimer(AutoSummonTimerHandle, this, &AInGameController::CheckAndAutoSummon, 0.5f, true);
+
+        //자동 전투 시작
+        GetWorld()->GetTimerManager().SetTimer(AutoCombatTimerHandle, this, &AInGameController::UpdateAutoCombat, 0.2f, true);
+    }
+    else
+    {
+        // 수동모드시 전부 멈춤
+        GetWorld()->GetTimerManager().ClearTimer(AutoSummonTimerHandle);
+        GetWorld()->GetTimerManager().ClearTimer(AutoCombatTimerHandle);
+        StopMovement();
+    }
 }
+
+void AInGameController::CheckAndAutoSummon()
+{
+    // 자동모드가 아니라면 진행X
+    if (!bIsAutoMode) return;
+
+    // PlayerState 가져오기 (소환 컴포넌트 가져오기위함)
+    AInGamePlayerState* PS = GetPlayerState<AInGamePlayerState>();
+    if (!PS) return;
+
+    // PlayerState에 있는 소환 컴포넌트 획득
+    UFamiliarSummonComponent* SummonComp = PS->FindComponentByClass<UFamiliarSummonComponent>();
+    if (SummonComp)
+    {
+        //맨 왼쪽(0번 인덱스) 슬롯 구매 요청
+        //(내부에서 코스트 체크를 알아서 해주므로, 돈이 없으면 조용히 false를 반환하고 끝납니다.)
+        bool bSuccess = SummonComp->RequestPurchase(0);
+
+        // 돈이 모여서 성공적으로 뽑았다면 로그 출력!
+        if (bSuccess)
+        {
+            UE_LOG(LogTemp, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
+        }
+    }
+}
+
+void AInGameController::UpdateAutoCombat()
+{
+    if (!bIsAutoMode) return;
+
+    APlayerBase* PlayerPawn = Cast<APlayerBase>(GetPawn());
+    if (!PlayerPawn || PlayerPawn->IsDead()) return;
+
+    float AttackRange = 300.0f; // TODO: 캐릭터 사거리에 맞게 조절 (현재 하드코딩중)
+    float NearestDist = 999999.0f;
+
+    //가장 가까운 적 탐색
+    AActor* TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
+
+    //적이 사거리 안에 들어왔다면 공격
+    if (TargetEnemy && NearestDist <= AttackRange)
+    {
+        //멈추기
+        StopMovement();
+
+        //적을 바라보게함
+        FVector LookDir = TargetEnemy->GetActorLocation() - PlayerPawn->GetActorLocation();
+        LookDir.Z = 0.f;
+        PlayerPawn->SetActorRotation(LookDir.Rotation());
+
+        //우선순위 대로 공격 어빌리티 발동
+        ExecutePrioritizedAction(PlayerPawn);
+    }
+    else
+    {
+        AActor* MoveTarget = TargetEnemy;
+
+        // 맵에 적이없다면 기지로 이동
+        if (!MoveTarget)
+        {
+            MoveTarget = GetEnemyBase();
+        }
+
+        // 이동 목표가 설정되었다면 내비메쉬를 따라 이동
+        if (MoveTarget)
+        {
+            UAIBlueprintHelperLibrary::SimpleMoveToActor(this, MoveTarget);
+        }
+    }
+}
+
+void AInGameController::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
+{
+    if (!PlayerPawn) return;
+
+    UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent();
+    if (!ASC)
+    {
+        // ASC가 없으면 그냥 기본 평타 시도
+        PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
+        return;
+    }
+
+    //특정 InputID의 스킬이 쿨타임/마나 조건이 되는지(사용 가능한지) 검사
+    auto CanUseAbility = [&](EInputID InputID) -> bool
+        {
+            for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+            {
+                if (Spec.InputID == static_cast<int32>(InputID))
+                {
+                    return Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
+                }
+            }
+            return false;
+        };
+
+    //궁극기 사용 가능 여부 확인
+    if (CanUseAbility(EInputID::Ultimate))
+    {
+        PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
+        UE_LOG(LogTemp, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
+        return;
+    }
+
+    // 2순위: 일반 스킬 사용 가능 여부 확인
+    if (CanUseAbility(EInputID::Skill))
+    {
+        PlayerPawn->SendAbilityInputToASC(EInputID::Skill, true);
+        UE_LOG(LogTemp, Log, TEXT("🤖 [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
+        return;
+    }
+
+    //궁극기, 스킬 모두 안되면 기본 평타
+    PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
+}
+
+AActor* AInGameController::FindNearestEnemy(APawn* PlayerPawn, float& OutDistance)
+{
+    OutDistance = 999999.0f;
+    AActor* NearestEnemy = nullptr;
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), FoundActors);
+
+    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+    const FVector PlayerLoc = PlayerPawn->GetActorLocation();
+
+    for (AActor* Actor : FoundActors)
+    {
+        AUnitBase* Unit = Cast<AUnitBase>(Actor);
+        if (Unit && !Unit->IsDead() && Unit->GetFactionTag().MatchesTag(EnemyTag))
+        {
+            float Dist = FVector::Distance(PlayerLoc, Unit->GetActorLocation());
+            if (Dist < OutDistance)
+            {
+                OutDistance = Dist;
+                NearestEnemy = Actor;
+            }
+        }
+    }
+    return NearestEnemy;
+}
+
+AActor* AInGameController::GetEnemyBase()
+{
+    TArray<AActor*> FoundBases;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
+
+    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+
+    for (AActor* Base : FoundBases)
+    {
+        AHomeBase* HomeBase = Cast<AHomeBase>(Base);
+
+        //기지의 Faction확인하여 적기지만 찾음
+        if (HomeBase && HomeBase->GetFactionTag().MatchesTag(EnemyTag))
+        {
+            return Base;
+        }
+    }
+    return nullptr;
+}
+
 
 void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
 {
@@ -124,6 +306,19 @@ void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
     if (OldPlayer)
     {
         PossessAI(OldPlayer);
+    }
+
+    //스위치(전환)한 캐릭터를 리더로 Set
+    for (APlayerBase* Member : ActiveSquadPawns)
+    {
+        // 빈 슬롯이 아니고, 현재 내가 직접 조종하게 된 캐릭터가 아닌 애들(AI)만 타겟
+        if (Member && Member != NewPlayer)
+        {
+            if (ASquadAIController* SquadAI = Cast<ASquadAIController>(Member->GetController()))
+            {
+                SquadAI->SetLeader(NewPlayer);
+            }
+        }
     }
 
     // 로그
@@ -437,6 +632,13 @@ void AInGameController::PossessAI(APlayerBase* TargetCharacter)
     {
         //빙의 (OnPossess가 호출되면서 비헤이비어 트리가 실행됨)
         NewAI->Possess(TargetCharacter);
+
+        //현재 조종중인 캐릭터를 리더로 Set
+        if (ASquadAIController* SquadAI = Cast<ASquadAIController>(NewAI))
+        {
+            SquadAI->SetLeader(GetPawn()); // 현재 플레이어의 폰 전달
+        }
+
         UE_LOG(LogTemp, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
     }
 }

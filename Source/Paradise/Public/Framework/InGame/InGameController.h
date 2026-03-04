@@ -50,12 +50,6 @@ public:
 	 */
 	void InitializeOverviewCamera();
 
-	/**
-	 * @brief 자동 전투 모드를 활성화하거나 비활성화합니다.
-	 * @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직을 강화합니다.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Squad|Control")
-	void SetAutoBattleMode(bool bEnable);
 
 	/*
 	 * @brief 요청된 인덱스의 영웅으로 직접 조작 대상을 변경(빙의)하는 함수
@@ -141,6 +135,51 @@ private:
 	void UpdateActionPanelUI(int32 PlayerIndex);
 #pragma endregion 내부 헬퍼 함수
 
+#pragma region 자동 모드 관련
+
+public:
+	/**
+	* @brief 자동 전투 모드를 활성화하거나 비활성화합니다.
+	* @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직 실행합니다.
+	*/
+	UFUNCTION(Exec,BlueprintCallable, Category = "Squad|Control")
+	void SetAutoBattleMode(bool bEnable);
+
+	
+protected:
+	// 0.5초마다 호출되어 1번 패밀리어를 소환할 함수
+	UFUNCTION()
+	void CheckAndAutoSummon();
+
+	/** @brief 0.2초마다 실행될 자동 전투 함수 */
+	UFUNCTION()
+	void UpdateAutoCombat();
+
+	/**  쿨타임 ,마나를 판단하여 가장 강력한 스킬부터 사용 */
+	void ExecutePrioritizedAction(APlayerBase* PlayerPawn);
+
+	/** @brief 현재 위치에서 가장 가까운 적을 찾습니다. */
+	AActor* FindNearestEnemy(APawn* PlayerPawn, float& OutDistance);
+
+	/** @brief 맵에 있는 적의 기지(HomeBase)를 찾습니다. */
+	AActor* GetEnemyBase();
+
+protected:
+
+
+	/** @brief 현재 자동 전투 모드 활성화 여부 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad|Status")
+	bool bIsAutoMode = false;
+
+	/** @brief 자동 소환을 주기적으로 체크할 타이머 핸들 */
+	FTimerHandle AutoSummonTimerHandle;
+
+	/** @brief 리더 캐릭터의 자동 이동/공격을 주기적으로 처리할 타이머 */
+	FTimerHandle AutoCombatTimerHandle;
+
+
+#pragma endregion 자동 모드 관련
+
 protected:
 	//  데이터 및 설정 (Data & Config)
 	/*
@@ -189,10 +228,6 @@ protected:
 	/** @brief 전체 뷰 카메라를 찾기 위한 태그 (기본값: "Camera.Overview") */
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
 	FName OverviewCameraTag = TEXT("Camera.Overview");
-
-	/** @brief 현재 자동 전투 모드 활성화 여부 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad|Status")
-	bool bIsAutoMode = false;
 
 	/** @brief 모든 영웅이 사망했는지 여부 */
 	bool bIsSquadWipedOut = false;

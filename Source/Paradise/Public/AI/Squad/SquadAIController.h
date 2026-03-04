@@ -17,7 +17,7 @@ class PARADISE_API ASquadAIController : public AAIController
 	
 
 public:
-	ASquadAIController();
+	ASquadAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** @brief 인게임 컨트롤러에서 캐릭터 스위치 시 호출해 줄 리더 지정 함수 */
 	UFUNCTION(BlueprintCallable, Category = "AI")
@@ -30,17 +30,17 @@ protected:
 private:
 	// AI 에셋
 	UPROPERTY(EditAnywhere, Category = "AI")
-	class UBehaviorTree* BTAsset;
+	TObjectPtr<class UBehaviorTree> BTAsset = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
-	class UBlackboardData* BBAsset;
+	TObjectPtr<class UBlackboardData> BBAsset=nullptr;
 
 	// 시야 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent* AIPerception;
+	TObjectPtr<class UAIPerceptionComponent> AIPerception = nullptr;
 
 	UPROPERTY()
-	class UAISenseConfig_Sight* SightConfig;
+	TObjectPtr<class UAISenseConfig_Sight> SightConfig = nullptr;
 
 	// 타겟 감지 이벤트
 	UFUNCTION()

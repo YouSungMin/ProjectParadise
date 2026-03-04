@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemComponent.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISense_Sight.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "AIController.h"
 #include "BrainComponent.h"
@@ -16,6 +18,18 @@ AUnitBase::AUnitBase()
 	PrimaryActorTick.bCanEverTick = false;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	bIsDead = false;
+
+	StimuliSourceComp = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComp"));
+
+	//0304 김성현 - 시야(Sight) 감지 대상으로 자동 등록 세팅
+	if (StimuliSourceComp)
+	{
+		// 스폰 시 자동으로 퍼셉션 시스템에 등록되도록 설정
+		StimuliSourceComp->RegisterWithPerceptionSystem();
+
+		//이 액터를 시각 감지 대상으로 등록합니다.
+		StimuliSourceComp->RegisterForSense(TSubclassOf<UAISense_Sight>());
+	}
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
@@ -191,7 +205,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
 		CachedDeathMontage = InAssets->DeathMontage.Get();
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
-		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
+		CachedActionFX = InAssets->ActionFX;  // 공격 연출 블록 캐싱
 		this->FactionTag = InAssets->FactionTag;
 
 		// 어빌리티 부여 (Grant Ability)

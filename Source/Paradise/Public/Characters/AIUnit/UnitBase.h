@@ -10,6 +10,8 @@
 #include "GameplayTagContainer.h"
 #include "UnitBase.generated.h"
 
+
+class UAIPerceptionStimuliSourceComponent;//0304 김성현 전방선언 추가
 UCLASS()
 class PARADISE_API AUnitBase : public ACharacterBase, public IObjectPoolInterface
 {
@@ -60,6 +62,10 @@ protected:
 	UFUNCTION()
 	void ExecuteReturnToPool();
 protected:
+	/** @brief AI 인지 자극 컴포넌트  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UAIPerceptionStimuliSourceComponent> StimuliSourceComp= nullptr;
+
 	/** @brief 데이터 테이블 조회를 위한 RowName 저장 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
 	FName UnitID;
