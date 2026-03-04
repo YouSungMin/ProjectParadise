@@ -341,6 +341,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> BodyIcon;
 
+	/**
+	 * @brief 캐릭터 전용 돌파 재화(조각) 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> AwakeningPieceIcon;
+
 	// =========================================================
 	//  GAS & Montage (Player Only)
 	// =========================================================

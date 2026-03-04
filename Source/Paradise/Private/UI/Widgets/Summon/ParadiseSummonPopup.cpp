@@ -31,7 +31,8 @@ void UParadiseSummonPopup::NativeConstruct()
 		Btn_Back->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnBackButtonClicked);
 	}
 	// 3. 재화 정보 갱신 (GameInstance 등에서 내 정보 가져오기)
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(UGameplayStatics::GetGameInstance(this)))
+	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (CachedGI.IsValid())
 	{
 		// TODO: GI나 PlayerData에 실제 저장된 변수명으로 교체하세요. (예: GI->GetMyEther())
 		// 일단 0이나 임시값으로 테스트
@@ -52,6 +53,7 @@ void UParadiseSummonPopup::NativeDestruct()
 	if (Btn_Tab_Equipment) Btn_Tab_Equipment->OnClicked.RemoveAll(this);
 	if (Btn_Back) Btn_Back->OnClicked.RemoveAll(this);
 
+	CachedGI = nullptr;
 	Super::NativeDestruct();
 }
 #pragma endregion 생명주기
@@ -80,6 +82,10 @@ void UParadiseSummonPopup::OnEquipmentTabClicked()
 
 void UParadiseSummonPopup::OnBackButtonClicked()
 {
+	if (CachedGI.IsValid())
+	{
+		CachedGI->SaveGameData();
+	}
 	// 내 컨트롤러 찾아서 로비(None)로 돌아가달라고 요청
 	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
 	{

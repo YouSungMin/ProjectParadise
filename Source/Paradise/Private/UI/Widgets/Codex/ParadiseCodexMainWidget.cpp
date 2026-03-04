@@ -86,7 +86,7 @@ void UParadiseCodexMainWidget::RefreshCodexList()
 
 				if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, CharID))
 				{
-					UIData.Icon = Asset->FaceIcon.LoadSynchronous();
+					UIData.Icon = Asset->BodyIcon.LoadSynchronous();
 				}
 				CodexDataList.Add(UIData);
 			}
@@ -206,7 +206,17 @@ void UParadiseCodexMainWidget::OnClickTabMisc() { SwitchTab(SquadTabs::Misc); }
 
 void UParadiseCodexMainWidget::OnClickBack()
 {
-	// 절대로 RemoveFromParent를 쓰지 않고 이벤트를 발송하여 부모(HUD)가 처리하게 합니다.
+	// 1. 패널 상태 강제 초기화 (다음에 도감을 다시 열 때 무조건 '캐릭터 탭'부터 보이도록 세팅)
+	CurrentTabIndex = -1; // 강제 업데이트를 위해 인덱스 초기화
+	SwitchTab(SquadTabs::Character);
+
+	// 2. 자동 저장
+	if (CachedGI.IsValid())
+	{
+		CachedGI->SaveGameData();
+		UE_LOG(LogTemp, Log, TEXT("💾 [CodexMain] 도감을 닫으며 게임 데이터를 자동 저장합니다."));
+	}
+
 	if (OnBackRequested.IsBound())
 	{
 		OnBackRequested.Broadcast();

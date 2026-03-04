@@ -372,6 +372,8 @@ void UParadiseEnhancePopupWidget::RequestEnhance()
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
 		if (bSuccess) RefreshAfterEnhancement();
 	}
+
+	CachedGI->SaveGameData();
 }
 
 void UParadiseEnhancePopupWidget::RequestBreakthrough()
@@ -387,6 +389,8 @@ void UParadiseEnhancePopupWidget::RequestBreakthrough()
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
 		if (bSuccess) RefreshAfterEnhancement();
 	}
+
+	CachedGI->SaveGameData();
 }
 void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }
@@ -399,6 +403,9 @@ void UParadiseEnhancePopupWidget::HandleClose()
 	{
 		Panel_Detail->ClearDetail();
 	}
+
+	// 뒤로가기 하면 저장
+	CachedGI->SaveGameData();
 
 	// 2. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
 	if (OnBackRequested.IsBound())

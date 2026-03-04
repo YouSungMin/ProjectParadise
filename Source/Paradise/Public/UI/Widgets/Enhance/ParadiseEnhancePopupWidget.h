@@ -116,4 +116,9 @@ private:
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
 	TWeakObjectPtr<UInventorySystem> CachedInventorySys = nullptr;
 #pragma endregion 내부 상태 및 캐싱
+
+private:
+	UPROPERTY()
+	bool bAutoSaveOnBack = true;
+
 };

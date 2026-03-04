@@ -11,6 +11,7 @@ class UButton;
 class UWidgetSwitcher;
 class UParadiseSummonPanel;
 class UTextBlock;
+class UParadiseGameInstance;
 #pragma endregion 전방선언
 
 /**
@@ -99,4 +100,11 @@ private:
 	 */
 	void SwitchTab(int32 NewIndex);
 #pragma endregion 내부 로직
+
+#pragma region 데이터 소스 (약한 참조)
+private:
+	/** @brief 데이터 테이블 접근용 (순환 참조 방지) */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+#pragma endregion 데이터 소스
+
 };
