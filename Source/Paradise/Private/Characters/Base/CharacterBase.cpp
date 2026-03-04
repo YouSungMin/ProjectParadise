@@ -199,19 +199,12 @@ USceneComponent* ACharacterBase::GetWeaponMesh() const
 	return nullptr;
 }
 
-void ACharacterBase::ActivateRagdoll()
+void ACharacterBase::OnDeathAnimationFinished()
 {
 	if (GetMesh())
 	{
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-		GetMesh()->SetSimulatePhysics(true);
-		UE_LOG(LogTemp, Log, TEXT("🦴 래그돌(Ragdoll) 물리 전환 완료"));
+		GetMesh()->bPauseAnims = true;
 	}
-}
-
-void ACharacterBase::OnDeathAnimationFinished()
-{
-	ActivateRagdoll();
 }
 
 void ACharacterBase::BeginPlay()

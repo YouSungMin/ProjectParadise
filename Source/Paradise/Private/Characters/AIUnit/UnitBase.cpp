@@ -189,7 +189,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.DamageEffectClass = InAssets->BasicAttackEffect;
 		BasicAttackData.MontageToPlay = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
 		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
-		CachedDeathMontage = InAssets->DeathMontage.Get();
+		CachedDeathMontage = InAssets->DeathMontage.LoadSynchronous();
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
 		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
 		this->FactionTag = InAssets->FactionTag;
@@ -264,8 +264,6 @@ UAnimMontage* AUnitBase::GetDeathMontage() const
 
 void AUnitBase::OnDeathAnimationFinished()
 {
-	Super::OnDeathAnimationFinished();
-
 	ExecuteReturnToPool();
 }
 
