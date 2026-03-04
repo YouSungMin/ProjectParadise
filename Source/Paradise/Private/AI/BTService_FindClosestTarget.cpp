@@ -55,17 +55,12 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 	{
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestEnemy);
 		BB->SetValueAsFloat(FName("DistanceToTarget"), MinDistance);
+
+		BB->SetValueAsVector(FName("TargetLocation"), ClosestEnemy->GetActorLocation());
 	}
 	else
 	{
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, nullptr);
-
-		AActor* DestBase = Cast<AActor>(BB->GetValueAsObject(FName("EnemyBaseActor")));
-		if (DestBase)
-		{
-			FVector BaseLoc = DestBase->GetActorLocation();
-			BB->SetValueAsVector(FName("TargetLocation"), BaseLoc);
-			BB->SetValueAsVector(FName("MoveLocation"), BaseLoc);
-		}
+		BB->ClearValue(FName("DistanceToTarget"));
 	}
 }
