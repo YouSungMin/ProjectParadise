@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GAS/Abilities/RangeBase.h"
+#include "GAS/Abilities/ProjectileAttackBase.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -9,13 +9,13 @@
 #include "Objects/ProjectileBase.h"
 #include "Characters/Base/CharacterBase.h"
 
-URangeBase::URangeBase()
+UProjectileAttackBase::UProjectileAttackBase()
 {
 	// 기본적으로 감지할 태그 설정
 	FireEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Fire"));
 }
 
-void URangeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
@@ -43,11 +43,11 @@ void URangeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		this, FireEventTag, nullptr, false, false
 	);
 
-	EventTask->EventReceived.AddDynamic(this, &URangeBase::OnGameplayEventReceived);
+	EventTask->EventReceived.AddDynamic(this, &UProjectileAttackBase::OnGameplayEventReceived);
 	EventTask->ReadyForActivation();
 }
 
-void URangeBase::OnGameplayEventReceived(FGameplayEventData Payload)
+void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
 	ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo());
 	if (!AvatarChar) return;

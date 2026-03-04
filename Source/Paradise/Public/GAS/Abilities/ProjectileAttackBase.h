@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GAS/Abilities/BaseGameplayAbility.h"
-#include "RangeBase.generated.h"
+#include "ProjectileAttackBase.generated.h"
 
 /**
  * @class URangeBase
@@ -12,11 +12,11 @@
  * @details 몽타주를 재생하고 이벤트가 발생하면 설정된 ProjectileClass를 스폰합니다.
  */
 UCLASS()
-class PARADISE_API URangeBase : public UBaseGameplayAbility
+class PARADISE_API UProjectileAttackBase : public UBaseGameplayAbility
 {
 	GENERATED_BODY()
 public:
-	URangeBase();
+	UProjectileAttackBase();
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 

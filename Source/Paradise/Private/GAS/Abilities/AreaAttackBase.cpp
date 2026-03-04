@@ -1,18 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GAS/Abilities/MeleeBase.h"
+#include "GAS/Abilities/AreaAttackBase.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Characters/Base/CharacterBase.h"
 
-UMeleeBase::UMeleeBase()
+UAreaAttackBase::UAreaAttackBase()
 {
 	// 기본적으로 감지할 태그 설정
 	HitEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));
 }
 
-void UMeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UAreaAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
@@ -46,11 +46,11 @@ void UMeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		this, HitEventTag, nullptr, false, false
 	);
 
-	EventTask->EventReceived.AddDynamic(this, &UMeleeBase::OnGameplayEventReceived);
+	EventTask->EventReceived.AddDynamic(this, &UAreaAttackBase::OnGameplayEventReceived);
 	EventTask->ReadyForActivation();
 }
 
-void UMeleeBase::OnGameplayEventReceived(FGameplayEventData Payload)
+void UAreaAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
 	// 맞은 대상(Target) 확인
 	AActor* TargetActor = const_cast<AActor*>(Payload.Target.Get());
