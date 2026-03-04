@@ -79,6 +79,10 @@ private:
 	/** @brief 시퀀스 최종 종료 시 호출 */
 	UFUNCTION()
 	void HandleSequenceFinished();
+
+	/** @brief 시퀀스의 이벤트 트랙에서 호출할 함수! 뚜껑이 열리는 순간 발동! */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void EruptGachaItems();
 #pragma endregion 내부 로직
 
 #pragma region 컴포넌트 및 에셋
@@ -92,11 +96,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Sequence")
 	TObjectPtr<ULevelSequence> MultiGachaSequence = nullptr;
 
-	/** @brief 🚨 EItemRarity를 키 값으로 사용하는 머티리얼 맵 */
+	/** @brief 스폰할 구슬(아이템)의 블루프린트 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning")
+	TSubclassOf<class AParadiseGachaItemActor> ItemActorClass;
+
+	/** @brief EItemRarity를 키 값으로 사용하는 머티리얼 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
 	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> BoxMaterialsByRarity;
 
-	/** @brief 🚨 EItemRarity를 키 값으로 사용하는 이펙트 맵 */
+	/** @brief EItemRarity를 키 값으로 사용하는 이펙트 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
 	TMap<EItemRarity, TObjectPtr<UNiagaraSystem>> ClimaxEffectsByRarity;
 #pragma endregion 컴포넌트 및 에셋

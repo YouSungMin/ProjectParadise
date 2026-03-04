@@ -179,3 +179,21 @@ enum class ESocketTargetType : uint8
 	CharacterBody UMETA(DisplayName = "캐릭터 본체 (Character Body)"),
 	EquippedWeapon UMETA(DisplayName = "장착된 무기 (Equipped Weapon)")
 };
+
+/**
+ * @enum EGachaItemState
+ * @brief가챠 연출에서 개별 아이템(구슬/박스)의 현재 연출 상태를 정의합니다.
+ * @details 이 상태에 따라 Tick 연산 활성화 및 터치 이벤트(Reveal) 허용 여부가 결정됩니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaItemState : uint8
+{
+	/** @brief [비행 중] 상자에서 튀어나와 바닥으로 날아가는 궤적 이동 상태 (터치 불가) */
+	Flying		UMETA(DisplayName = "Flying (비행 중)"),
+
+	/** @brief [대기 중] 바닥에 꽂힌 후 아우라를 뿜으며 유저의 터치를 기다리는 상태 (터치 가능) */
+	Landed		UMETA(DisplayName = "Landed (안착 완료)"),
+
+	/** @brief [리빌 완료] 터치되어 폭발 이펙트와 함께 원본(캐릭터 등)이 드러난 상태 */
+	Revealed	UMETA(DisplayName = "Revealed (리빌 완료)")
+};

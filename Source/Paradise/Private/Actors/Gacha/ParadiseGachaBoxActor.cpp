@@ -2,6 +2,7 @@
 
 
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
+#include "Actors/Gacha/ParadiseGachaItemActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "LevelSequence.h"
 #include "LevelSequencePlayer.h"
@@ -141,6 +142,33 @@ void AParadiseGachaBoxActor::HandleSequenceFinished()
 	{
 		//  최종 UI 결과창에 사용자가 만든 완벽한 데이터 구조체를 통째로 전달
 		OnGachaResultScreenRequested.Broadcast(CachedResults);
+	}
+}
+void AParadiseGachaBoxActor::EruptGachaItems()
+{
+	// 1. 이펙트 터뜨리기 (기존 로직)
+	SpawnClimaxEffect();
+
+	if (!ItemActorClass || CachedResults.IsEmpty()) return;
+
+	// 2. 1회 소환용 사출 로직 (일단 위로 퐁! 하고 던짐)
+	FVector SpawnLoc = GetActorLocation() + FVector(0, 0, 50.0f); // 상자 살짝 위
+	FRotator SpawnRot = FRotator::ZeroRotator;
+
+	// 구슬 스폰
+	AParadiseGachaItemActor* SpawnedItem = GetWorld()->SpawnActor<AParadiseGachaItemActor>(ItemActorClass, SpawnLoc, SpawnRot);
+
+	if (SpawnedItem)
+	{
+		// 유저님이 짠 완벽한 데이터 주입 함수 호출! (머티리얼은 일단 임시로 nullptr 처리)
+		SpawnedItem->InitializeItemData(CachedResults[0], nullptr, nullptr);
+
+		// 상자 앞쪽 바닥으로 날아가도록 목표 지점 설정
+		FVector TargetLoc = GetActorLocation() + GetActorForwardVector() * 150.0f;
+		TargetLoc.Z = GetActorLocation().Z; // 바닥 높이
+
+		// 1초 동안 높이 200만큼 튀어오르며 날아감
+		SpawnedItem->LaunchToTarget(TargetLoc, 1.0f, 200.0f);
 	}
 }
 #pragma endregion 내부 유틸리티 및 이펙트 로직
