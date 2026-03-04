@@ -267,6 +267,25 @@ void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
 	}
 }
 
+void ALobbyPlayerController::CheatAddAwakeningPiece(FName CharacterID, int32 Count)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvSys = GI->GetMainInventory())
+		{
+			// 1. 캐릭터가 인벤토리에 없으면 먼저 지급 (조각만 받을 순 없으니)
+			if (!InvSys->HasCharacter(CharacterID))
+			{
+				InvSys->AddCharacter(CharacterID);
+			}
+
+			// 2. 조각 개수 추가
+			InvSys->AddAwakeningPiece(CharacterID, Count);
+			UE_LOG(LogTemp, Warning, TEXT("🧩 [Cheat] %s 캐릭터의 각성 조각 %d개 획득!"), *CharacterID.ToString(), Count);
+		}
+	}
+}
+
 void ALobbyPlayerController::CheatGrantAll()
 {
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());

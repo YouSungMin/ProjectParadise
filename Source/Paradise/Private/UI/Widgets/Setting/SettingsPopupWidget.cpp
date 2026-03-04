@@ -15,7 +15,7 @@ void USettingsPopupWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	bIsFocusable = true; // 키보드/마우스 입력을 온전히 받을 수 있도록 설정
+	SetIsFocusable(true); // 키보드/마우스 입력을 온전히 받을 수 있도록 설정
 
 	/** @section 1. AudioSettingsSubsystem 캐싱 */
 	if (UGameInstance* GI = GetGameInstance())

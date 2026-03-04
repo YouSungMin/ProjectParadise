@@ -57,6 +57,9 @@ public:
 	UFUNCTION(Exec)
 	void CheatEnhanceEquipment(FName ItemID);
 
+	UFUNCTION(Exec)
+	void CheatAddAwakeningPiece(FName CharacterID, int32 Count);
+
 	//모든 아이템, 캐릭터, 퍼밀리어, 돈을 얻는 치트
 	UFUNCTION(Exec)
 	void CheatGrantAll();
