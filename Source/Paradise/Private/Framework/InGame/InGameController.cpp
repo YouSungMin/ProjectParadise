@@ -7,6 +7,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
 #include "AI/Squad/SquadAIController.h"
+#include "Components/FamiliarSummonComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -85,7 +86,41 @@ void AInGameController::SetAutoBattleMode(bool bEnable)
     UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
     UpdateCameraSystem(); //카메라시점 전체시점으로 변경
 
-    //TODO: 이 아래에 자동모드 AI 전환 함수 구현
+    if (bIsAutoMode)
+    {
+        // 자동 모드가 켜지면 0.5초마다 CheckAndAutoSummon 무한 반복 실행
+        GetWorld()->GetTimerManager().SetTimer(AutoSummonTimerHandle, this, &AInGameController::CheckAndAutoSummon, 0.5f, true);
+    }
+    else
+    {
+        // 자동 모드가 꺼지면 타이머를 즉시 해제하여 소환 중지
+        GetWorld()->GetTimerManager().ClearTimer(AutoSummonTimerHandle);
+    }
+}
+
+void AInGameController::CheckAndAutoSummon()
+{
+    // 자동모드가 아니라면 진행X
+    if (!bIsAutoMode) return;
+
+    // PlayerState 가져오기 (소환 컴포넌트 가져오기위함)
+    AInGamePlayerState* PS = GetPlayerState<AInGamePlayerState>();
+    if (!PS) return;
+
+    // PlayerState에 있는 소환 컴포넌트 획득
+    UFamiliarSummonComponent* SummonComp = PS->FindComponentByClass<UFamiliarSummonComponent>();
+    if (SummonComp)
+    {
+        //맨 왼쪽(0번 인덱스) 슬롯 구매 요청
+        //(내부에서 코스트 체크를 알아서 해주므로, 돈이 없으면 조용히 false를 반환하고 끝납니다.)
+        bool bSuccess = SummonComp->RequestPurchase(0);
+
+        // 돈이 모여서 성공적으로 뽑았다면 로그 출력!
+        if (bSuccess)
+        {
+            UE_LOG(LogTemp, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
+        }
+    }
 }
 
 void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
