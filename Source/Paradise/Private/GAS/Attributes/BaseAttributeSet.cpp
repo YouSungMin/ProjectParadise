@@ -95,26 +95,33 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			const float NewHealth = GetHealth() - LocalDamage;
 			SetHealth(NewHealth);
 
-			// 로그 출력
-			AActor* MyOwner = GetOwningActor();
-			FString OwnerName = MyOwner ? MyOwner->GetName() : TEXT("Unknown");
-			UE_LOG(LogTemp, Log, TEXT("[%s] HP 변경 : %.2f"), *OwnerName, NewHealth);
+			// 1. 타겟 액터가 누구인지 확인
+			AActor* TargetActor = Data.Target.GetAvatarActor();
+			UE_LOG(LogTemp, Warning, TEXT("===================================="));
+			UE_LOG(LogTemp, Warning, TEXT("🩸 [데미지 판정] 타겟 액터: %s, 남은 HP: %.2f"), TargetActor ? *TargetActor->GetName() : TEXT("Null"), NewHealth);
 
-			if (NewHealth <= 0.0f)
+			// 2. 캐릭터 베이스로 캐스팅 시도
+			if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
 			{
-				// 데이터(Effect)의 대상(Target) 액터를 가져옴
-				AActor* TargetActor = Data.Target.GetAvatarActor();
-
-				// 캐릭터 베이스로 캐스팅해서 Die() 호출
-				if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
+				if (NewHealth <= 0.0f)
 				{
-					// 이미 죽어있지 않을 때만 죽음 처리 (중복 사망 방지)
+					UE_LOG(LogTemp, Warning, TEXT("💀 [데미지 판정] 타겟 사망! -> Die() 호출"));
 					if (!Character->IsDead())
 					{
 						Character->Die();
 					}
 				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("🎯 [데미지 판정] 타겟 생존! -> PlayHitReaction() 호출 시도!"));
+					Character->PlayHitReaction();
+				}
 			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [데미지 판정] 타겟 액터를 ACharacterBase로 캐스팅 실패!"));
+			}
+			UE_LOG(LogTemp, Warning, TEXT("===================================="));
 		}
 	}
 }

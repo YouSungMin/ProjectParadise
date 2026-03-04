@@ -47,10 +47,10 @@ struct FReactionFXSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
 	TSoftObjectPtr<class UFXDataAsset> ReactionFXData; // 피격음, 피 튀기는 이펙트 등
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "Effect.Hit"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag HitTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "Effect.Death"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag DeathTag;
 };
 
@@ -66,25 +66,9 @@ struct FActionFXSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
 	TSoftObjectPtr<class UFXDataAsset> ActionFXData; // 무기 휘두르는 소리, 검기 이펙트 등
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "Effect.Attack"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag BasicAttackTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "Effect.Skill"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag SkillTag;
-};
-
-/**
- * @struct FReactionFXSettings
- * @brief 궁극기 전용, FX, Tags
- */
-USTRUCT(BlueprintType)
-struct FUltimateFXSettings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
-	TSoftObjectPtr<class UFXDataAsset> UltimateFXData;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "Effect.Ultimate"))
-	FGameplayTag UltimateTag;
 };

@@ -374,7 +374,7 @@ public:
 	TMap<EWeaponType, FWeaponAnimSet> WeaponAnimMap;
 
 	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
 	FGameplayTag UltimateEffectTag;
 };
 

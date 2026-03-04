@@ -54,6 +54,9 @@ public:
 
 	/** @brief 부모의 가상 함수 오버라이드 */
 	virtual UAnimMontage* GetDeathMontage() const override;
+
+	/** @brief 부모의 가상 함수 오버라이드 */
+	virtual UAnimMontage* GetHitMontage() const override;
 protected:
 	// 사망 애니메이션 종료 시 호출됨
 	virtual void OnDeathAnimationFinished() override;
@@ -86,8 +89,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FActionFXSettings CachedActionFX;
 
+	/** @brief 사망 몽타주 캐싱 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	TObjectPtr<UAnimMontage> CachedDeathMontage = nullptr;
+
+	/** @brief 피격 몽타주 캐싱 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TObjectPtr<UAnimMontage> CachedHitMontage = nullptr;
 
 	// =========================================================
 	// GAS Handles (어빌리티 관리)
