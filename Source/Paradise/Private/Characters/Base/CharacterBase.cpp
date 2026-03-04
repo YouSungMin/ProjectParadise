@@ -121,8 +121,8 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			// 피아 식별 (이미 위에서 HitChar를 구했으므로 바로 사용)
 			if (!IsHostile(HitChar))
 			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [CheckHit] 아군 판정되어 무시합니다! (내 태그: %s vs 적 태그: %s)"),
-					*this->FactionTag.ToString(), *HitChar->FactionTag.ToString());
+				//UE_LOG(LogTemp, Error, TEXT("❌ [CheckHit] 아군 판정되어 무시합니다! (내 태그: %s vs 적 태그: %s)"),
+				//	*this->FactionTag.ToString(), *HitChar->FactionTag.ToString());
 				continue;
 			}
 
@@ -199,6 +199,37 @@ USceneComponent* ACharacterBase::GetWeaponMesh() const
 	return nullptr;
 }
 
+void ACharacterBase::PlayHitReaction()
+{
+	PlayHitFlash(); // 매쉬 빨개지기 (이건 정상 작동하는지 눈으로 확인)
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [%s] AnimInstance를 찾을 수 없습니다!"), *GetName());
+		return;
+	}
+
+	// 1. 슈퍼아머(다른 몽타주 재생 중) 체크
+	if (AnimInst->IsAnyMontagePlaying())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
+		return;
+	}
+
+	// 2. 피격 몽타주 데이터 확인
+	UAnimMontage* HitMontage = GetHitMontage();
+	if (!HitMontage)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [%s] HitMontage가 Null입니다! (데이터 테이블이나 캐싱 코드 확인 필요)"), *GetName());
+		return;
+	}
+
+	// 3. 정상 재생 명령
+	UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
+	AnimInst->Montage_Play(HitMontage);
+}
+
 void ACharacterBase::OnDeathAnimationFinished()
 {
 	if (GetMesh())
@@ -263,7 +294,7 @@ void ACharacterBase::PlayHitFlash()
 		MyMesh->SetCustomPrimitiveDataFloat(4, 100.0f);
 	}
 
-	//3초후 이펙트 리셋 함수호출
+	// HitResetTime 후 이펙트 리셋 함수호출
 	GetWorldTimerManager().SetTimer(
 		HitEffectTimerHandle,
 		this,

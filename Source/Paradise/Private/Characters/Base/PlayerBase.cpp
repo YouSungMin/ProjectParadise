@@ -333,3 +333,13 @@ UAnimMontage* APlayerBase::GetDeathMontage() const
     return nullptr; // 데이터가 없으면 예외처리
 }
 
+UAnimMontage* APlayerBase::GetHitMontage() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        return LinkedPlayerData->GetHitMontage();
+    }
+
+    return nullptr;
+}
+

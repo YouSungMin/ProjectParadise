@@ -190,6 +190,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.MontageToPlay = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
 		BasicAttackData.ProjectileClass = InAssets->ProjectileClass;
 		CachedDeathMontage = InAssets->DeathMontage.LoadSynchronous();
+		CachedHitMontage = InAssets->HitMontage.LoadSynchronous();
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
 		CachedActionFX = InAssets->ActionFX;     // 공격 연출 블록 캐싱
 		this->FactionTag = InAssets->FactionTag;
@@ -260,6 +261,11 @@ void AUnitBase::PlayRangeAttack()
 UAnimMontage* AUnitBase::GetDeathMontage() const
 {
 	return CachedDeathMontage;
+}
+
+UAnimMontage* AUnitBase::GetHitMontage() const
+{
+	return CachedHitMontage;
 }
 
 void AUnitBase::OnDeathAnimationFinished()

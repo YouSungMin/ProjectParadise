@@ -200,6 +200,7 @@ void APlayerData::InitPlayerAssets()
 
 	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 	this->CachedDeathMontage = Assets->DeathMontage.LoadSynchronous();
+	this->CachedHitMontage = Assets->HitMontage.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
 	this->FactionTag = Assets->FactionTag;
 	this->CachedReactionFX = Assets->ReactionFX;

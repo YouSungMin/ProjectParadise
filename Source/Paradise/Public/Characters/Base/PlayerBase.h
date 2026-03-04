@@ -114,6 +114,8 @@ public:
 	/** @brief 사망 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
 	virtual UAnimMontage* GetDeathMontage() const override;
 
+	/** @brief 피격 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual UAnimMontage* GetHitMontage() const override;
 protected:
 
 	/*
