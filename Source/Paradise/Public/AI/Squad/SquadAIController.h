@@ -30,17 +30,17 @@ protected:
 private:
 	// AI 에셋
 	UPROPERTY(EditAnywhere, Category = "AI")
-	class UBehaviorTree* BTAsset;
+	TObjectPtr<class UBehaviorTree> BTAsset = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
-	class UBlackboardData* BBAsset;
+	TObjectPtr<class UBlackboardData> BBAsset=nullptr;
 
 	// 시야 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent* AIPerception;
+	TObjectPtr<class UAIPerceptionComponent> AIPerception = nullptr;
 
 	UPROPERTY()
-	class UAISenseConfig_Sight* SightConfig;
+	TObjectPtr<class UAISenseConfig_Sight> SightConfig = nullptr;
 
 	// 타겟 감지 이벤트
 	UFUNCTION()

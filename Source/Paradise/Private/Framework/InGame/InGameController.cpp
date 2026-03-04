@@ -6,6 +6,7 @@
 #include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/SquadSubsystem.h" //디버그함수때문에 추가 이후 삭제
+#include "AI/Squad/SquadAIController.h"
 #include "Components/EquipmentComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -124,6 +125,19 @@ void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
     if (OldPlayer)
     {
         PossessAI(OldPlayer);
+    }
+
+    //스위치(전환)한 캐릭터를 리더로 Set
+    for (APlayerBase* Member : ActiveSquadPawns)
+    {
+        // 빈 슬롯이 아니고, 현재 내가 직접 조종하게 된 캐릭터가 아닌 애들(AI)만 타겟
+        if (Member && Member != NewPlayer)
+        {
+            if (ASquadAIController* SquadAI = Cast<ASquadAIController>(Member->GetController()))
+            {
+                SquadAI->SetLeader(NewPlayer);
+            }
+        }
     }
 
     // 로그
@@ -437,6 +451,13 @@ void AInGameController::PossessAI(APlayerBase* TargetCharacter)
     {
         //빙의 (OnPossess가 호출되면서 비헤이비어 트리가 실행됨)
         NewAI->Possess(TargetCharacter);
+
+        //현재 조종중인 캐릭터를 리더로 Set
+        if (ASquadAIController* SquadAI = Cast<ASquadAIController>(NewAI))
+        {
+            SquadAI->SetLeader(GetPawn()); // 현재 플레이어의 폰 전달
+        }
+
         UE_LOG(LogTemp, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
     }
 }

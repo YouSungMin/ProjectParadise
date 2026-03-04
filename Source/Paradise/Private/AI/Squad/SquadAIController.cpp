@@ -2,8 +2,10 @@
 
 
 #include "AI/Squad/SquadAIController.h"
+#include "Characters/AIUnit/UnitBase.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "GameplayTagContainer.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Characters/Base/PlayerBase.h"
@@ -21,17 +23,14 @@ ASquadAIController::ASquadAIController()
 		SightConfig->LoseSightRadius = 1200.f; // 시야에서 놓치는 반경
 		SightConfig->PeripheralVisionAngleDegrees = 180.f; // 360도 전방위 감지
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-		SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = false; // 아군은 기본 무시
 
 		AIPerception->ConfigureSense(*SightConfig);
 		AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 	}
 
-	if (AIPerception)
-	{
-		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &ASquadAIController::OnTargetDetected);
-	}
+	
 }
 
 void ASquadAIController::SetLeader(AActor* CurrentLeaderActor)
@@ -46,6 +45,11 @@ void ASquadAIController::SetLeader(AActor* CurrentLeaderActor)
 void ASquadAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	if (AIPerception)
+	{
+		UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] AIPerception 바인딩 성공"));
+		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &ASquadAIController::OnTargetDetected);
+	}
 
 	UBlackboardComponent* BBComp = Blackboard.Get();
 	if (BTAsset && BBAsset && UseBlackboard(BBAsset, BBComp))
@@ -63,6 +67,8 @@ void ASquadAIController::OnPossess(APawn* InPawn)
 
 void ASquadAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 {
+	UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 적 발견!"));
+
 	if (!Blackboard || !Actor) return;
 
 	// 리더(플레이어)이거나 자기 자신이면 타겟팅 무시
@@ -73,11 +79,23 @@ void ASquadAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		// TODO: Actor가 적인지(Enemy 태그나 인터페이스 확인) 판별하는 로직 추가
-		// 예: if (Actor->ActorHasTag(TEXT("Enemy")))
+		UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] Stimulus : 적 발견!"));
+		// 감지된 액터가 유닛(몬스터/퍼밀리어 등)인지 확인
+		AUnitBase* TargetUnit = Cast<AUnitBase>(Actor);
+		if (TargetUnit)
+		{
+			//타겟의 진영 태그 가져오기 
+			FGameplayTag TargetFaction = TargetUnit->GetFactionTag();
 
-		// 적이라면 전투 타겟으로 설정
-		Blackboard->SetValueAsObject(FName("TargetEnemy"), Actor);
+			//적인지 판별
+			FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+			if (TargetFaction.MatchesTag(EnemyTag))
+			{
+				Blackboard->SetValueAsObject(FName("TargetEnemy"), Actor);
+				UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 적 발견! 타겟 설정: %s (태그: %s)"), *Actor->GetName(), *TargetFaction.ToString());
+			}
+
+		}
 	}
 	else
 	{
