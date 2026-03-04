@@ -79,22 +79,33 @@ void ASquadAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] Stimulus : 적 발견!"));
-		// 감지된 액터가 유닛(몬스터/퍼밀리어 등)인지 확인
 		AUnitBase* TargetUnit = Cast<AUnitBase>(Actor);
 		if (TargetUnit)
 		{
-			//타겟의 진영 태그 가져오기 
 			FGameplayTag TargetFaction = TargetUnit->GetFactionTag();
-
-			//적인지 판별
 			FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+
 			if (TargetFaction.MatchesTag(EnemyTag))
 			{
-				Blackboard->SetValueAsObject(FName("TargetEnemy"), Actor);
-				UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 적 발견! 타겟 설정: %s (태그: %s)"), *Actor->GetName(), *TargetFaction.ToString());
-			}
+				//이미 블랙보드에 저장된 타겟이 있는지 확인
+				AActor* CurrentTarget = Cast<AActor>(Blackboard->GetValueAsObject(FName("TargetEnemy")));
 
+				//기존 타겟이 존재하고, 그 타겟이 방금 새로 감지된 액터와 다르다면
+				if (CurrentTarget && CurrentTarget != Actor)
+				{
+					AUnitBase* CurrentTargetUnit = Cast<AUnitBase>(CurrentTarget);
+
+					//기존 타겟이 아직 살아있다면, 새 타겟으로 바꾸지 않고 무시
+					if (CurrentTargetUnit && !CurrentTargetUnit->IsDead())
+					{
+						return;
+					}
+				}
+
+				// 기존 타겟이 없거나, 죽었을 때만 새로운 타겟을 설정
+				Blackboard->SetValueAsObject(FName("TargetEnemy"), Actor);
+				UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 새로운 타겟 고정: %s"), *Actor->GetName());
+			}
 		}
 	}
 	else
