@@ -188,7 +188,38 @@ void UParadiseCodexMainWidget::RefreshCodexList()
 		}
 		break;
 	case SquadTabs::Misc:
-		// 기타 아이템 데이터 테이블이 추가되면 위 패턴을 복사하여 적용합니다.
+		// 1. 캐릭터 조각(Awakening Pieces) 도감 로드
+		if (UDataTable* DT = CachedGI->CharacterStatsDataTable)
+		{
+			for (const auto& RowMap : DT->GetRowMap())
+			{
+				FName CharID = RowMap.Key;
+
+				FSquadItemUIData UIData;
+				UIData.ID = CharID;
+				// 이름 뒤에 '조각'을 붙여서 명확하게 구분해줍니다.
+				UIData.Name = FText::Format(FText::FromString(TEXT("{0} 조각")), FText::FromName(CharID));
+				UIData.Level = 0;
+				UIData.Quantity = 0; // 도감 화면이므로 수량 텍스트 숨김을 위해 0으로 세팅 (WBP_MiscSlot 로직에 따름)
+				UIData.Rarity = EItemRarity::Common; // 조각은 보통 공통 등급 테두리를 쓰거나 별도 처리
+
+				// 인벤토리 캐릭터 데이터가 있고, 그 캐릭터의 조각(AwakeningPieces)이 1개 이상일 때 '보유(Owned)' 처리!
+				const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharID);
+				UIData.bIsOwned = (CharData != nullptr && CharData->AwakeningPieces > 0);
+
+				if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, CharID))
+				{
+					// 방금 추가하신 돌파 재화 아이콘을 들고 옵니다.
+					UIData.Icon = Asset->AwakeningPieceIcon.LoadSynchronous();
+				}
+
+				// 방어 코드: 에셋 테이블에 아직 조각 아이콘을 안 넣은 캐릭터가 있을 수 있으니, 아이콘이 유효할 때만 리스트에 넣습니다.
+				if (UIData.Icon)
+				{
+					CodexDataList.Add(UIData);
+				}
+			}
+		}
 		break;
 	}
 
