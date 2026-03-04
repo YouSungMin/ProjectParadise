@@ -44,12 +44,15 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 			{
 				if (UNiagaraSystem* LoadedNiagara = Payload->VisualEffect.LoadSynchronous())
 				{
+					FVector RotatedOffset = HitRotation.RotateVector(Payload->LocationOffset);
+					FVector FinalLocation = HitLocation + RotatedOffset;
+
 					UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 						MyTarget,
 						LoadedNiagara,
-						HitLocation + Payload->LocationOffset, // 오프셋 적용
+						FinalLocation,	// 오프셋 적용
 						HitRotation,
-						Payload->Scale                         // 스케일 적용
+						Payload->Scale	// 스케일 적용
 					);
 				}
 			}

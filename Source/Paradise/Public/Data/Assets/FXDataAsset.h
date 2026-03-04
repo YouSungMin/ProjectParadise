@@ -19,7 +19,7 @@ class PARADISE_API UFXDataAsset : public UDataAsset
 	
 public:
     // 태그 : 이펙트 매핑
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data", meta = (Categories = "Effect, State"))
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data", meta = (Categories = "FX"))
     TMap<FGameplayTag, FFXPayload> EffectMap;
 
     // 검색 함수
