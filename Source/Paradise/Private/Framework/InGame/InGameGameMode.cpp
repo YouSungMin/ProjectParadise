@@ -37,7 +37,10 @@ void AInGameGameMode::BeginPlay()
 
 	//0223 김성현 - 스테이지 연결 초기화 로직 연결
 	//서브시스템에서 아까 골랐던 스테이지 ID Get 
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+
+	if (GI)
 	{
 		if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
 		{
@@ -64,12 +67,35 @@ void AInGameGameMode::BeginPlay()
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
 	}
 		
-	//전투 시작 전, 데미지 텍스트 미리 넣기
-	if (DamageTextClass)
+	// 최적화 - 사전 풀링
+	if (UObjectPoolSubsystem* PoolSystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
 	{
-		if (UObjectPoolSubsystem* PoolSystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
+		// 1. 공통 에셋: 데미지 텍스트 미리 생성
+		if (DamageTextClass)
 		{
-			//PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
+			PoolSystem->PreSpawnPool(DamageTextClass, GetWorld(), PreSpawnDamageTextCount);
+		}
+
+		// 2. 특수 에셋: 로딩창에서 프리로드한 데이터 장전
+		if (GI && !TargetStageToPlay.IsNone())
+		{
+			if (FStageAssets* Assets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, TargetStageToPlay))
+			{
+				for (const TSoftObjectPtr<UObject>& SoftObj : Assets->ExtraPreloadAssets)
+				{
+					// 로딩 화면에서 이미 RAM에 올렸으므로 Get()을 써도 디스크 I/O 렉이 없습니다!
+					if (UClass* PreloadedClass = Cast<UClass>(SoftObj.Get()))
+					{
+						// 해당 클래스가 월드에 스폰 가능한 Actor인지 확인
+						if (PreloadedClass->IsChildOf(AActor::StaticClass()))
+						{
+							// 보스나 무거운 이펙트를 풀에 1개 미리 만들어 둡니다. (필요 시 개수 조절)
+							PoolSystem->PreSpawnPool(PreloadedClass, GetWorld(), 1);
+							UE_LOG(LogTemp, Log, TEXT("✅ [ObjectPool] 프리로드 에셋 장전 완료: %s"), *PreloadedClass->GetName());
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -78,7 +104,6 @@ void AInGameGameMode::BeginPlay()
 
 	//게임 시작 상태 Ready로 설정
 	SetGamePhase(EGamePhase::Combat);
-
 	
 }
 

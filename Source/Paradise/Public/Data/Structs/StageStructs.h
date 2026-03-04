@@ -107,6 +107,13 @@ public:
 	/** @brief 환경음 (바람 소리 등, 선택 사항) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
 	TSoftObjectPtr<USoundBase> AmbienceSound;
+
+	/**
+	 * @brief 이 스테이지 진입 전 로딩 화면에서 미리 메모리(RAM)에 올릴 무거운 특수 에셋들
+	 * @details 보스 몬스터 클래스, 거대 파티클(Niagara) 이펙트 등을 여기에 등록하면 인게임 진입 렉(Hitch)을 방지합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Optimization")
+	TArray<TSoftObjectPtr<UObject>> ExtraPreloadAssets;
 };
 
 /**

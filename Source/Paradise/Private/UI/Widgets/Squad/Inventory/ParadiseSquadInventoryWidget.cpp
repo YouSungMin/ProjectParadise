@@ -39,6 +39,10 @@ void UParadiseSquadInventoryWidget::UpdateList(int32 TabIndex, const TArray<FSqu
 		TargetWrap = Wrap_Unit;
 		TargetSlotClass = UnitSlotClass;
 		break;
+	case SquadTabs::Misc: // 기타 탭
+		TargetWrap = Wrap_Misc;
+		TargetSlotClass = MiscSlotClass;
+		break;
 	}
 
 	// 3. 방어 코드: WrapBox나 슬롯 클래스가 할당되지 않았으면 즉시 중단

@@ -49,6 +49,24 @@ void UParadiseItemSlot::UpdateSlot(const FSquadItemUIData& InData)
 	{
 		Img_EquippedMark->SetVisibility(InData.bIsEquipped ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+
+	// 보유 여부에 따른 상태 변경 (도감용)
+	if (!InData.bIsOwned)
+	{
+		// 아이콘을 흑백/어둡게 (블러 느낌)
+		if (Img_Icon) Img_Icon->SetColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.15f, 0.9f));
+		if (Img_RankBorder) Img_RankBorder->SetColorAndOpacity(FLinearColor(0.3f, 0.3f, 0.3f, 1.0f));
+
+		// 터치(클릭) 원천 차단
+		if (Btn_Select) Btn_Select->SetIsEnabled(false);
+	}
+	else
+	{
+		// 보유한 아이템이면 정상 색상 및 클릭 활성화
+		if (Img_Icon) Img_Icon->SetColorAndOpacity(FLinearColor::White);
+		if (Img_RankBorder) Img_RankBorder->SetColorAndOpacity(FLinearColor::White); // 틴트 초기화
+		if (Btn_Select) Btn_Select->SetIsEnabled(true);
+	}
 }
 
 void UParadiseItemSlot::OnButtonClicked()

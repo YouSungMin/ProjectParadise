@@ -13,15 +13,17 @@ void UParadiseEquipmentSlot::UpdateSlot(const FSquadItemUIData& InData)
 	// 2. 장비 고유 로직: 강화 수치(레벨) 처리
 	if (Text_Level)
 	{
-		if (InData.Level > 0)
+		// 도감에서는 레벨을 0으로 넘겨줄 것이므로 자동으로 숨겨집니다.
+		if (InData.Level <= 0 || !InData.bIsOwned)
 		{
-			// 장비 특성에 맞춰 +기호 표기
-			Text_Level->SetText(FText::Format(FText::FromString(TEXT("+{0}")), InData.Level));
-			Text_Level->SetVisibility(ESlateVisibility::HitTestInvisible);
+			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		else
 		{
-			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
+			// 장비는 "+1" 스타일로 표기하는 것이 일반적입니다.
+			FString EnhanceString = FString::Printf(TEXT("+%d"), InData.Level);
+			Text_Level->SetText(FText::FromString(EnhanceString));
+			Text_Level->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 	}
 }

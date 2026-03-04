@@ -66,6 +66,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWrapBox> Wrap_Unit = nullptr;
+
+	/** @brief 기타 아이템 리스트 랩박스 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWrapBox> Wrap_Misc = nullptr;
 #pragma endregion UI 바인딩
 
 #pragma region 슬롯 설정 데이터 (Config)
@@ -81,6 +85,10 @@ protected:
 	/** @brief 유닛 탭에 표시할 전용 슬롯 클래스 */
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
 	TSubclassOf<UParadiseUnitSlot> UnitSlotClass = nullptr;
+
+	/** @brief 기타 탭에 표시할 전용 슬롯 클래스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
+	TSubclassOf<UParadiseItemSlot> MiscSlotClass = nullptr;
 #pragma endregion 슬롯 설정 데이터 (Config)
 
 #pragma region 이벤트 델리게이트
