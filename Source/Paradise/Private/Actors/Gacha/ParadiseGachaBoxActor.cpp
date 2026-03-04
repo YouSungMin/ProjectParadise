@@ -146,29 +146,58 @@ void AParadiseGachaBoxActor::HandleSequenceFinished()
 }
 void AParadiseGachaBoxActor::EruptGachaItems()
 {
-	// 1. 이펙트 터뜨리기 (기존 로직)
+	// 1. 최고 등급 이펙트 터뜨리기 (상자 열릴 때 번쩍!)
 	SpawnClimaxEffect();
 
 	if (!ItemActorClass || CachedResults.IsEmpty()) return;
 
-	// 2. 1회 소환용 사출 로직 (일단 위로 퐁! 하고 던짐)
-	FVector SpawnLoc = GetActorLocation() + FVector(0, 0, 50.0f); // 상자 살짝 위
-	FRotator SpawnRot = FRotator::ZeroRotator;
+	int32 ItemCount = CachedResults.Num();
+	FVector BoxLoc = GetActorLocation();
 
-	// 구슬 스폰
-	AParadiseGachaItemActor* SpawnedItem = GetWorld()->SpawnActor<AParadiseGachaItemActor>(ItemActorClass, SpawnLoc, SpawnRot);
-
-	if (SpawnedItem)
+	// 2. 배열에 들어있는 개수만큼(1개 or 10개) 구슬을 생성해서 던집니다.
+	for (int32 i = 0; i < ItemCount; ++i)
 	{
-		// 유저님이 짠 완벽한 데이터 주입 함수 호출! (머티리얼은 일단 임시로 nullptr 처리)
-		SpawnedItem->InitializeItemData(CachedResults[0], nullptr, nullptr);
+		// 상자 바로 위에서 스폰
+		FVector SpawnLoc = BoxLoc + FVector(0, 0, 50.0f);
+		AParadiseGachaItemActor* SpawnedItem = GetWorld()->SpawnActor<AParadiseGachaItemActor>(ItemActorClass, SpawnLoc, FRotator::ZeroRotator);
 
-		// 상자 앞쪽 바닥으로 날아가도록 목표 지점 설정
-		FVector TargetLoc = GetActorLocation() + GetActorForwardVector() * 150.0f;
-		TargetLoc.Z = GetActorLocation().Z; // 바닥 높이
+		if (SpawnedItem)
+		{
+			// 1. 방금 뽑힌 이 구슬의 등급(Rarity)에 맞는 실루엣 머티리얼을 맵에서 찾습니다.
+			UMaterialInstance* TargetSilhouetteMat = nullptr;
+			if (TObjectPtr<UMaterialInstance>* MatPtr = SilhouetteMaterialsByRarity.Find(CachedResults[i].PulledRarity))
+			{
+				TargetSilhouetteMat = *MatPtr;
+			}
 
-		// 1초 동안 높이 200만큼 튀어오르며 날아감
-		SpawnedItem->LaunchToTarget(TargetLoc, 1.0f, 200.0f);
+			// ★ 핵심: 찾은 실루엣 머티리얼을 구슬에게 주입! (진짜 캐릭터 머티리얼은 일단 nullptr)
+			SpawnedItem->InitializeItemData(CachedResults[i], TargetSilhouetteMat, nullptr);
+
+			FVector TargetLoc = BoxLoc;
+
+			if (ItemCount == 1)
+			{
+				// 단건 소환: 상자 바로 앞쪽으로 툭 던짐
+				TargetLoc += GetActorForwardVector() * 200.0f;
+			}
+			else
+			{
+				// 10연차 소환: 360도를 10등분하여 둥글게(방사형) 흩뿌림
+				float AngleDegrees = (360.0f / ItemCount) * i;
+				float Radius = 350.0f; // 퍼지는 원의 반지름 넓이
+
+				// 삼각함수(Cos, Sin)를 이용한 원형 좌표 계산
+				TargetLoc.X += FMath::Cos(FMath::DegreesToRadians(AngleDegrees)) * Radius;
+				TargetLoc.Y += FMath::Sin(FMath::DegreesToRadians(AngleDegrees)) * Radius;
+			}
+
+			TargetLoc.Z = BoxLoc.Z; // 바닥 높이 유지
+
+			// 3. 구슬에게 목표 지점으로 날아가라고 명령!
+			// 약간의 시간차(FMath::RandRange)를 주면 더 자연스럽게 흩뿌려집니다.
+			float RandomFlightTime = FMath::RandRange(0.8f, 1.2f);
+			SpawnedItem->LaunchToTarget(TargetLoc, RandomFlightTime, 250.0f);
+		}
 	}
 }
 #pragma endregion 내부 유틸리티 및 이펙트 로직

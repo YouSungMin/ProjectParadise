@@ -113,9 +113,12 @@ void AParadiseGachaItemActor::RevealItem()
 	}
 
 	// 2. 펑! 터지는 리빌 파티클 및 사운드 재생
-	if (RevealVFX)
+	if (TObjectPtr<UNiagaraSystem>* FxPtr = RevealVFXByRarity.Find(CachedItemData.PulledRarity))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), RevealVFX, GetActorLocation(), GetActorRotation());
+		if (FxPtr && *FxPtr)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
+		}
 	}
 	if (RevealSound)
 	{

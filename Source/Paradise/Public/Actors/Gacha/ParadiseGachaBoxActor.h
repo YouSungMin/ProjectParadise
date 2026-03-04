@@ -107,6 +107,10 @@ protected:
 	/** @brief EItemRarity를 키 값으로 사용하는 이펙트 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
 	TMap<EItemRarity, TObjectPtr<UNiagaraSystem>> ClimaxEffectsByRarity;
+
+	/** @brief EItemRarity를 키 값으로 사용하는 미확인 구슬(실루엣) 머티리얼 맵 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
+	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> SilhouetteMaterialsByRarity;
 #pragma endregion 컴포넌트 및 에셋
 
 #pragma region 내부 상태

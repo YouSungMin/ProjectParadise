@@ -90,9 +90,9 @@ protected:
 
 #pragma region 시각 효과 데이터 
 protected:
-	/** @brief 터치 시 터지는 파티클 (데이터 주도적 설계를 위해 BP에서 할당) */
+	// 단일 이펙트가 아니라, 등급(Rarity)별로 다른 파티클을 맵핑합니다!
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Visuals")
-	TObjectPtr<UNiagaraSystem> RevealVFX = nullptr;
+	TMap<EItemRarity, TObjectPtr<UNiagaraSystem>> RevealVFXByRarity;
 
 	/** @brief 터치 시 재생될 사운드 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Visuals")
