@@ -79,7 +79,7 @@ void AMyAIController::OnPossess(APawn* InPawn)
 
                     if (bIsEnemyResult)
                     {
-                        Blackboard->SetValueAsObject(TEXT("HomeBaseActor"), HomeBase);
+                        Blackboard->SetValueAsObject(TEXT("EnemyBaseActor"), HomeBase);
                         UE_LOG(LogTemp, Error, TEXT("🚀 [%s] 타겟 확정! 공격하러 갑니다 -> %s"), *SelfUnit->GetName(), *HomeBase->GetName());
                         break; // 타겟을 찾았으니 루프 종료
                     }
