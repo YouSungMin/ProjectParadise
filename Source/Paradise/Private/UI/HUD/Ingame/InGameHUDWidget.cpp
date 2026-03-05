@@ -91,6 +91,13 @@ void UInGameHUDWidget::NativeConstruct()
 						Btn_AutoMode->SetButtonIcon(Tex_AutoModeOff);
 					}
 
+					// 눌림 이미지 없이 Normal 하나만 주입!
+					if (Btn_Setting)
+					{
+						Btn_Setting->SetButtonText(FText::GetEmpty());
+						Btn_Setting->SetButtonIcon(Tex_SettingNormal);
+					}
+
 					// 태그 버튼 FaceIcon + 공격 버튼 아이콘 세팅
 					if (ActionControlPanel)
 					{
@@ -277,15 +284,12 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 		UTexture2D* TargetTexture = bIsAutoMode ? Tex_AutoModeOn : Tex_AutoModeOff;
 		Btn_AutoMode->SetButtonText(FText::GetEmpty());
 		Btn_AutoMode->SetButtonIcon(TargetTexture);
+
+		// 버튼의 자체 기능 호출!
+		Btn_AutoMode->SetGlowRingActive(bIsAutoMode);
 	}
 
-	// 머티리얼이 적용된 링 이미지를 켜고 끄기만 합니다! 
-	if (Img_AutoGlowRing)
-	{
-		Img_AutoGlowRing->SetVisibility(bIsAutoMode ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-	}
-
-	// 4. 컨트롤러에 전달
+	// 3. 컨트롤러에 전달
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
 		InGamePC->SetAutoBattleMode(bIsAutoMode);

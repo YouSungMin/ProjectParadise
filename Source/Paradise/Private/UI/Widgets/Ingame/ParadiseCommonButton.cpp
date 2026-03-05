@@ -66,6 +66,11 @@ void UParadiseCommonButton::NativeConstruct()
 	{
 		UpdateBackgroundImage(BgImage_Normal);
 	}
+
+	if (Img_GlowRing)
+	{
+		Img_GlowRing->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 #pragma endregion 생명주기 및 초기화
 
@@ -76,9 +81,10 @@ void UParadiseCommonButton::NativeOnPressed()
 
 	UpdateBackgroundImage(BgImage_Pressed ? BgImage_Pressed : BgImage_Normal);
 
-	if (bEnablePressedTint && Img_Icon)
+	if (bEnablePressedTint)
 	{
-		Img_Icon->SetColorAndOpacity(PressedTintColor);
+		if (Img_Icon) Img_Icon->SetColorAndOpacity(PressedTintColor);
+		if (Img_Bg) Img_Bg->SetColorAndOpacity(PressedTintColor);
 	}
 }
 
@@ -88,9 +94,10 @@ void UParadiseCommonButton::NativeOnReleased()
 
 	UpdateBackgroundImage(BgImage_Normal);
 
-	if (bEnablePressedTint && Img_Icon)
+	if (bEnablePressedTint)
 	{
-		Img_Icon->SetColorAndOpacity(NormalTintColor);
+		if (Img_Icon) Img_Icon->SetColorAndOpacity(NormalTintColor);
+		if (Img_Bg) Img_Bg->SetColorAndOpacity(NormalTintColor);
 	}
 }
 
@@ -104,6 +111,13 @@ void UParadiseCommonButton::NativeOnUnhovered()
 	Super::NativeOnUnhovered();
 
 	UpdateBackgroundImage(BgImage_Normal);
+
+	// 마우스가 밖으로 나가도 원래 색상으로 복구 (안전장치)
+	if (bEnablePressedTint)
+	{
+		if (Img_Icon) Img_Icon->SetColorAndOpacity(NormalTintColor);
+		if (Img_Bg) Img_Bg->SetColorAndOpacity(NormalTintColor);
+	}
 }
 #pragma endregion 상태 변화 구현 (이미지 교체)
 
@@ -117,19 +131,21 @@ void UParadiseCommonButton::SetButtonText(FText InText)
 	}
 }
 
-void UParadiseCommonButton::SetButtonIcon(UTexture2D* InIcon)
+void UParadiseCommonButton::SetButtonIcon(UTexture2D* InNormalIcon, UTexture2D* InPressedIcon)
 {
-	// 1. 내부 데이터 갱신
-	BgImage_Normal = InIcon;
-	BgImage_Pressed = InIcon;
+	// 1. 내부 데이터 갱신 (SRP: 상태 저장은 버튼 스스로가 관리)
+	// 눌림 이미지가 없으면(nullptr) 기본 이미지로 자동 대체하여 에러 및 빈 화면 방지
+	BgImage_Normal = InNormalIcon;
+	BgImage_Pressed = InPressedIcon ? InPressedIcon : InNormalIcon;
 
+	// 2. 즉시 UI 갱신
 	if (Img_Icon)
 	{
-		UpdateIconImage(InIcon);
+		UpdateIconImage(InNormalIcon);
 	}
 	else
 	{
-		UpdateBackgroundImage(InIcon);
+		UpdateBackgroundImage(InNormalIcon);
 	}
 }
 
@@ -139,6 +155,16 @@ void UParadiseCommonButton::SetTagActiveState(bool bIsActive)
 	// bIsActive = true  → 현재 조작 중 → 밝게 (TagActiveColor)
 	// bIsActive = false → 교체 대기   → 어둡게 (TagInactiveColor)
 	SetColorAndOpacity(bIsActive ? TagActiveColor : TagInactiveColor);
+
+	SetGlowRingActive(bIsActive);
 }
 
+void UParadiseCommonButton::SetGlowRingActive(bool bIsActive)
+{
+	// 오토 버튼이나 태그 버튼에서 개별적으로 링을 제어할 때 호출됨
+	if (Img_GlowRing)
+	{
+		Img_GlowRing->SetVisibility(bIsActive ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
 #pragma endregion 외부 인터페이스 구현

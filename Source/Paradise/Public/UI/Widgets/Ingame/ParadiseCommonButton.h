@@ -41,9 +41,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetButtonText(FText InText);
 
-	/** 런타임에 버튼 이미지를 동적으로 교체합니다. (스킬 아이콘, 오토 버튼 등) */
+	/**
+	 * @brief 런타임에 버튼 이미지를 동적으로 교체합니다. (스킬 아이콘, 오토 버튼, 설정 등)
+	 * @details PressedIcon을 nullptr로 넘기면 NormalIcon과 동일하게 자동 설정됩니다.
+	 * @param InNormalIcon 평상시(Normal) 보여줄 기본 이미지
+	 * @param InPressedIcon 눌렸을 때(Pressed) 보여줄 이미지 (선택적)
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void SetButtonIcon(UTexture2D* InIcon);
+	void SetButtonIcon(UTexture2D* InNormalIcon, UTexture2D* InPressedIcon = nullptr);
 
 	/**
 	 * @brief 태그 버튼의 활성/비활성 시각 상태를 설정합니다.
@@ -51,6 +56,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetTagActiveState(bool bIsActive);
+
+	/**
+	 * @brief 빙글빙글 도는 빛 링 이펙트를 개별적으로 켜거나 끕니다. (오토 모드 등)
+	 * @param bIsActive true면 링 활성화, false면 비활성화
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetGlowRingActive(bool bIsActive);
 #pragma endregion 외부 인터페이스
 
 private:
@@ -101,6 +113,13 @@ private:
 	 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> Img_Icon = nullptr;
+
+	/**
+	 * @brief 버튼 테두리를 따라 도는 강조 링 이미지
+	 * @details 에디터에서 WBP 셋업 시 바인딩되며, SetGlowRingActive()로 제어됩니다.
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_GlowRing = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 데이터 드리븐 설정

@@ -76,6 +76,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Summon")
 	FOnSummonSlotsUpdated OnSummonSlotsUpdated;
 
+
 public:
 	//스포너 등록 함수
 	void RegisterSpawner(AFamiliarSpawner* NewSpawner);

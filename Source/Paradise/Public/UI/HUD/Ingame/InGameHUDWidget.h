@@ -124,10 +124,6 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseCommonButton> Btn_AutoMode = nullptr;
 
-	/** 빙글빙글 돌게 만들 빛(Glow) 링 이미지 */
-	UPROPERTY(meta = (BindWidgetOptional)) // 에러 방지를 위해 Optional 처리
-	TObjectPtr<UImage> Img_AutoGlowRing = nullptr;
-
 	/** @brief 우측 상단 설정 버튼 (CommonBtn) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseCommonButton> Btn_Setting = nullptr;
@@ -141,16 +137,20 @@ private:
 	TObjectPtr<UDefeatPopupWidget> Widget_DefeatPopup = nullptr;
 #pragma endregion 위젯 바인딩
 
-#pragma region 오토 모드 UI 설정 (Config)
+#pragma region 공통 UI 에셋 설정 (Config)
 protected:
 	/** @brief 오토 모드가 꺼져있을 때 (수동) 보여줄 어두운 이미지 */
-	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|AutoMode")
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
 	TObjectPtr<UTexture2D> Tex_AutoModeOff = nullptr;
 
 	/** @brief 오토 모드가 켜져있을 때 (자동) 보여줄 빛나는 이미지 */
-	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|AutoMode")
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
 	TObjectPtr<UTexture2D> Tex_AutoModeOn = nullptr;
-#pragma endregion 오토 모드 UI 설정 (Config)
+
+	/** @brief 설정 버튼 이미지 (눌림 이미지는 사용하지 않고 틴트로 처리) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_SettingNormal = nullptr;
+#pragma endregion 공통 UI 에셋 설정 (Config)
 
 #pragma region 내부 데이터
 private:

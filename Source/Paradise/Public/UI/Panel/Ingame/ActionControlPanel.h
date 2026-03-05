@@ -142,4 +142,14 @@ private:
 	TObjectPtr<UTexture2D> Tex_DefaultAttackIcon = nullptr;
 #pragma endregion 내부 데이터
 
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 버튼 눌렸을 때 아이콘 틴트 (어둡게) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Button")
+	FLinearColor PressedTintColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+	/** @brief 버튼 기본 상태 아이콘 틴트 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Button")
+	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+#pragma endregion 데이터 드리븐 설정
 };
