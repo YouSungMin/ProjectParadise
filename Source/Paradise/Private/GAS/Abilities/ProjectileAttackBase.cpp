@@ -76,6 +76,7 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	SpawnParams.Instigator = AvatarChar;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	UE_LOG(LogTemp, Warning, TEXT("🎯 [Debug] 투사체 발사 위치(MuzzleSocket): %s"), *SpawnLocation.ToString());
 	// 투사체 스폰
 	AActor* SpawnedProjectile = nullptr;
 

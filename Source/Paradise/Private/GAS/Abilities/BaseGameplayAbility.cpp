@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
+#include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Kismet/GameplayStatics.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
@@ -43,6 +44,37 @@ FGameplayEffectSpecHandle UBaseGameplayAbility::MakeSpecHandle(TSubclassOf<UGame
 
 	// Spec 생성
 	return SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
+}
+
+void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	if (AbilityActionType == ECombatActionType::AIUnitSkill)
+	{
+		// 이 어빌리티를 실행한 주체가 ASkillCasterUnit(보스/캐스터)인지 확인
+		if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+		{
+			if (FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
+			{
+				Caster->SetCurrentCastingSkillIndex(Spec->InputID);
+			}
+		}
+	}
+}
+
+void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// 스킬 시전이 끝났거나 캔슬되었을 때
+	if (AbilityActionType == ECombatActionType::AIUnitSkill)
+	{
+		if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+		{
+			Caster->SetCurrentCastingSkillIndex(INDEX_NONE);
+		}
+	}
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UBaseGameplayAbility::ApplySpecHandleToTarget(AActor* TargetActor, const FGameplayEffectSpecHandle& SpecHandle)

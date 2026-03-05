@@ -418,6 +418,14 @@ public:
 	// =========================================================
 
 	/**
+	 * @brief 스킬 연출 몽타주 목록
+	 * @details SkillAbilities, SkillActionIDs 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
+	 * 예: 인덱스 0 = 돌진 몽타주, 인덱스 1 = 브레스 몽타주
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Skill")
+	TArray<TSoftObjectPtr<UAnimMontage>> SkillMontages;
+
+	/**
 	 * @brief 사용할 AI 컨트롤러 클래스
 	 * @details 몬스터의 두뇌 역할을 하는 컨트롤러 클래스(BP_EnemyController 등)입니다.
 	 */

@@ -167,17 +167,21 @@ bool ACharacterBase::IsHostile(ACharacterBase* Target) const
 
 FVector ACharacterBase::GetMuzzleLocation(FName SocketName) const
 {
-	// 장착한 무기가 있다면 무기에서 먼저 찾기
-	if (CurrentWeaponActor)
+	if (USceneComponent* WeaponComp = GetWeaponMesh())
 	{
-		// 무기 액터의 첫 번째 메쉬 컴포넌트를 가져옴
-		if (UMeshComponent* WeaponMesh = CurrentWeaponActor->GetComponentByClass<UMeshComponent>())
+		// 무기 메쉬에서 소켓 찾기
+		if (WeaponComp->DoesSocketExist(SocketName))
 		{
-			if (WeaponMesh->DoesSocketExist(SocketName))
-			{
-				return WeaponMesh->GetSocketLocation(SocketName);
-			}
+			return WeaponComp->GetSocketLocation(SocketName);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ 무기 메쉬(%s)를 찾았으나 '%s' 소켓이 없습니다!"), *WeaponComp->GetName(), *SocketName.ToString());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ GetWeaponMesh()가 Null입니다! (무기 메쉬가 없음)"));
 	}
 
 	// 무기가 없거나 무기에 소켓이 없다면 캐릭터 몸통에서 찾기

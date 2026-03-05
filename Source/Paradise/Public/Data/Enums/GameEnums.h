@@ -99,9 +99,10 @@ enum class EAIUnitType : uint8
 UENUM(BlueprintType)
 enum class ECombatActionType : uint8
 {
-	BasicAttack,  // 기본 공격 (평타, LMB) - 계수 1.0
-	WeaponSkill,  // 무기 스킬 (RMB, Q 등) - 계수 1.5 (WeaponStats 참조)
-	UltimateSkill // 궁극기 (R) - 계수 3.0 (CharacterStats 참조)
+	BasicAttack,  // 기본 공격
+	WeaponSkill,  // 무기 스킬
+	AIUnitSkill,
+	UltimateSkill // 궁극기
 };
 
 /**
