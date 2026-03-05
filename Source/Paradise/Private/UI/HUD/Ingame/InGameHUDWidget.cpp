@@ -295,7 +295,7 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 	// 3. 컨트롤러에 전달
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
-		InGamePC->SetAutoBattleMode(bIsAutoMode);
+		InGamePC->ToggleAutoBattleMode(bIsAutoMode);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] Auto Mode Toggled: %s"), bIsAutoMode ? TEXT("ON") : TEXT("OFF"));
