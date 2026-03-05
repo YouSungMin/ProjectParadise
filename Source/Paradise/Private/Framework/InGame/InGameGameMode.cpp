@@ -389,31 +389,49 @@ void AInGameGameMode::DistributeStageRewards()
 		}
 	}
 
-	//재화 보상 및 스테이지 진행도 갱신
-	if (EconomySys && StageSys)
+	// 재화 보상 및 스테이지 진행도 갱신
+	if (EconomySys && StageSys && CachedGameState)
 	{
-		// 기본 보상 지급
+		//기본 보상(골드) 무조건 지급
 		EconomySys->AddCurrency(ECurrencyType::Gold, CurrentStageData.ClearGold);
 
-		// 최초 클리어인지 검사
-		bool bIsFirstClear = (StageSys->GetStageClearStar(CurrentStageID) == 0);
+		//남은 시간 비율 계산 및 별 갯수 판별
+		float TimeRatio = CachedGameState->RemainingTime / CurrentStageData.TimeLimit;
+		int32 EarnedStars = 1; // 클리어만 하면 기본 1별
 
-		if (bIsFirstClear)
+		if (TimeRatio >= 0.5f) //제한 시간 절반(50%) 이상 남겼을 때
 		{
-			// 처음 깼을 때만 에테르 지급
-			EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
-
-			if (CachedGameState)
-			{
-				CachedGameState->AcquiredAether = CurrentStageData.ClearAether;
-			}
-			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 클리어! 에테르 보상이 지급되었습니다."));
+			EarnedStars = 3;
+		}
+		else if (TimeRatio >= 0.2f) //제한 시간 20% 이상 남겼을 때
+		{
+			EarnedStars = 2;
 		}
 
-		// 다음 스테이지 해금 및 현재 스테이지 별점 기록
+		UE_LOG(LogTemp, Warning, TEXT("🌟 남은 시간 비율: %.1f%% -> 획득 별: %d개"), TimeRatio * 100.f, EarnedStars);
+
+		//초회 3별 보상 검사
+		int32 PreviousStars = StageSys->GetStageClearStar(CurrentStageID);
+
+		//이번에 3별을 땄고, 예전 기록이 3별 미만일 때만 True
+		bool bIsFirst3Star = (EarnedStars == 3 && PreviousStars < 3);
+
+		if (bIsFirst3Star)
+		{
+			// 최초 3별일 때만 에테르 지급
+			EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
+			CachedGameState->AcquiredAether = CurrentStageData.ClearAether;
+			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 3별 달성! 에테르 보상이 지급되었습니다."));
+		}
+		else
+		{
+			//최초 3별이 아니면 (이미 받았거나 1~2별이면) UI 표기를 위해 0으로 처리
+			CachedGameState->AcquiredAether = 0;
+		}
+
+		//다음 스테이지 해금 및 현재 스테이지 별점 기록
 		StageSys->UnlockStage(CurrentStageData.NextStageID);
-		//TODO : 스테이지 별 갯수 판단 로직 추가 필요
-		StageSys->RecordStageClearStar(CurrentStageID, 3); // 임시 3별
+		StageSys->RecordStageClearStar(CurrentStageID, EarnedStars); // 획득한 별 개수로 기록!
 	}
 
 	// 세이브 파일에 저장

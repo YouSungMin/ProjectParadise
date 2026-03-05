@@ -3,26 +3,36 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
-#include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
 #include "Framework/Core/ParadiseGameInstance.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "AbilitySystemComponent.h"
-#include "Characters/AIUnit/UnitBase.h"
-#include "Objects/HomeBase.h"
-#include "AI/Squad/SquadAIController.h"
-#include "Components/FamiliarSummonComponent.h"
-#include "Components/EquipmentComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
-#include "InputMappingContext.h"
-#include "AIController.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "Components/AutoCombatComponent.h"
+#include "Components/FamiliarSummonComponent.h"
+#include "Components/EquipmentComponent.h"
+
+#include "AIController.h"
+#include "AI/Squad/SquadAIController.h"
+
+#include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
+#include "GAS/Attributes/BaseAttributeSet.h"//디버그치트함수때문에 추가 이후 삭제
+#include "AbilitySystemComponent.h"//데미지 주는 치트함수 때문에 추가 이후 삭제 예정
+#include "GameplayEffect.h" //데미지 주는 치트함수 때문에 추가 이후 삭제 예정
+
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
+#include "InputMappingContext.h"
+
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "UI/Panel/Ingame/ActionControlPanel.h"
 #include "Blueprint/UserWidget.h"
+
+AInGameController::AInGameController()
+{
+    AutoCombatComponent = CreateDefaultSubobject<UAutoCombatComponent>(TEXT("AutoCombatComponent"));
+}
 
 void AInGameController::BeginPlay()
 {
@@ -81,192 +91,6 @@ void AInGameController::SetupInputComponent()
 
 }
 
-void AInGameController::SetAutoBattleMode(bool bEnable)
-{
-    bIsAutoMode = bEnable;
-
- 
-    UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
-    UpdateCameraSystem(); //카메라시점 전체시점으로 변경
-
-    if (bIsAutoMode)
-    {
-        //자동 소환 시작
-        GetWorld()->GetTimerManager().SetTimer(AutoSummonTimerHandle, this, &AInGameController::CheckAndAutoSummon, 0.5f, true);
-
-        //자동 전투 시작
-        GetWorld()->GetTimerManager().SetTimer(AutoCombatTimerHandle, this, &AInGameController::UpdateAutoCombat, 0.2f, true);
-    }
-    else
-    {
-        // 수동모드시 전부 멈춤
-        GetWorld()->GetTimerManager().ClearTimer(AutoSummonTimerHandle);
-        GetWorld()->GetTimerManager().ClearTimer(AutoCombatTimerHandle);
-        StopMovement();
-    }
-}
-
-void AInGameController::CheckAndAutoSummon()
-{
-    // 자동모드가 아니라면 진행X
-    if (!bIsAutoMode) return;
-
-    // PlayerState 가져오기 (소환 컴포넌트 가져오기위함)
-    AInGamePlayerState* PS = GetPlayerState<AInGamePlayerState>();
-    if (!PS) return;
-
-    // PlayerState에 있는 소환 컴포넌트 획득
-    UFamiliarSummonComponent* SummonComp = PS->FindComponentByClass<UFamiliarSummonComponent>();
-    if (SummonComp)
-    {
-        //맨 왼쪽(0번 인덱스) 슬롯 구매 요청
-        //(내부에서 코스트 체크를 알아서 해주므로, 돈이 없으면 조용히 false를 반환하고 끝납니다.)
-        bool bSuccess = SummonComp->RequestPurchase(0);
-
-        // 돈이 모여서 성공적으로 뽑았다면 로그 출력!
-        if (bSuccess)
-        {
-            UE_LOG(LogTemp, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
-        }
-    }
-}
-
-void AInGameController::UpdateAutoCombat()
-{
-    if (!bIsAutoMode) return;
-
-    APlayerBase* PlayerPawn = Cast<APlayerBase>(GetPawn());
-    if (!PlayerPawn || PlayerPawn->IsDead()) return;
-
-    float AttackRange = 300.0f; // TODO: 캐릭터 사거리에 맞게 조절 (현재 하드코딩중)
-    float NearestDist = 999999.0f;
-
-    //가장 가까운 적 탐색
-    AActor* TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
-
-    //적이 사거리 안에 들어왔다면 공격
-    if (TargetEnemy && NearestDist <= AttackRange)
-    {
-        //멈추기
-        StopMovement();
-
-        //적을 바라보게함
-        FVector LookDir = TargetEnemy->GetActorLocation() - PlayerPawn->GetActorLocation();
-        LookDir.Z = 0.f;
-        PlayerPawn->SetActorRotation(LookDir.Rotation());
-
-        //우선순위 대로 공격 어빌리티 발동
-        ExecutePrioritizedAction(PlayerPawn);
-    }
-    else
-    {
-        AActor* MoveTarget = TargetEnemy;
-
-        // 맵에 적이없다면 기지로 이동
-        if (!MoveTarget)
-        {
-            MoveTarget = GetEnemyBase();
-        }
-
-        // 이동 목표가 설정되었다면 내비메쉬를 따라 이동
-        if (MoveTarget)
-        {
-            UAIBlueprintHelperLibrary::SimpleMoveToActor(this, MoveTarget);
-        }
-    }
-}
-
-void AInGameController::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
-{
-    if (!PlayerPawn) return;
-
-    UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent();
-    if (!ASC)
-    {
-        // ASC가 없으면 그냥 기본 평타 시도
-        PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
-        return;
-    }
-
-    //특정 InputID의 스킬이 쿨타임/마나 조건이 되는지(사용 가능한지) 검사
-    auto CanUseAbility = [&](EInputID InputID) -> bool
-        {
-            for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
-            {
-                if (Spec.InputID == static_cast<int32>(InputID))
-                {
-                    return Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
-                }
-            }
-            return false;
-        };
-
-    //궁극기 사용 가능 여부 확인
-    if (CanUseAbility(EInputID::Ultimate))
-    {
-        PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
-        UE_LOG(LogTemp, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
-        return;
-    }
-
-    // 2순위: 일반 스킬 사용 가능 여부 확인
-    if (CanUseAbility(EInputID::Skill))
-    {
-        PlayerPawn->SendAbilityInputToASC(EInputID::Skill, true);
-        UE_LOG(LogTemp, Log, TEXT("🤖 [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
-        return;
-    }
-
-    //궁극기, 스킬 모두 안되면 기본 평타
-    PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
-}
-
-AActor* AInGameController::FindNearestEnemy(APawn* PlayerPawn, float& OutDistance)
-{
-    OutDistance = 999999.0f;
-    AActor* NearestEnemy = nullptr;
-
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), FoundActors);
-
-    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
-    const FVector PlayerLoc = PlayerPawn->GetActorLocation();
-
-    for (AActor* Actor : FoundActors)
-    {
-        AUnitBase* Unit = Cast<AUnitBase>(Actor);
-        if (Unit && !Unit->IsDead() && Unit->GetFactionTag().MatchesTag(EnemyTag))
-        {
-            float Dist = FVector::Distance(PlayerLoc, Unit->GetActorLocation());
-            if (Dist < OutDistance)
-            {
-                OutDistance = Dist;
-                NearestEnemy = Actor;
-            }
-        }
-    }
-    return NearestEnemy;
-}
-
-AActor* AInGameController::GetEnemyBase()
-{
-    TArray<AActor*> FoundBases;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
-
-    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
-
-    for (AActor* Base : FoundBases)
-    {
-        AHomeBase* HomeBase = Cast<AHomeBase>(Base);
-
-        //기지의 Faction확인하여 적기지만 찾음
-        if (HomeBase && HomeBase->GetFactionTag().MatchesTag(EnemyTag))
-        {
-            return Base;
-        }
-    }
-    return nullptr;
-}
 
 
 void AInGameController::RequestSwitchPlayer(int32 PlayerIndex)
@@ -377,8 +201,8 @@ void AInGameController::RespawnSquadPlayer(int32 PlayerIndex)
     //육체(Body) 스폰
     UClass* SpawnClass = nullptr;
 
-    if (TestPlayerClass) {
-        SpawnClass = TestPlayerClass;
+    if (PlayerBaseClass) {
+        SpawnClass = PlayerBaseClass;
     }
     else {
         SpawnClass = APlayerBase::StaticClass();
@@ -391,6 +215,9 @@ void AInGameController::RespawnSquadPlayer(int32 PlayerIndex)
 
     if (NewBody)
     {
+        //플레이어 데이터(영혼) 상태 리셋 
+        Soul->ResetStateForRespawn();
+
         //데이터 연동 (영혼 주입)
         NewBody->InitializePlayer(Soul);
 
@@ -488,6 +315,44 @@ void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
         // (AI 동료가 죽은 경우)
         UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 동료(AI)가 사망했습니다."));
     }
+
+    //죽은 캐릭터 덱 풀에 넣기
+    int32 DeadIndex = ActiveSquadPawns.Find(DeadPlayer);
+    if (DeadIndex != INDEX_NONE && CachedPlayerState.IsValid())
+    {
+        if (UFamiliarSummonComponent* SummonComp = CachedPlayerState->FindComponentByClass<UFamiliarSummonComponent>())
+        {
+            // 기본값 설정 (혹시 모를 데이터 누락 대비)
+            int32 RespawnCost = 30;
+            TSoftObjectPtr<UTexture2D> CharacterIcon = nullptr;
+
+            // 1. 죽은 캐릭터의 고유 데이터(영혼) 가져오기
+            if (APlayerData* Soul = CachedPlayerState->GetSquadMemberData(DeadIndex))
+            {
+                FName CharID = Soul->CharacterID;
+
+                if (CachedGameInstance.IsValid())
+                {
+                    //캐릭터 스탯 테이블에서 SummonCost 가져오기
+                    if (FCharacterStats* Stats = CachedGameInstance->GetDataTableRow<FCharacterStats>(CachedGameInstance->CharacterStatsDataTable, CharID))
+                    {
+                        RespawnCost = Stats->SummonCost;
+                    }
+
+                    //캐릭터 에셋 테이블에서 FaceIcon 가져오기
+                    if (FCharacterAssets* Assets = CachedGameInstance->GetDataTableRow<FCharacterAssets>(CachedGameInstance->CharacterAssetsDataTable, CharID))
+                    {
+                        CharacterIcon = Assets->FaceIcon;
+                    }
+                }
+            }
+
+            // 4. 수집된 데이터를 컴포넌트에 주입
+            SummonComp->InjectCharacterRespawnCard(DeadIndex, RespawnCost, CharacterIcon);
+
+            UE_LOG(LogTemp, Log, TEXT("💀 [Controller] 캐릭터(%d번) 사망: 부활 카드 생성 (비용: %d)"), DeadIndex, RespawnCost);
+        }
+    }
 }
 
 void AInGameController::UpdateCameraSystem()
@@ -502,7 +367,9 @@ void AInGameController::UpdateCameraSystem()
     }
 
     // 우선순위 1: 전멸했거나 자동 모드일 때 -> Overview 카메라
-    if ((bIsSquadWipedOut || bIsAutoMode) && OverviewCameraActor)
+    bool bIsAuto = AutoCombatComponent ? AutoCombatComponent->IsAutoMode() : false;
+
+    if ((bIsSquadWipedOut || bIsAuto) && OverviewCameraActor)
     {
         if (bIsSquadWipedOut)
         {
@@ -556,9 +423,9 @@ void AInGameController::InitializeSquadPawns()
 
             UClass* SpawnClass = APlayerBase::StaticClass();
 
-            if (TestPlayerClass)
+            if (PlayerBaseClass)
             {
-                SpawnClass = TestPlayerClass;
+                SpawnClass = PlayerBaseClass;
             }
 
             APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot);
@@ -680,19 +547,6 @@ void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerD
     PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
 
     UE_LOG(LogTemp, Error, TEXT("=================================================================="));
-
-    //if (!InGameHUDInstance || !InPlayerData) return;
-
-    //if (UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel())
-    //{
-    //    // 1. ASC(심장)를 UI에 연동하여 체력/마나가 실시간으로 움직이게 합니다.
-    //    PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
-
-    //    // 2. 캐릭터 ID를 넘겨주어 데이터 테이블에서 초상화 이미지를 가져오게 합니다.
-    //    PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
-
-    //    UE_LOG(LogTemp, Log, TEXT("[Controller] %d번 파티원 UI(초상화 및 ASC) 연동 완료!"), PlayerIndex);
-    //}
 }
 
 UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
@@ -790,10 +644,20 @@ void AInGameController::UpdateActionPanelUI(int32 PlayerIndex)
     UE_LOG(LogTemp, Log, TEXT("⚔️ [ActionPanel] UI 갱신 성공 (Index: %d)"), PlayerIndex);
 }
 
+void AInGameController::ToggleAutoBattleMode(bool bEnable)
+{
+    if (AutoCombatComponent)
+    {
+        AutoCombatComponent->SetAutoBattleMode(bEnable);
+    }
+
+    UpdateCameraSystem();
+}
+
 
 void AInGameController::CheatStageClear()
 {
-    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    if (AInGameGameMode* gamemode = GetWorld()->GetAuthGameMode<AInGameGameMode>())
     {
         gamemode->EndStage(true);
     }
@@ -801,8 +665,47 @@ void AInGameController::CheatStageClear()
 
 void AInGameController::CheatStageFail()
 {
-    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    if (AInGameGameMode* gamemode = GetWorld()->GetAuthGameMode<AInGameGameMode>())
     {
         gamemode->EndStage(false);
+    }
+}
+
+void AInGameController::CheatKillCharacter(int32 PlayerIndex)
+{
+    // 유효한 인덱스인지, 해당 슬롯에 캐릭터가 존재하는지 확인
+    if (!ActiveSquadPawns.IsValidIndex(PlayerIndex) || ActiveSquadPawns[PlayerIndex] == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 유효하지 않은 인덱스거나 슬롯이 비어있습니다. (요청 인덱스: %d)"), PlayerIndex);
+        return;
+    }
+
+    APlayerBase* TargetCharacter = ActiveSquadPawns[PlayerIndex];
+
+    // 이미 죽은 캐릭터인지 확인
+    if (TargetCharacter->IsDead())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Cheat] %d번 캐릭터(%s)는 이미 사망한 상태입니다."), PlayerIndex, *TargetCharacter->GetName());
+        return;
+    }
+
+    // GAS를 통해 치명적인 데미지 적용
+    if (UAbilitySystemComponent* ASC = TargetCharacter->GetAbilitySystemComponent())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("💀 [Cheat] %d번 캐릭터(%s)에게 999,999의 데미지를 가합니다!"), PlayerIndex, *TargetCharacter->GetName());
+
+        //일회성(Instant) 게임플레이 이펙트를 생성
+        UGameplayEffect* CheatKillGE = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("CheatKillGE")));
+        CheatKillGE->DurationPolicy = EGameplayEffectDurationType::Instant;
+
+        // IncomingDamage 어트리뷰트에 999999 데미지를 더하는 모디파이어(Modifier) 설정
+        FGameplayModifierInfo ModInfo;
+        ModInfo.Attribute = UBaseAttributeSet::GetIncomingDamageAttribute();
+        ModInfo.ModifierOp = EGameplayModOp::Additive;
+        ModInfo.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(999999.0f));
+        CheatKillGE->Modifiers.Add(ModInfo);
+
+        //만든 이펙트를 타겟 캐릭터에게 적용
+        ASC->ApplyGameplayEffectToSelf(CheatKillGE, 1.0f, ASC->MakeEffectContext());
     }
 }

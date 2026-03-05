@@ -90,6 +90,12 @@ public:
 	void OnRespawnFinished();
 
 	/**
+	 * @brief 부활 시 체력, 마나, 쿨타임, 디버프 상태를 완전히 초기화(세탁)합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void ResetStateForRespawn();
+
+	/**
 	 * @brief 실제 전투 데이터를 조회하는 함수
 	 * @details PlayerBase가 호출하면, GameInstance와 EquipmentComponent를 탐색하여 결과 리턴.
 	 */

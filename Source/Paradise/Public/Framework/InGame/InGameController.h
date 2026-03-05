@@ -27,6 +27,8 @@ class PARADISE_API AInGameController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	AInGameController();
+
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
@@ -41,6 +43,8 @@ public:
 	UFUNCTION(Exec)
 	void CheatStageFail();
 
+	UFUNCTION(Exec)
+	void CheatKillCharacter(int32 PlayerIndex);
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
 public:
@@ -143,39 +147,14 @@ public:
 	* @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직 실행합니다.
 	*/
 	UFUNCTION(Exec,BlueprintCallable, Category = "Squad|Control")
-	void SetAutoBattleMode(bool bEnable);
-
-	
-protected:
-	// 0.5초마다 호출되어 1번 패밀리어를 소환할 함수
-	UFUNCTION()
-	void CheckAndAutoSummon();
-
-	/** @brief 0.2초마다 실행될 자동 전투 함수 */
-	UFUNCTION()
-	void UpdateAutoCombat();
-
-	/**  쿨타임 ,마나를 판단하여 가장 강력한 스킬부터 사용 */
-	void ExecutePrioritizedAction(APlayerBase* PlayerPawn);
-
-	/** @brief 현재 위치에서 가장 가까운 적을 찾습니다. */
-	AActor* FindNearestEnemy(APawn* PlayerPawn, float& OutDistance);
-
-	/** @brief 맵에 있는 적의 기지(HomeBase)를 찾습니다. */
-	AActor* GetEnemyBase();
+	void ToggleAutoBattleMode(bool bEnable);
 
 protected:
 
+	/** @brief 자동 전투 관리 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UAutoCombatComponent> AutoCombatComponent= nullptr;
 
-	/** @brief 현재 자동 전투 모드 활성화 여부 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad|Status")
-	bool bIsAutoMode = false;
-
-	/** @brief 자동 소환을 주기적으로 체크할 타이머 핸들 */
-	FTimerHandle AutoSummonTimerHandle;
-
-	/** @brief 리더 캐릭터의 자동 이동/공격을 주기적으로 처리할 타이머 */
-	FTimerHandle AutoCombatTimerHandle;
 
 
 #pragma endregion 자동 모드 관련
@@ -215,11 +194,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_SwitchHero3 = nullptr;
 
-	/* * @brief 테스트용 캐릭터 클래스 (BP_PlayerBase 할당용)
-	 * @details 여기에 에디터에서 만든 캐릭터 블루프린트를 넣어주세요.
+	/* * @brief 스폰할 캐릭터베이스 클래스 (BP_PlayerBase 할당용)
+	 * @details 여기에 에디터에서 만든 캐릭터 블루프린트를 할당
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Test")
-	TSubclassOf<APlayerBase> TestPlayerClass = nullptr;
+	TSubclassOf<APlayerBase> PlayerBaseClass = nullptr;
 
 	/** @brief 전장을 조망하는 전체 뷰 전용 카메라 액터 (에디터에서 할당) */
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera")

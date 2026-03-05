@@ -27,6 +27,10 @@ USTRUCT(BlueprintType)
 struct FUnitBaseStats : public FTableRowBase
 {
 	GENERATED_BODY()
+	/** @brief 소환 코스트 (재화) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	int32 SummonCost;
+
 	// =========================================================
 	//  전투 스탯 (Combat Stats)
 	// =========================================================
@@ -221,9 +225,10 @@ struct FFamiliarStats : public FAIUnitStats
 	GENERATED_BODY()
 
 public:
-	/** @brief 소환 코스트 (재화) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
-	int32 SummonCost;
+	//0305 김성현 - 캐릭터 리스폰 기능 을 위해 베이스로 변수이동
+	///** @brief 소환 코스트 (재화) */
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	//int32 SummonCost;
 };
 
 /**
