@@ -63,7 +63,7 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 
 		//0305 김성현 - 데이터 테이블 조회 방식 템플릿 함수 사용으로 변경
 		// 데이터 테이블을 여기서 단 한 번만 조회합니다.
-		if (FFamiliarStats* Stats = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable,UnitID))
+		if (FFamiliarStats* Stats = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, UnitID))
 		{
 			CachedSlot.CardCost = Stats->SummonCost;
 		}
@@ -210,6 +210,11 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 		}
 		break;
 	}
+	}
+
+	if (OnSummonSlotConsumed.IsBound())
+	{
+		OnSummonSlotConsumed.Broadcast(SlotIndex);
 	}
 
 	// 소환/부활 성공 후 슬롯을 당기는 공통 로직
