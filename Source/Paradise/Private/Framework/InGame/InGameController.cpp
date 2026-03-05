@@ -644,7 +644,7 @@ void AInGameController::UpdateActionPanelUI(int32 PlayerIndex)
     UE_LOG(LogTemp, Log, TEXT("⚔️ [ActionPanel] UI 갱신 성공 (Index: %d)"), PlayerIndex);
 }
 
-void AInGameController::InvokeSetAutoBattleMode(bool bEnable)
+void AInGameController::ToggleAutoBattleMode(bool bEnable)
 {
     if (AutoCombatComponent)
     {

@@ -147,7 +147,7 @@ public:
 	* @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직 실행합니다.
 	*/
 	UFUNCTION(Exec,BlueprintCallable, Category = "Squad|Control")
-	void InvokeSetAutoBattleMode(bool bEnable);
+	void ToggleAutoBattleMode(bool bEnable);
 
 protected:
 
