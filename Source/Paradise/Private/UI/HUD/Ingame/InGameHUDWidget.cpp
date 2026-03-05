@@ -20,6 +20,9 @@
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+#include "Camera/CameraComponent.h"
+
+
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
 
@@ -267,24 +270,43 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 
 void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)
 {
-	// 조이스틱 입력이 오면 폰(캐릭터)에게 이동 명령 전달
+	// 현재 조종 중인 캐릭터를 가져옵니다.
 	if (APawn* OwnedPawn = GetOwningPlayerPawn())
 	{
-		// 조이스틱에서 넘어온 순수 입력값을 90도 회전하여 보정
-		FVector2D TransformedInput;
-		TransformedInput.X = InputVector.Y;
-		TransformedInput.Y = -InputVector.X;
+		// 캐릭터에 붙어있는 카메라 컴포넌트를 직접 찾습니다. (유저님 방식 적용! 가장 안전함)
+		if (UCameraComponent* CameraComp = OwnedPawn->FindComponentByClass<UCameraComponent>())
+		{
+			// 카메라 매니저의 '블렌딩되는 회전'이 아닌, 카메라 컴포넌트의 '고정된 절대 회전값' 사용
+			const FRotator CameraRot = CameraComp->GetComponentRotation();
+			const FRotator YawRot(0, CameraRot.Yaw, 0);
 
-		const FRotator ControlRot = GetOwningPlayer()->GetControlRotation();
-		const FRotator YawRot(0, ControlRot.Yaw, 0);
+			const FVector CameraForward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+			const FVector CameraRight = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
-		const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-		const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-		// 보정된 벡터(TransformedInput)를 기준으로 캐릭터 이동 적용
-		OwnedPawn->AddMovementInput(ForwardDir, TransformedInput.Y * -1.0f);
-		OwnedPawn->AddMovementInput(RightDir, TransformedInput.X);
+			//UMG 조이스틱 보정 (위로 올릴 때 Y가 음수이므로 -1 곱하기)
+			OwnedPawn->AddMovementInput(CameraForward, InputVector.Y * -1.0f);
+			OwnedPawn->AddMovementInput(CameraRight, InputVector.X);
+		}
 	}
+
+	// 조이스틱 입력이 오면 폰(캐릭터)에게 이동 명령 전달
+	//if (APawn* OwnedPawn = GetOwningPlayerPawn())
+	//{
+	//	// 조이스틱에서 넘어온 순수 입력값을 90도 회전하여 보정
+	//	FVector2D TransformedInput;
+	//	TransformedInput.X = InputVector.Y;
+	//	TransformedInput.Y = -InputVector.X;
+
+	//	const FRotator ControlRot = GetOwningPlayer()->GetControlRotation();
+	//	const FRotator YawRot(0, ControlRot.Yaw, 0);
+
+	//	const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+	//	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+
+	//	// 보정된 벡터(TransformedInput)를 기준으로 캐릭터 이동 적용
+	//	OwnedPawn->AddMovementInput(ForwardDir, TransformedInput.Y * -1.0f);
+	//	OwnedPawn->AddMovementInput(RightDir, TransformedInput.X);
+	//}
 }
 
 void UInGameHUDWidget::OnUpdateHUD()

@@ -25,6 +25,7 @@
 
 APlayerBase::APlayerBase()
 {
+
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
 
@@ -42,6 +43,7 @@ APlayerBase::APlayerBase()
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+    GetMesh()->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }
 
 void APlayerBase::InitializeComponents()
