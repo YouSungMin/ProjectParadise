@@ -167,11 +167,11 @@ void USummonControlPanel::HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>&
 
 		// ★ 중복 로딩 제거
 		UTexture2D* LoadedIcon = nullptr;
-		if (!Slots[i].FamiliarIcon.IsNull())
+		if (!Slots[i].CardIcon.IsNull())
 		{
-			LoadedIcon = Slots[i].FamiliarIcon.LoadSynchronous();
+			LoadedIcon = Slots[i].CardIcon.LoadSynchronous();
 		}
-		int32 Cost = Slots[i].FamiliarCost;
+		int32 Cost = Slots[i].CardCost;
 
 		// 시간표 체크 후 UI 업데이트
 		if (SlotRevealTimes.IsValidIndex(i) && CurrentTime < SlotRevealTimes[i])

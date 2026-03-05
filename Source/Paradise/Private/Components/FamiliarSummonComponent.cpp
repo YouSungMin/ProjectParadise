@@ -4,6 +4,7 @@
 #include "Components/FamiliarSummonComponent.h"
 #include "Components/CostManageComponent.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/InGame/InGameController.h"
 #include "Characters/AIUnit/UnitBase.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/SquadSubsystem.h"
@@ -48,11 +49,6 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
 	if (!SquadSys) return;
 
-	UDataTable* StatsTable = GI->FamiliarStatsDataTable;
-	UDataTable* AssetsTable = GI->FamiliarAssetsDataTable;
-
-	if (!StatsTable || !AssetsTable) return;
-
 	CachedDeckPool.Empty();
 	const TArray<FName>& SelectedIDs = SquadSys->GetFamiliarSquad();
 
@@ -65,18 +61,19 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 		FSummonSlotInfo CachedSlot;
 		CachedSlot.FamiliarID = UnitID;
 
+		//0305 김성현 - 데이터 테이블 조회 방식 템플릿 함수 사용으로 변경
 		// 데이터 테이블을 여기서 단 한 번만 조회합니다.
-		if (FFamiliarStats* Stats = StatsTable->FindRow<FFamiliarStats>(UnitID, TEXT("")))
+		if (FFamiliarStats* Stats = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable,UnitID))
 		{
-			CachedSlot.FamiliarCost = Stats->SummonCost;
+			CachedSlot.CardCost = Stats->SummonCost;
 		}
-		if (FFamiliarAssets* Assets = AssetsTable->FindRow<FFamiliarAssets>(UnitID, TEXT("")))
+		if (FFamiliarAssets* Assets = GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, UnitID))
 		{
-			CachedSlot.FamiliarIcon = Assets->FaceIcon;
+			CachedSlot.CardIcon = Assets->FaceIcon;
 		}
 
 		CachedDeckPool.Add(CachedSlot);
-		UE_LOG(LogTemp, Log, TEXT("  [덱에 추가됨] 유닛: %s | 가격: %d"), *UnitID.ToString(), CachedSlot.FamiliarCost);
+		UE_LOG(LogTemp, Log, TEXT("  [덱에 추가됨] 유닛: %s | 가격: %d"), *UnitID.ToString(), CachedSlot.CardCost);
 	}
 
 	if (CachedDeckPool.IsEmpty())
@@ -85,6 +82,21 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("============================================="));
+}
+
+void UFamiliarSummonComponent::InjectCharacterRespawnCard(int32 TargetCharacterIndex, int32 RespawnCost, TSoftObjectPtr<UTexture2D> InCardIcon)
+{
+	FSummonSlotInfo RespawnCard;
+	RespawnCard.CardType = ESummonCardType::CharacterRespawn;
+	RespawnCard.CharacterIndex = TargetCharacterIndex;
+	RespawnCard.CardCost = RespawnCost;
+	RespawnCard.CardIcon = InCardIcon;
+	RespawnCard.FamiliarID = FName(*FString::Printf(TEXT("Character_%d"), TargetCharacterIndex));
+
+	//리스폰 가능해진 캐릭터를 스폰 가능 덱 풀에 추가
+	CachedDeckPool.Add(RespawnCard);
+
+	UE_LOG(LogTemp, Warning, TEXT("🔀 [SummonDeck] %d번 캐릭터 부활 카드가 덱에 섞였습니다! (현재 덱 크기: %d)"), TargetCharacterIndex, CachedDeckPool.Num());
 }
 
 void UFamiliarSummonComponent::RefreshAllSlots()
@@ -101,7 +113,7 @@ void UFamiliarSummonComponent::RefreshAllSlots()
 		FSummonSlotInfo NewCard = DrawRandomCardFromPool();
 		CurrentSlots.Add(NewCard);
 
-		UE_LOG(LogTemp, Log, TEXT("[%d번 슬롯] 유닛: %s | 가격: %d"), i + 1, *NewCard.FamiliarID.ToString(), NewCard.FamiliarCost);
+		UE_LOG(LogTemp, Log, TEXT("[%d번 슬롯] 유닛: %s | 가격: %d"), i + 1, *NewCard.FamiliarID.ToString(), NewCard.CardCost);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("==================================================="));
@@ -154,8 +166,8 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 	//		return false;
 	//}
 
-		//PlayerState 및 CostManger 가져오기
-		AInGamePlayerState* PS = GetOwner<AInGamePlayerState>();
+	//PlayerState 및 CostManger 가져오기
+	AInGamePlayerState* PS = GetOwner<AInGamePlayerState>();
 	if (!PS) return false;
 
 	UCostManageComponent* CostManager = PS->GetCostManageComponent();
@@ -163,27 +175,46 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 	FSummonSlotInfo& SlotInfo = CurrentSlots[SlotIndex];
 
 	//비용 비교 및 결제(돈이 부족하면 false처리)
-	float PriceToPay = (float)SlotInfo.FamiliarCost; // 혹은 FinalCost
+	float PriceToPay = (float)SlotInfo.CardCost; // 혹은 FinalCost
 	if (!CostManager || !CostManager->TrySpendCost(PriceToPay))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("❌ 잔액 부족! (필요: %.0f)"), PriceToPay);
 		return false;
 	}
 
-	if (LinkedSpawner)
+	//0305 김성현 - 캐릭터 부활 로직 추가
+	switch (SlotInfo.CardType)
 	{
-		//ID를 넘겨서 실제 소환 수행
-		LinkedSpawner->SpawnFamiliarByID(SlotInfo.FamiliarID);
+	case ESummonCardType::CharacterRespawn:
+	{
+		// 캐릭터 부활 카드일 경우 컨트롤러를 찾아 부활 함수 호출
+		if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+		{
+			if (AInGameController* InGamePC = Cast<AInGameController>(PC))
+			{
+				InGamePC->RespawnSquadPlayer(SlotInfo.CharacterIndex);
+			}
+		}
+		break;
+	}
+	case ESummonCardType::Familiar:
+	{
+		// 일반 퍼밀리어 소환 로직
+		if (LinkedSpawner)
+		{
+			LinkedSpawner->SpawnFamiliarByID(SlotInfo.FamiliarID);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ 월드에서 AFamiliarSpawner를 찾을 수 없습니다!"));
+		}
+		break;
+	}
+	}
 
-		//소환 성공 후 슬롯 처리 로직
-		ConsumeSpecificSlot(SlotIndex);
-		return true;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ 월드에서 AFamiliarSpawner를 찾을 수 없습니다!"));
-		return false;
-	}
+	// 소환/부활 성공 후 슬롯을 당기는 공통 로직
+	ConsumeSpecificSlot(SlotIndex);
+	return true;
 }
 
 
@@ -206,64 +237,28 @@ void UFamiliarSummonComponent::ConsumeSpecificSlot(int32 SlotIndex)
 	FSummonSlotInfo NewCard = DrawRandomCardFromPool();
 	CurrentSlots.Add(NewCard);
 
-	UE_LOG(LogTemp, Log, TEXT("🔥 슬롯[%d] 사용 완료 -> 목록 당겨짐 -> 맨 뒤에 [%s] 추가됨"), SlotIndex, *NewCard.FamiliarID.ToString());
+	UE_LOG(LogTemp, Log, TEXT("🔥 슬롯[%d] 사용 완료 -> 맨 뒤에 [%s] 추가됨"), SlotIndex, *NewCard.FamiliarID.ToString());
 
-	// UI 갱신 방송
+	// 3. UI 갱신 방송
 	if (OnSummonSlotsUpdated.IsBound())
 	{
 		OnSummonSlotsUpdated.Broadcast(CurrentSlots);
 	}
-
-	////데이터테이블 가져오기
-	//UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
-	//if (GI || GI->FamiliarStatsDataTable || GI->FamiliarAssetsDataTable)
-	//{
-	//	//1. 새로운 랜덤 유닛 생성
-	//	FSummonSlotInfo NewSlot = GenerateRandomSlot(GI->FamiliarStatsDataTable, GI->FamiliarAssetsDataTable);
-
-	//	//2. 배열 맨 뒤에 추가
-	//	CurrentSlots.Add(NewSlot);
-
-	//	UE_LOG(LogTemp, Log, TEXT("🔥 슬롯[%d] 구매 완료 -> 목록 당겨짐 -> 맨 뒤에 [%s] 추가됨"),
-	//		SlotIndex, *NewSlot.FamiliarID.ToString());
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("GameInstance나 DataTable을 찾을 수 없어 새 슬롯을 추가하지 못했습니다."));
-	//}
-	//if (OnSummonSlotsUpdated.IsBound())
-	//{
-	//	OnSummonSlotsUpdated.Broadcast(CurrentSlots);
-	//}
 }
 
 FSummonSlotInfo UFamiliarSummonComponent::DrawRandomCardFromPool()
 {
 	// 캐싱된 덱 풀에서 무작위 인덱스를 뽑아 즉시 리턴 (데이터 테이블 검색 0회)
 	int32 RandomIndex = FMath::RandRange(0, CachedDeckPool.Num() - 1);
-	return CachedDeckPool[RandomIndex];
-}
+	FSummonSlotInfo DrawnCard = CachedDeckPool[RandomIndex];
 
-////슬롯을 랜덤으로 for문으로 5번 돌림
-//FSummonSlotInfo UFamiliarSummonComponent::GenerateRandomSlot(UDataTable* StatsTable, UDataTable* AssetsTable)
-//{
-//	//빈 슬롯 구조체 생성
-//	FSummonSlotInfo NewSlot;
-//	TArray<FName> RowNames = StatsTable->GetRowNames();
-//
-//	//0부터 (배열크기-1) 사이의 랜덤 인덱스 생성
-//	int32 RandomIndex = FMath::RandRange(0, RowNames.Num() - 1);
-//	FName SelectedID = RowNames[RandomIndex];
-//
-//	//데이터테이블
-//	FFamiliarStats* Stats = StatsTable->FindRow<FFamiliarStats>(SelectedID, TEXT(""));
-//	FFamiliarAssets* Assets = AssetsTable->FindRow<FFamiliarAssets>(SelectedID, TEXT(""));
-//
-//	if (Stats && Assets)
-//	{
-//		NewSlot.FamiliarID = SelectedID;
-//		NewSlot.FamiliarCost = Stats->SummonCost;
-//		//NewSlot.UnitIcon = Stats->UnitIcon; // 필요시
-//	}
-//	return NewSlot;
-//}
+	//0305 김성현 - 캐릭터 리스폰 로직 추가
+	//캐릭터 부활 카드가 나왔다면 덱 풀에서 제거
+	if (DrawnCard.CardType == ESummonCardType::CharacterRespawn)
+	{
+		CachedDeckPool.RemoveAt(RandomIndex);
+		UE_LOG(LogTemp, Warning, TEXT("🎟️ [SummonDeck] 부활 카드가 뽑혔습니다! (덱에서 제거됨)"));
+	}
+
+	return DrawnCard;
+}

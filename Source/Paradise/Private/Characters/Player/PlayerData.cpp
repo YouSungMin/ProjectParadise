@@ -488,6 +488,32 @@ void APlayerData::OnRespawnFinished()
 	UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
 }
 
+void APlayerData::ResetStateForRespawn()
+{
+	//사망 플래그 초기화
+	bIsDead = false;
+
+	if (AbilitySystemComponent)
+	{
+		//체력 완전 회복
+		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
+		AbilitySystemComponent->ApplyModToAttribute(UBaseAttributeSet::GetHealthAttribute(), EGameplayModOp::Override, MaxHP);
+
+		//마나 완전 회복
+		float MaxMP = AbilitySystemComponent->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
+		AbilitySystemComponent->ApplyModToAttribute(UBaseAttributeSet::GetManaAttribute(), EGameplayModOp::Override, MaxMP);
+
+		//쿨타임(Cooldown) 및 디버프(Debuff) 타이머 싹 지우기
+		FGameplayTagContainer TagsToRemove;
+		TagsToRemove.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Cooldown")));
+		TagsToRemove.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Debuff")));
+
+		AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TagsToRemove);
+
+		UE_LOG(LogTemp, Log, TEXT("✨ [PlayerData] %s의 영혼 상태(체력/마나/디버프)가 완벽히 정화되었습니다!"), *GetName());
+	}
+}
+
 FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
 {
 	UFXDataAsset* TargetAsset = nullptr;

@@ -41,6 +41,8 @@ public:
 	UFUNCTION(Exec)
 	void CheatStageFail();
 
+	UFUNCTION(Exec)
+	void CheatKillCharacter(int32 PlayerIndex);
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
 public:
@@ -215,11 +217,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_SwitchHero3 = nullptr;
 
-	/* * @brief 테스트용 캐릭터 클래스 (BP_PlayerBase 할당용)
-	 * @details 여기에 에디터에서 만든 캐릭터 블루프린트를 넣어주세요.
+	/* * @brief 스폰할 캐릭터베이스 클래스 (BP_PlayerBase 할당용)
+	 * @details 여기에 에디터에서 만든 캐릭터 블루프린트를 할당
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Test")
-	TSubclassOf<APlayerBase> TestPlayerClass = nullptr;
+	TSubclassOf<APlayerBase> PlayerBaseClass = nullptr;
 
 	/** @brief 전장을 조망하는 전체 뷰 전용 카메라 액터 (에디터에서 할당) */
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera")

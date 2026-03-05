@@ -268,7 +268,7 @@ void APlayerBase::Die()
 
     UE_LOG(LogTemp, Warning, TEXT("[PlayerBase] 육체가 사망했습니다."));
 
-    //부모의 Die 호출 -> 래그돌(Ragdoll) 실행
+    //부모의 Die 호출
     Super::Die();
 
     //영혼(PlayerData)에게 사망 사실 통보 -> 부활 타이머 가동
@@ -281,6 +281,27 @@ void APlayerBase::Die()
     {
         PC->OnPlayerDied(this);
     }
+
+    float DeathDelay = 2.0f; // 기본값
+
+    if (UAnimMontage* DeathMontage = GetDeathMontage())
+    {
+        // 몽타주의 총 재생 시간을 가져옵니다.
+        UE_LOG(LogTemp, Warning, TEXT("[PlayerBase] DeathMontage의 재생시간을 가져옴"));
+        DeathDelay = DeathMontage->GetPlayLength();
+
+        //몽타주가 끝나서 기본 자세로 돌아가기 직전에 애니메이션을 아예 정지시킵니다.
+        FTimerHandle DeathAnimTimer;
+        GetWorldTimerManager().SetTimer(
+            DeathAnimTimer,
+            this,
+            &ACharacterBase::OnDeathAnimationFinished,
+            DeathDelay - 0.225f,
+            false
+        );
+    }
+    SetLifeSpan(DeathDelay+0.15f);
+    
 
 }
 

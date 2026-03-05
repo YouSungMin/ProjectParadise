@@ -4,6 +4,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
+#include "GAS/Attributes/BaseAttributeSet.h"//디버그치트함수때문에 추가 이후 삭제
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -23,6 +24,7 @@
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "UI/Panel/Ingame/ActionControlPanel.h"
 #include "Blueprint/UserWidget.h"
+#include "GameplayEffect.h" //데미지 주는 치트함수 때문에 추가 이후 삭제 예정
 
 void AInGameController::BeginPlay()
 {
@@ -387,8 +389,8 @@ void AInGameController::RespawnSquadPlayer(int32 PlayerIndex)
     //육체(Body) 스폰
     UClass* SpawnClass = nullptr;
 
-    if (TestPlayerClass) {
-        SpawnClass = TestPlayerClass;
+    if (PlayerBaseClass) {
+        SpawnClass = PlayerBaseClass;
     }
     else {
         SpawnClass = APlayerBase::StaticClass();
@@ -401,6 +403,9 @@ void AInGameController::RespawnSquadPlayer(int32 PlayerIndex)
 
     if (NewBody)
     {
+        //플레이어 데이터(영혼) 상태 리셋 
+        Soul->ResetStateForRespawn();
+
         //데이터 연동 (영혼 주입)
         NewBody->InitializePlayer(Soul);
 
@@ -498,6 +503,44 @@ void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
         // (AI 동료가 죽은 경우)
         UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 동료(AI)가 사망했습니다."));
     }
+
+    //죽은 캐릭터 덱 풀에 넣기
+    int32 DeadIndex = ActiveSquadPawns.Find(DeadPlayer);
+    if (DeadIndex != INDEX_NONE && CachedPlayerState.IsValid())
+    {
+        if (UFamiliarSummonComponent* SummonComp = CachedPlayerState->FindComponentByClass<UFamiliarSummonComponent>())
+        {
+            // 기본값 설정 (혹시 모를 데이터 누락 대비)
+            int32 RespawnCost = 30;
+            TSoftObjectPtr<UTexture2D> CharacterIcon = nullptr;
+
+            // 1. 죽은 캐릭터의 고유 데이터(영혼) 가져오기
+            if (APlayerData* Soul = CachedPlayerState->GetSquadMemberData(DeadIndex))
+            {
+                FName CharID = Soul->CharacterID;
+
+                if (CachedGameInstance.IsValid())
+                {
+                    //캐릭터 스탯 테이블에서 SummonCost 가져오기
+                    if (FCharacterStats* Stats = CachedGameInstance->GetDataTableRow<FCharacterStats>(CachedGameInstance->CharacterStatsDataTable, CharID))
+                    {
+                        RespawnCost = Stats->SummonCost;
+                    }
+
+                    //캐릭터 에셋 테이블에서 FaceIcon 가져오기
+                    if (FCharacterAssets* Assets = CachedGameInstance->GetDataTableRow<FCharacterAssets>(CachedGameInstance->CharacterAssetsDataTable, CharID))
+                    {
+                        CharacterIcon = Assets->FaceIcon;
+                    }
+                }
+            }
+
+            // 4. 수집된 데이터를 컴포넌트에 주입
+            SummonComp->InjectCharacterRespawnCard(DeadIndex, RespawnCost, CharacterIcon);
+
+            UE_LOG(LogTemp, Log, TEXT("💀 [Controller] 캐릭터(%d번) 사망: 부활 카드 생성 (비용: %d)"), DeadIndex, RespawnCost);
+        }
+    }
 }
 
 void AInGameController::UpdateCameraSystem()
@@ -566,9 +609,9 @@ void AInGameController::InitializeSquadPawns()
 
             UClass* SpawnClass = APlayerBase::StaticClass();
 
-            if (TestPlayerClass)
+            if (PlayerBaseClass)
             {
-                SpawnClass = TestPlayerClass;
+                SpawnClass = PlayerBaseClass;
             }
 
             APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot);
@@ -803,7 +846,7 @@ void AInGameController::UpdateActionPanelUI(int32 PlayerIndex)
 
 void AInGameController::CheatStageClear()
 {
-    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    if (AInGameGameMode* gamemode = GetWorld()->GetAuthGameMode<AInGameGameMode>())
     {
         gamemode->EndStage(true);
     }
@@ -811,8 +854,47 @@ void AInGameController::CheatStageClear()
 
 void AInGameController::CheatStageFail()
 {
-    if (AInGameGameMode* gamemode = Cast<AInGameGameMode>(GetWorld()->GetAuthGameMode()))
+    if (AInGameGameMode* gamemode = GetWorld()->GetAuthGameMode<AInGameGameMode>())
     {
         gamemode->EndStage(false);
+    }
+}
+
+void AInGameController::CheatKillCharacter(int32 PlayerIndex)
+{
+    // 유효한 인덱스인지, 해당 슬롯에 캐릭터가 존재하는지 확인
+    if (!ActiveSquadPawns.IsValidIndex(PlayerIndex) || ActiveSquadPawns[PlayerIndex] == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 유효하지 않은 인덱스거나 슬롯이 비어있습니다. (요청 인덱스: %d)"), PlayerIndex);
+        return;
+    }
+
+    APlayerBase* TargetCharacter = ActiveSquadPawns[PlayerIndex];
+
+    // 이미 죽은 캐릭터인지 확인
+    if (TargetCharacter->IsDead())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Cheat] %d번 캐릭터(%s)는 이미 사망한 상태입니다."), PlayerIndex, *TargetCharacter->GetName());
+        return;
+    }
+
+    // GAS를 통해 치명적인 데미지 적용
+    if (UAbilitySystemComponent* ASC = TargetCharacter->GetAbilitySystemComponent())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("💀 [Cheat] %d번 캐릭터(%s)에게 999,999의 데미지를 가합니다!"), PlayerIndex, *TargetCharacter->GetName());
+
+        // 🚨 1. 일회성(Instant) 게임플레이 이펙트를 코드로 즉석 생성합니다.
+        UGameplayEffect* CheatKillGE = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("CheatKillGE")));
+        CheatKillGE->DurationPolicy = EGameplayEffectDurationType::Instant;
+
+        // 🚨 2. IncomingDamage 어트리뷰트에 999999 데미지를 더하는 모디파이어(Modifier) 설정
+        FGameplayModifierInfo ModInfo;
+        ModInfo.Attribute = UBaseAttributeSet::GetIncomingDamageAttribute();
+        ModInfo.ModifierOp = EGameplayModOp::Additive;
+        ModInfo.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(999999.0f));
+        CheatKillGE->Modifiers.Add(ModInfo);
+
+        // 🚨 3. 만든 이펙트를 타겟 캐릭터에게 강제로 적용합니다!
+        ASC->ApplyGameplayEffectToSelf(CheatKillGE, 1.0f, ASC->MakeEffectContext());
     }
 }
