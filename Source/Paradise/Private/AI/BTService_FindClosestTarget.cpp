@@ -11,7 +11,7 @@
 UBTService_FindClosestTarget::UBTService_FindClosestTarget()
 {
 	NodeName = "Find Closest Target";
-	Interval = 0.2f;      // 너무 잦은 틱은 성능과 안정성에 좋지 않으므로 0.2초 권장
+	Interval = 0.2f;
 	SearchRadius = 1500.0f;
 }
 
@@ -29,18 +29,19 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 	UObject* RawTarget = BB->GetValueAsObject(TargetActorKey.SelectedKeyName);
 	ACharacterBase* CurrentTarget = Cast<ACharacterBase>(RawTarget);
 
-	// ⭐ [핵심 고정 로직]
 	// 타겟이 존재하고(IsValid), 살아있다면(!IsDead) 
 	// 주변에 더 가까운 적이 있는지 검색조차 하지 않고 즉시 리턴합니다.
 	if (IsValid(CurrentTarget) && !CurrentTarget->IsDead())
 	{
 		// 위치와 거리 정보만 최신화 (이동 및 공격 거리 체크용)
 		float Distance = FVector::Dist(SelfUnit->GetActorLocation(), CurrentTarget->GetActorLocation());
-		BB->SetValueAsFloat(FName("DistanceToTarget"), Distance);
-		BB->SetValueAsVector(FName("TargetLocation"), CurrentTarget->GetActorLocation());
+		if (Distance < (SearchRadius * 1.0f))
+		{
+			BB->SetValueAsFloat(FName("DistanceToTarget"), Distance);
+			BB->SetValueAsVector(FName("TargetLocation"), CurrentTarget->GetActorLocation());
 
-		// 새로운 타겟 검색(for문)을 완전히 건너뜁니다.
-		return;
+			return;
+		}
 	}
 
 	// [2단계] 타겟이 없거나 죽은 경우에만 아래의 '새로운 적 탐색' 로직 실행
