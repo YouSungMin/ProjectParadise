@@ -71,6 +71,13 @@ private:
 
 	/** @brief 쿨타임 UI를 비활성화하고 초기 상태로 되돌립니다. */
 	void ClearCooldownVisual();
+
+	/** @brief 버튼 눌림/뗌 처리 */
+	UFUNCTION()
+	void OnSkillButtonPressed();
+
+	UFUNCTION()
+	void OnSkillButtonReleased();
 #pragma endregion 내부 로직 (최적화)
 
 public:
@@ -116,4 +123,23 @@ private:
 	/** @brief 쿨타임 갱신용 타이머 핸들 */
 	FTimerHandle CooldownTimerHandle;
 #pragma endregion 캡슐화 데이터
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/**
+	 * @brief 스킬 버튼 기본 아이콘 (폴백 이미지)
+	 * @details 데이터 테이블에 스킬 아이콘이 연동되기 전까지 표시됩니다.
+	 *          WBP_SkillSlotWidget 디테일 패널 Paradise|UI|Skill 카테고리에서 할당해주세요.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	TObjectPtr<UTexture2D> Tex_DefaultSkillIcon = nullptr;
+
+	/** @brief 버튼 눌렸을 때 아이콘 틴트 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	FLinearColor PressedTintColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+	/** @brief 버튼 기본 상태 아이콘 틴트 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+#pragma endregion 데이터 드리븐 설정
 };

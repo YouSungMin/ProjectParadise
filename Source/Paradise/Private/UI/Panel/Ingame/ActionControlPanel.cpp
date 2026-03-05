@@ -10,7 +10,7 @@
 #include "Framework/System/SquadSubsystem.h"
 
 #include "Characters/Base/PlayerBase.h"
-
+#include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
 
 void UActionControlPanel::NativeConstruct()
@@ -60,7 +60,7 @@ void UActionControlPanel::NativeConstruct()
 	}
 
 	// 5. 로비 데이터 연동 초기화
-	InitTagButtons();
+	//InitTagButtons();
 }
 
 void UActionControlPanel::NativeDestruct()
@@ -82,13 +82,18 @@ void UActionControlPanel::NativeDestruct()
 }
 
 #pragma region 외부 인터페이스 구현
-void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID)
+void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon)
 {
 	// 게임 인스턴스의 공용 데이터 테이블 로직을 활용합니다.
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
 
 	/** @section 1. 무기 스킬 (일반 스킬) 데이터 연동 */
+	if (AttackBtn && AttackIcon)
+	{
+		AttackBtn->SetButtonIcon(AttackIcon);
+	}
+
 	if (WeaponActionID != NAME_None)
 	{
 		 if (const FActionStats* WeaponActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WeaponActionID))
@@ -135,8 +140,17 @@ void UActionControlPanel::InitTagButtons()
 			if (FCharacterAssets* Asset = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharID))
 			{
 				// UParadiseCommonButton의 캡슐화된 인터페이스를 통해 아이콘 세팅
-				TagButtons[i]->SetButtonIcon(Asset->FaceIcon.LoadSynchronous());
+				UTexture2D* FaceIcon = Asset->FaceIcon.LoadSynchronous();
+
+				TagButtons[i]->SetButtonIcon(FaceIcon);
 				TagButtons[i]->SetVisibility(ESlateVisibility::Visible);
+
+				if (i == 0 && AttackBtn)
+				{
+					// TODO: FCharacterAssets에 WeaponIcon 필드 추가 후 Asset->WeaponIcon.LoadSynchronous()로 교체
+					UTexture2D* AttackIcon = Tex_DefaultAttackIcon.Get();
+					AttackBtn->SetButtonIcon(AttackIcon);
+				}
 			}
 		}
 		else
@@ -166,6 +180,8 @@ void UActionControlPanel::UpdateSkillCooldown(int32 SkillIndex, float CurrentTim
 
 void UActionControlPanel::UpdateTagButtons(int32 ActiveCharIndex)
 {
+	CurrentActiveTagIndex = ActiveCharIndex;
+
 	/**
 	 * @brief 현재 조작 캐릭터에 따른 태그 버튼 활성화/비활성화 제어
 	 * @details 배열 루프를 사용하여 하드코딩 없이 상태를 일괄 업데이트합니다.
@@ -174,9 +190,9 @@ void UActionControlPanel::UpdateTagButtons(int32 ActiveCharIndex)
 	{
 		if (TagButtons[i])
 		{
-			// 현재 조작 중인 캐릭터의 버튼은 비활성화(교체 대상에서 제외)
-			const bool bIsActiveTag = (i != ActiveCharIndex);
-			TagButtons[i]->SetIsEnabled(bIsActiveTag);
+			// 현재 조작 중인 캐릭터(Active)는 뚜렷하게(true), 나머지는 연하게(false)
+			const bool bIsCurrentlyActive = (i == ActiveCharIndex);
+			TagButtons[i]->SetTagActiveState(bIsCurrentlyActive);
 		}
 	}
 }
@@ -217,26 +233,12 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 현재 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제)"));
 	}
-
-	// 이제 확실하게 찾았으니 명령을 내립니다.
-	/*if (!CachedPlayer.IsValid())
-	{
-		CachedPlayer = Cast<APlayerBase>(GetOwningPlayerPawn());
-		UE_LOG(LogTemp, Error, TEXT("[ActionPanel] %s가 어빌리티를 발동 합니다."), *CachedPlayer->GetName());
-	}
-	if (CachedPlayer.IsValid())
-	{
-		CachedPlayer->SendAbilityInputToASC(InputID, true);
-		UE_LOG(LogTemp, Error, TEXT("[ActionPanel] %s가 어빌리티를 발동 합니다."), *CachedPlayer->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 아직도 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제 확인 필요)"));
-	}*/
 }
 
 void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
 {
+	if (CharacterIndex == CurrentActiveTagIndex) return;
+
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
 		// 2. 컨트롤러에 구현해두신 안전한 캐릭터 교체 및 AI 배정 로직 실행

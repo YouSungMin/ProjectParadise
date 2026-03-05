@@ -77,32 +77,6 @@ void USummonSlotWidget::UpdateSlotInfo(UTexture2D* IconTexture, int32 InCost)
 		Text_CostValue->SetText(FText::AsNumber(InCost));
 		Text_CostValue->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
-
-//	// 1. 아이콘 처리
-//	if (Img_SummonIcon)
-//	
-//			if (Btn_SummonAction) Btn_SummonAction->SetIsEnabled(true);
-//		{
-//		if (IconTexture)
-//		{
-//			Img_SummonIcon->SetBrushFromTexture(IconTexture);
-//			Img_SummonIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
-//}
-//		else
-//		{
-//			// 아이콘이 없으면 숨김 (혹은 빈 슬롯 이미지)
-//			Img_SummonIcon->SetVisibility(ESlateVisibility::Hidden);
-//
-//			if (Btn_SummonAction) Btn_SummonAction->SetIsEnabled(false);
-//		}
-//	}
-//
-//	// 2. 텍스트 처리
-//	if (Text_CostValue)
-//	{
-//		Text_CostValue->SetText(FText::AsNumber(InCost));
-//		Text_CostValue->SetVisibility(ESlateVisibility::HitTestInvisible);
-//	}
 }
 
 void USummonSlotWidget::ScheduleReveal(UTexture2D* IconTexture, int32 InCost, float DelayTime)
@@ -127,8 +101,16 @@ void USummonSlotWidget::PlayIntroAnimation()
 {
 	if (Anim_Intro)
 	{
-		// 처음부터 재생 (Forward), 1배속, 루프 없음
-		PlayAnimation(Anim_Intro, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		// 자동 소환 시 애니메이션 겹침 방지 (끊기지 않고 자연스럽게 가속)
+		if (IsAnimationPlaying(Anim_Intro))
+		{
+			float CurrentTime = GetAnimationCurrentTime(Anim_Intro);
+			PlayAnimation(Anim_Intro, CurrentTime, 1, EUMGSequencePlayMode::Forward, 1.5f);
+		}
+		else
+		{
+			PlayAnimation(Anim_Intro, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		}
 	}
 }
 
@@ -136,34 +118,19 @@ void USummonSlotWidget::PlayShiftAnimation()
 {
 	if (Anim_Shift)
 	{
-		// 처음부터 1배속으로 재생
-		PlayAnimation(Anim_Shift, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		// 0.5초마다 RequestPurchase가 호출될 때 애니메이션이 끝나지 않았다면 이어서 재생해야 합니다.
+		if (IsAnimationPlaying(Anim_Shift))
+		{
+			float CurrentTime = GetAnimationCurrentTime(Anim_Shift);
+			PlayAnimation(Anim_Shift, CurrentTime, 1, EUMGSequencePlayMode::Forward, 2.0f);
+		}
+		else
+		{
+			PlayAnimation(Anim_Shift, 0.0f, 1, EUMGSequencePlayMode::Forward, 1.0f);
+		}
 	}
 }
 
-//void USummonSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
-//{
-//	CurrentCooldownTime = CurrentTime;
-//	MaxCooldownTime = MaxTime;
-//
-//	if (CurrentCooldownTime > 0.0f)
-//	{
-//		// 쿨타임 시작: 버튼 비활성화 및 타이머 가동
-//		if (Btn_SummonAction) Btn_SummonAction->SetIsEnabled(false);
-//
-//		if (PB_Cooldown) PB_Cooldown->SetVisibility(ESlateVisibility::HitTestInvisible);
-//		if (Text_CooldownTime) Text_CooldownTime->SetVisibility(ESlateVisibility::HitTestInvisible);
-//
-//		if (GetWorld() && !GetWorld()->GetTimerManager().IsTimerActive(CooldownTimerHandle))
-//		{
-//			GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &USummonSlotWidget::UpdateCooldownVisual, UpdateInterval, true);
-//		}
-//	}
-//	else
-//	{
-//		StopCooldownTimer();
-//	}
-//}
 #pragma endregion 외부 인터페이스 구현
 
 #pragma region 내부 로직
@@ -185,50 +152,4 @@ void USummonSlotWidget::OnRevealTimerFinished()
 	// 피드백 복구: 다시 선명하게 만듦
 	if (Img_SummonIcon) Img_SummonIcon->SetOpacity(1.0f);
 }
-
-//void USummonSlotWidget::UpdateCooldownVisual()
-//{
-//	CurrentCooldownTime -= UpdateInterval;
-//
-//	if (CurrentCooldownTime <= 0.0f)
-//	{
-//		StopCooldownTimer();
-//		return;
-//	}
-//
-//	if (PB_Cooldown && MaxCooldownTime > 0.0f)
-//	{
-//		PB_Cooldown->SetPercent(CurrentCooldownTime / MaxCooldownTime);
-//	}
-//
-//	if (Text_CooldownTime)
-//	{
-//		Text_CooldownTime->SetText(FText::AsNumber(FMath::CeilToInt(CurrentCooldownTime)));
-//	}
-//}
-
-//void USummonSlotWidget::StopCooldownTimer()
-//{
-//	if (GetWorld())
-//	{
-//		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
-//	}
-//
-//	if (PB_Cooldown)
-//	{
-//		PB_Cooldown->SetPercent(0.0f);
-//		PB_Cooldown->SetVisibility(ESlateVisibility::Collapsed);
-//	}
-//
-//	if (Text_CooldownTime)
-//	{
-//		Text_CooldownTime->SetVisibility(ESlateVisibility::Collapsed);
-//	}
-//
-//	// 쿨타임 종료 시 버튼 활성화 (단, 아이콘이 있어야 함)
-//	if (Btn_SummonAction && Img_SummonIcon && Img_SummonIcon->GetVisibility() != ESlateVisibility::Hidden)
-//	{
-//		Btn_SummonAction->SetIsEnabled(true);
-//	}
-//}
 #pragma endregion 내부 로직

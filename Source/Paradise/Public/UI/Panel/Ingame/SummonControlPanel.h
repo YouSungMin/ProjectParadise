@@ -45,15 +45,15 @@ private:
 	void HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>& Slots);
 #pragma endregion 시스템 초기화
 
-#pragma region 입력 처리
-private:
+#pragma region 핸들러
+public:
 	/**
 	 * @brief 하위 슬롯 위젯이 클릭되었을 때 호출되는 함수
 	 * @param SlotIndex 클릭된 슬롯의 인덱스
 	 */
 	UFUNCTION()
 	void HandleSlotClickRequest(int32 SlotIndex);
-#pragma endregion 입력 처리
+#pragma endregion 핸들러
 
 #pragma region 외부 인터페이스
 public:

@@ -19,6 +19,9 @@ class UDefeatPopupWidget;
 class UParadiseCommonButton;
 class AInGameGameState;
 class USettingsPopupWidget;
+class UTexture2D;
+class UImage;
+class UWidgetAnimation;
 #pragma endregion 전방 선언
 
 /**
@@ -133,6 +136,21 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UDefeatPopupWidget> Widget_DefeatPopup = nullptr;
 #pragma endregion 위젯 바인딩
+
+#pragma region 공통 UI 에셋 설정 (Config)
+protected:
+	/** @brief 오토 모드가 꺼져있을 때 (수동) 보여줄 어두운 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_AutoModeOff = nullptr;
+
+	/** @brief 오토 모드가 켜져있을 때 (자동) 보여줄 빛나는 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_AutoModeOn = nullptr;
+
+	/** @brief 설정 버튼 이미지 (눌림 이미지는 사용하지 않고 틴트로 처리) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_SettingNormal = nullptr;
+#pragma endregion 공통 UI 에셋 설정 (Config)
 
 #pragma region 내부 데이터
 private:

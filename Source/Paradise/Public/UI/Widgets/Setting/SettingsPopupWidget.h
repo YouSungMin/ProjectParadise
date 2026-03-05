@@ -119,6 +119,20 @@ protected:
 	TObjectPtr<UParadiseCommonButton> Btn_ReturnToLobby = nullptr;
 #pragma endregion 위젯 바인딩
 
+#pragma region 공통 UI 에셋 설정 (Config)
+protected:
+	/** * @brief 게임으로 돌아가기 버튼의 기본 이미지
+	 * @details 눌림 효과는 UParadiseCommonButton의 틴트(bEnablePressedTint) 기능을 사용하므로 1장만 필요합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "돌아가기 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_ResumeGame = nullptr;
+
+	/** * @brief 로비로 돌아가기 버튼의 기본 이미지
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "로비 귀환 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_ReturnToLobby = nullptr;
+#pragma endregion 공통 UI 에셋 설정 (Config)
+
 #pragma region 데이터 드리븐 설정
 protected:
 	/**

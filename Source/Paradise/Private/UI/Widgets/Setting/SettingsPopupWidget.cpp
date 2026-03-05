@@ -41,10 +41,16 @@ void USettingsPopupWidget::NativeConstruct()
 	if (Btn_ResumeGame)
 	{
 		Btn_ResumeGame->OnClicked().AddUObject(this, &USettingsPopupWidget::OnResumeGameClicked);
+
+		Btn_ResumeGame->SetButtonText(FText::GetEmpty());
+		Btn_ResumeGame->SetButtonIcon(Tex_ResumeGame);
 	}
 	if (Btn_ReturnToLobby)
 	{
 		Btn_ReturnToLobby->OnClicked().AddUObject(this, &USettingsPopupWidget::OnReturnToLobbyClicked);
+
+		Btn_ReturnToLobby->SetButtonText(FText::GetEmpty());
+		Btn_ReturnToLobby->SetButtonIcon(Tex_ReturnToLobby);
 	}
 
 	/** @section 4. 슬라이더 초기값 세팅 (서브시스템의 RAM 볼륨) */

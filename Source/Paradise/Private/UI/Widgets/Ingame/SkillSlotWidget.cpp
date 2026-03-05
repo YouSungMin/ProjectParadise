@@ -24,6 +24,15 @@ void USkillSlotWidget::NativeConstruct()
 	if (Btn_SkillAction)
 	{
 		Btn_SkillAction->OnClicked().AddUObject(this, &USkillSlotWidget::OnSkillButtonClicked);
+
+		Btn_SkillAction->OnPressed().AddUObject(this, &USkillSlotWidget::OnSkillButtonPressed);
+		Btn_SkillAction->OnReleased().AddUObject(this, &USkillSlotWidget::OnSkillButtonReleased);
+	}
+
+	// 기본 아이콘이 할당되어 있으면 즉시 세팅
+	if (Tex_DefaultSkillIcon && Img_SkillIcon)
+	{
+		Img_SkillIcon->SetBrushFromTexture(Tex_DefaultSkillIcon, true);
 	}
 
 	// 초기 상태 설정
@@ -36,6 +45,11 @@ void USkillSlotWidget::NativeDestruct()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
+	}
+	if (Btn_SkillAction)
+	{
+		Btn_SkillAction->OnPressed().RemoveAll(this);
+		Btn_SkillAction->OnReleased().RemoveAll(this);
 	}
 
 	Super::NativeDestruct();
@@ -98,6 +112,22 @@ void USkillSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
 #pragma endregion 외부 인터페이스 구현
 
 #pragma region 내부 로직 구현
+void USkillSlotWidget::OnSkillButtonPressed()
+{
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(PressedTintColor);
+	}
+}
+
+void USkillSlotWidget::OnSkillButtonReleased()
+{
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(NormalTintColor);
+	}
+}
+
 void USkillSlotWidget::OnSkillButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));

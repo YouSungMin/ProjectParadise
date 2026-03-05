@@ -16,6 +16,7 @@
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
+#include "Framework/InGame/InGameController.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -26,6 +27,7 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
 
+#include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
@@ -47,8 +49,6 @@ void UInGameHUDWidget::NativeConstruct()
 	if (Btn_AutoMode)
 	{
 		Btn_AutoMode->OnClicked().AddUObject(this, &UInGameHUDWidget::OnAutoModeButtonClicked);
-		// 초기 텍스트 설정 (필요 시)
-		// Btn_AutoMode->SetButtonText(FText::FromString(TEXT("MANUAL")));
 	}
 
 	// 3. 조이스틱 바인딩
@@ -81,6 +81,32 @@ void UInGameHUDWidget::NativeConstruct()
 			&UInGameHUDWidget::OnUpdateHUD,
 			0.5f,
 			true
+		);
+
+		// 7. CommonUI 스타일 동기화 완료 후 이미지 세팅 (한 프레임 지연)
+		GetWorld()->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					// 오토 버튼 초기 이미지 세팅
+					if (Btn_AutoMode)
+					{
+						Btn_AutoMode->SetButtonText(FText::GetEmpty());
+						Btn_AutoMode->SetButtonIcon(Tex_AutoModeOff);
+					}
+
+					// 눌림 이미지 없이 Normal 하나만 주입!
+					if (Btn_Setting)
+					{
+						Btn_Setting->SetButtonText(FText::GetEmpty());
+						Btn_Setting->SetButtonIcon(Tex_SettingNormal);
+					}
+
+					// 태그 버튼 FaceIcon + 공격 버튼 아이콘 세팅
+					if (ActionControlPanel)
+					{
+						ActionControlPanel->InitTagButtons();
+					}
+				})
 		);
 	}
 }
@@ -255,17 +281,24 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 	// 1. 상태 토글
 	bIsAutoMode = !bIsAutoMode;
 
-	// 2. UI 텍스트/아이콘 변경 (피드백)
+	// 2. 버튼 이미지 교체
 	if (Btn_AutoMode)
 	{
-		// 텍스트 변경 예시 (아이콘 교체로 해도 됨)
-		FText StatusText = bIsAutoMode ? FText::FromString(TEXT("AUTO")) : FText::FromString(TEXT("MANUAL"));
-		Btn_AutoMode->SetButtonText(StatusText);
+		UTexture2D* TargetTexture = bIsAutoMode ? Tex_AutoModeOn : Tex_AutoModeOff;
+		Btn_AutoMode->SetButtonText(FText::GetEmpty());
+		Btn_AutoMode->SetButtonIcon(TargetTexture);
+
+		// 버튼의 자체 기능 호출!
+		Btn_AutoMode->SetGlowRingActive(bIsAutoMode);
 	}
 
-	// 3. 실제 게임플레이 로직에 알림 (Controller or PlayerState)
-	// GetOwningPlayer()->GetComponent<UAutoCombatComponent>()->SetAutoMode(bIsAutoMode);
-	UE_LOG(LogTemp, Log, TEXT("Auto Mode Toggled: %s"), bIsAutoMode ? TEXT("ON") : TEXT("OFF"));
+	// 3. 컨트롤러에 전달
+	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	{
+		InGamePC->SetAutoBattleMode(bIsAutoMode);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] Auto Mode Toggled: %s"), bIsAutoMode ? TEXT("ON") : TEXT("OFF"));
 }
 
 void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)

@@ -104,13 +104,13 @@ void USummonControlPanel::InitComponents()
 	if (SummonComp)
 	{
 		CachedSummonComponent = SummonComp;
+
+		//초기 슬롯 데이터 요청
+		SummonComp->RefreshAllSlots();
 		if (!SummonComp->OnSummonSlotsUpdated.IsAlreadyBound(this, &USummonControlPanel::HandleSummonSlotsUpdate))
 		{
 			SummonComp->OnSummonSlotsUpdated.AddDynamic(this, &USummonControlPanel::HandleSummonSlotsUpdate);
 		}
-
-		// 초기 슬롯 데이터 요청 (필요 시)
-		SummonComp->RefreshAllSlots();
 	}
 	else
 	{
@@ -135,37 +135,41 @@ void USummonControlPanel::HandleCostUpdate(float CurrentCost, float MaxCost)
 		CostWidget->UpdateCost(CurrentCost, MaxCost);
 	}
 }
+
+
 void USummonControlPanel::HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>& Slots)
 {
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 
-	// 1. 시간표 갱신
-	if (LastClickedSlotIndex >= 0 && SlotRevealTimes.IsValidIndex(LastClickedSlotIndex))
+	// 1. 시간표 갱신 (Shift 애니메이션은 이미 재생되었고, 여기서는 새로 들어올 맨 끝 슬롯의 등장 시간만 조율합니다)
+	if (SlotRevealTimes.Num() > 0)
 	{
-		SlotRevealTimes.RemoveAt(LastClickedSlotIndex);
+		// 맨 앞의 딜레이만 하나 빼주고 뒤로 밀어줍니다.
+		SlotRevealTimes.RemoveAt(0);
 
 		if (NextAvailableRefillTime < CurrentTime)
 		{
 			NextAvailableRefillTime = CurrentTime;
 		}
-		NextAvailableRefillTime += SlotRefillDelay;
+
+		float ActualDelay = SlotRefillDelay;
+		if (NextAvailableRefillTime > CurrentTime + 0.5f)
+		{
+			ActualDelay = 0.1f; // 큐 밀림 방지
+		}
+
+		NextAvailableRefillTime += ActualDelay;
 		SlotRevealTimes.Add(NextAvailableRefillTime);
 
-		// ★ 최적화: O(N²) → O(N) 개선
 		int32 ExcessCount = SlotRevealTimes.Num() - Slots.Num();
-		if (ExcessCount > 0)
-		{
-			SlotRevealTimes.RemoveAt(0, ExcessCount);  // 한 번에 여러 개 제거
-		}
+		if (ExcessCount > 0) SlotRevealTimes.RemoveAt(0, ExcessCount);
 	}
 
-	// 2. UI 갱신 (중복 제거)
+	// 2. UI 데이터 갱신 및 새 슬롯 ScheduleReveal
 	for (int32 i = 0; i < SummonSlots.Num(); ++i)
 	{
-		if (!SummonSlots.IsValidIndex(i) || !SummonSlots[i] || !Slots.IsValidIndex(i))
-			continue;
+		if (!SummonSlots.IsValidIndex(i) || !SummonSlots[i] || !Slots.IsValidIndex(i)) continue;
 
-		// ★ 중복 로딩 제거
 		UTexture2D* LoadedIcon = nullptr;
 		if (!Slots[i].CardIcon.IsNull())
 		{
@@ -173,7 +177,6 @@ void USummonControlPanel::HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>&
 		}
 		int32 Cost = Slots[i].CardCost;
 
-		// 시간표 체크 후 UI 업데이트
 		if (SlotRevealTimes.IsValidIndex(i) && CurrentTime < SlotRevealTimes[i])
 		{
 			float TimeLeft = SlotRevealTimes[i] - CurrentTime;
@@ -185,18 +188,18 @@ void USummonControlPanel::HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>&
 		}
 	}
 
-	// 3. 애니메이션
-	if (LastClickedSlotIndex >= 0)
-	{
-		for (int32 i = LastClickedSlotIndex; i < SummonSlots.Num() - 1; ++i)
+		// 3. 애니메이션
+		if (LastClickedSlotIndex >= 0)
 		{
-			if (SummonSlots.IsValidIndex(i) && SummonSlots[i])
+			for (int32 i = LastClickedSlotIndex; i < SummonSlots.Num() - 1; ++i)
 			{
-				SummonSlots[i]->PlayShiftAnimation();
+				if (SummonSlots.IsValidIndex(i) && SummonSlots[i])
+				{
+					SummonSlots[i]->PlayShiftAnimation();
+				}
 			}
+			LastClickedSlotIndex = -1;
 		}
-		LastClickedSlotIndex = -1;
-	}
 }
 #pragma endregion 시스템 초기화
 
@@ -213,43 +216,8 @@ void USummonControlPanel::HandleSlotClickRequest(int32 SlotIndex)
 			LastClickedSlotIndex = -1;
 			UE_LOG(LogTemp, Warning, TEXT("[SummonPanel] 구매 실패: %d"), SlotIndex);
 		}
-		// ★ SlotRevealTimes 조작 코드 전부 삭제 (146-163줄 제거)
 	}
 
-	//if (CachedSummonComponent.IsValid())
-	//{
-	//	LastClickedSlotIndex = SlotIndex;
-	//	bool bSuccess = CachedSummonComponent->RequestPurchase(SlotIndex);
-
-	//	if (bSuccess)
-	//	{
-	//		// (추가) 구매 성공 시 시간표 배열도 왼쪽으로 당기고, 새 슬롯의 등장 시간을 추가
-	//		if (SlotRevealTimes.IsValidIndex(SlotIndex))
-	//		{
-	//			SlotRevealTimes.RemoveAt(SlotIndex);
-
-	//			float CurrentTime = GetWorld()->GetTimeSeconds();
-
-	//			// 1. 만약 대기열이 비어있다면(앞에 기다리는 놈이 없다면), 기준 시간은 '지금'
-	//			// 2. 만약 앞에 기다리는 놈이 있다면, 기준 시간은 '앞사람이 끝나는 시간'
-	//			if (NextAvailableRefillTime < CurrentTime)
-	//			{
-	//				NextAvailableRefillTime = CurrentTime;
-	//			}
-
-	//			// 기준 시간에 1초(SlotRefillDelay)를 더해서 내 번호표로 만듦
-	//			NextAvailableRefillTime += SlotRefillDelay;
-
-	//			// 배열 맨 끝(빈자리)에 내 번호표를 등록
-	//			SlotRevealTimes.Add(NextAvailableRefillTime);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		LastClickedSlotIndex = -1;
-	//		UE_LOG(LogTemp, Warning, TEXT("[SummonPanel] 구매 실패: %d"), SlotIndex);
-	//	}
-	//}
 }
 #pragma endregion 입력 처리
 	
@@ -261,14 +229,6 @@ void USummonControlPanel::SetSummonSlotData(int32 SlotIndex, UTexture2D* Icon, i
 		SummonSlots[SlotIndex]->UpdateSlotInfo(Icon, InCost);
 	}
 }
-
-//void USummonControlPanel::UpdateSummonCooldown(int32 SlotIndex, float CurrentTime, float MaxTime)
-//{
-//	//if (SummonSlots.IsValidIndex(SlotIndex) && SummonSlots[SlotIndex])
-//	//{
-//	//	//SummonSlots[SlotIndex]->RefreshCooldown(CurrentTime, MaxTime);
-//	//}
-//}
 void USummonControlPanel::UpdateCostDisplay(float CurrentCost, float MaxCost)
 {
 	if (CostWidget)
