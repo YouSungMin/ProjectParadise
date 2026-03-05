@@ -223,22 +223,6 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 				FGameplayAbilitySpec Spec(InAssets->BasicAbility, 1, -1);
 				BasicAbilityHandle = AbilitySystemComponent->GiveAbility(Spec);
 			}
-
-			// 스킬 (Skills) - 보스 사용
-			for (const auto& Handle : SkillAbilityHandles)
-			{
-				AbilitySystemComponent->ClearAbility(Handle);
-			}
-			SkillAbilityHandles.Empty();
-
-			for (const auto& SkillClass : InAssets->SkillAbilities)
-			{
-				if (SkillClass)
-				{
-					FGameplayAbilitySpec Spec(SkillClass, 1, -1);
-					SkillAbilityHandles.Add(AbilitySystemComponent->GiveAbility(Spec));
-				}
-			}
 		}
 	}
 

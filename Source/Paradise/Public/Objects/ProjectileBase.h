@@ -10,7 +10,7 @@
 
 
 class USphereComponent;
-class UStaticMeshComponent;
+class UNiagaraComponent;
 class UProjectileMovementComponent;
 
 
@@ -46,11 +46,13 @@ protected:
 	// =========================================================================
 	/** @brief 적과 겹쳤을 때(Overlap) 데미지를 주고 풀로 돌아가는 함수 */
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	/** @brief 타이머 만료 또는 충돌 시 스스로 풀로 돌아가는 헬퍼 함수 */
 	void ReturnSelfToPool();
 
+	/** @brief 적합한 타겟인지 검사하는 함수 */
+	bool IsValidTarget(AActor* OtherActor);
 protected:
 	// =========================================================================
 	// 컴포넌트
@@ -60,9 +62,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> SphereComp;
 
-	/** @brief 투사체의 외형 (화살, 파이어볼 등) */
+	/** @brief 투사체의 외형 (나이아가라 이펙트) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> MeshComp;
+	TObjectPtr<UNiagaraComponent> NiagaraComp;
 
 	/** @brief 투사체의 이동 로직을 담당 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -76,7 +78,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float LifeTime = 3.0f;
 
-private:
 	/** @brief 배달해야 할 데미지 택배 상자 */
 	FGameplayEffectSpecHandle DamageSpecHandle;
 

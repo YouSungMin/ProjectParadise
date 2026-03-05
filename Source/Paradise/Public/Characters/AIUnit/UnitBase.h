@@ -33,7 +33,7 @@ public:
 	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
 
 	/** @brief 유닛 초기화 및 ID 설정 */
-	void InitializeUnit(struct FAIUnitStats* InStats, struct FAIUnitAssets* InAssets);
+	virtual void InitializeUnit(struct FAIUnitStats* InStats, struct FAIUnitAssets* InAssets);
 
 
 	void SetUnitID(FName InID) { UnitID = InID; }
@@ -77,10 +77,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Data")
 	FCombatActionData BasicAttackData;
 
-	/** @brief 위의 코드 처럼 변경 필요 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	FName CachedSkillActionID;
-
 	/** @brief 피격/사망 등 생존 반응 연출 캐싱 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	FReactionFXSettings CachedReactionFX;
@@ -103,9 +99,6 @@ protected:
 
 	/** @brief 평타 어빌리티 핸들 */
 	FGameplayAbilitySpecHandle BasicAbilityHandle;
-
-	/** @brief 스킬 어빌리티 핸들 목록 (보스/패밀리어 용) */
-	TArray<FGameplayAbilitySpecHandle> SkillAbilityHandles;
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
 	void SetAvoidanceEnabled(bool bEnable);

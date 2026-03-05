@@ -3,7 +3,7 @@
 
 #include "Objects/ProjectileBase.h"
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "NiagaraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
@@ -22,9 +22,8 @@ AProjectileBase::AProjectileBase()
 	SphereComp->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnSphereOverlap);
 
-	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	MeshComp->SetupAttachment(SphereComp);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	NiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComp"));
+	NiagaraComp->SetupAttachment(SphereComp);
 
 	ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComp"));
 	ProjectileMovementComp->InitialSpeed = 1000.0f;
@@ -36,15 +35,27 @@ AProjectileBase::AProjectileBase()
 
 void AProjectileBase::OnPoolActivate_Implementation()
 {
+	// 1. 액터 보이기 & 충돌 켜기
 	SetActorHiddenInGame(false);
+	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	// 이동 재시작
-	ProjectileMovementComp->SetComponentTickEnabled(true);
-	ProjectileMovementComp->Activate(true);
-	ProjectileMovementComp->Velocity = GetActorForwardVector() * ProjectileMovementComp->InitialSpeed;
+	// 2. 나이아가라 파티클 처음부터 재생 (스태틱 매쉬 대신)
+	if (NiagaraComp) NiagaraComp->Activate(true);
 
-	// LifeTime 이후에 풀로 돌아가는 타이머 시작
-	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	// 3. 이동 컴포넌트 재시작 및 발사 방향 리셋
+	if (ProjectileMovementComp)
+	{
+		ProjectileMovementComp->SetComponentTickEnabled(true);
+		ProjectileMovementComp->Activate(true);
+		// 현재 바라보는 방향으로 속도 재설정
+		ProjectileMovementComp->Velocity = GetActorForwardVector() * ProjectileMovementComp->InitialSpeed;
+	}
+
+	// 4. 수명 타이머 세팅
+	if (LifeTime > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	}
 }
 
 void AProjectileBase::OnPoolDeactivate_Implementation()
@@ -53,14 +64,19 @@ void AProjectileBase::OnPoolDeactivate_Implementation()
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
 
 	// 물리/이동 정지 및 숨김
-	ProjectileMovementComp->Deactivate();
-	ProjectileMovementComp->SetComponentTickEnabled(false);
-	ProjectileMovementComp->Velocity = FVector::ZeroVector;
+	if (ProjectileMovementComp)
+	{
+		ProjectileMovementComp->Deactivate();
+		ProjectileMovementComp->SetComponentTickEnabled(false);
+		ProjectileMovementComp->Velocity = FVector::ZeroVector;
+	}
 
-	SphereComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetActorHiddenInGame(true);
 
-	// 갖고 있던 데미지 정보(택배) 파기
+	if (NiagaraComp) NiagaraComp->Deactivate();
+
+	// 갖고 있던 데미지 정보 파기
 	DamageSpecHandle = FGameplayEffectSpecHandle();
 }
 
@@ -127,24 +143,6 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 			}
 		}
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("🎯 [Projectile] 투사체 적중! 대상: %s"), *OtherActor->GetName());
-
-	if (DamageSpecHandle.IsValid())
-	{
-		// Target의 ASC를 찾아서 GE 스펙 적용
-		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OtherActor);
-		if (TargetASC)
-		{
-			// 이펙트 배달 완료! (ExecCalcCombat이 이어서 데미지 계산 및 텍스트 출력을 수행합니다)
-			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
-		}
-	}
-
-	// (선택) 여기에 파티클(폭발)이나 사운드 스폰 로직 추가 가능
-
-	// 적을 맞췄으니 스스로 풀로 돌아감
-	ReturnSelfToPool();
 }
 
 void AProjectileBase::ReturnSelfToPool()
@@ -160,4 +158,24 @@ void AProjectileBase::ReturnSelfToPool()
 			Destroy();
 		}
 	}
+}
+
+bool AProjectileBase::IsValidTarget(AActor* OtherActor)
+{
+	// 예외 대상 무시
+	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
+		return false;
+
+	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
+	{
+		if (ACharacterBase* TargetChar = Cast<ACharacterBase>(OtherActor))
+		{
+			if (!Shooter->IsHostile(TargetChar))
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
 }

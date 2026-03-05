@@ -428,7 +428,7 @@ void APlayerData::InitPlayerData(FName HeroID)
 	{
 		const FOwnedCharacterData* MyData;
 		bool bFound = false;
-		MyData = InvSys->GetCharacterDataByID(HeroID);// 함수명은 실제 구현에 맞게 변경하세요.
+		MyData = InvSys->GetCharacterDataByID(HeroID);
 
 		if (MyData) {
 			bFound = true;

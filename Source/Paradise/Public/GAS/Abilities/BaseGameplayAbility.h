@@ -57,8 +57,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Effect")
 	FGameplayEffectSpecHandle MakeSpecHandle(TSubclassOf<UGameplayEffect> EffectClass, float Level = 1.0f);
 
+	/** @brief 어빌리티 시작 시 캐릭터에게 현재 사용 중인 스킬 인덱스를 알립니다. */
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+
+	/** @brief 어빌리티 종료 시 캐릭터의 스킬 시전 상태를 초기화(-1)합니다. */
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
 	/**
-	 * @brief 생성된 스펙 핸들을 타겟 액터에게 적용합니다. (택배 배송)
+	 * @brief 생성된 스펙 핸들을 타겟 액터에게 적용합니다.
 	 * * @param TargetActor 이펙트를 맞을 대상 액터.
 	 * @param SpecHandle MakeSpecHandle로 생성한 핸들.
 	 */
