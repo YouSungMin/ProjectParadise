@@ -9,6 +9,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Data/Assets/FXDataAsset.h"
@@ -35,36 +36,84 @@ AUnitBase::AUnitBase()
 	AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
 }
 
+void AUnitBase::OnPoolDeactivate_Implementation()
+{
+	// 타이머 및 AI 중지
+	GetWorldTimerManager().ClearAllTimersForObject(this);
+
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->StopLogic("Returned to Pool");
+
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+		{
+			BB->ClearValue(FName("TargetActor"));
+			BB->ClearValue(FName("TargetLocation"));
+		}
+		AIC->UnPossess();
+	}
+
+	FVector ExileLocation = FVector(0.f, 0.f, -100000.f);
+	SetActorLocation(ExileLocation);
+
+	// 물리 및 충돌 완전 차단
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+	}
+
+	bIsDead = true;
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+	SetActorEnableCollision(false);
+}
+
 void AUnitBase::OnPoolActivate_Implementation()
 {
+	// 가시성 복구
 	bIsDead = false;
 	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
-	SetActorEnableCollision(true);
 
+	// 물리 상태 초기화 (메시/캡슐)
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetSimulatePhysics(false);
+		MeshComp->SetAllBodiesSimulatePhysics(false);
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		MeshComp->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+		MeshComp->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
+		MeshComp->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+
+		if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
+		{
+			AnimInst->StopAllMontages(0.0f);
+		}
+	}
+
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetSimulatePhysics(false);
+		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Capsule->SetCollisionResponseToAllChannels(ECR_Block);
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+
+		Capsule->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+		Capsule->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	}
+
+	// 캐릭터 무브먼트 리셋
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->StopMovementImmediately();
 		MoveComp->Velocity = FVector::ZeroVector;
 		MoveComp->SetMovementMode(MOVE_Walking);
-	}
-}
-
-void AUnitBase::OnPoolDeactivate_Implementation()
-{
-	// 풀로 돌아갈 때 AI 로직 중지 및 컨트롤러 해제
-	if (AAIController* AIC = Cast<AAIController>(GetController()))
-	{
-		if (AIC->GetBrainComponent())
-		{
-			AIC->GetBrainComponent()->StopLogic("Returned to Pool");
-		}
-		AIC->UnPossess();
+		MoveComp->CurrentFloor.Clear();
 	}
 
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	SetActorTickEnabled(false);
+	SetActorEnableCollision(true);
 }
 
 FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) const

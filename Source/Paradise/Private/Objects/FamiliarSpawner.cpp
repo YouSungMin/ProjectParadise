@@ -43,17 +43,20 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 
 	if (!PoolSubsystem || !UnitClass || !GI) return;
 
-	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 100.0f);
+	// 전장 스폰 위치 계산
+	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 20.0f);
 	FRotator SpawnRotation = GetActorRotation();
 
+	// 풀에서 유닛 확보
 	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
 
 	if (NewUnit)
 	{
+		// 전장으로 강제 워프 및 물리 상태 초기화
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
+
 		NewUnit->SetUnitID(UnitID);
 
-		// 퍼밀리어 전용 데이터 테이블 참조
 		if (GI->FamiliarStatsDataTable && GI->FamiliarAssetsDataTable)
 		{
 			FFamiliarStats* StatData = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, UnitID);
@@ -81,7 +84,6 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 						{
 							AIC->RunBehaviorTree(BT);
 
-							// 블랙보드 타겟 기지 설정
 							UBlackboardComponent* BB = AIC->GetBlackboardComponent();
 							if (BB)
 							{

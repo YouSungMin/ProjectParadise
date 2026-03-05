@@ -86,17 +86,21 @@ void AUnitSpawner::SpawnUnit()
 
 	if (!PoolSubsystem || !UnitClass || EnemyRowName.IsNone() || !GI) return;
 
-	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 100.0f);
+	// 유배지에서 복귀할 정확한 전장 좌표 계산
+	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 20.0f);
 	FRotator SpawnRotation = FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f);
 
+	// 풀에서 유닛을 가져옴 (이때 내부적으로 OnPoolActivate 호출)
 	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
 
 	if (NewUnit)
 	{
+		// 전장 좌표로 즉시 순간이동 및 물리 리셋
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
+
 		NewUnit->SetUnitID(EnemyRowName);
 
-		// 유닛 데이터 로드 (GI 참조)
+		// 유닛 데이터 로드
 		if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
 		{
 			FEnemyStats* StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, NewUnit->GetUnitID());
@@ -104,6 +108,7 @@ void AUnitSpawner::SpawnUnit()
 
 			if (StatData && AssetData)
 			{
+				// 스탯 및 메시 초기화
 				NewUnit->InitializeUnit(StatData, AssetData);
 
 				AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
@@ -152,6 +157,8 @@ void AUnitSpawner::SpawnUnit()
 									BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
 								}
 							}
+							// AI 로직 강제 재시작
+							if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->RestartLogic();
 						}
 					}
 				}
@@ -159,19 +166,16 @@ void AUnitSpawner::SpawnUnit()
 		}
 	}
 
-	// 웨이브 진행 체크
+	// 웨이브 진행 관리
 	CurrentSpawnCountInWave++;
 	if (CurrentSpawnCountInWave >= WaveConfigs[CurrentWaveIndex].SpawnCount)
 	{
 		CurrentSpawnCountInWave = 0;
 		int32 FinishedIdx = CurrentWaveIndex;
 		CurrentWaveIndex++;
-
 		GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
-
 		if (WaveConfigs.IsValidIndex(CurrentWaveIndex))
 		{
-			// 다음 웨이브로 전환 시 간격과 딜레이 적용
 			GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
 				WaveConfigs[CurrentWaveIndex].SpawnInterval, true, WaveConfigs[FinishedIdx].NextWaveDelay);
 		}
