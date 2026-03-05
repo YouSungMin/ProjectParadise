@@ -100,45 +100,36 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
-
-		UE_LOG(LogTemp, Warning, TEXT("⏳ [ApplyCooldown] 적용 시도! 엑셀 쿨타임: %.1f"), CombatData.Cooldown);
+		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
 		if (CombatData.Cooldown > 0.0f)
 		{
 			FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Data.Cooldown"));
 			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Cooldown);
 		}
-
-		// 나 자신에게 쿨타임 이펙트 적용
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCooldown] 어빌리티에 Cooldown GE가 설정되지 않았습니다!"));
 	}
 }
 
 bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// 엑셀에서 읽어둔 내 스킬 데이터 가져오기
-	FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
-
-	// 소모 마나가 없으면(0이면) 무조건 패스 (평타 등)
-	if (CombatData.ManaCost <= 0.0f)
+	// 기본 로직 검사 통과 못하면 실패
+	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
 	{
-		return true;
+		return false;
 	}
 
-	// 현재 내 마나량과 비교
+	// ✅ 수정됨: const_cast 삭제하고 안전한 헬퍼 함수 사용!
+	FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
+
+	if (CombatData.ManaCost <= 0.0f) return true;
+
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
 		float CurrentMana = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
-
 		if (CurrentMana < CombatData.ManaCost)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("❌ 마나가 부족합니다! (현재: %.1f / 필요: %.1f)"), CurrentMana, CombatData.ManaCost);
-			return false; // 발동 실패!
+			return false; // 마나 부족 실패!
 		}
 	}
 	return true;
@@ -150,25 +141,15 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 	if (CostGE)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CostGE->GetClass(), GetAbilityLevel());
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+
+		// ✅ 수정됨: const_cast 삭제하고 안전한 헬퍼 함수 사용!
+		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
 		if (CombatData.ManaCost > 0.0f)
 		{
-			// SetByCaller를 통해 엑셀의 마나 코스트 수치를 GE로 전송
 			FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(FName("Data.Cost.Mana"));
-
 			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.ManaCost);
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-			UE_LOG(LogTemp,Log,TEXT("ApplyCost %.1f"), -CombatData.ManaCost);
-		}
-	}
-	else
-	{
-		// 마나가 드는 스킬인데 블루프린트에서 Cost GE를 빼먹은 경우 에러 로그 출력
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
-		if (CombatData.ManaCost > 0.0f)
-		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCost] 엑셀에 마나 소모량이 기입되었으나, 블루프린트의 Cost GE Class가 설정되지 않았습니다!"));
 		}
 	}
 }
@@ -229,4 +210,37 @@ void UBaseGameplayAbility::OnMontageCompleted()
 
 	// 몽타주가 끝나면 어빌리티 종료
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+FCombatActionData UBaseGameplayAbility::GetCombatDataFromActorInfo(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const
+{
+	FCombatActionData Data; // 빈 데이터 준비
+
+	if (ActorInfo && ActorInfo->AvatarActor.IsValid())
+	{
+		// 몬스터(보스)의 스킬일 경우 -> Handle의 InputID로 인덱스를 알아내서 가져옴
+		if (AbilityActionType == ECombatActionType::AIUnitSkill)
+		{
+			if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+			{
+				if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+				{
+					if (FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromHandle(Handle))
+					{
+						Data = Caster->GetSkillActionData(Spec->InputID);
+					}
+				}
+			}
+		}
+		// 플레이어 평타, 무기 스킬, 일반 몹 평타
+		else
+		{
+			if (ICombatInterface* CombatInt = Cast<ICombatInterface>(ActorInfo->AvatarActor.Get()))
+			{
+				Data = CombatInt->GetCombatActionData(AbilityActionType);
+			}
+		}
+	}
+
+	return Data;
 }

@@ -111,6 +111,12 @@ protected:
 	 */
 	UFUNCTION()
 	virtual void OnMontageCompleted();
+
+	/**
+	 * @brief (안전용) CheckCost, ApplyCooldown 등 CDO에서 호출될 때 사용하는 함수입니다.
+	 * 멤버 변수를 절대 수정하지 않고, 즉석에서 인터페이스를 통해 데이터를 가져옵니다.
+	 */
+	FCombatActionData GetCombatDataFromActorInfo(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const;
 private:
 	/** @brief 데이터를 이미 가져왔는지 확인하는 플래그 */
 	bool bIsDataCached = false;
