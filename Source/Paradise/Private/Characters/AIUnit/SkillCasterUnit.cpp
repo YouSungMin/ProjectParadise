@@ -45,33 +45,16 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 			}
 			SkillAbilityHandles.Empty();
 
-			// 새 스킬 부여 및 디버그 로그 출력
+			// 새 스킬 부여
 			for (int32 i = 0; i < InAssets->SkillAbilities.Num(); ++i)
 			{
 				TSubclassOf<UGameplayAbility> SkillClass = InAssets->SkillAbilities[i];
 				if (SkillClass)
 				{
+					// 1은 어빌리티 레벨, 그리고 3번째 인자가 바로 InputID 입니다! 
+					// 여기에 배열의 순서(i)를 그대로 박아줍니다.
 					FGameplayAbilitySpec Spec(SkillClass, 1, i);
-					FGameplayAbilitySpecHandle GivenHandle = AbilitySystemComponent->GiveAbility(Spec);
-
-					// 디버그 로그: 핸들이 유효한지(부여 성공) 확인
-					if (GivenHandle.IsValid())
-					{
-						SkillAbilityHandles.Add(GivenHandle);
-						UE_LOG(LogTemp, Log, TEXT("🟢 [%s] 스킬 부여 성공! | 어빌리티: %s | 할당된 인덱스(InputID): %d"),
-							*GetName(), *SkillClass->GetName(), i);
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("❌ [%s] 스킬 부여 실패! | 어빌리티: %s | 인덱스: %d"),
-							*GetName(), *SkillClass->GetName(), i);
-					}
-				}
-				else
-				{
-					// 배열 칸은 있는데 BP를 안 채워 넣었을 경우의 경고 로그
-					UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] %d번 인덱스의 스킬 클래스가 비어있습니다! (데이터 테이블 확인 요망)"),
-						*GetName(), i);
+					SkillAbilityHandles.Add(AbilitySystemComponent->GiveAbility(Spec));
 				}
 			}
 		}
