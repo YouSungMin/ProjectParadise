@@ -223,13 +223,15 @@ void AInGameController::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
 
 AActor* AInGameController::FindNearestEnemy(APawn* PlayerPawn, float& OutDistance)
 {
-    OutDistance = 999999.0f;
+    //큰값으로 초기화
+    OutDistance = MAX_flt;
     AActor* NearestEnemy = nullptr;
 
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), FoundActors);
 
-    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+    //처음 한 번만 태그를 검색
+    static const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
     const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 
     for (AActor* Actor : FoundActors)
@@ -237,14 +239,22 @@ AActor* AInGameController::FindNearestEnemy(APawn* PlayerPawn, float& OutDistanc
         AUnitBase* Unit = Cast<AUnitBase>(Actor);
         if (Unit && !Unit->IsDead() && Unit->GetFactionTag().MatchesTag(EnemyTag))
         {
-            float Dist = FVector::Distance(PlayerLoc, Unit->GetActorLocation());
-            if (Dist < OutDistance)
+            //DistSquared(제곱 거리) 사용
+            float DistSq = FVector::DistSquared(PlayerLoc, Unit->GetActorLocation());
+            if (DistSq < OutDistance)
             {
-                OutDistance = Dist;
+                OutDistance = DistSq; 
                 NearestEnemy = Actor;
             }
         }
     }
+
+    // 최종 반환할 때만 제곱근(루트)을 씌워서 실제 거리로 반환
+    if (NearestEnemy)
+    {
+        OutDistance = FMath::Sqrt(OutDistance);
+    }
+
     return NearestEnemy;
 }
 
@@ -253,7 +263,7 @@ AActor* AInGameController::GetEnemyBase()
     TArray<AActor*> FoundBases;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
-    const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
+    static const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
 
     for (AActor* Base : FoundBases)
     {
