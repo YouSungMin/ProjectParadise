@@ -12,6 +12,7 @@ class UParadiseCommonButton;
 class USkillSlotWidget;
 class APlayerBase;
 class AInGameController;
+class UTexture2D;
 #pragma endregion 전방 선언
 
 /**
@@ -26,15 +27,17 @@ class PARADISE_API UActionControlPanel : public UUserWidget
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
 public:
 #pragma region 외부 인터페이스
 	/**
-	 * @brief 데이터 테이블(Data-Driven)을 기반으로 스킬/궁극기 UI를 초기화합니다.
-	 * @param WeaponActionID 무기 데이터의 SkillActionID (액티브 스킬)
-	 * @param UltimateActionID 캐릭터 데이터의 SkillActionID (궁극기)
+	 * @brief 데이터 테이블을 기반으로 패널 전체를 초기화합니다.
+	 * @param WeaponActionID 무기 스킬 ID
+	 * @param UltimateActionID 궁극기 ID
+	 * @param AttackIcon 무기별 기본 공격 아이콘 (추가)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void InitActionPanel(FName WeaponActionID, FName UltimateActionID);
+	void InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon = nullptr);
 
 	/**
 	 * @brief 로비 편성 데이터(SquadSubsystem)를 읽어와 태그 버튼의 얼굴 이미지를 세팅합니다.
@@ -126,5 +129,17 @@ private:
 
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
 	TWeakObjectPtr<APlayerBase> CachedPlayer;
+
+	/** @brief 현재 조작 중인 캐릭터 인덱스 (중복 클릭 방지용) */
+	int32 CurrentActiveTagIndex = 0;
+
+	/**
+	 * @brief 공격 버튼 기본 아이콘 (폴백 이미지)
+	 * @details CharacterAssets에 WeaponIcon이 없거나 로드 실패 시 표시됩니다.
+	 *          에디터의 WBP_ActionControlPanel 디테일 패널에서 할당해주세요.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|ActionPanel")
+	TObjectPtr<UTexture2D> Tex_DefaultAttackIcon = nullptr;
 #pragma endregion 내부 데이터
+
 };
