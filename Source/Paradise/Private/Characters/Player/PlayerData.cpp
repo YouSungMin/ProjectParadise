@@ -2,7 +2,6 @@
 
 
 #include "Characters/Player/PlayerData.h"
-#include "Characters/Base/CharacterBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
