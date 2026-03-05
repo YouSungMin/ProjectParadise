@@ -2,6 +2,7 @@
 
 #include "Objects/UnitSpawner.h"
 #include "Characters/AIUnit/UnitBase.h"
+#include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/MyAIController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -84,14 +85,32 @@ void AUnitSpawner::SpawnUnit()
 	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 
-	if (!PoolSubsystem || !UnitClass || EnemyRowName.IsNone() || !GI) return;
+	if (!PoolSubsystem || (!UnitClass && !SkillCasterClass) || EnemyRowName.IsNone() || !GI) return;
+
+	FEnemyStats* StatData = nullptr;
+	FEnemyAssets* AssetData = nullptr;
+
+	if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
+	{
+		StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, EnemyRowName);
+		AssetData = GI->GetDataTableRow<FEnemyAssets>(GI->EnemyAssetsDataTable, EnemyRowName);
+	}
+
+	if (!StatData || !AssetData) return;
+
+	TSubclassOf<AUnitBase> ClassToSpawn = UnitClass;
+
+	if (StatData->SkillActionIDs.Num() > 0 && SkillCasterClass)
+	{
+		ClassToSpawn = SkillCasterClass; // 보스(스킬 캐스터) 클래스로 변경!
+	}
 
 	// 유배지에서 복귀할 정확한 전장 좌표 계산
 	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 20.0f);
 	FRotator SpawnRotation = FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f);
 
 	// 풀에서 유닛을 가져옴 (이때 내부적으로 OnPoolActivate 호출)
-	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
+	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(ClassToSpawn, SpawnLocation, SpawnRotation, this, nullptr);
 
 	if (NewUnit)
 	{
@@ -99,68 +118,57 @@ void AUnitSpawner::SpawnUnit()
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
 
 		NewUnit->SetUnitID(EnemyRowName);
+		// 스탯 및 메시 초기화
+		NewUnit->InitializeUnit(StatData, AssetData);
 
-		// 유닛 데이터 로드
-		if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
+		AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
+		if (!AIC)
 		{
-			FEnemyStats* StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, NewUnit->GetUnitID());
-			FEnemyAssets* AssetData = GI->GetDataTableRow<FEnemyAssets>(GI->EnemyAssetsDataTable, NewUnit->GetUnitID());
+			NewUnit->SpawnDefaultController();
+			AIC = Cast<AMyAIController>(NewUnit->GetController());
+		}
 
-			if (StatData && AssetData)
+		if (AIC)
+		{
+			AIC->Possess(NewUnit);
+
+			if (!AssetData->BehaviorTree.IsNull())
 			{
-				// 스탯 및 메시 초기화
-				NewUnit->InitializeUnit(StatData, AssetData);
-
-				AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
-				if (!AIC)
+				UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
+				if (BT)
 				{
-					NewUnit->SpawnDefaultController();
-					AIC = Cast<AMyAIController>(NewUnit->GetController());
-				}
+					AIC->RunBehaviorTree(BT);
 
-				if (AIC)
-				{
-					AIC->Possess(NewUnit);
-
-					if (!AssetData->BehaviorTree.IsNull())
+					UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+					if (BB)
 					{
-						UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
-						if (BT)
+						TArray<AActor*> FoundBases;
+						UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
+
+						AHomeBase* TargetFriendlyBase = nullptr;
+						for (AActor* BaseActor : FoundBases)
 						{
-							AIC->RunBehaviorTree(BT);
-
-							UBlackboardComponent* BB = AIC->GetBlackboardComponent();
-							if (BB)
+							AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
+							if (HomeBase && NewUnit->IsHostile(HomeBase))
 							{
-								TArray<AActor*> FoundBases;
-								UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
-
-								AHomeBase* TargetFriendlyBase = nullptr;
-								for (AActor* BaseActor : FoundBases)
-								{
-									AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
-									if (HomeBase && NewUnit->IsHostile(HomeBase))
-									{
-										TargetFriendlyBase = HomeBase;
-										break;
-									}
-								}
-
-								if (TargetFriendlyBase)
-								{
-									BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
-									FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
-									FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
-									FVector TargetLocation = BaseLoc + (Dir * 200.0f);
-
-									BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
-									BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
-								}
+								TargetFriendlyBase = HomeBase;
+								break;
 							}
-							// AI 로직 강제 재시작
-							if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->RestartLogic();
+						}
+
+						if (TargetFriendlyBase)
+						{
+							BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
+							FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
+							FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
+							FVector TargetLocation = BaseLoc + (Dir * 200.0f);
+
+							BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
+							BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
 						}
 					}
+					// AI 로직 강제 재시작
+					if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->RestartLogic();
 				}
 			}
 		}
