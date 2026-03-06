@@ -42,6 +42,8 @@ void UEquipmentComponent::InitializeEquipment(const TMap<EEquipmentSlot, FGuid>&
 			}
 		}
 	}
+
+	CalculateActiveSetBonuses();
 }
 
 
@@ -133,6 +135,59 @@ void UEquipmentComponent::UpdateVisuals(APlayerBase* TargetCharacter)
 			SetEquipmentMesh(Char, Slot, NAME_None);
 		}
 	}
+}
+
+TMap<FName, int32> UEquipmentComponent::CalculateActiveSetBonuses() const
+{
+	TMap<FName, int32> SetCounts;
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
+	if (!GI) return SetCounts;
+
+	UE_LOG(LogTemp, Warning, TEXT("=== 🔄 세트 효과 계산 시작 ==="));
+	// 컴포넌트 본인이 들고 있는 EquippedItems 순회
+	for (const auto& Pair : EquippedItems)
+	{
+		EEquipmentSlot Slot = Pair.Key;
+		FName ItemID = GetEquippedItemID(Slot);
+
+		if (ItemID.IsNone()) continue;
+
+		FName SetID = NAME_None;
+
+		// 1. 무기 테이블 조회
+		if (GI->WeaponStatsDataTable)
+		{
+			if (FWeaponStats* WeaponStat = GI->WeaponStatsDataTable->FindRow<FWeaponStats>(ItemID, TEXT("")))
+			{
+				SetID = WeaponStat->SetID;
+			}
+		}
+
+		// 2. 방어구 테이블 조회 (무기가 아니었다면)
+		if (SetID.IsNone() && GI->ArmorStatsDataTable)
+		{
+			if (FArmorStats* ArmorStat = GI->ArmorStatsDataTable->FindRow<FArmorStats>(ItemID, TEXT("")))
+			{
+				SetID = ArmorStat->SetID;
+			}
+		}
+
+		// 세트 ID가 존재하면 카운트 +1
+		if (!SetID.IsNone())
+		{
+			int32& Count = SetCounts.FindOrAdd(SetID);
+			Count++;
+			UE_LOG(LogTemp, Log, TEXT("✅ 장비 인식: [%s] -> 적용 세트: [%s] (누적 %d개)"), *ItemID.ToString(), *SetID.ToString(), Count);
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("=== 📊 최종 활성화된 세트 효과 목록 ==="));
+	for (const auto& Result : SetCounts)
+	{
+		UE_LOG(LogTemp, Warning, TEXT(" - 세트 ID: [%s] | 장착 부위 개수: %d"), *Result.Key.ToString(), Result.Value);
+	}
+
+	return SetCounts;
 }
 
 void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slot, FName ItemID)

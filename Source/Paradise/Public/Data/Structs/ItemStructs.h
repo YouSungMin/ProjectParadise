@@ -211,11 +211,22 @@ struct FWeaponAssets : public FItemBaseAssets
 	GENERATED_BODY()
 
 public:
+	/**
+	 * @brief 인게임 무기 평타 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WeaponBasicAttackIcon;
 
 	/**
-	* @brief 무기 분류 태그
-	* @details 예: Item.Type.Weapon.Melee.Sword, Item.Type.Weapon.Range.Staff
-	*/
+	 * @brief 인게임 무기 스킬 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WeaponSkillIcon;
+
+	/**
+	 * @brief 무기 분류 태그
+	 * @details 예: Item.Type.Weapon.Melee.Sword, Item.Type.Weapon.Range.Staff
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Type", meta = (Categories = "Item.Type.Weapon"))
 	FGameplayTag WeaponTag;
 

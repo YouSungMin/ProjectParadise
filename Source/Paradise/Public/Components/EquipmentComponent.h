@@ -75,6 +75,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Equipment|Visual")
 	void UpdateVisuals(APlayerBase* TargetCharacter);
 
+	/**
+	 * @brief 세트효과를 계산하는 함수
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Equipment|SetBonus")
+	TMap<FName, int32> CalculateActiveSetBonuses() const;
 private:
 
 	/**
