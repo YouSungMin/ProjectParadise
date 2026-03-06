@@ -43,6 +43,10 @@ public:
 	*/
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
+	/**
+	 * @brief 스탯(Attribute)의 최종 값이 변경된 직후에 자동으로 호출되는 함수
+	 */
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 public:
 	// =====================================================
 	//  기본 스탯 (Base Stats)

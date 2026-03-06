@@ -444,6 +444,9 @@ void APlayerData::InitPlayerData(FName HeroID)
 			{
 				EquipmentComponent->InitializeEquipment(MyData->EquipmentMap);
 			}
+
+			ApplySetBonuses();
+
 			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
 		}
 		else
@@ -550,4 +553,90 @@ FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
 	}
 
 	return nullptr;
+}
+
+void APlayerData::ApplySetBonuses()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI || !AbilitySystemComponent || !EquipmentComponent) return;
+
+	// 기존에 적용되어 있던 세트 효과 초기화
+	for (const FActiveGameplayEffectHandle& Handle : AppliedSetEffectHandles)
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffect(Handle);
+	}
+	AppliedSetEffectHandles.Empty();
+
+	for (const FGameplayAbilitySpecHandle& Handle : AppliedSetAbilityHandles)
+	{
+		AbilitySystemComponent->ClearAbility(Handle);
+	}
+	AppliedSetAbilityHandles.Empty();
+
+	// 현재 활성화된 세트 개수 가져오기
+	TMap<FName, int32> ActiveSets = EquipmentComponent->CalculateActiveSetBonuses();
+
+	// 각 세트마다 조건 검사 후 효과 적용
+	for (const auto& Pair : ActiveSets)
+	{
+		FName SetID = Pair.Key;
+		int32 EquipCount = Pair.Value;
+
+		FSetBonusStats* SetStat = GI->SetBonusStatsDataTable ? GI->SetBonusStatsDataTable->FindRow<FSetBonusStats>(SetID, TEXT("")) : nullptr;
+		FSetBonusAssets* SetAsset = GI->SetBonusAssetsDataTable ? GI->SetBonusAssetsDataTable->FindRow<FSetBonusAssets>(SetID, TEXT("")) : nullptr;
+
+		if (!SetStat || !SetAsset) continue;
+
+		// 1단계 수치형 버프 적용
+		if (EquipCount >= SetStat->Slot1_Count && !SetAsset->Slot1_Effect.IsNull())
+		{
+			TSubclassOf<UGameplayEffect> EffectClass = SetAsset->Slot1_Effect.LoadSynchronous();
+			if (EffectClass)
+			{
+				FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.0f, Context);
+
+				// 엑셀에 적힌 태그와 수치를 SetByCaller로 주입
+				SpecHandle.Data.Get()->SetSetByCallerMagnitude(SetStat->Slot1_AttributeTag, SetStat->Slot1_Value);
+
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				AppliedSetEffectHandles.Add(ActiveHandle); // 나중에 지우기 위해 저장
+
+				UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 1단계 적용 완료!"), *SetID.ToString());
+			}
+		}
+
+		// 2단계 수치형 버프 적용
+		if (EquipCount >= SetStat->Slot2_Count && !SetAsset->Slot2_Effect.IsNull())
+		{
+			TSubclassOf<UGameplayEffect> EffectClass = SetAsset->Slot2_Effect.LoadSynchronous();
+			if (EffectClass)
+			{
+				FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.0f, Context);
+
+				SpecHandle.Data.Get()->SetSetByCallerMagnitude(SetStat->Slot2_AttributeTag, SetStat->Slot2_Value);
+
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				AppliedSetEffectHandles.Add(ActiveHandle);
+
+				UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 2단계 적용 완료!"), *SetID.ToString());
+			}
+		}
+
+		// 3단계 특수 기능(Ability) 부여
+		if (EquipCount >= SetStat->Slot3_Count && !SetAsset->Slot3_Ability.IsNull())
+		{
+			TSubclassOf<UGameplayAbility> AbilityClass = SetAsset->Slot3_Ability.LoadSynchronous();
+			if (AbilityClass)
+			{
+				FGameplayAbilitySpec Spec(AbilityClass, 1, INDEX_NONE);
+				FGameplayAbilitySpecHandle ActiveHandle = AbilitySystemComponent->GiveAbility(Spec);
+
+				AppliedSetAbilityHandles.Add(ActiveHandle);
+
+				UE_LOG(LogTemp, Log, TEXT("⚡ [SetBonus] %s 3단계 어빌리티 부여 완료!"), *SetID.ToString());
+			}
+		}
+	}
 }
