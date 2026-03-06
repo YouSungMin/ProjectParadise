@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Data/Structs/UnitStructs.h"
-#include "Data/Structs/ItemStructs.h"
-#include "Data/Structs/CombatTypes.h"
 #include "AutoCombatComponent.generated.h"
 
 

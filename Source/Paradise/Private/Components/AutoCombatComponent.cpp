@@ -191,15 +191,6 @@ AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDist
     FCollisionQueryParams CollisionParams;
     CollisionParams.AddIgnoredActor(PlayerPawn);
 
-    bool bHit = GetWorld()->OverlapMultiByChannel(
-        OverlapResults,
-        PlayerLoc,
-        FQuat::Identity,
-        ECC_Pawn, // 만약 몬스터 전용 채널이 있다면 그걸 넣으셔도 좋습니다.
-        FCollisionShape::MakeSphere(SearchRadius),
-        CollisionParams
-    );
-
     //처음 한 번만 태그를 검색
     static const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
 
