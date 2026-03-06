@@ -4,7 +4,11 @@
 #include "Components/AutoCombatComponent.h"
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Components/SquadControlComponent.h"
+#include "Components/EquipmentComponent.h"
 #include "Characters/Base/PlayerBase.h"
+#include "Characters/Player/PlayerData.h"
 #include "Characters/AIUnit/UnitBase.h"
 #include "Objects/HomeBase.h"
 #include "Components/FamiliarSummonComponent.h"
@@ -88,7 +92,7 @@ void UAutoCombatComponent::UpdateAutoCombat()
     APlayerBase* PlayerPawn = Cast<APlayerBase>(OwnerPC->GetPawn());
     if (!PlayerPawn || PlayerPawn->IsDead()) return;
 
-    float AttackRange = 300.0f; // TODO: 캐릭터 사거리에 맞게 조절 (현재 하드코딩중)
+    float AttackRange = GetDynamicAttackRange(PlayerPawn);
     float NearestDist = 999999.0f;
 
     //가장 가까운 적 탐색
@@ -177,25 +181,45 @@ AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDist
     OutDistance = MAX_flt;
     AActor* NearestEnemy = nullptr;
 
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), FoundActors);
+    if (!PlayerPawn || !GetWorld()) return nullptr;
+
+    const FVector PlayerLoc = PlayerPawn->GetActorLocation();
+
+    float SearchRadius = 3000.0f;
+
+    TArray<FOverlapResult> OverlapResults;
+    FCollisionQueryParams CollisionParams;
+    CollisionParams.AddIgnoredActor(PlayerPawn);
+
+    bool bHit = GetWorld()->OverlapMultiByChannel(
+        OverlapResults,
+        PlayerLoc,
+        FQuat::Identity,
+        ECC_Pawn, // 만약 몬스터 전용 채널이 있다면 그걸 넣으셔도 좋습니다.
+        FCollisionShape::MakeSphere(SearchRadius),
+        CollisionParams
+    );
 
     //처음 한 번만 태그를 검색
     static const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
-    const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 
-    for (AActor* Actor : FoundActors)
+    for (const FOverlapResult& Result : OverlapResults)
     {
-        AUnitBase* Unit = Cast<AUnitBase>(Actor);
-        if (Unit && !Unit->IsDead() && Unit->GetFactionTag().MatchesTag(EnemyTag))
+        AUnitBase* Unit = Cast<AUnitBase>(Result.GetActor());
+
+        // 유효하지 않거나, 죽었거나, 적군 태그가 아니라면 넘어가기
+        if (!Unit || Unit->IsDead() || !Unit->GetFactionTag().MatchesTag(EnemyTag))
         {
-            //DistSquared(제곱 거리) 사용
-            float DistSq = FVector::DistSquared(PlayerLoc, Unit->GetActorLocation());
-            if (DistSq < OutDistance)
-            {
-                OutDistance = DistSq;
-                NearestEnemy = Actor;
-            }
+            continue;
+        }
+
+        //이후에 남아있는 액터는 살아있는 적
+        float DistSq = FVector::DistSquared(PlayerLoc, Unit->GetActorLocation());
+
+        if (DistSq < OutDistance)
+        {
+            OutDistance = DistSq;
+            NearestEnemy = Unit;
         }
     }
 
@@ -210,6 +234,12 @@ AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDist
 
 AActor* UAutoCombatComponent::GetEnemyBase()
 {
+    if (CachedEnemyBase.IsValid())
+    {
+        return CachedEnemyBase.Get();
+    }
+
+    //최초 1회 또는 다음 스테이지만 전체 탐색 수행
     TArray<AActor*> FoundBases;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
@@ -219,9 +249,10 @@ AActor* UAutoCombatComponent::GetEnemyBase()
     {
         AHomeBase* HomeBase = Cast<AHomeBase>(Base);
 
-        //기지의 Faction확인하여 적기지만 찾음
         if (HomeBase && HomeBase->GetFactionTag().MatchesTag(EnemyTag))
         {
+            // 찾아낸 기지를 저장
+            CachedEnemyBase = HomeBase;
             return Base;
         }
     }
@@ -231,4 +262,66 @@ AActor* UAutoCombatComponent::GetEnemyBase()
 AInGameController* UAutoCombatComponent::GetOwnerController() const
 {
     return Cast<AInGameController>(GetOwner());
+}
+
+float UAutoCombatComponent::GetDynamicAttackRange(APlayerBase* PlayerPawn)
+{
+    float DefaultRange = 150.0f; // 데이터를 못 찾았을 때의 기본 사거리
+    if (!PlayerPawn) return DefaultRange;
+
+    AInGameController* OwnerPC = GetOwnerController();
+    UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
+    if (!OwnerPC || !GI) return DefaultRange;
+
+    UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent();
+    if (!ASC) return DefaultRange;
+
+    // 스킬 사용 가능 여부 검사 (람다)
+    auto CanUseAbility = [&](EInputID InputID) -> bool
+        {
+            for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+            {
+                if (Spec.InputID == static_cast<int32>(InputID))
+                    return Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
+            }
+            return false;
+        };
+
+    // 캐릭터 데이터(영혼) 가져오기
+    AInGamePlayerState* PS = OwnerPC->GetPlayerState<AInGamePlayerState>();
+    USquadControlComponent* SquadComp = OwnerPC->GetSquadControlComponent();
+    if (!PS || !SquadComp) return DefaultRange;
+
+    APlayerData* Soul = PS->GetSquadMemberData(SquadComp->GetCurrentControlledIndex());
+    if (!Soul) return DefaultRange;
+
+    FName TargetActionID = NAME_None;
+
+    // 1순위: 궁극기 검사
+    if (CanUseAbility(EInputID::Ultimate))
+    {
+        if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
+            TargetActionID = CharStats->SkillActionID;
+    }
+    // 2, 3순위: 무기 스킬 및 평타 검사
+    else if (UEquipmentComponent* EquipComp = Soul->GetEquipmentComponent())
+    {
+        FName WeaponID = EquipComp->GetEquippedItemID(EEquipmentSlot::Weapon);
+        if (const FWeaponStats* WeaponStats = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, WeaponID))
+            TargetActionID = CanUseAbility(EInputID::Skill) ? WeaponStats->SkillActionID : WeaponStats->BasicAttackActionID;
+    }
+
+    // 최종 사거리 반환
+    if (TargetActionID != NAME_None && GI->ActionStatsDataTable)
+    {
+        if (const FActionStats* ActionStats = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+        {
+            // AI의 헛방 방지를 위해 실제 사거리의 90%를 적용 (버퍼)
+            return ActionStats->AttackRange * 0.9f;
+        }
+    }
+
+    // 🚨 데이터를 찾지 못했을 때만 에러 파악을 위해 경고 로그 출력
+    UE_LOG(LogTemp, Warning, TEXT("⚠️ [AutoCombat] 액션 데이터를 찾지 못했습니다. 기본 사거리(%.1f) 반환."), DefaultRange);
+    return DefaultRange;
 }
