@@ -84,6 +84,14 @@ struct FGachaResult
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	FName PulledItemID = NAME_None;
 
+	/** @brief UI 결과창에 표시할 아이템 아이콘/일러스트 텍스처 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
+	TObjectPtr<UTexture2D> ItemIcon = nullptr;
+
+	/** @brief UI 결과창에 표시할 아이템 이름 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
+	FName ItemName = NAME_None;
+
 	/** @brief 뽑힌 등급 (UI 박스 색상 및 이펙트 결정용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	EItemRarity PulledRarity = EItemRarity::Common;

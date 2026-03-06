@@ -62,6 +62,7 @@ void AParadiseGachaBoxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 	SpawnTimerHandles.Empty();
 
+	GetWorldTimerManager().ClearTimer(ResultDelayTimerHandle);
 	StopCurrentSequence();
 
 	Super::EndPlay(EndPlayReason);
@@ -76,8 +77,11 @@ void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InRes
 	CachedResults = InResults;
 	CachedHighestRarity = GetHighestRarity(CachedResults);
 	bIsOpening = false;
+	RevealedItemCount = 0;
+	TotalItemCount = InResults.Num();
+	SpawnedItems.Empty();
 
-	// 시퀀스 시작 전 라이트 및 발광 색상을 미리 초기화 (Data-Driven)
+	// 시퀀스 시작 전 라이트 및 발광 색상을 미리 초기화 
 	if (FLinearColor* RarityColor = GlowColorsByRarity.Find(CachedHighestRarity))
 	{
 		if (AuraLight)
@@ -111,11 +115,11 @@ void AParadiseGachaBoxActor::SkipGachaSequence()
 	}
 	SpawnTimerHandles.Empty();
 
+	GetWorldTimerManager().ClearTimer(ResultDelayTimerHandle);
 	StopCurrentSequence();
 
-	// Open 단계로 강제 전환 → 결과창 바로 표시
-	CurrentStep = EGachaSequenceStep::Open;
-	OnSequenceFinished();
+	// 딜레이 없이 즉시 결과창
+	ShowResultScreen();
 }
 
 void AParadiseGachaBoxActor::SetGachaPlaySpeed(float SpeedMultiplier)
@@ -196,11 +200,7 @@ void AParadiseGachaBoxActor::OnSequenceFinished()
 		}
 		break;
 	case EGachaSequenceStep::Open:
-		// 뚜껑 열림 완료. 
-		if (OnGachaResultScreenRequested.IsBound())
-		{
-			OnGachaResultScreenRequested.Broadcast(CachedResults);
-		}
+		// Open 시퀀스 종료 — 구슬들이 착지 후 터치 대기 중
 		break;
 	case EGachaSequenceStep::Idle:
 	case EGachaSequenceStep::None:
@@ -298,8 +298,14 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 
 	SpawnedItem->InitializeItemData(CachedResults[Index], TargetSilhouetteMat, nullptr);
 
-	FVector TargetLoc = BoxLoc;
+	// 리빌 완료 콜백 바인딩
+	SpawnedItem->OnItemRevealed.AddDynamic(this, &AParadiseGachaBoxActor::OnItemRevealedCallback);
 
+	// 구슬 목록에 추가 (배속 전파용)
+	SpawnedItems.Add(SpawnedItem);
+
+	// 목표 위치 계산
+	FVector TargetLoc = BoxLoc;
 	if (ItemCount == 1)
 	{
 		TargetLoc += GetActorForwardVector() * 200.0f;
@@ -317,6 +323,37 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 	SpawnedItem->LaunchToTarget(TargetLoc, FlightTime, EruptArcHeight);
 }
 #pragma endregion 내부 시퀀스 로직 구현
+
+#pragma region 내부 리빌 카운트 로직 구현
+void AParadiseGachaBoxActor::OnItemRevealedCallback(const FGachaResult& ItemData)
+{
+	++RevealedItemCount;
+
+	if (OnSingleCharacterRevealed.IsBound())
+	{
+		OnSingleCharacterRevealed.Broadcast(ItemData);
+	}
+
+	// 모든 구슬 리빌 완료 → ResultDelaySeconds 후 결과창
+	if (RevealedItemCount >= TotalItemCount)
+	{
+		GetWorldTimerManager().SetTimer(
+			ResultDelayTimerHandle,
+			this,
+			&AParadiseGachaBoxActor::ShowResultScreen,
+			ResultDelaySeconds,
+			false);
+	}
+}
+
+void AParadiseGachaBoxActor::ShowResultScreen()
+{
+	if (OnGachaResultScreenRequested.IsBound())
+	{
+		OnGachaResultScreenRequested.Broadcast(CachedResults);
+	}
+}
+#pragma endregion 내부 리빌 카운트 로직 구현
 
 #pragma region 내부 터치 로직 구현
 void AParadiseGachaBoxActor::HandleBoxClicked(UPrimitiveComponent* TouchedComp, FKey ButtonPressed)
@@ -400,7 +437,19 @@ void AParadiseGachaBoxActor::TickPressUpdate()
 	if (bNewPressing != bIsPressing)
 	{
 		bIsPressing = bNewPressing;
-		SetGachaPlaySpeed(bIsPressing ? PressPlayRate : 1.0f);
+		const float NewRate = bIsPressing ? PressPlayRate : 1.0f;
+
+		// 1. 시퀀스 배속
+		SetGachaPlaySpeed(NewRate);
+
+		// 2. ★ 날아다니는 구슬들도 동일 배속 적용
+		for (TObjectPtr<AParadiseGachaItemActor>& Item : SpawnedItems)
+		{
+			if (IsValid(Item))
+			{
+				Item->SetFlightSpeedMultiplier(NewRate);
+			}
+		}
 	}
 }
 

@@ -64,6 +64,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha|Item")
 	void RevealItem();
+
+	/**
+	 * @brief 비행 속도 배율을 설정합니다. (BoxActor 의 꾹 누름 배속과 연동)
+	 * @param InMultiplier 1.0 = 기본 / 2.0 = 2배속
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha|Item")
+	void SetFlightSpeedMultiplier(float InMultiplier);
 #pragma endregion 외부 인터페이스 (주입식 설계)
 
 #pragma region 내부 이벤트 핸들러 (Delegate Wrapper)
@@ -118,6 +125,12 @@ private:
 	float TotalFlightTime = 1.0f;
 	float CurrentFlightTime = 0.0f;
 	float MaxArcHeight = 300.0f;
+
+	/**
+	 * @brief 비행 속도 배율 (BoxActor 의 꾹 누름 배속과 동기화)
+	 * @details SetFlightSpeedMultiplier() 로 외부에서 설정합니다.
+	 */
+	float FlightSpeedMultiplier = 1.0f;
 #pragma endregion 내부 상태 및 캐싱
 
 #pragma region 델리게이트

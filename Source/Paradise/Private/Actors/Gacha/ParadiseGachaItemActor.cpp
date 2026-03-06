@@ -43,37 +43,36 @@ void AParadiseGachaItemActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// 비행 상태일 때만 포물선 수학 연산 수행 (물리 엔진 미사용으로 압도적 최적화)
-	if (CurrentState == EGachaItemState::Flying)
+	if (CurrentState != EGachaItemState::Flying) return;
+
+	// ★ FlightSpeedMultiplier 적용 — 꾹 누름 시 2배속으로 날아감
+	CurrentFlightTime += DeltaTime * FlightSpeedMultiplier;
+
+	const float Alpha = FMath::Clamp(CurrentFlightTime / TotalFlightTime, 0.0f, 1.0f);
+
+	// X, Y 선형 보간
+	FVector CurrentPos = FMath::Lerp(StartLoc, EndLoc, Alpha);
+
+	// Z 사인 곡선 포물선
+	CurrentPos.Z += FMath::Sin(Alpha * PI) * MaxArcHeight;
+
+	SetActorLocation(CurrentPos);
+
+	// 착지 완료
+	if (Alpha >= 1.0f)
 	{
-		CurrentFlightTime += DeltaTime;
-		float Alpha = FMath::Clamp(CurrentFlightTime / TotalFlightTime, 0.0f, 1.0f);
+		CurrentState = EGachaItemState::Landed;
+		SetActorTickEnabled(false);
 
-		// X, Y는 선형 보간 (Lerp)
-		FVector CurrentPos = FMath::Lerp(StartLoc, EndLoc, Alpha);
-
-		// Z(높이)는 사인(Sin) 곡선을 더해 포물선(Arc) 궤적 생성
-		float HeightOffset = FMath::Sin(Alpha * PI) * MaxArcHeight;
-		CurrentPos.Z += HeightOffset;
-
-		SetActorLocation(CurrentPos);
-
-		// 안착 완료 시 Tick 종료 및 상태 변경
-		if (Alpha >= 1.0f)
+		if (RarityAuraEffect)
 		{
-			CurrentState = EGachaItemState::Landed;
-			SetActorTickEnabled(false);
-
-			// 바닥에 안착하면 영롱한 아우라 재생 시작
-			if (RarityAuraEffect)
-			{
-				RarityAuraEffect->Activate(true);
-			}
+			RarityAuraEffect->Activate(true);
 		}
 	}
 }
 #pragma endregion 초기화 및 생명주기
 
-#pragma region 외부 인터페이스 (주입식 로직)
+#pragma region 외부 인터페이스
 void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, UMaterialInstance* InSilhouetteMat, UMaterialInstance* InRealMat)
 {
 	CachedItemData = InResult;
@@ -117,7 +116,8 @@ void AParadiseGachaItemActor::RevealItem()
 	{
 		if (FxPtr && *FxPtr)
 		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
 		}
 	}
 	if (RevealSound)
@@ -137,9 +137,14 @@ void AParadiseGachaItemActor::RevealItem()
 		OnItemRevealed.Broadcast(CachedItemData);
 	}
 }
-#pragma endregion 외부 인터페이스 (주입식 로직)
 
-#pragma region 내부 이벤트 핸들러 (Delegate Wrapper)
+void AParadiseGachaItemActor::SetFlightSpeedMultiplier(float InMultiplier)
+{
+	FlightSpeedMultiplier = FMath::Max(InMultiplier, 0.1f);
+}
+#pragma endregion 외부 인터페이스 
+
+#pragma region 내부 이벤트 핸들러
 // 델리게이트로부터 이벤트를 받아서, 실제 연출 함수인 RevealItem을 호출합니다.
 void AParadiseGachaItemActor::HandleItemClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
@@ -150,5 +155,5 @@ void AParadiseGachaItemActor::HandleItemTouchEnd(ETouchIndex::Type FingerIndex, 
 {
 	RevealItem();
 }
-#pragma endregion 내부 이벤트 핸들러 (Delegate Wrapper)
+#pragma endregion 내부 이벤트 핸들러
 
