@@ -8,10 +8,12 @@
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/GrowthSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
+#include "Framework/System/GachaSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
-#include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
+#include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
 
@@ -424,29 +426,108 @@ void ALobbyPlayerController::RequestBackToPreviousMenu()
 
 void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
 {
-	// 1. 떠 있던 가챠 팝업 UI 숨기기 (연출을 봐야 하니까!)
-	if (CachedLobbyHUD)
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	UGachaSubsystem* GachaSys = GI->GetSubsystem<UGachaSubsystem>();
+	UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>();
+	UInventorySystem* InvSys = GI->GetMainInventory();
+
+	if (!GachaSys || !EconSys || !InvSys) return;
+
+	// 1. [트랜잭션] 총 에테르 비용 계산 및 소모 (Aether 통일)
+	const int32 TotalAetherNeeded = GachaSys->GetCurrentAetherRequirement() * DrawCount;
+
+	if (!EconSys->ConsumeCurrency(ECurrencyType::Aether, TotalAetherNeeded))
 	{
-		CachedLobbyHUD->OnStartCameraMove(); // 만들어두신 숨김 함수 재활용
+		UE_LOG(LogTemp, Warning, TEXT("❌ [Gacha] 에테르가 부족합니다! (필요: %d)"), TotalAetherNeeded);
+		return;
 	}
 
-	// 2. 카메라를 상자가 있는 시네마틱 카메라로 즉시(0초) 컷 전환!
-	// (블렌드를 줘도 되지만, 오버워치나 원신은 보통 여기서 컷 씬으로 확 넘어갑니다)
-	if (Camera_GachaAction)
+	// 2. [UI 및 카메라 전환] 
+	if (CachedLobbyHUD) CachedLobbyHUD->OnStartCameraMove();
+	if (Camera_GachaAction) SetViewTargetWithBlend(Camera_GachaAction, 0.0f);
+
+	// 3. [데이터 준비] 중복 검사용 배열
+	TArray<FName> OwnedCharacterIDs;
+	for (const FOwnedCharacterData& CharData : InvSys->GetOwnedCharacters())
 	{
-		SetViewTargetWithBlend(Camera_GachaAction, 0.0f);
+		OwnedCharacterIDs.Add(CharData.CharacterID);
 	}
 
-	// 3. 서버/서브시스템에서 실제 뽑기 결과(데이터)를 가져옵니다.
-	// (이 부분은 유저님의 GachaSubsystem 연동 방식에 맞춰 작성하시면 됩니다)
-	TArray<FGachaResult> PulledResults;
-	// 예시: PulledResults = GI->GetSubsystem<UGachaSubsystem>()->PullGacha(DrawCount);
+	// 4. [가챠 실행!] 
+	TArray<FGachaResult> PulledResults = GachaSys->PerformGacha(DrawCount, OwnedCharacterIDs);
 
-	// 4. 레벨에 배치된 상자 액터를 찾아서 시퀀스 재생 명령을 내립니다!
+	// 5. [연출 큐 사인] 상자에게 결과 전달 및 연출 시작
 	AParadiseGachaBoxActor* GachaBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
-
 	if (GachaBox)
 	{
+		GachaBox->OnGachaResultScreenRequested.RemoveDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
+		GachaBox->OnGachaResultScreenRequested.AddDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
+
 		GachaBox->PlayGachaSequence(PulledResults);
+	}
+}
+
+void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults)
+{
+	UE_LOG(LogTemp, Log, TEXT("🎉 [Gacha] 연출 종료! 결과창을 띄우고 보상을 지급합니다."));
+
+	// 1. 위젯이 없으면 최초 1회만 생성 (Lazy Initialization)
+	if (!CachedResultWidget && GachaResultWidgetClass)
+	{
+		CachedResultWidget = CreateWidget<UParadiseGachaResultWidget>(this, GachaResultWidgetClass);
+		if (CachedResultWidget)
+		{
+			CachedResultWidget->AddToViewport(100);
+		}
+	}
+
+	// 2. 캐싱된 위젯 재사용 (Object Pooling)
+	if (CachedResultWidget)
+	{
+		CachedResultWidget->SetVisibility(ESlateVisibility::Visible);
+		CachedResultWidget->ShowResults(FinalResults);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ GachaResultWidgetClass가 세팅되지 않았습니다!"));
+	}
+
+	// 3. 실제 보상 인벤토리에 확정 지급 로직
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		UInventorySystem* InvSys = GI->GetMainInventory();
+		if (InvSys)
+		{
+			for (const FGachaResult& Result : FinalResults)
+			{
+				// GameInstance의 유효성 검사 함수를 통해 '장비'인지 '캐릭터'인지 똑똑하게 구분합니다.
+				if (GI->IsValidItemID(Result.PulledItemID))
+				{
+					// [장비] 중복 상관없이 1개씩 온전하게 지급 (0강 상태)
+					InvSys->AddItem(Result.PulledItemID, 1, 0);
+				}
+				else if (GI->IsValidPlayerID(Result.PulledItemID))
+				{
+					// [캐릭터] 중복 여부에 따라 분기
+					if (Result.bIsDuplicate)
+					{
+						// 가챠 풀 엑셀에 적혀있던 그 조각 개수만큼! 정확하게 지급
+						InvSys->AddAwakeningPiece(Result.PulledItemID, Result.ConvertedFragments);
+						UE_LOG(LogTemp, Log, TEXT("🧩 [Gacha] 캐릭터 중복 획득! %s 조각 %d개 지급 완료."), *Result.PulledItemID.ToString(), Result.ConvertedFragments);
+					}
+					else
+					{
+						// 최초 획득 시 온전한 캐릭터 1개 추가
+						InvSys->AddCharacter(Result.PulledItemID);
+					}
+				}
+			}
+			// 4. 모든 지급이 끝난 후 게임 자동 세이브!
+			GI->SaveGameData();
+			UE_LOG(LogTemp, Log, TEXT("💾 [Gacha] 가챠 보상 지급 및 게임 저장 완료!"));
+		}
 	}
 }

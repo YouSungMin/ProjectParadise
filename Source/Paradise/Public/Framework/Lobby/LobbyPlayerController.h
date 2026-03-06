@@ -5,11 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "Data/Enums/ParadiseLobbyEnums.h"
+#include "Data/Structs/GachaTypes.h"
 #include "LobbyPlayerController.generated.h"
 
 #pragma region 전방 선언
 class UParadiseLobbyHUDWidget;
 class ACameraActor;
+class AParadiseGachaBoxActor;
+class UParadiseGachaResultWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -68,8 +71,6 @@ public:
 
 
 #pragma region 카메라 설정
-
-#pragma region 카메라 설정
 public:
 	/**
 	 * @brief 카메라 이동을 요청합니다.
@@ -118,6 +119,10 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI")
 	TSubclassOf<UParadiseLobbyHUDWidget> LobbyHUDClass;
+
+	/** @brief 10연차 연출이 끝난 후 띄워줄 결과창 UI 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI")
+	TSubclassOf<UParadiseGachaResultWidget> GachaResultWidgetClass;
 #pragma endregion 설정
 
 #pragma region 로직 인터페이스
@@ -135,14 +140,6 @@ public:
 	/** @brief 컨텍스트를 유지한 채 직전 메뉴로 돌아갑니다. */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Navigation")
 	void RequestBackToPreviousMenu();
-
-	/**
-	 * @brief 1회 또는 10회 소환 버튼을 눌렀을 때, 본격적인 가챠 연출을 시작합니다.
-	 * @param DrawCount 뽑기 횟수 (1 또는 10)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
-	void StartGachaActionSequence(int32 DrawCount);
-
 private:
 	/** @brief 직전 메뉴 상태를 캐싱합니다. */
 	EParadiseLobbyMenu PreviousMenu = EParadiseLobbyMenu::None;
@@ -151,6 +148,26 @@ private:
 	EParadiseLobbyMenu CurrentMenu = EParadiseLobbyMenu::None;
 
 	UPROPERTY()
-	TObjectPtr<UParadiseLobbyHUDWidget> CachedLobbyHUD;
+	TObjectPtr<UParadiseLobbyHUDWidget> CachedLobbyHUD = nullptr;
+
+	/** @brief 매번 생성하지 않기 위해 결과창 위젯을 강하게 쥐고 있습니다. (캐싱 및 Object Pooling) */
+	UPROPERTY()
+	TObjectPtr<UParadiseGachaResultWidget> CachedResultWidget = nullptr;
 #pragma endregion 로직 인터페이스
+
+#pragma region 가챠 연출 제어
+public:
+	/**
+	 * @brief 1회 또는 10회 소환 버튼을 눌렀을 때, 본격적인 가챠 연출을 시작합니다.
+	 * @param DrawCount 뽑기 횟수 (1 또는 10)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void StartGachaActionSequence(int32 DrawCount);
+
+	/**
+	 * @brief 가챠 박스 연출이 끝나고 결과창을 띄워달라는 델리게이트를 받을 콜백 함수
+	 */
+	UFUNCTION()
+	void OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults);
+#pragma endregion 가챠 연출 제어
 };

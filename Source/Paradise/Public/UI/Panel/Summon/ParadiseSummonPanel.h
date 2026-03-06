@@ -10,6 +10,9 @@
 class UButton;
 class UImage;
 class UTextBlock;
+class UDataTable;
+class ALobbyPlayerController;
+class UParadiseGameInstance;
 #pragma endregion 전방선언
 
 /**
@@ -36,6 +39,15 @@ public:
 	virtual void RefreshPanelData();
 #pragma endregion 외부 인터페이스
 
+#pragma region 데이터 및 에셋 설정
+protected:
+	/** * @brief 기획자가 에디터에서 할당할 이 패널의 배너 행(Row) 데이터
+	 * @details FDataTableRowHandle을 사용해 테이블과 특정 배너 행을 동시에 선택합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Data", meta = (RowType = "/Script/Paradise.GachaBannerData"))
+	FDataTableRowHandle BannerDataRow;
+#pragma endregion 데이터 및 에셋 설정
+
 #pragma region 내부 변수
 protected:
 	/** @brief 소환 수행 버튼 (1회) */
@@ -47,6 +59,15 @@ protected:
 	TObjectPtr<UButton> Btn_SummonMulti = nullptr;
 #pragma endregion 내부 변수
 
+#pragma region 내부 상태 및 캐싱
+private:
+	/** @brief 가챠 액션(시퀀스 카메라 연출) 요청을 위한 컨트롤러 약참조 */
+	TWeakObjectPtr<ALobbyPlayerController> CachedPlayerController = nullptr;
+
+	/** @brief 서브시스템(GachaSubsystem) 접근용 게임 인스턴스 약참조 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+#pragma endregion 내부 상태 및 캐싱
+
 #pragma region 내부 로직
 protected:
 	UFUNCTION()
@@ -54,5 +75,12 @@ protected:
 
 	UFUNCTION()
 	virtual void OnMultiSummonClicked();
+
+private:
+	/**
+	 * @brief 공통 소환 요청 로직 분리
+	 * @param DrawCount 소환 횟수
+	 */
+	void RequestSummonAction(int32 DrawCount);
 #pragma endregion 내부 로직
 };

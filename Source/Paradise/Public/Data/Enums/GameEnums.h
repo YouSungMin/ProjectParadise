@@ -212,3 +212,15 @@ enum class EGachaSequenceStep : uint8
 	Idle    UMETA(DisplayName = "흔들흔들 대기"),
 	Open    UMETA(DisplayName = "격렬+열림"),
 };
+
+/**
+ * @enum EGachaBannerType
+ * @brief 가챠 배너의 종류를 구분하는 열거형
+ * @details UI 필터링 및 인벤토리 지급 로직 분기용으로 사용됩니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaBannerType : uint8
+{
+	Character	UMETA(DisplayName = "캐릭터 소환"),
+	Equipment	UMETA(DisplayName = "장비 소환")
+};

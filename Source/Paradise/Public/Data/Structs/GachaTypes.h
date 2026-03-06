@@ -4,6 +4,45 @@
 #include "Data/Enums/GameEnums.h"
 #include "GachaTypes.generated.h"
 
+#pragma region 배너 및 확률 데이터
+/**
+ * @struct FGachaBannerData
+ * @brief 기획자가 각 배너(픽업, 상시, 장비 등)의 전반적인 규칙과 확률을 세팅하는 마스터 테이블
+ * @details 이 테이블 하나만 교체하면 가챠의 가격, 확률, 풀(Pool)이 모두 데이터 주도적으로 변경됩니다.
+ */
+USTRUCT(BlueprintType)
+struct FGachaBannerData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** @brief 배너의 종류 (캐릭터 or 장비) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner")
+	EGachaBannerType BannerType = EGachaBannerType::Character;
+
+	/** @brief 1회 소환에 필요한 에테르의 양 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner", meta = (ClampMin = "0"))
+	int32 RequiredAether = 100;
+
+	/** * @brief 등급별 등장 확률 (Rarity Rates)
+	 * @details 총합이 반드시 1.0(100%)이 되도록 기획자가 엑셀에서 세팅해야 합니다.
+	 * 예: Common(0.8), Rare(0.15), Legendary(0.05)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner")
+	TMap<EItemRarity, float> RarityProbabilities;
+
+	/** * @brief 이 배너에서 등장할 아이템 목록이 담긴 풀(Pool) 데이터 테이블
+	 * @details FGachaPoolRow 구조체를 사용하는 데이터 테이블을 연결합니다.
+	 * TSoftObjectPtr를 사용하여 메모리 낭비와 순환 참조를 방지합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner")
+	TSoftObjectPtr<UDataTable> TargetPoolTable = nullptr;
+
+	/** @brief 이 배너 전용 천장 스택 (예: 80회 뽑기 시 최고 등급 확정) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner", meta = (ClampMin = "1"))
+	int32 PityThreshold = 80;
+};
+#pragma endregion 배너 및 확률 데이터
+
 #pragma region 데이터 구조체
 /**
  * @struct FGachaPoolRow
@@ -26,7 +65,7 @@ struct FGachaPoolRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0.0"))
 	float Weight = 1.0f;
 
-	/** @brief 중복 획득 시 변환될 조각(파편)의 개수 */
+	/** @brief 중복 획득 시 변환될 조각(파편)의 개수 (장비는 전부 0으로 해서 조각 X) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0"))
 	int32 DuplicateFragmentReward = 10;
 };
