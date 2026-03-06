@@ -9,7 +9,7 @@
 #include "Framework/System/GrowthSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
 
-
+#include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -28,6 +28,7 @@ void ALobbyPlayerController::BeginPlay()
 		Camera_Main = LobbySetup->Camera_Main;
 		Camera_Battle = LobbySetup->Camera_Battle;
 		Camera_Summon = LobbySetup->Camera_Summon;
+		Camera_GachaAction = LobbySetup->Camera_GachaAction;
 
 		UE_LOG(LogTemp, Log, TEXT("[LobbyController] 카메라 설정 로드 완료 via SetupActor"));
 	}
@@ -419,4 +420,33 @@ void ALobbyPlayerController::RequestBackToPreviousMenu()
 	// 저장해둔 직전 메뉴로 다시 돌아갑니다.
 	// 만약 Battle에서 왔다면 다시 Battle로, 메인에서 왔다면 메인(None)으로 갑니다.
 	SetLobbyMenu(PreviousMenu);
+}
+
+void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
+{
+	// 1. 떠 있던 가챠 팝업 UI 숨기기 (연출을 봐야 하니까!)
+	if (CachedLobbyHUD)
+	{
+		CachedLobbyHUD->OnStartCameraMove(); // 만들어두신 숨김 함수 재활용
+	}
+
+	// 2. 카메라를 상자가 있는 시네마틱 카메라로 즉시(0초) 컷 전환!
+	// (블렌드를 줘도 되지만, 오버워치나 원신은 보통 여기서 컷 씬으로 확 넘어갑니다)
+	if (Camera_GachaAction)
+	{
+		SetViewTargetWithBlend(Camera_GachaAction, 0.0f);
+	}
+
+	// 3. 서버/서브시스템에서 실제 뽑기 결과(데이터)를 가져옵니다.
+	// (이 부분은 유저님의 GachaSubsystem 연동 방식에 맞춰 작성하시면 됩니다)
+	TArray<FGachaResult> PulledResults;
+	// 예시: PulledResults = GI->GetSubsystem<UGachaSubsystem>()->PullGacha(DrawCount);
+
+	// 4. 레벨에 배치된 상자 액터를 찾아서 시퀀스 재생 명령을 내립니다!
+	AParadiseGachaBoxActor* GachaBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
+
+	if (GachaBox)
+	{
+		GachaBox->PlayGachaSequence(PulledResults);
+	}
 }

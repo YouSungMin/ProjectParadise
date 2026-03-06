@@ -91,6 +91,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	TObjectPtr<ACameraActor> Camera_Summon;
 
+	/** @brief 실제 상자가 떨어지고 뚜껑이 열리는 연출 전용 시네 카메라 (태그: "Cam_GachaAction") */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	TObjectPtr<ACameraActor> Camera_GachaAction = nullptr;
+
 	/** @brief 카메라 이동 시간 (초) */
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Config")
 	float CameraBlendTime = 1.5f;
@@ -131,6 +135,13 @@ public:
 	/** @brief 컨텍스트를 유지한 채 직전 메뉴로 돌아갑니다. */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Navigation")
 	void RequestBackToPreviousMenu();
+
+	/**
+	 * @brief 1회 또는 10회 소환 버튼을 눌렀을 때, 본격적인 가챠 연출을 시작합니다.
+	 * @param DrawCount 뽑기 횟수 (1 또는 10)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void StartGachaActionSequence(int32 DrawCount);
 
 private:
 	/** @brief 직전 메뉴 상태를 캐싱합니다. */
