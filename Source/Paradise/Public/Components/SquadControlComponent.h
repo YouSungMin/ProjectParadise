@@ -26,7 +26,7 @@ public:
 	AInGameController* GetOwnerPC() const;
 
 	/** @brief Squad액터 배열 Getter */
-	TArray<TObjectPtr<APlayerBase>> GetActiveSquadPawns() const;
+	const TArray<TObjectPtr<APlayerBase>>& GetActiveSquadPawns() const;
 
 	/** @brief 현재 컨트롤 중인 캐릭터 인덱스 Getter */
 	int32 GetCurrentControlledIndex() const;
