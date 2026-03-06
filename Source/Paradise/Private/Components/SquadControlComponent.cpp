@@ -25,10 +25,12 @@ AInGameController* USquadControlComponent::GetOwnerPC() const
     return Cast<AInGameController>(GetOwner());
 }
 
-TArray<TObjectPtr<APlayerBase>> USquadControlComponent::GetActiveSquadPawns() const
+const TArray<TObjectPtr<APlayerBase>>& USquadControlComponent::GetActiveSquadPawns() const
 {
     return ActiveSquadPawns;
 }
+
+
 
 int32 USquadControlComponent::GetCurrentControlledIndex() const
 {
