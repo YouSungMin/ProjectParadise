@@ -7,7 +7,12 @@
 #include "Engine/DataTable.h"
 #include "Data/Enums/GameEnums.h"
 #include "Data/Structs/StageStructs.h"
+#include "Data/Structs/ResultUITypes.h"
 #include "InGameGameMode.generated.h"
+
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageVictorySignature, const FStageClearRewardData&, RewardData);
 
 /**
  * @class AInGameGameMode
@@ -88,6 +93,12 @@ protected:
 	void OnPhaseDefeat();	///< [패배] 패배 처리 및 결과창 준비
 	void OnPhaseResult();	///< [결과] 결과창 표시 및 레벨 이동 준비
 	/** @} */
+
+public:
+
+	/** @brief 스테이지 승리 보상 데이터를 UI로 전달하는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnStageVictorySignature OnStageVictory;
 
 protected:
 	/** @brief [캐싱] 전역 상태 관리를 위한 GameState 포인터 */

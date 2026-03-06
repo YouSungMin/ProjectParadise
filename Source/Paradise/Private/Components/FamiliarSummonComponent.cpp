@@ -3,6 +3,7 @@
 
 #include "Components/FamiliarSummonComponent.h"
 #include "Components/CostManageComponent.h"
+#include "Components/SquadControlComponent.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/InGame/InGameController.h"
 #include "Characters/AIUnit/UnitBase.h"
@@ -192,7 +193,9 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 		{
 			if (AInGameController* InGamePC = Cast<AInGameController>(PC))
 			{
-				InGamePC->RespawnSquadPlayer(SlotInfo.CharacterIndex);
+				if (USquadControlComponent* squadcomp = InGamePC->GetSquadControlComponent()) {
+					squadcomp->RespawnSquadPlayer(SlotInfo.CharacterIndex);
+				}
 			}
 		}
 		break;
