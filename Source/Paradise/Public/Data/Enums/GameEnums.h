@@ -153,7 +153,7 @@ enum class EWeaponType : uint8
 	Base	UMETA(DisplayName = "Base (맨손/기본)"),
 	Melee	UMETA(DisplayName = "Melee (근접)"),
 	Gun		UMETA(DisplayName = "Gun (총)"),
-	Book	UMETA(DisplayName = "Book (마법책/지팡이)")
+	Book	UMETA(DisplayName = "Book (마법책)"),
 };
 
 /**

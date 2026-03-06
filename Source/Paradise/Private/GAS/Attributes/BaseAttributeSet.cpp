@@ -125,3 +125,16 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		}
 	}
 }
+
+void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	// 값이 실제로 변했을 때만 디버그 로그 출력
+	if (OldValue != NewValue)
+	{
+		// 어떤 스탯인지, 몇에서 몇으로 변했는지, 증감량은 얼마인지 출력!
+		UE_LOG(LogTemp, Warning, TEXT("📈 [스탯 변경] %s : %.1f ➡️ %.1f (%+.1f)"),
+			*Attribute.GetName(), OldValue, NewValue, NewValue - OldValue);
+	}
+}

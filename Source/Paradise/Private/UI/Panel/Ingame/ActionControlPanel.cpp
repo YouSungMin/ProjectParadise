@@ -11,6 +11,8 @@
 #include "Framework/System/SquadSubsystem.h"
 
 #include "Characters/Player/PlayerData.h"
+#include "Components/SquadControlComponent.h"
+
 #include "Characters/Base/PlayerBase.h"
 
 #include "Components/EquipmentComponent.h"
@@ -289,7 +291,8 @@ void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
 		// 2. 컨트롤러에 구현해두신 안전한 캐릭터 교체 및 AI 배정 로직 실행
-		InGamePC->RequestSwitchPlayer(CharacterIndex);
+		//0306 김성현 - 컨트롤러 로직 분리 작업
+		InGamePC->GetSquadControlComponent()->RequestSwitchPlayer(CharacterIndex);
 
 		// 3. 교체가 완료되었으므로 버튼 상태 즉시 갱신 (자신은 비활성화, 나머진 활성화)
 		UpdateTagButtons(CharacterIndex);

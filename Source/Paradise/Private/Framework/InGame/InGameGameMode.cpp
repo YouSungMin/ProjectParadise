@@ -12,6 +12,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
+#include "Components/SquadControlComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void AInGameGameMode::ForceVictory()
@@ -171,7 +172,7 @@ void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
 		PS->InitSquad(MyPlayerIDs);
 
 		//(PlayerBase) 3개 스폰 및 Init
-		PC->InitializeSquadPawns();
+		PC->GetSquadControlComponent()->InitializeSquadPawns();
 
 		UE_LOG(LogTemp, Log, TEXT("✅ [%s] 플레이어의 스쿼드 세팅이 성공적으로 완료되었습니다."), *PC->GetName());
 	}
@@ -428,6 +429,20 @@ void AInGameGameMode::DistributeStageRewards()
 			//최초 3별이 아니면 (이미 받았거나 1~2별이면) UI 표기를 위해 0으로 처리
 			CachedGameState->AcquiredAether = 0;
 		}
+
+		FStageClearRewardData StageRewardData;
+		StageRewardData.AcquiredAether = CachedGameState->AcquiredAether;
+		StageRewardData.AcquiredExp = CurrentStageData.ClearExp;
+		StageRewardData.AcquiredGold = CurrentStageData.ClearGold;
+		StageRewardData.EarnedStars = EarnedStars;
+
+		//스테이지 보상 구조체 UI에 Broadcast
+		if (OnStageVictory.IsBound())
+		{
+			OnStageVictory.Broadcast(StageRewardData);
+		}
+
+
 
 		//다음 스테이지 해금 및 현재 스테이지 별점 기록
 		StageSys->UnlockStage(CurrentStageData.NextStageID);

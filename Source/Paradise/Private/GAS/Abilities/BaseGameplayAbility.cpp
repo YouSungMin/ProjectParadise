@@ -119,7 +119,6 @@ bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, co
 		return false;
 	}
 
-	// ✅ 수정됨: const_cast 삭제하고 안전한 헬퍼 함수 사용!
 	FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
 	if (CombatData.ManaCost <= 0.0f) return true;
@@ -129,7 +128,7 @@ bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, co
 		float CurrentMana = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
 		if (CurrentMana < CombatData.ManaCost)
 		{
-			return false; // 마나 부족 실패!
+			return false; // 마나 부족 실패
 		}
 	}
 	return true;
@@ -142,7 +141,6 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CostGE->GetClass(), GetAbilityLevel());
 
-		// ✅ 수정됨: const_cast 삭제하고 안전한 헬퍼 함수 사용!
 		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
 		if (CombatData.ManaCost > 0.0f)

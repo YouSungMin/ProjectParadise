@@ -11,6 +11,7 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Components/EquipmentComponent.h"
 #include "Characters/Player/PlayerData.h"
+#include "Data/Structs/ItemStructs.h"
 #include "Kismet/GameplayStatics.h"
 
 
