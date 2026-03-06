@@ -59,6 +59,8 @@ struct FSummonSlotInfo
 /** @brief 슬롯 정보가 갱신되었을 때 UI에 알리는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotsUpdated, const TArray<FSummonSlotInfo>&, Slots);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotConsumed, int32, ConsumedIndex);
+
 /**
  * @class UFamiliarSummonComponent
  * @brief 유닛 소환 시스템을 관리하는 컴포넌트
@@ -66,18 +68,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotsUpdated, const TArray<
  * - 5개의 랜덤 유닛 슬롯을 관리.
  * - CostManageComponent와 연동하여 유닛 소환 시 코스트 차감 및 잔액 확인.
  */
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PARADISE_API UFamiliarSummonComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
+	// 🚨 2. 기존 델리게이트들 밑에 '소모 방송용 델리게이트'를 추가합니다.
+	/** @brief 특정 슬롯이 소모되었을 때 UI 애니메이션을 위해 인덱스를 방송합니다. */
+	UPROPERTY(BlueprintAssignable, Category = "Summon")
+	FOnSummonSlotConsumed OnSummonSlotConsumed;
+
+public:
 	UFamiliarSummonComponent();
 
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	//0305 김성현 - 캐릭터 리스폰 로직 함수 추가
 	/**
 	 * @brief 캐릭터가 사망했을 때, 소환 대기열 맨 앞에 '부활 카드'를 강제 삽입합니다.
