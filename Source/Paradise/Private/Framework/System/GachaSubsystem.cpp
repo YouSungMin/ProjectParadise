@@ -5,31 +5,41 @@
 #include "Engine/DataTable.h"
 #include "Math/UnrealMathUtility.h"
 
-void UGachaSubsystem::InitializeBanner(UDataTable* BannerTable)
+void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 {
-	if (!BannerTable || CurrentBannerTable == BannerTable) return;
+	// 1. 배너 타입과 확률 세팅 캐싱
+	CurrentBannerType = InBannerData.BannerType;
+	CurrentRarityRates = InBannerData.RarityProbabilities;
+	DefaultPityThreshold = InBannerData.PityThreshold;
 
-	CurrentBannerTable = BannerTable;
-	CachedGachaPool.Empty();
+	//  에테르 비용 캐싱!
+	CachedRequiredAether = InBannerData.RequiredAether; 
 
-	// 테이블 로드 후 등급별로 분류하여 캐싱 (O(1) 검색 최적화)
-	TArray<FGachaPoolRow*> AllRows;
-	BannerTable->GetAllRows<FGachaPoolRow>(TEXT("GachaInit"), AllRows);
-
-	for (const FGachaPoolRow* Row : AllRows)
+	// 2. 연결된 풀(Pool) 테이블을 비동기/동기로 로드하여 캐싱
+	if (UDataTable* PoolTable = InBannerData.TargetPoolTable.LoadSynchronous())
 	{
-		if (Row)
+		TArray<FGachaPoolRow*> AllRows;
+		PoolTable->GetAllRows<FGachaPoolRow>(TEXT("GachaInit"), AllRows);
+
+		for (const FGachaPoolRow* Row : AllRows)
 		{
-			CachedGachaPool.FindOrAdd(Row->Rarity).Add(*Row);
+			if (Row)
+			{
+				CachedGachaPool.FindOrAdd(Row->Rarity).Add(*Row);
+			}
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [GachaSubsystem] 타겟 풀(Pool) 테이블을 로드하지 못했습니다."));
 	}
 }
 
-TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TMap<EItemRarity, float>& RarityRates, const TArray<FName>& OwnedItems)
+TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray<FName>& OwnedItems)
 {
 	TArray<FGachaResult> Results;
 
-	if (PullCount <= 0 || CachedGachaPool.IsEmpty() || RarityRates.IsEmpty())
+	if (PullCount <= 0 || CachedGachaPool.IsEmpty() || CurrentRarityRates.IsEmpty())
 	{
 		return Results;
 	}
@@ -40,39 +50,43 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TMap<E
 		CurrentPityStack++;
 		bool bIsPityTriggered = (CurrentPityStack >= DefaultPityThreshold);
 
-		// 2. 등급 판정 (천장에 도달했으면 강제 전설, 아니면 확률 추첨)
-		EItemRarity HitRarity = bIsPityTriggered ? EItemRarity::Legendary : RollRarity(RarityRates);
+		// 2. 등급 판정
+		EItemRarity HitRarity = bIsPityTriggered ? EItemRarity::Legendary : RollRarity(CurrentRarityRates);
 
-		// ★ 전설이 뽑혔다면 (운이 좋든 천장이든) 스택 리셋
 		if (HitRarity == EItemRarity::Legendary)
 		{
-			CurrentPityStack = 0;
+			CurrentPityStack = 0; // 전설 획득 시 천장 초기화
 		}
 
-		// 3. 해당 등급 내에서 아이템 뽑기 (이 안에서 이미 Item.DuplicateFragmentReward 값이 세팅되어 나옴)
+		// 3. 아이템 뽑기 (여기서 Result.ConvertedFragments 에 기본값이 들어옴)
 		FGachaResult Result = PickItemFromRarity(HitRarity);
 
-		// 4. 중복 검사 및 파편 처리
-		if (OwnedItems.Contains(Result.PulledItemID))
+		// ---------------------------------------------------------
+		// 4. ★ 배너 타입에 따른 중복(Duplicate) 분기 처리 ★
+		// ---------------------------------------------------------
+		if (CurrentBannerType == EGachaBannerType::Equipment)
 		{
-			Result.bIsDuplicate = true;
-
-			// 기획자가 데이터 테이블에 실수로 파편 보상량을 0이나 음수로 넣었을 때만 10개(최소 보장)로 세팅
-			if (Result.ConvertedFragments <= 0)
-			{
-				Result.ConvertedFragments = 10;
-			}
+			// 장비 배너: 장비는 중복의 개념이 없습니다. 무조건 온전한 장비로 지급됩니다.
+			Result.bIsDuplicate = false;
+			Result.ConvertedFragments = 0; // 조각 보상 없음!
 		}
 		else
 		{
-			Result.bIsDuplicate = false;
-			// 중복이 아니므로 조각은 주지 않음
-			Result.ConvertedFragments = 0;
+			// 캐릭터 배너: 보유 중인지 검사하여 조각으로 변환
+			if (OwnedItems.Contains(Result.PulledItemID))
+			{
+				Result.bIsDuplicate = true;
+				// 엑셀 기입 실수 방지용 최소치 보장
+				Result.ConvertedFragments = FMath::Max(10, Result.ConvertedFragments);
+			}
+			else
+			{
+				Result.bIsDuplicate = false;
+				Result.ConvertedFragments = 0;
+			}
 		}
 
-		// UI에서 표기할 천장 스택 기록
 		Result.CurrentPityCount = CurrentPityStack;
-
 		Results.Add(Result);
 	}
 

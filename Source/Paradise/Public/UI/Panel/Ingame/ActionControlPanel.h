@@ -13,6 +13,8 @@ class USkillSlotWidget;
 class APlayerBase;
 class AInGameController;
 class UTexture2D;
+class AInGamePlayerState;
+class APlayerData;
 #pragma endregion 전방 선언
 
 /**
@@ -30,6 +32,14 @@ protected:
 
 public:
 #pragma region 외부 인터페이스
+	/**
+	 * @brief 특정 플레이어 인덱스의 데이터를 기반으로 액션 패널 전체를 스스로 갱신합니다.
+	 * @details 컨트롤러에 있던 UpdateActionPanelUI 로직을 이관하여 SRP를 준수합니다.
+	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void RefreshActionPanel(int32 PlayerIndex);
+
 	/**
 	 * @brief 데이터 테이블을 기반으로 패널 전체를 초기화합니다.
 	 * @param WeaponActionID 무기 스킬 ID

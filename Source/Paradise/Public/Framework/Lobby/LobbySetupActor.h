@@ -40,6 +40,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Lobby Setup")
 	TObjectPtr<ACameraActor> Camera_Summon;
 
+	/** @brief 가챠 연출(상자 낙하 및 오픈) 전용 시네 카메라 액터 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Camera")
+	TObjectPtr<ACameraActor> Camera_GachaAction = nullptr;
+
 	// 추후 확장: 소환 연출용 카메라, 강화실 카메라 등등
 	// UPROPERTY(EditInstanceOnly, Category = "Paradise|Lobby Setup")
 	// TObjectPtr<ACameraActor> Camera_Summon;

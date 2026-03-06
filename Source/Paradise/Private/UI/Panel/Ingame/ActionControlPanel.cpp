@@ -5,13 +5,17 @@
 #include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "UI/Widgets/InGame/SkillSlotWidget.h"
 
-#include "Framework/InGame/InGameController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/InGame/InGameController.h"
+#include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/SquadSubsystem.h"
 
+#include "Characters/Player/PlayerData.h"
 #include "Components/SquadControlComponent.h"
 
 #include "Characters/Base/PlayerBase.h"
+
+#include "Components/EquipmentComponent.h"
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
 
@@ -84,6 +88,49 @@ void UActionControlPanel::NativeDestruct()
 }
 
 #pragma region 외부 인터페이스 구현
+void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
+{
+	// 1. 시스템 캐싱 (위젯 내부에서 스스로 가져옵니다)
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
+
+	if (!GI || !PS) return;
+
+	FName CurrentWeaponSkillID = NAME_None;
+	FName CurrentUltimateID = NAME_None;
+	UTexture2D* TargetAttackIcon = Tex_DefaultAttackIcon.Get(); // 기본 아이콘으로 초기화
+
+	// 2. [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
+	if (APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex))
+	{
+		// A. 캐릭터 스탯 테이블로부터 궁극기(Ultimate) ID 획득
+		if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
+		{
+			CurrentUltimateID = CharStats->SkillActionID;
+		}
+
+		// B. 장비 컴포넌트로부터 무기 스킬(Weapon Skill) ID 획득
+		if (UEquipmentComponent* EquipComp = Soul->GetEquipmentComponent())
+		{
+			const FName EquippedWeaponID = EquipComp->GetEquippedItemID(EEquipmentSlot::Weapon);
+
+			if (EquippedWeaponID != NAME_None)
+			{
+				if (const FWeaponStats* WeaponStats = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, EquippedWeaponID))
+				{
+					CurrentWeaponSkillID = WeaponStats->SkillActionID;
+				}
+			}
+		}
+	}
+
+	// 3. 추출된 데이터를 자신의 패널에 주입
+	InitActionPanel(CurrentWeaponSkillID, CurrentUltimateID, TargetAttackIcon);
+	UpdateTagButtons(PlayerIndex);
+
+	UE_LOG(LogTemp, Log, TEXT("⚔️ [ActionPanel] UI 자율 갱신 성공 (Index: %d)"), PlayerIndex);
+}
+
 void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon)
 {
 	// 게임 인스턴스의 공용 데이터 테이블 로직을 활용합니다.

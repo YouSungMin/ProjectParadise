@@ -24,24 +24,24 @@ class PARADISE_API UGachaSubsystem : public UGameInstanceSubsystem
 #pragma region 외부 인터페이스
 public:
 	/**
-	 * @brief 새로운 배너(데이터 테이블)를 등록하고 등급별로 캐싱합니다.
-	 * @param BannerTable 기획자가 세팅한 가챠 풀 테이블
+	 * @brief 새로운 배너의 마스터 데이터를 등록하고 확률 풀을 캐싱합니다.
+	 * @param InBannerData 기획자가 세팅한 배너 데이터 구조체 (타입, 확률, 풀 테이블 포함)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha")
-	void InitializeBanner(UDataTable* BannerTable);
+	void InitializeBanner(const FGachaBannerData& InBannerData);
 
 	/**
 	 * @brief 지정된 횟수만큼 가챠를 돌리고 상세 결과를 반환합니다.
 	 * @param PullCount 뽑기 횟수 (1연차, 10연차 등)
-	 * @param RarityRates 등급별 기본 확률표
-	 * @param OwnedItems 유저가 현재 보유 중인 캐릭터 ID 목록 (중복 검사용)
-	 * @return TArray<FGachaResult> UI 연출 및 인벤토리 처리에 필요한 완벽한 결과 리스트
+	 * @param OwnedItems 유저가 현재 보유 중인 캐릭터 ID 목록 (장비 배너일 경우 빈 배열 전달 무방)
+	 * @return TArray<FGachaResult> UI 연출 및 인벤토리 처리에 필요한 결과 리스트
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha")
-	TArray<FGachaResult> PerformGacha(
-		int32 PullCount, 
-		const TMap<EItemRarity, float>& RarityRates, 
-		const TArray<FName>& OwnedItems);
+	TArray<FGachaResult> PerformGacha(int32 PullCount, const TArray<FName>& OwnedItems);
+
+	/** @brief 현재 활성화된 배너의 1회 뽑기 에테르 요구량을 반환합니다. */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Gacha")
+	int32 GetCurrentAetherRequirement() const { return CachedRequiredAether; }
 
 	/** @brief 현재 쌓인 천장 스택을 확인합니다. (UI 표기용) */
 	UFUNCTION(BlueprintPure, Category = "Paradise|Gacha")
@@ -59,16 +59,21 @@ private:
 
 #pragma region 내부 데이터
 private:
+	/** @brief 현재 활성화된 배너의 종류 (캐릭터 vs 장비 분기용) */
+	EGachaBannerType CurrentBannerType = EGachaBannerType::Character;
+
+	/** @brief 현재 활성화된 배너의 등급별 확률표 */
+	TMap<EItemRarity, float> CurrentRarityRates;
+
 	/** @brief [최적화] 등급별로 O(1) 접근이 가능하도록 쪼개어 캐싱된 데이터 풀 */
 	TMap<EItemRarity, TArray<FGachaPoolRow>> CachedGachaPool;
-
-	/** @brief 현재 적용된 배너 테이블 (스마트 포인터 안전 초기화) */
-	UPROPERTY()
-	TObjectPtr<UDataTable> CurrentBannerTable = nullptr;
 
 	/** @brief 누적된 천장(Pity) 스택 (전설 획득 시 0으로 리셋) */
 	UPROPERTY()
 	int32 CurrentPityStack = 0;
+
+	/** @brief 현재 활성화된 배너의 1회 뽑기 에테르 비용 (결제용) */
+	int32 CachedRequiredAether = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Gacha|Config", meta = (ClampMin = "1"))
 	int32 DefaultPityThreshold = 50;

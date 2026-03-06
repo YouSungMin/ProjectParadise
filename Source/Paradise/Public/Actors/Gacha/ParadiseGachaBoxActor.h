@@ -4,12 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Data/Enums/GameEnums.h" // EItemRarity가 있는 헤더
-#include "Data/Structs/GachaTypes.h"          // FGachaResult가 있는 헤더
+#include "Data/Enums/GameEnums.h" 
+#include "Data/Structs/GachaTypes.h"          
 #include "ParadiseGachaBoxActor.generated.h"
 
 #pragma region 전방 선언
 class USkeletalMeshComponent;
+class UPointLightComponent;
 class UMaterialInstanceDynamic;
 class UMaterialInstance;
 class ULevelSequence;
@@ -45,7 +46,6 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 #pragma endregion 생명주기
 
-	// ─────────────────────────────────────────────────────────────
 #pragma region 외부 인터페이스
 public:
 	/**
@@ -72,12 +72,15 @@ public:
 	FOnGachaResultScreenRequested OnGachaResultScreenRequested;
 #pragma endregion 외부 인터페이스
 
-	// ─────────────────────────────────────────────────────────────
-#pragma region 컴포넌트 및 에셋 설정 (기획자 노출)
+#pragma region 컴포넌트 및 에셋 설정
 protected:
 	/** @brief 상자 스켈레탈 메시 (애니메이션 재생 + 터치 감지) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<USkeletalMeshComponent> BoxMesh = nullptr;
+
+	/** @brief 상자 주변 바닥을 은은하게 비출 라이트 (Idle 연출용) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<UPointLightComponent> AuraLight = nullptr;
 
 	// ── 시퀀스 에셋 ─────────────────────────────────────────
 
@@ -123,6 +126,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.0"))
 	float MultiSpawnInterval = 0.15f;
 
+	// ── 결과창 딜레이 ────────────────────────────────────────
+
+	/**
+	 * @brief 마지막 구슬 리빌 후 결과창이 뜨기까지 대기 시간 (초)
+	 * @details 더블 터치 스킵 시에는 이 딜레이 없이 즉시 표시됩니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Result", meta = (ClampMin = "0.0"))
+	float ResultDelaySeconds = 2.0f;
+
 	// ── 터치 입력 설정 ───────────────────────────────────────
 
 	/** @brief 꾹 누름 시 재생 배속 */
@@ -134,6 +146,11 @@ protected:
 	float DoubleTapThreshold = 0.3f;
 
 	// ── 발광(Glow) 설정 ──────────────────────────────────────
+
+	// ── 발광(Glow) 및 라이트 설정 (데이터 주도적) ──
+	/** @brief Idle 상태일 때 켜지는 주변 빛의 세기 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.0"))
+	float IdleLightIntensity = 5000.0f;
 
 	/** @brief 터치 시 발광 증가 속도 (초당 강도) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.1"))
@@ -147,15 +164,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.0"))
 	float MaxGlowIntensity = 3.0f;
 
-	/** @brief 머티리얼 발광 파라미터 이름 (아티스트가 변경 가능) */
+	/** @brief 머티리얼 발광 강도 파라미터 이름 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow")
 	FName GlowIntensityParamName = FName(TEXT("GlowIntensity"));
 
+	/** @brief 머티리얼 틈새 발광 색상 파라미터 이름 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow")
+	FName GlowColorParamName = FName(TEXT("GlowColor"));
+
 	// ── 비주얼 에셋 맵 ──────────────────────────────────────
 
-	/** @brief 등급별 상자 머티리얼 맵 (상자 열릴 때 교체) */
+	/** @brief 등급별 틈새 발광 및 주변 라이트 색상 맵  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
-	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> BoxMaterialsByRarity;
+	TMap<EItemRarity, FLinearColor> GlowColorsByRarity;
 
 	/** @brief 등급별 뚜껑 오픈 폭발 이펙트 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
@@ -164,9 +185,8 @@ protected:
 	/** @brief 등급별 구슬 실루엣 머티리얼 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
 	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> SilhouetteMaterialsByRarity;
-#pragma endregion 컴포넌트 및 에셋 설정 (기획자 노출)
+#pragma endregion 컴포넌트 및 에셋 설정
 
-	// ─────────────────────────────────────────────────────────────
 #pragma region 내부 시퀀스 로직
 private:
 	/**
@@ -208,7 +228,20 @@ private:
 	void SpawnSingleItem(int32 Index);
 #pragma endregion 내부 시퀀스 로직
 
-	// ─────────────────────────────────────────────────────────────
+#pragma region 내부 리빌 카운트 로직
+private:
+	/**
+	 * @brief 구슬 하나가 리빌됐을 때 호출 (각 ItemActor 의 OnItemRevealed 에 바인딩)
+	 * @param ItemData 리빌된 아이템 데이터
+	 */
+	UFUNCTION()
+	void OnItemRevealedCallback(const FGachaResult& ItemData);
+
+	/** @brief 모든 구슬 리빌 완료 → ResultDelaySeconds 후 결과창 */
+	UFUNCTION()
+	void ShowResultScreen();
+#pragma endregion 내부 리빌 카운트 로직
+
 #pragma region 내부 터치 로직
 private:
 	/** @brief BoxMesh 마우스 클릭 이벤트 래퍼 */
@@ -286,6 +319,22 @@ private:
 
 	/** @brief 10연차 구슬 순차 스폰 타이머 핸들 배열 */
 	TArray<FTimerHandle> SpawnTimerHandles;
+
+	/** @brief 결과창 지연 타이머 핸들 */
+	FTimerHandle ResultDelayTimerHandle;
+
+	/** @brief 리빌 완료된 구슬 수 */
+	int32 RevealedItemCount = 0;
+
+	/** @brief 이번 뽑기 총 구슬 수 */
+	int32 TotalItemCount = 0;
+
+	/**
+	 * @brief 현재 살아있는 구슬 액터 목록
+	 * @details 꾹 누름 시 모든 구슬에 배속을 전파하기 위해 유지합니다.
+	 */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AParadiseGachaItemActor>> SpawnedItems;
 #pragma endregion 내부 상태
 
 };

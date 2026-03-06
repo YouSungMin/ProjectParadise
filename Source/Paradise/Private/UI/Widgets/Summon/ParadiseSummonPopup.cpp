@@ -4,43 +4,33 @@
 #include "UI/Widgets/Summon/ParadiseSummonPopup.h"
 #include "UI/Panel/Summon/ParadiseSummonPanel.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
-#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UParadiseSummonPopup::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 1. 탭 버튼 바인딩
-	if (Btn_Tab_Character)
-	{
-		Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnCharacterTabClicked);
-	}
-	if (Btn_Tab_Equipment)
-	{
-		Btn_Tab_Equipment->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnEquipmentTabClicked);
-	}
+	// 1. 이벤트 바인딩
+	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnCharacterTabClicked);
+	if (Btn_Tab_Equipment) Btn_Tab_Equipment->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnEquipmentTabClicked);
+	if (Btn_Back) Btn_Back->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnBackButtonClicked);
 
-	// 2. 뒤로가기 버튼 바인딩
-	if (Btn_Back)
-	{
-		Btn_Back->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnBackButtonClicked);
-	}
-	// 3. 재화 정보 갱신 (GameInstance 등에서 내 정보 가져오기)
+	// 2. 컨트롤러 및 서브시스템 캐싱 (최적화)
+	CachedPlayerController = GetOwningPlayer<ALobbyPlayerController>();
 	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
+
 	if (CachedGI.IsValid())
 	{
-		// TODO: GI나 PlayerData에 실제 저장된 변수명으로 교체하세요. (예: GI->GetMyEther())
-		// 일단 0이나 임시값으로 테스트
-		int32 CurrentEther = 0;
-		// CurrentEther = GI->GetPlayerEther(); 
-
-		UpdateAetherUI(CurrentEther);
+		CachedEconomySubsystem = CachedGI->GetSubsystem<UEconomySubsystem>();
 	}
+
+	// 3. 재화 UI 최초 갱신
+	RefreshCurrencyUI();
 
 	// 4. 초기 상태 설정 (캐릭터 탭 기본)
 	SwitchTab(INDEX_CHARACTER);
@@ -53,23 +43,29 @@ void UParadiseSummonPopup::NativeDestruct()
 	if (Btn_Tab_Equipment) Btn_Tab_Equipment->OnClicked.RemoveAll(this);
 	if (Btn_Back) Btn_Back->OnClicked.RemoveAll(this);
 
+	CachedEconomySubsystem = nullptr;
+	CachedPlayerController = nullptr;
 	CachedGI = nullptr;
+
 	Super::NativeDestruct();
 }
 #pragma endregion 생명주기
 
-#pragma region 내부 로직
-void UParadiseSummonPopup::UpdateAetherUI(int32 InEther)
+#pragma region 외부 인터페이스
+void UParadiseSummonPopup::RefreshCurrencyUI()
 {
-	if (Text_AetherAmount)
+	if (Text_AetherAmount && CachedEconomySubsystem.IsValid())
 	{
-		// 3자리마다 콤마(,) 찍기 (ex: 1,000,000)
-		FNumberFormattingOptions NumberFormat;
-		NumberFormat.UseGrouping = true;
+		const int32 CurrentEther = CachedEconomySubsystem->GetCurrency(ECurrencyType::Aether);
 
-		Text_AetherAmount->SetText(FText::AsNumber(InEther, &NumberFormat));
+		FNumberFormattingOptions NumberFormat;
+		NumberFormat.UseGrouping = true; // 3자리 콤마
+		Text_AetherAmount->SetText(FText::AsNumber(CurrentEther, &NumberFormat));
 	}
 }
+#pragma endregion 외부 인터페이스
+
+#pragma region 내부 로직
 void UParadiseSummonPopup::OnCharacterTabClicked()
 {
 	SwitchTab(INDEX_CHARACTER);
@@ -82,15 +78,16 @@ void UParadiseSummonPopup::OnEquipmentTabClicked()
 
 void UParadiseSummonPopup::OnBackButtonClicked()
 {
+	// 1. 상태 저장 (Model 갱신)
 	if (CachedGI.IsValid())
 	{
 		CachedGI->SaveGameData();
 	}
-	// 내 컨트롤러 찾아서 로비(None)로 돌아가달라고 요청
-	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
+
+	// 2. 화면 복귀 요청 (기존의 무거운 탐색을 지우고 캐싱된 컨트롤러 사용 - SRP)
+	if (CachedPlayerController.IsValid())
 	{
-		// "None"으로 이동하면 -> 카메라는 Main으로, UI는 로비 메뉴로 복구됨
-		PC->MoveCameraToMenu(EParadiseLobbyMenu::None);
+		CachedPlayerController->MoveCameraToMenu(EParadiseLobbyMenu::None);
 	}
 }
 
