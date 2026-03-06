@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/ItemStructs.h"
+#include "Data/Structs/CombatTypes.h"
 #include "AutoCombatComponent.generated.h"
 
 
@@ -72,6 +75,16 @@ private:
 	 * @return 캐스팅된 AInGameController 포인터
 	 */
 	AInGameController* GetOwnerController() const;
+
+	/** * @brief 현재 캐릭터가 사용 가능한 액션(궁극기 -> 스킬 -> 평타)을 파악하고,
+	 * 데이터 테이블(ActionStats)을 조회하여 해당 액션의 진짜 사거리를 반환합니다.
+	 */
+	float GetDynamicAttackRange(class APlayerBase* PlayerPawn);
+
+protected:
+
+	/** @brief 무거운 연산을 막기 위해 한 번 찾은 적 기지를 기억해두는 캐싱 포인터 */
+	TWeakObjectPtr<class AHomeBase> CachedEnemyBase = nullptr;
 
 private:
 	/** @brief 현재 자동 전투 활성화 여부를 나타내는 플래그 */

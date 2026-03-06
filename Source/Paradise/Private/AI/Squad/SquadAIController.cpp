@@ -43,13 +43,14 @@ void ASquadAIController::SetLeader(AActor* CurrentLeaderActor)
 	}
 }
 
+
 void ASquadAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	if (AIPerception)
 	{
 		UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] AIPerception 바인딩 성공"));
-		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &ASquadAIController::OnTargetDetected);
+		AIPerception->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &ASquadAIController::OnTargetDetected);
 	}
 
 	UBlackboardComponent* BBComp = Blackboard.Get();
