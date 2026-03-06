@@ -10,6 +10,8 @@
 #include "AI/Squad/SquadAIController.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "UI/HUD/Ingame/InGameHUDWidget.h"
+#include "UI/Panel/Ingame/ActionControlPanel.h"
 
 USquadControlComponent::USquadControlComponent()
 {
@@ -113,7 +115,13 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
     {
         CamManager->UpdateCameraSystem();
     }
-    PC->UpdateActionPanelUI(PlayerIndex);
+    if (UInGameHUDWidget* HUD = PC->GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->RefreshActionPanel(PlayerIndex);
+        }
+    }
 }
 
 void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
