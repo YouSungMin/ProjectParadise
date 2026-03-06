@@ -352,6 +352,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> AwakeningPieceIcon;
 
+	/**
+	 * @brief 인게임 궁극기 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> UltimateIcon;
 	// =========================================================
 	//  GAS & Montage (Player Only)
 	// =========================================================
@@ -359,7 +364,7 @@ public:
 	/**
 	 * @brief 궁극기 어빌리티 클래스 (Ultimate Ability)
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UGameplayAbility> UltimateAbility;
 
 	/**
