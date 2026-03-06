@@ -55,6 +55,9 @@ public:
 	void CheatAddGold(int32 Amount);
 
 	UFUNCTION(Exec)
+	void CheatAddAether(int32 Amount);
+
+	UFUNCTION(Exec)
 	void CheatAwakenCharacter(FName CharacterID);
 
 	UFUNCTION(Exec)

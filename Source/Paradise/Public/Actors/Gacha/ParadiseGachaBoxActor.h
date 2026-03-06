@@ -10,6 +10,7 @@
 
 #pragma region 전방 선언
 class USkeletalMeshComponent;
+class UPointLightComponent;
 class UMaterialInstanceDynamic;
 class UMaterialInstance;
 class ULevelSequence;
@@ -79,6 +80,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<USkeletalMeshComponent> BoxMesh = nullptr;
 
+	/** @brief 상자 주변 바닥을 은은하게 비출 라이트 (Idle 연출용) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<UPointLightComponent> AuraLight = nullptr;
+
 	// ── 시퀀스 에셋 ─────────────────────────────────────────
 
 	/** @brief [공용] 낙하 + 착지 시퀀스 → 1회 재생 후 자동으로 Idle 전환 */
@@ -135,6 +140,11 @@ protected:
 
 	// ── 발광(Glow) 설정 ──────────────────────────────────────
 
+	// ── 발광(Glow) 및 라이트 설정 (데이터 주도적) ──
+	/** @brief Idle 상태일 때 켜지는 주변 빛의 세기 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.0"))
+	float IdleLightIntensity = 5000.0f;
+
 	/** @brief 터치 시 발광 증가 속도 (초당 강도) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.1"))
 	float GlowIncreaseSpeed = 1.5f;
@@ -147,15 +157,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow", meta = (ClampMin = "0.0"))
 	float MaxGlowIntensity = 3.0f;
 
-	/** @brief 머티리얼 발광 파라미터 이름 (아티스트가 변경 가능) */
+	/** @brief 머티리얼 발광 강도 파라미터 이름 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow")
 	FName GlowIntensityParamName = FName(TEXT("GlowIntensity"));
 
+	/** @brief 머티리얼 틈새 발광 색상 파라미터 이름 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Glow")
+	FName GlowColorParamName = FName(TEXT("GlowColor"));
+
 	// ── 비주얼 에셋 맵 ──────────────────────────────────────
 
-	/** @brief 등급별 상자 머티리얼 맵 (상자 열릴 때 교체) */
+	/** @brief 등급별 틈새 발광 및 주변 라이트 색상 맵  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
-	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> BoxMaterialsByRarity;
+	TMap<EItemRarity, FLinearColor> GlowColorsByRarity;
 
 	/** @brief 등급별 뚜껑 오픈 폭발 이펙트 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
@@ -164,6 +178,7 @@ protected:
 	/** @brief 등급별 구슬 실루엣 머티리얼 맵 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Visual")
 	TMap<EItemRarity, TObjectPtr<UMaterialInstance>> SilhouetteMaterialsByRarity;
+#pragma endregion 컴포넌트 및 에셋 설정
 #pragma endregion 컴포넌트 및 에셋 설정 (기획자 노출)
 
 	// ─────────────────────────────────────────────────────────────

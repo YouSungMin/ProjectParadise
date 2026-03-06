@@ -52,10 +52,13 @@ void ALobbyPlayerController::BeginPlay()
 
 	//1. 마우스 커서 보이게 설정
 	bShowMouseCursor = true;
+	bEnableClickEvents = true; // 이거 없으면 3D 액터 클릭 안 됨!
+	bEnableTouchEvents = true;
 
 	//2. UI 전용 입력 모드 설정
-	FInputModeUIOnly InputModeData;
+	FInputModeGameAndUI InputModeData;
 	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputModeData.SetHideCursorDuringCapture(false);
 	SetInputMode(InputModeData);
 
 	UE_LOG(LogTemp, Log, TEXT("LobbyController: Mouse Cursor On"));
@@ -206,6 +209,18 @@ void ALobbyPlayerController::CheatAddGold(int32 Amount)
 		{
 			EconSys->AddCurrency(ECurrencyType::Gold, Amount);
 			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 골드 %d 획득! (현재 총 골드: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
+		}
+	}
+}
+
+void ALobbyPlayerController::CheatAddAether(int32 Amount)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
+		{
+			EconSys->AddCurrency(ECurrencyType::Aether, Amount);
+			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 에테르 %d 획득! (현재 총 에테르: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
 		}
 	}
 }

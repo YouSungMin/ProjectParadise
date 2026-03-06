@@ -4,6 +4,7 @@
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "Actors/Gacha/ParadiseGachaItemActor.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "LevelSequence.h"
 #include "LevelSequencePlayer.h"
@@ -20,6 +21,11 @@ AParadiseGachaBoxActor::AParadiseGachaBoxActor()
 	BoxMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BoxMesh"));
 	RootComponent = BoxMesh;
 
+	// 2. 바닥 조명 설정
+	AuraLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AuraLight"));
+	AuraLight->SetupAttachment(RootComponent);
+	AuraLight->SetIntensity(0.0f); // 기본 꺼짐 상태
+	AuraLight->SetAttenuationRadius(500.0f); // 부드러운 감쇠 반경
 }
 
 void AParadiseGachaBoxActor::BeginPlay()
@@ -71,7 +77,20 @@ void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InRes
 	CachedHighestRarity = GetHighestRarity(CachedResults);
 	bIsOpening = false;
 
-	// ★ 머티리얼 교체는 상자가 열리는 순간(ApplyClimaxVisual)에만 합니다.
+	// 시퀀스 시작 전 라이트 및 발광 색상을 미리 초기화 (Data-Driven)
+	if (FLinearColor* RarityColor = GlowColorsByRarity.Find(CachedHighestRarity))
+	{
+		if (AuraLight)
+		{
+			AuraLight->SetIntensity(0.0f);
+			AuraLight->SetLightColor(*RarityColor);
+		}
+
+		if (BoxDynamicMat)
+		{
+			BoxDynamicMat->SetVectorParameterValue(GlowColorParamName, *RarityColor);
+		}
+	}
 
 	if (!IntroSequence)
 	{
@@ -114,7 +133,6 @@ void AParadiseGachaBoxActor::PlaySequenceInternal(
 {
 	if (!Sequence)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [GachaBox] PlaySequenceInternal: Sequence가 nullptr입니다."));
 		CurrentStep = Step;
 		OnSequenceFinished();
 		return;
@@ -142,9 +160,12 @@ void AParadiseGachaBoxActor::PlaySequenceInternal(
 	if (!bLoop)
 	{
 		SequencePlayer->OnFinished.AddDynamic(this, &AParadiseGachaBoxActor::OnSequenceFinished);
+		SequencePlayer->Play();
 	}
-
-	SequencePlayer->Play();
+	else
+	{
+		SequencePlayer->PlayLooping(-1);
+	}
 }
 
 void AParadiseGachaBoxActor::StopCurrentSequence()
@@ -164,23 +185,23 @@ void AParadiseGachaBoxActor::OnSequenceFinished()
 	switch (CurrentStep)
 	{
 	case EGachaSequenceStep::Intro:
-		// 낙하+착지 완료 → Idle 루프 시작
-		if (!IdleShakeSequence)
+		// Intro 종료 시 바닥 라이트 켜기 (은은한 효과 시작)
+		if (AuraLight)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [GachaBox] IdleShakeSequence 누락! 터치 대기 상태로 진입합니다."));
-			return;
+			AuraLight->SetIntensity(IdleLightIntensity);
 		}
-		PlaySequenceInternal(IdleShakeSequence, EGachaSequenceStep::Idle, true);
+		if (IdleShakeSequence)
+		{
+			PlaySequenceInternal(IdleShakeSequence, EGachaSequenceStep::Idle, true);
+		}
 		break;
-
 	case EGachaSequenceStep::Open:
-		// 격렬+열림 완료 → 결과창 요청
+		// 뚜껑 열림 완료. 
 		if (OnGachaResultScreenRequested.IsBound())
 		{
 			OnGachaResultScreenRequested.Broadcast(CachedResults);
 		}
 		break;
-
 	case EGachaSequenceStep::Idle:
 	case EGachaSequenceStep::None:
 	default:
@@ -203,24 +224,17 @@ EItemRarity AParadiseGachaBoxActor::GetHighestRarity(const TArray<FGachaResult>&
 
 void AParadiseGachaBoxActor::ApplyClimaxVisual()
 {
-	// 1. 등급 머티리얼로 교체
-	if (TObjectPtr<UMaterialInstance>* MatPtr = BoxMaterialsByRarity.Find(CachedHighestRarity))
+	// 오픈 순간 포인트 라이트 끄기 (클라이맥스 이펙트에 집중)
+	if (AuraLight)
 	{
-		if (MatPtr && *MatPtr && BoxMesh)
-		{
-			BoxMesh->SetMaterial(0, *MatPtr);
-			// 교체 후 다이나믹 인스턴스 갱신 (발광 파라미터 계속 제어)
-			BoxDynamicMat = BoxMesh->CreateAndSetMaterialInstanceDynamic(0);
-		}
+		AuraLight->SetIntensity(0.0f);
 	}
 
-	// 2. 폭발 이펙트 스폰
 	if (TObjectPtr<UNiagaraSystem>* FxPtr = ClimaxEffectsByRarity.Find(CachedHighestRarity))
 	{
 		if (FxPtr && *FxPtr)
 		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
 		}
 	}
 }
@@ -341,6 +355,8 @@ void AParadiseGachaBoxActor::ProcessTouchInput()
 
 void AParadiseGachaBoxActor::ProcessSingleTap()
 {
+	UE_LOG(LogTemp, Error, TEXT("👆 [GachaBox] 상자 터치 성공! Open 시퀀스로 넘어갑니다!"));
+
 	// Open 시퀀스가 이미 재생 중이면 중복 실행 방지
 	if (bIsOpening) return;
 	bIsOpening = true;
