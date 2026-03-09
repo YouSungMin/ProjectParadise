@@ -3,6 +3,7 @@
 
 #include "Framework/System/InventorySystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/ParadiseSaveGame.h"
 #include "Framework/System/GrowthSubsystem.h"
 
 // Sets default values for this component's properties
@@ -348,6 +349,25 @@ EEquipmentSlot UInventorySystem::FindEquipmentSlot(FName ItemID) const
 	}
 
 	return EEquipmentSlot::Unknown;
+}
+
+void UInventorySystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
+{
+	if (!SaveGameObj) return;
+
+	SaveGameObj->SavedOwnedCharacters = OwnedCharacters;
+	SaveGameObj->SavedOwnedFamiliars = OwnedFamiliars;
+	SaveGameObj->SavedOwnedInventoryItems = OwnedItems;
+}
+
+void UInventorySystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
+{
+	if (!SaveGameObj) return;
+
+	OwnedCharacters = SaveGameObj->SavedOwnedCharacters;
+	OwnedFamiliars = SaveGameObj->SavedOwnedFamiliars;
+	OwnedItems = SaveGameObj->SavedOwnedInventoryItems;
+
 }
 
 void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)

@@ -4,6 +4,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/ParadiseSaveGame.h"
+#include "Framework/System/GachaSubsystem.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/System/SquadSubsystem.h"
@@ -49,35 +50,20 @@ void UParadiseGameInstance::Shutdown()
 
 void UParadiseGameInstance::SaveGameData()
 {
-	UInventorySystem* MainInventory = GetMainInventory();
-	if (!MainInventory) return;
-
 	//저장할 SaveGame 객체 생성
 	UParadiseSaveGame* SaveObj = Cast<UParadiseSaveGame>(UGameplayStatics::CreateSaveGameObject(UParadiseSaveGame::StaticClass()));
 	if (!SaveObj) return;
 
-	//현재 메모리에 있는 인벤토리 데이터를 세이브 객체로 복사 (깊은 복사)
-	SaveObj->SavedOwnedCharacters = MainInventory->GetOwnedCharacters();
-	SaveObj->SavedOwnedFamiliars = MainInventory->GetOwnedFamiliars();
-	SaveObj->SavedOwnedInventoryItems = MainInventory->GetOwnedItems();
+	const TArray<UGameInstanceSubsystem*>& Subsystems = GetSubsystemArrayCopy<UGameInstanceSubsystem>();
 
-	//스쿼드 편성 정보 저장
-	if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
+	for (UGameInstanceSubsystem* Subsystem : Subsystems)
 	{
-		SquadSys->SaveToSaveGame(SaveObj);
+		//서브시스템이 인터페이스 구현이 되어있는지 확인
+		if (IParadiseSaveInterface* SaveableSubsystem = Cast<IParadiseSaveInterface>(Subsystem))
+		{
+			SaveableSubsystem->SaveToSaveGame(SaveObj);
+		}
 	}
-
-	//플레이어 보유 재화 정보 저장
-	if (UEconomySubsystem* EconomySys = GetSubsystem<UEconomySubsystem>())
-	{
-		EconomySys->SaveToSaveGame(SaveObj);
-	}
-
-	//스테이지 정보 저장
-	if (UStageSubsystem* StageSys = GetSubsystem<UStageSubsystem>()) {
-		StageSys->SaveToSaveGame(SaveObj);
-	}
-
 
 	//슬롯 이름으로 디스크에 실제 파일 쓰기
 	if (UGameplayStatics::SaveGameToSlot(SaveObj, SaveGameSlotName, 0))

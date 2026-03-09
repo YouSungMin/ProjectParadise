@@ -7,6 +7,7 @@
 #include "Data/Structs/GrowthStruct.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/InventoryStruct.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "InventorySystem.generated.h"
 
@@ -35,7 +36,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEquipmentUpdated);
  * - 획득(Add) 및 소모(Remove) 시 데이터 테이블을 통해 ID 유효성을 검증합니다.
  */
 UCLASS()
-class PARADISE_API UInventorySystem : public UGameInstanceSubsystem
+class PARADISE_API UInventorySystem : public UGameInstanceSubsystem , public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 
@@ -180,6 +181,19 @@ public:
 	EEquipmentSlot FindEquipmentSlot(FName ItemID) const;
 
 	#pragma endregion 헬퍼 함수 선언
+
+	#pragma region 저장 및 로드
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Save")
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Save")
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj)override;
+
+	#pragma endregion 저장 및 로드
+
+
+
 
 
 

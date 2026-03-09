@@ -92,4 +92,11 @@ public:
 	int32 SavedMaxClearedStageIndex = 0;
 
 #pragma endregion 스테이지 해금 , 클리어 목록
+
+#pragma region 가챠 관련
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Gacha")
+	int32 SavedCurrentPityStack = 0;
+
+#pragma endregion 가챠 관련
 };

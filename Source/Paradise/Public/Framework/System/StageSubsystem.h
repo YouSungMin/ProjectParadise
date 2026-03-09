@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "StageSubsystem.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PARADISE_API UStageSubsystem : public UGameInstanceSubsystem
+class PARADISE_API UStageSubsystem : public UGameInstanceSubsystem, public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 	
@@ -43,10 +44,10 @@ public:
 
 	// 세이브 / 로드 연동
 	UFUNCTION(BlueprintCallable, Category = "Stage|Save")
-	void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj);
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Stage|Save")
-	void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const;
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
 
 private:
 
