@@ -322,10 +322,10 @@ void AInGameGameMode::OnPhaseVictory()
 	}
 
 
-	//3. 3초 후 결과 단계(Result)로 전환
+	//3. 1초 후 결과 단계(Result)로 전환
 	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
-		}, 3.0f, false);
+		}, 1.0f, false);
 }
 
 void AInGameGameMode::OnPhaseDefeat()
@@ -345,10 +345,10 @@ void AInGameGameMode::OnPhaseDefeat()
 		GI->SaveGameData();
 	}
 	
-	//3초 후 결과 단계(Result)로 전환
+	//1초 후 결과 단계(Result)로 전환
 	GetWorldTimerManager().SetTimer(ResultTimerHandle, [this]() {
 		SetGamePhase(EGamePhase::Result);
-		}, 3.0f, false);
+		}, 1.0f, false);
 	
 }
 
