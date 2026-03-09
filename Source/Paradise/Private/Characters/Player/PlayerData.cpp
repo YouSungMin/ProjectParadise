@@ -279,6 +279,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				Result.AttackRadius = ActionRow->AttackRadius;
 				Result.ForwardOffset = ActionRow->ForwardOffset;
 				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+				Result.TargetFilter = ActionRow->TargetFilter;
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
