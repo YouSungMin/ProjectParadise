@@ -38,13 +38,13 @@ void ACharacterBase::TestKillSelf()
 	Die();
 }
 
-void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType)
+void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 {
 	FVector TraceStart;
 
 	USceneComponent* TargetMesh = GetMesh();
 
-	// 2노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
+	// 노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
 	if (TargetType == ESocketTargetType::EquippedWeapon)
 	{
 		if (USceneComponent* WpnMesh = GetWeaponMesh())
@@ -69,20 +69,23 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 	}
 
 	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
-	TraceStart += GetActorForwardVector() * ForwardOffset;
+	TraceStart += GetActorForwardVector() * CurrentActiveActionData.ForwardOffset;
 
 	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
-	FVector TraceEnd = TraceStart + (GetActorForwardVector() * AttackRange);
+	FVector TraceEnd = TraceStart + (GetActorForwardVector() * CurrentActiveActionData.AttackRange);
 
 	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this); // 나는 때리면 안 됨
+	if (CurrentActiveActionData.TargetFilter == ETargetFilter::Enemy)
+	{
+		ActorsToIgnore.Add(this);
+	}
 
 	TArray<FHitResult> HitResults;
 	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
 		GetWorld(),
 		TraceStart,      // 시작점
 		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
-		AttackRadius,    // 반경
+		CurrentActiveActionData.AttackRadius,    // 반경
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		ActorsToIgnore,
@@ -118,11 +121,17 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			}
 			HitActors.Add(HitActor);
 
-			// 피아 식별 (이미 위에서 HitChar를 구했으므로 바로 사용)
-			if (!IsHostile(HitChar))
+			bool bIsHostile = IsHostile(HitChar);
+			ETargetFilter Filter = CurrentActiveActionData.TargetFilter;
+
+			if (Filter == ETargetFilter::Enemy && !bIsHostile)
 			{
-				//UE_LOG(LogTemp, Error, TEXT("❌ [CheckHit] 아군 판정되어 무시합니다! (내 태그: %s vs 적 태그: %s)"),
-				//	*this->FactionTag.ToString(), *HitChar->FactionTag.ToString());
+				// 적 공격용 스킬인데 아군이면 무시
+				continue;
+			}
+			else if (Filter == ETargetFilter::Friendly && bIsHostile)
+			{
+				// 아군 버프용 스킬인데 적군이면 무시
 				continue;
 			}
 
@@ -133,9 +142,10 @@ void ACharacterBase::CheckHit(FName SocketName, float AttackRange, float AttackR
 			Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Result);
 
 			// 태그를 고정하거나, 인자로 받을 수도 있음
-			FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));
+			FGameplayTag EventTag;
+			EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
 
-			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, HitTag, Payload);
+			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, Payload);
 
 			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 타격 성공! 대상: %s (소켓: %s)"), *GetName(), *HitActor->GetName(), *SocketName.ToString());
 		}

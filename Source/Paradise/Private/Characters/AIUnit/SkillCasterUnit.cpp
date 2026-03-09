@@ -42,7 +42,7 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 		// 스킬 셋업 (이펙트, 투사체 포장 & GAS 어빌리티 부여)
 		if (InAssets->SkillSetups.IsValidIndex(i))
 		{
-			SkillData.DamageEffectClass = InAssets->SkillSetups[i].EffectClass;
+			SkillData.EffectClass = InAssets->SkillSetups[i].EffectClass;
 			SkillData.ProjectileClass = InAssets->SkillSetups[i].ProjectileClass;
 
 			// 인덱스(i)를 InputID로 사용하여 어빌리티 즉시 부여

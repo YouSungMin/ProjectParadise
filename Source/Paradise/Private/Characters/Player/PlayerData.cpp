@@ -282,7 +282,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
-			Result.DamageEffectClass = CharAssets->UltimateAttackSetup.EffectClass;
+			Result.EffectClass = CharAssets->UltimateAttackSetup.EffectClass;
 		}
 
 		return Result; // 궁극기 데이터 반환 후 종료
@@ -308,12 +308,12 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	{
 		if (ActionType == ECombatActionType::BasicAttack)
 		{
-			Result.DamageEffectClass = WeaponAssets->BasicAttackSetup.EffectClass;
+			Result.EffectClass = WeaponAssets->BasicAttackSetup.EffectClass;
 			Result.ProjectileClass = WeaponAssets->BasicAttackSetup.ProjectileClass;
 		}
 		else if (ActionType == ECombatActionType::WeaponSkill)
 		{
-			Result.DamageEffectClass = WeaponAssets->WeaponSkillSetup.EffectClass;
+			Result.EffectClass = WeaponAssets->WeaponSkillSetup.EffectClass;
 			Result.ProjectileClass = WeaponAssets->WeaponSkillSetup.ProjectileClass;
 		}
 

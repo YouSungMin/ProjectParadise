@@ -123,12 +123,13 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 	if (ActionType == ECombatActionType::BasicAttack)
 	{
 		Result.MontageToPlay = BasicAttackData.MontageToPlay;
-		Result.DamageEffectClass = BasicAttackData.DamageEffectClass;
+		Result.EffectClass = BasicAttackData.EffectClass;
 		Result.ProjectileClass = BasicAttackData.ProjectileClass;
 		Result.DamageMultiplier = BasicAttackData.DamageMultiplier;
 		Result.AttackRange = BasicAttackData.AttackRange;
 		Result.AttackRadius = BasicAttackData.AttackRadius;
 		Result.ForwardOffset = BasicAttackData.ForwardOffset;
+		Result.TargetFilter = BasicAttackData.TargetFilter;
 	}
 	else if (ActionType == ECombatActionType::WeaponSkill)
 	{
@@ -249,7 +250,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		}
 
 		// 전투 데이터 캐싱 (멤버 변수에 저장)
-		BasicAttackData.DamageEffectClass = InAssets->BasicAttackSetup.EffectClass;
+		BasicAttackData.EffectClass = InAssets->BasicAttackSetup.EffectClass;
 		BasicAttackData.MontageToPlay = InAssets->AttackMontage.LoadSynchronous(); // 미리 로드해둠
 		BasicAttackData.ProjectileClass = InAssets->BasicAttackSetup.ProjectileClass;
 		CachedDeathMontage = InAssets->DeathMontage.LoadSynchronous();

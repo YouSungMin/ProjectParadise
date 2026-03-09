@@ -96,9 +96,9 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
 		{
 			// 데미지 이펙트 세팅
-			if (CombatData.DamageEffectClass)
+			if (CombatData.EffectClass)
 			{
-				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.DamageEffectClass, GetAbilityLevel());
+				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
 				SpecHandle.Data->SetSetByCallerMagnitude(
 					FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
 					CombatData.DamageMultiplier

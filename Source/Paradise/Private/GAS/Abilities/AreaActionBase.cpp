@@ -1,18 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GAS/Abilities/AreaAttackBase.h"
+#include "GAS/Abilities/AreaActionBase.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Characters/Base/CharacterBase.h"
 
-UAreaAttackBase::UAreaAttackBase()
+UAreaActionBase::UAreaActionBase()
 {
 	// 기본적으로 감지할 태그 설정
-	HitEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.Hit"));
+	HitEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
 }
 
-void UAreaAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UAreaActionBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
@@ -29,7 +29,7 @@ void UAreaAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 	if (!CombatData.MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [MeleeBase] 재생할 몽타주가 없습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("❌ [AreaActionBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -46,11 +46,11 @@ void UAreaAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		this, HitEventTag, nullptr, false, false
 	);
 
-	EventTask->EventReceived.AddDynamic(this, &UAreaAttackBase::OnGameplayEventReceived);
+	EventTask->EventReceived.AddDynamic(this, &UAreaActionBase::OnGameplayEventReceived);
 	EventTask->ReadyForActivation();
 }
 
-void UAreaAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
+void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
 	// 맞은 대상(Target) 확인
 	AActor* TargetActor = const_cast<AActor*>(Payload.Target.Get());
@@ -60,15 +60,15 @@ void UAreaAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
 	// GE 클래스가 없으면 데미지 못 줌
-	if (!CombatData.DamageEffectClass)
+	if (!CombatData.EffectClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [MeleeBase] DamageEffectClass가 설정되지 않았습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [AreaActionBase] DamageEffectClass가 설정되지 않았습니다."));
 		return;
 	}
 
 	// 3. GE 스펙 생성 (Make Spec)
 	// BaseGameplayAbility에 구현된 Helper 함수 사용
-	FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.DamageEffectClass, GetAbilityLevel());
+	FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
 
 	if (SpecHandle.IsValid())
 	{

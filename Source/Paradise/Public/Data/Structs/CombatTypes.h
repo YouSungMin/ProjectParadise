@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/Enums/GameEnums.h"
 #include "CombatTypes.generated.h"
 
 class UAnimMontage;
@@ -83,6 +84,10 @@ struct FActionStats : public FTableRowBase
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float ProjectileSpeed;
+
+	/** @brief 스킬의 적용 대상 (적군인지 아군인지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	ETargetFilter TargetFilter = ETargetFilter::Enemy;
 };
 
 USTRUCT(BlueprintType)
@@ -93,7 +98,7 @@ struct FCombatActionData
 public:
 	FCombatActionData()
 		: MontageToPlay(nullptr)
-		, DamageEffectClass(nullptr)
+		, EffectClass(nullptr)
 		, DamageMultiplier(1.0f)
 		, ProjectileClass(nullptr)
 	{
@@ -110,7 +115,7 @@ public:
 	 * (예: GE_DamageStandard, GE_FireDamage)
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	TSubclassOf<UGameplayEffect> EffectClass;
 
 	/** * @brief 데미지 계수 (Damage Multiplier)
 	 * @details 기본값 1.0.
@@ -168,6 +173,9 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float ProjectileSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	ETargetFilter TargetFilter = ETargetFilter::Enemy;
 };
 
 
