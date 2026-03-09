@@ -5,6 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
 #include "Data/Structs/FXStructs.h"
+#include "Data/Structs/CombatTypes.h"
 #include "UnitStructs.generated.h"
 
 class USkeletalMesh;
@@ -361,17 +362,9 @@ public:
 	//  GAS & Montage (Player Only)
 	// =========================================================
 
-	/**
-	 * @brief 궁극기 어빌리티 클래스 (Ultimate Ability)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UGameplayAbility> UltimateAbility;
-
-	/**
-	 * @brief 궁극기 사용 시 적용할 GameplayEffect
-	 */
+	/** @brief 캐릭터 궁극기 세트 (어빌리티, 이펙트, 투사체 묶음) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<class UGameplayEffect> UltimateDamageEffect;
+	FCombatAbilitySetup UltimateAttackSetup;
 
 	/**
 	 * @brief 궁극기 연출 몽타주 (Ultimate Montage)
@@ -460,34 +453,13 @@ public:
 	//  GAS 어빌리티 (Abilities)
 	// =========================================================
 
-	/**
-	 * @brief 이 유닛의 기본 공격 데미지 GE
-	 * @details 늑대는 GE_DamageStandard(물리), 화염정령은 GE_FireDamage(화염) 등을 할당합니다.
-	 */
+	/** @brief 몬스터 기본 평타 세트 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Common")
-	TSubclassOf<UGameplayEffect> BasicAttackEffect;
+	FCombatAbilitySetup BasicAttackSetup;
 
-	/**
-	 * @brief 평타 어빌리티 (Basic Attack)
-	 * @details 쿨타임이 없거나 매우 짧은 기본 공격입니다. AI의 경우 스킬 쿨타임일 때 사용하는 '패시브성' 공격입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Common")
-	TSubclassOf<UGameplayAbility> BasicAbility;
-
-	/**
-	 * @brief 스폰 시 부여할 기본 어빌리티 목록
-	 * @details 몬스터가 태어날 때 ASC(AbilitySystemComponent)에 등록될 스킬들입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
-
-	/**
-	 * @brief 투사체 클래스 (Projectile Class)
-	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
-	 * @note 근거리 무기일 경우 비워둡니다 (None).
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<AActor> ProjectileClass;
+	/** @brief 몬스터가 사용하는 다중 스킬 목록 (1번 스킬, 2번 스킬...) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Skill")
+	TArray<FCombatAbilitySetup> SkillSetups;
 
 	/**
 	 * @brief 공격 행동 전용, FX, Tags

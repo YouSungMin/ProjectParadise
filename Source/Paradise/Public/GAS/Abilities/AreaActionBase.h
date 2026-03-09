@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GAS/Abilities/BaseGameplayAbility.h"
-#include "AreaAttackBase.generated.h"
+#include "AreaActionBase.generated.h"
 
 /**
  * @class UGA_MeleeBase
@@ -15,12 +15,12 @@
  * '공격 몽타주'와 '데미지 이펙트'를 가져와서 실행합니다.
  */
 UCLASS()
-class PARADISE_API UAreaAttackBase : public UBaseGameplayAbility
+class PARADISE_API UAreaActionBase : public UBaseGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
-	UAreaAttackBase();
+	UAreaActionBase();
 
 	/**
 	 * @brief 어빌리티 실행 진입점.

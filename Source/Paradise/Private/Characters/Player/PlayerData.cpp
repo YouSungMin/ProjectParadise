@@ -216,10 +216,10 @@ void APlayerData::InitPlayerAssets()
 		}
 
 		// 새 궁극기 부여
-		if (Assets->UltimateAbility)
+		if (Assets->UltimateAttackSetup.AbilityClass)
 		{
 			// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
-			FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
+			FGameplayAbilitySpec Spec(Assets->UltimateAttackSetup.AbilityClass, 1, static_cast<int32>(EInputID::Ultimate));
 
 			UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 
@@ -279,10 +279,11 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				Result.AttackRadius = ActionRow->AttackRadius;
 				Result.ForwardOffset = ActionRow->ForwardOffset;
 				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+				Result.TargetFilter = ActionRow->TargetFilter;
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
-			Result.DamageEffectClass = CharAssets->UltimateDamageEffect;
+			Result.EffectClass = CharAssets->UltimateAttackSetup.EffectClass;
 		}
 
 		return Result; // 궁극기 데이터 반환 후 종료
@@ -306,9 +307,17 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	// 4. 데이터 패키징
 	if (WeaponAssets && WeaponStats)
 	{
-		// 공통: 무기 전용 데미지 이펙트 (독, 화염 등)
-		Result.DamageEffectClass = WeaponAssets->DamageEffectClass;
-		Result.ProjectileClass = WeaponAssets->ProjectileClass;
+		if (ActionType == ECombatActionType::BasicAttack)
+		{
+			Result.EffectClass = WeaponAssets->BasicAttackSetup.EffectClass;
+			Result.ProjectileClass = WeaponAssets->BasicAttackSetup.ProjectileClass;
+		}
+		else if (ActionType == ECombatActionType::WeaponSkill)
+		{
+			Result.EffectClass = WeaponAssets->WeaponSkillSetup.EffectClass;
+			Result.ProjectileClass = WeaponAssets->WeaponSkillSetup.ProjectileClass;
+		}
+
 		FName TargetActionID = NAME_None;
 
 		FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID);
@@ -378,16 +387,16 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	// ---------------------------------------------------------
 
 	// 평타 (Basic Attack)
-	if (WeaponData->BasicAttackAbility)
+	if (WeaponData->BasicAttackSetup.AbilityClass)
 	{
-		FGameplayAbilitySpec Spec(WeaponData->BasicAttackAbility, 1, static_cast<int32>(EInputID::Attack));
+		FGameplayAbilitySpec Spec(WeaponData->BasicAttackSetup.AbilityClass, 1, static_cast<int32>(EInputID::Attack));
 		BasicAttackHandle = AbilitySystemComponent->GiveAbility(Spec);
 	}
 
 	// 무기 스킬 (Weapon Skill)
-	if (WeaponData->WeaponSkillAbility)
+	if (WeaponData->WeaponSkillSetup.AbilityClass)
 	{
-		FGameplayAbilitySpec Spec(WeaponData->WeaponSkillAbility, 1, static_cast<int32>(EInputID::Skill));
+		FGameplayAbilitySpec Spec(WeaponData->WeaponSkillSetup.AbilityClass, 1, static_cast<int32>(EInputID::Skill));
 		WeaponSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 	}
 

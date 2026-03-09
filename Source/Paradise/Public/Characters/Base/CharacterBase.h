@@ -74,7 +74,7 @@ public:
 	 * @param ForwardOffset : 타격 시작점을 앞으로 얼마나 밀어낼 것인가
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType);
+	void CheckHit(FName SocketName,ESocketTargetType TargetType);
 
 	/*
 	 * @brief 새로운 공격이 시작될 때 타격 목록 초기화

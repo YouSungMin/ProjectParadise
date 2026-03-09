@@ -9,96 +9,72 @@
 
 void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 {
-	// 부모의 초기화 로직 실행
 	Super::InitializeUnit(InStats, InAssets);
 
-	// 다중 스킬 스탯 캐싱 (InStats->SkillActionIDs 순회)
-	if (InStats)
+	// 필수 데이터가 없으면 진행 불가
+	if (!InStats || !InAssets || !AbilitySystemComponent) return;
+
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
+	if (!GI) return;
+
+	// 기존 캐싱 데이터 및 어빌리티 초기화
+	CachedSkillDataArray.Empty();
+	CachedSkillMontages.Empty();
+	for (const auto& Handle : SkillAbilityHandles)
 	{
-		CachedSkillDataArray.Empty();
-		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance()))
+		AbilitySystemComponent->ClearAbility(Handle);
+	}
+	SkillAbilityHandles.Empty();
+
+	for (int32 i = 0; i < InStats->SkillActionIDs.Num(); ++i)
+	{
+		FCombatActionData SkillData;
+
+		// 엑셀 데이터 로드 (사거리, 데미지 배율 등)
+		if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->SkillActionIDs[i]))
 		{
-			for (const FName& SkillID : InStats->SkillActionIDs)
+			SkillData.AttackRange = ActionRow->AttackRange;
+			SkillData.DamageMultiplier = ActionRow->DamageMultiplier;
+			SkillData.AttackRadius = ActionRow->AttackRadius;
+			SkillData.ForwardOffset = ActionRow->ForwardOffset;
+		}
+
+		// 스킬 셋업 (이펙트, 투사체 포장 & GAS 어빌리티 부여)
+		if (InAssets->SkillSetups.IsValidIndex(i))
+		{
+			SkillData.EffectClass = InAssets->SkillSetups[i].EffectClass;
+			SkillData.ProjectileClass = InAssets->SkillSetups[i].ProjectileClass;
+
+			// 인덱스(i)를 InputID로 사용하여 어빌리티 즉시 부여
+			if (TSubclassOf<UGameplayAbility> SkillClass = InAssets->SkillSetups[i].AbilityClass)
 			{
-				FCombatActionData SkillData;
-				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, SkillID))
-				{
-					SkillData.AttackRange = ActionRow->AttackRange;
-					SkillData.DamageMultiplier = ActionRow->DamageMultiplier;
-					SkillData.AttackRadius = ActionRow->AttackRadius;
-					SkillData.ForwardOffset = ActionRow->ForwardOffset;
-				}
-				CachedSkillDataArray.Add(SkillData);
+				FGameplayAbilitySpec Spec(SkillClass, 1, i);
+				SkillAbilityHandles.Add(AbilitySystemComponent->GiveAbility(Spec));
 			}
 		}
+
+		// 몽타주 포장 및 캐싱
+		if (InAssets->SkillMontages.IsValidIndex(i))
+		{
+			UAnimMontage* LoadedMontage = InAssets->SkillMontages[i].LoadSynchronous();
+			SkillData.MontageToPlay = LoadedMontage;
+			CachedSkillMontages.Add(LoadedMontage); // (기존 호환성 유지용)
+		}
+		else
+		{
+			CachedSkillMontages.Add(nullptr); // 인덱스 꼬임 방지
+		}
+
+		// 완성된 종합 선물 세트를 배열에 쏙!
+		CachedSkillDataArray.Add(SkillData);
 	}
 
-	if (InAssets)
+	// 적군(Enemy)일 경우 연출 태그 캐싱
+	if (FactionTag.MatchesTagExact(FGameplayTag::RequestGameplayTag("Unit.Faction.Enemy")))
 	{
-		// 다중 스킬 어빌리티(GAS) 완벽한 재설정 및 부여
-		if (AbilitySystemComponent)
+		if (FEnemyAssets* EnemyAssets = static_cast<FEnemyAssets*>(InAssets))
 		{
-			// 기존 스킬 초기화 및 비우기
-			for (const auto& Handle : SkillAbilityHandles)
-			{
-				AbilitySystemComponent->ClearAbility(Handle);
-			}
-			SkillAbilityHandles.Empty();
-
-			// 새 스킬 부여 및 디버그 로그 출력
-			for (int32 i = 0; i < InAssets->SkillAbilities.Num(); ++i)
-			{
-				TSubclassOf<UGameplayAbility> SkillClass = InAssets->SkillAbilities[i];
-				if (SkillClass)
-				{
-					// 1은 어빌리티 레벨, 그리고 3번째 인자가 바로 InputID 입니다! 
-					// 여기에 배열의 순서(i)를 그대로 박아줍니다.
-					FGameplayAbilitySpec Spec(SkillClass, 1, i);
-					FGameplayAbilitySpecHandle GivenHandle = AbilitySystemComponent->GiveAbility(Spec);
-
-					// 디버그 로그: 핸들이 유효한지(부여 성공) 확인
-					if (GivenHandle.IsValid())
-					{
-						SkillAbilityHandles.Add(GivenHandle);
-						UE_LOG(LogTemp, Log, TEXT("🟢 [%s] 스킬 부여 성공! | 어빌리티: %s | 할당된 인덱스(InputID): %d"),
-							*GetName(), *SkillClass->GetName(), i);
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("❌ [%s] 스킬 부여 실패! | 어빌리티: %s | 인덱스: %d"),
-							*GetName(), *SkillClass->GetName(), i);
-					}
-				}
-				else
-				{
-					// 배열 칸은 있는데 BP를 안 채워 넣었을 경우의 경고 로그
-					UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] %d번 인덱스의 스킬 클래스가 비어있습니다! (데이터 테이블 확인 요망)"),
-						*GetName(), i);
-				}
-			}
-		}
-
-		// 스킬 연출 태그 캐싱
-		if (FactionTag.MatchesTagExact(FGameplayTag::RequestGameplayTag("Unit.Faction.Enemy")))
-		{
-			if (FEnemyAssets* EnemyAssets = static_cast<FEnemyAssets*>(InAssets))
-			{
-				CachedSkillEffectTags = EnemyAssets->SkillEffectTags;
-			}
-		}
-
-		// 스킬 몽타주 캐싱
-		CachedSkillMontages.Empty();
-		for (const TSoftObjectPtr<UAnimMontage>& SoftMontage : InAssets->SkillMontages)
-		{
-			if (!SoftMontage.IsNull())
-			{
-				CachedSkillMontages.Add(SoftMontage.LoadSynchronous());
-			}
-			else
-			{
-				CachedSkillMontages.Add(nullptr); // 인덱스 동기화
-			}
+			CachedSkillEffectTags = EnemyAssets->SkillEffectTags;
 		}
 	}
 }
