@@ -35,6 +35,7 @@ public:
 	/** @brief 유닛 초기화 및 ID 설정 */
 	virtual void InitializeUnit(struct FAIUnitStats* InStats, struct FAIUnitAssets* InAssets);
 
+	const FAIUnitAssets& GetUnitAssets() const { return UnitAssets; }
 
 	void SetUnitID(FName InID) { UnitID = InID; }
 	FName GetUnitID() const { return UnitID; }
@@ -72,6 +73,9 @@ protected:
 	/** @brief 데이터 테이블 조회를 위한 RowName 저장 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
 	FName UnitID;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
+	FAIUnitAssets UnitAssets;
 
 	/** @brief 기본 공격에 필요한 전투 데이터 모음 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Data")

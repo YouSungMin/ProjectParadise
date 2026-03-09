@@ -43,12 +43,22 @@ void AMyAIController::OnPossess(APawn* InPawn)
     Super::OnPossess(InPawn);
 
     UBlackboardComponent* BBComp = Blackboard.Get();
-    if (BTAsset && BBAsset && UseBlackboard(BBAsset, BBComp))
+    AUnitBase* SelfUnit = Cast<AUnitBase>(InPawn);
+
+    if (SelfUnit && BBAsset)
     {
-        Blackboard = BBComp;
-        AUnitBase* SelfUnit = Cast<AUnitBase>(InPawn);
-        if (SelfUnit)
+        UBehaviorTree* BTToRun = SelfUnit->GetUnitAssets().BehaviorTree.LoadSynchronous();
+
+        if (BTToRun == nullptr)
         {
+            BTToRun = BTAsset;
+        }
+
+        // 블랙보드 사용 및 결정된 비헤이비어 트리 실행
+        if (BTToRun && UseBlackboard(BBAsset, BBComp))
+        {
+            Blackboard = BBComp;
+
             // 1. 사거리 데이터 로드
             Blackboard->SetValueAsFloat(TEXT("TargetAttackRange"), SelfUnit->GetAttackRange());
 
@@ -56,36 +66,18 @@ void AMyAIController::OnPossess(APawn* InPawn)
             TArray<AActor*> FoundBases;
             UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
-            UE_LOG(LogTemp, Log, TEXT("🔍 [%s] 주변 기지 검색 시작 (총 %d개 발견)"), *SelfUnit->GetName(), FoundBases.Num());
-
             for (AActor* Actor : FoundBases)
             {
                 AHomeBase* HomeBase = Cast<AHomeBase>(Actor);
-                if (HomeBase)
+                if (HomeBase && SelfUnit->IsEnemy(HomeBase))
                 {
-                    FGameplayTag MyTag = SelfUnit->GetFactionTag();
-                    FGameplayTag BaseTag = HomeBase->GetFactionTag();
-                    bool bIsEnemyResult = SelfUnit->IsEnemy(HomeBase);
-
-                    UE_LOG(LogTemp, Warning, TEXT("   👉 [Check] 나: %s(%s) vs 기지: %s(%s) | 적대판정: %s"),
-                        *SelfUnit->GetName(),
-                        *MyTag.ToString(),
-                        *HomeBase->GetName(),
-                        *BaseTag.ToString(),
-                        bIsEnemyResult ? TEXT("TRUE (공격대상)") : TEXT("FALSE (아군/중립)")
-                    );
-
-                    if (bIsEnemyResult)
-                    {
-                        Blackboard->SetValueAsObject(TEXT("EnemyBaseActor"), HomeBase);
-                        UE_LOG(LogTemp, Error, TEXT("🚀 [%s] 타겟 확정! 공격하러 갑니다 -> %s"), *SelfUnit->GetName(), *HomeBase->GetName());
-                        break;
-                    }
+                    Blackboard->SetValueAsObject(TEXT("EnemyBaseActor"), HomeBase);
+                    break;
                 }
             }
-        }
 
-        RunBehaviorTree(BTAsset);
+            RunBehaviorTree(BTToRun);
+        }
     }
 }
 

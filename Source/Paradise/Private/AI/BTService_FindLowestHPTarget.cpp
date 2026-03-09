@@ -5,86 +5,116 @@
 #include "AIController.h"
 #include "Characters/Base/CharacterBase.h"
 #include "Characters/AIUnit/UnitBase.h"
+#include "Objects/HomeBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "EngineUtils.h"
 
 UBTService_FindLowestHPTarget::UBTService_FindLowestHPTarget()
 {
-	NodeName = "Find Lowest HP Target (Range Unit)";
-	Interval = 0.2f;
-	SearchRadius = 1500.0f;
+    NodeName = "Find Lowest HP Percent Target";
+    Interval = 0.2f;
+    SearchRadius = 1500.0f;
 }
 
 void UBTService_FindLowestHPTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	AAIController* AIC = OwnerComp.GetAIOwner();
-	if (!BB || !AIC) return;
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    AAIController* AIC = OwnerComp.GetAIOwner();
+    if (!BB || !AIC) return;
 
-	AUnitBase* SelfUnit = Cast<AUnitBase>(AIC->GetPawn());
-	if (!SelfUnit) return;
+    AUnitBase* SelfUnit = Cast<AUnitBase>(AIC->GetPawn());
+    if (!SelfUnit) return;
 
-	// 원거리 유닛의 현재 공격 사거리
-	float AttackRange = SelfUnit->GetAttackRange();
+    float AttackRange = SelfUnit->GetAttackRange();
 
-	AUnitBase* BestTarget = nullptr;
-	float MinHealth = FLT_MAX;
+    AUnitBase* BestUnitTarget = nullptr;
+    float MinUnitHealthPercent = 2.0f;
 
-	for (TActorIterator<AUnitBase> It(GetWorld()); It; ++It)
-	{
-		AUnitBase* PotentialTarget = *It;
+    AUnitBase* BestBaseTarget = nullptr;
+    float MinBaseHealthPercent = 2.0f;
 
-		// 1. 기본 검사
-		if (!IsValid(PotentialTarget) || PotentialTarget == SelfUnit || PotentialTarget->IsDead()) continue;
+    // 1. 사거리 내의 모든 적(유닛/기지)을 탐색하여 최저 HP% 타겟 선정
+    for (TActorIterator<AUnitBase> It(GetWorld()); It; ++It)
+    {
+        AUnitBase* PotentialTarget = *It;
 
-		// 2. 적대 관계 확인
-		if (SelfUnit->IsEnemy(PotentialTarget))
-		{
-			float Distance = FVector::Dist(SelfUnit->GetActorLocation(), PotentialTarget->GetActorLocation());
+        if (!IsValid(PotentialTarget) || PotentialTarget == SelfUnit || PotentialTarget->IsDead()) continue;
 
-			// 3. 내 사거리(AttackRange) 안에 들어와 있는 유닛 검사
-			if (Distance <= AttackRange)
-			{
-				// 4. GAS AttributeSet에서 체력 정보
-				if (const UBaseAttributeSet* AS = Cast<UBaseAttributeSet>(PotentialTarget->GetAttributeSet()))
-				{
-					float CurrentHP = AS->GetHealth();
+        if (SelfUnit->IsEnemy(PotentialTarget))
+        {
+            float Distance = FVector::Dist(SelfUnit->GetActorLocation(), PotentialTarget->GetActorLocation());
 
-					// 5. 현재까지 찾은 유닛보다 체력이 더 적으면 교체
-					if (CurrentHP < MinHealth)
-					{
-						MinHealth = CurrentHP;
-						BestTarget = PotentialTarget;
-					}
-				}
-			}
-		}
-	}
+            // 사거리 내에 있을 때만 비교 대상에 포함
+            if (Distance <= AttackRange)
+            {
+                const UBaseAttributeSet* AS = Cast<UBaseAttributeSet>(PotentialTarget->GetAttributeSet());
+                if (AS)
+                {
+                    float CurrentHP = AS->GetHealth();
+                    float MaxHP = AS->GetMaxHealth();
+                    float HealthPercent = (MaxHP > 0.0f) ? (CurrentHP / MaxHP) : 1.0f;
 
-	if (BestTarget)
-	{
-		// 가장 낮은 HP를 가진 타겟을 블랙보드에 갱신
-		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, BestTarget);
-		BB->SetValueAsFloat(FName("DistanceToTarget"), FVector::Dist(SelfUnit->GetActorLocation(), BestTarget->GetActorLocation()));
-		BB->SetValueAsVector(FName("TargetLocation"), BestTarget->GetActorLocation());
-	}
-	else
-	{
-		// 사거리 안에 적 유닛이 없는 경우, 기존 타겟이 시야 밖으로 나갔는지 확인 후 처리
-		UObject* RawTarget = BB->GetValueAsObject(TargetActorKey.SelectedKeyName);
-		AUnitBase* CurrentTarget = Cast<AUnitBase>(RawTarget);
+                    if (PotentialTarget->IsA(AHomeBase::StaticClass()))
+                    {
+                        if (HealthPercent < MinBaseHealthPercent)
+                        {
+                            MinBaseHealthPercent = HealthPercent;
+                            BestBaseTarget = PotentialTarget;
+                        }
+                    }
+                    else
+                    {
+                        if (HealthPercent < MinUnitHealthPercent)
+                        {
+                            MinUnitHealthPercent = HealthPercent;
+                            BestUnitTarget = PotentialTarget;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-		// 현재 타겟이 없거나 죽었다면 기지로
-		if (!IsValid(CurrentTarget) || CurrentTarget->IsDead())
-		{
-			BB->SetValueAsObject(TargetActorKey.SelectedKeyName, nullptr);
-			BB->ClearValue(FName("DistanceToTarget"));
+    // 유닛 우선순위 적용
+    AUnitBase* FinalTarget = (BestUnitTarget != nullptr) ? BestUnitTarget : BestBaseTarget;
 
-			AActor* DestBase = Cast<AActor>(BB->GetValueAsObject(FName("EnemyBaseActor")));
-			if (DestBase)
-			{
-				BB->SetValueAsVector(FName("TargetLocation"), DestBase->GetActorLocation());
-			}
-		}
-	}
+    // 2. 최종 타겟팅 결과에 따른 블랙보드 갱신
+    if (FinalTarget)
+    {
+        float DistanceToTarget = FVector::Dist(SelfUnit->GetActorLocation(), FinalTarget->GetActorLocation());
+
+        // 타겟 액터와 실시간 거리는 항상 업데이트 (타겟팅 전환용)
+        BB->SetValueAsObject(TargetActorKey.SelectedKeyName, FinalTarget);
+        BB->SetValueAsFloat(FName("DistanceToTarget"), DistanceToTarget);
+
+        if (DistanceToTarget <= AttackRange)
+        {
+            // 이미 사거리 안이라면 내 현재 위치를 목표로 설정하여 이동 중지 유도
+            BB->SetValueAsVector(FName("TargetLocation"), SelfUnit->GetActorLocation());
+        }
+        else
+        {
+            // 사거리 밖으로 나가면 다시 적을 추적하기 위해 위치 갱신
+            BB->SetValueAsVector(FName("TargetLocation"), FinalTarget->GetActorLocation());
+        }
+    }
+    else
+    {
+        // 사거리 내에 타겟이 없는 경우: 기존 타겟이 죽었는지 확인
+        UObject* RawTarget = BB->GetValueAsObject(TargetActorKey.SelectedKeyName);
+        AUnitBase* CurrentTarget = Cast<AUnitBase>(RawTarget);
+
+        if (!IsValid(CurrentTarget) || CurrentTarget->IsDead())
+        {
+            BB->SetValueAsObject(TargetActorKey.SelectedKeyName, nullptr);
+            BB->ClearValue(FName("DistanceToTarget"));
+
+            // 사거리 내에 유닛이 없으므로 적 기지로 이동 좌표 설정
+            AActor* DestBase = Cast<AActor>(BB->GetValueAsObject(FName("EnemyBaseActor")));
+            if (DestBase)
+            {
+                BB->SetValueAsVector(FName("TargetLocation"), DestBase->GetActorLocation());
+            }
+        }
+    }
 }
