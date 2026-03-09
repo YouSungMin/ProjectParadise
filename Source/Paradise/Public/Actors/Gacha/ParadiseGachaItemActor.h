@@ -90,6 +90,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<UStaticMeshComponent> ItemMesh = nullptr;
 
+	/** @brief [캐릭터 전용] 리빌 후 Idle 애니메이션을 재생할 스켈레탈 메시 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<USkeletalMeshComponent> RevealCharacterMesh = nullptr;
+
+	/** @brief [장비 전용] 리빌 후 보여줄 장비 스태틱 메시 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<UStaticMeshComponent> RevealEquipmentMesh = nullptr;
+
 	/** @brief 등급별 아우라/빛기둥 이펙트를 담당하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<UNiagaraComponent> RarityAuraEffect = nullptr;

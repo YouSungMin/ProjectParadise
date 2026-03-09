@@ -6,6 +6,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/AnimSequence.h"
 #include "Materials/MaterialInstance.h"
 
 #pragma region 초기화 및 생명주기
@@ -24,6 +25,18 @@ AParadiseGachaItemActor::AParadiseGachaItemActor()
 	// 모바일 터치 및 마우스 클릭 이벤트 바인딩
 	ItemMesh->OnClicked.AddDynamic(this, &AParadiseGachaItemActor::HandleItemClicked);
 	ItemMesh->OnInputTouchEnd.AddDynamic(this, &AParadiseGachaItemActor::HandleItemTouchEnd);
+
+	// ── 캐릭터 리빌 메시 (기본 숨김) ─────────────────────────────────────
+	RevealCharacterMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RevealCharacterMesh"));
+	RevealCharacterMesh->SetupAttachment(RootComponent);
+	RevealCharacterMesh->SetVisibility(false);
+	RevealCharacterMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// ── 장비 리빌 메시 (기본 숨김) ──────────────────────────────────────
+	RevealEquipmentMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RevealEquipmentMesh"));
+	RevealEquipmentMesh->SetupAttachment(RootComponent);
+	RevealEquipmentMesh->SetVisibility(false);
+	RevealEquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// 2. 나이아가라 컴포넌트 생성
 	RarityAuraEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RarityAuraEffect"));
@@ -83,6 +96,23 @@ void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, U
 	{
 		ItemMesh->SetMaterial(0, InSilhouetteMat);
 	}
+
+	// 캐릭터 메시 미리 세팅 (숨김 상태) — 리빌 시 SetVisibility만 하면 됨
+	if (CachedItemData.bIsCharacter)
+	{
+		if (RevealCharacterMesh && CachedItemData.CharacterSkeletalMesh)
+		{
+			RevealCharacterMesh->SetSkeletalMesh(CachedItemData.CharacterSkeletalMesh);
+		}
+	}
+	// 장비 메시 미리 세팅 (숨김 상태)
+	else
+	{
+		if (RevealEquipmentMesh && CachedItemData.EquipmentStaticMesh)
+		{
+			RevealEquipmentMesh->SetStaticMesh(CachedItemData.EquipmentStaticMesh);
+		}
+	}
 }
 
 void AParadiseGachaItemActor::LaunchToTarget(FVector TargetLocation, float FlightDuration, float ArcHeight)
@@ -100,18 +130,47 @@ void AParadiseGachaItemActor::LaunchToTarget(FVector TargetLocation, float Fligh
 
 void AParadiseGachaItemActor::RevealItem()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[ItemActor] bIsCharacter=%d | SkeletalMesh=%s | Anim=%s"),
+		CachedItemData.bIsCharacter,
+		CachedItemData.CharacterSkeletalMesh ? *CachedItemData.CharacterSkeletalMesh->GetName() : TEXT("NULL"),
+		CachedItemData.CharacterIdleAnim ? *CachedItemData.CharacterIdleAnim->GetName() : TEXT("NULL"));
+
 	// 대기 상태(바닥에 꽂힘)일 때만 터치 리빌 허용
 	if (CurrentState != EGachaItemState::Landed) return;
 
 	CurrentState = EGachaItemState::Revealed;
 
-	// 1. 진짜 머티리얼로 교체 (실루엣 해제)
-	if (ItemMesh && CachedRealMaterial)
+	// 1. 구슬 숨기기
+	if (ItemMesh)
 	{
-		ItemMesh->SetMaterial(0, CachedRealMaterial);
+		ItemMesh->SetVisibility(false);
+		ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	// 2. 펑! 터지는 리빌 파티클 및 사운드 재생
+	// 2. 캐릭터 or 장비 메시 표시
+	if (CachedItemData.bIsCharacter)
+	{
+		if (RevealCharacterMesh)
+		{
+			RevealCharacterMesh->SetVisibility(true);
+
+			if (CachedItemData.CharacterIdleAnim)
+			{
+				// ABP 없이 애니메이션 시퀀스 직접 루프 재생
+				RevealCharacterMesh->PlayAnimation(CachedItemData.CharacterIdleAnim, true);
+			}
+		}
+	}
+	else
+	{
+		// 장비 — 스태틱 메시 표시
+		if (RevealEquipmentMesh)
+		{
+			RevealEquipmentMesh->SetVisibility(true);
+		}
+	}
+
+	// 3. 리빌 파티클 + 사운드
 	if (TObjectPtr<UNiagaraSystem>* FxPtr = RevealVFXByRarity.Find(CachedItemData.PulledRarity))
 	{
 		if (FxPtr && *FxPtr)
@@ -120,18 +179,19 @@ void AParadiseGachaItemActor::RevealItem()
 				GetWorld(), *FxPtr, GetActorLocation(), GetActorRotation());
 		}
 	}
+
 	if (RevealSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, RevealSound, GetActorLocation());
 	}
 
-	// 3. 아우라 이펙트 끄기 (선택 사항)
+	// 4. 아우라 끄기
 	if (RarityAuraEffect)
 	{
 		RarityAuraEffect->Deactivate();
 	}
 
-	// 4. 상자 액터나 UI 매니저에게 "나 까졌어!" 하고 데이터 전달
+	// 5. 완료 이벤트 방송
 	if (OnItemRevealed.IsBound())
 	{
 		OnItemRevealed.Broadcast(CachedItemData);

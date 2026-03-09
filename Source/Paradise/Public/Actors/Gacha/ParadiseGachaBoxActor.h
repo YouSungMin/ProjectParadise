@@ -121,6 +121,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "50.0"))
 	float EruptArcHeight = 600.0f;
 
+	/**
+	 * @brief [1연차 전용] 구슬이 착지할 위치 오프셋 (박스 기준 상대 좌표)
+	 * @details X = 앞뒤, Y = 좌우, Z = 높이. 기획자가 에디터에서 조절합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning")
+	FVector SinglePullLandingOffset = FVector(0.0f, 0.0f, 0.0f);
+
+	/**
+	 * @brief [1연차 전용] 구슬이 하늘로 치솟는 포물선 최고 높이
+	 * @details 멀티 뽑기보다 훨씬 높게 설정해 드라마틱한 연출을 만듭니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "100.0"))
+	float SinglePullArcHeight = 1500.0f;
+
 	/** @brief 구슬 비행 시간 최솟값 (초) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.1"))
 	float FlightTimeMin = 0.8f;
@@ -143,10 +157,6 @@ protected:
 	float ResultDelaySeconds = 2.0f;
 
 	// ── 터치 입력 설정 ───────────────────────────────────────
-
-	/** @brief 꾹 누름 시 재생 배속 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Input", meta = (ClampMin = "1.0", ClampMax = "10.0"))
-	float PressPlayRate = 2.0f;
 
 	/** @brief 더블 터치 인식 허용 간격 (초) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Input", meta = (ClampMin = "0.05", ClampMax = "1.0"))
@@ -272,13 +282,6 @@ private:
 	/** @brief 더블 탭 → 연출 즉시 스킵 */
 	void ProcessDoubleTap();
 
-	/**
-	 * @brief Tick 에서 꾹 누름 상태 감지
-	 * @details 모바일: bIsMobilePressing 플래그 사용
-	 *          에디터(PC): PlayerController::IsInputKeyDown(LeftMouseButton) 폴링
-	 */
-	void TickPressUpdate();
-
 	/** @brief 매 Tick 발광 강도 부드럽게 보간 */
 	void TickGlowUpdate(float DeltaTime);
 #pragma endregion 내부 터치 로직
@@ -343,5 +346,13 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AParadiseGachaItemActor>> SpawnedItems;
 #pragma endregion 내부 상태
+
+protected:
+	/**
+	 * @brief 구슬 착지 시 바닥에서 띄울 Z 오프셋 (구슬 절반 높이)
+	 * @details 구슬이 바닥에 반쯤 잠기면 이 값을 높여주세요.
+	 */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.0"))
+		float OrbLandingZOffset = 50.0f;
 
 };

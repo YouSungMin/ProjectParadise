@@ -151,6 +151,8 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 			Result.ItemName = Item.ItemDisplayName;
 			Result.ItemIcon = Item.ItemIcon.LoadSynchronous(); 
 			Result.ItemCardIllust = Item.ItemCardIllust.LoadSynchronous();
+			Result.CharacterSkeletalMesh = Item.CharacterSkeletalMesh.LoadSynchronous();
+			Result.CharacterIdleAnim = Item.CharacterIdleAnim.LoadSynchronous();
 			Result.ConvertedFragments = Item.DuplicateFragmentReward;
 			break;
 		}

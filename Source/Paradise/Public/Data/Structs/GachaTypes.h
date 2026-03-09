@@ -37,9 +37,9 @@ struct FGachaBannerData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner")
 	TSoftObjectPtr<UDataTable> TargetPoolTable = nullptr;
 
-	/** @brief 이 배너 전용 천장 스택 (예: 80회 뽑기 시 최고 등급 확정) */
+	/** @brief 이 배너 전용 천장 스택 (예: 50회 뽑기 시 최고 등급 확정) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Banner", meta = (ClampMin = "1"))
-	int32 PityThreshold = 80;
+	int32 PityThreshold = 50;
 };
 #pragma endregion 배너 및 확률 데이터
 
@@ -80,6 +80,28 @@ struct FGachaPoolRow : public FTableRowBase
 	/** @brief 중복 획득 시 변환될 조각(파편)의 개수 (장비는 전부 0으로 해서 조각 X) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0"))
 	int32 DuplicateFragmentReward = 10;
+
+	// ── 캐릭터 전용 ─────────────────────────────────────────────────────────
+
+	/**
+	 * @brief [캐릭터 전용] 리빌 시 보여줄 캐릭터 스켈레탈 메시
+	 * @details 장비 배너는 비워둡니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha|Character")
+	TSoftObjectPtr<USkeletalMesh> CharacterSkeletalMesh = nullptr;
+
+	/** @brief [캐릭터 전용] 리빌 후 재생할 Idle 애니메이션 시퀀스 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha|Character")
+	TSoftObjectPtr<UAnimSequence> CharacterIdleAnim = nullptr;
+
+	// ── 장비 전용 ────────────────────────────────────────────────────────────
+
+	/**
+	 * @brief [장비 전용] 리빌 시 보여줄 장비 스태틱 메시
+	 * @details 캐릭터 배너는 비워둡니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha|Equipment")
+	TSoftObjectPtr<UStaticMesh> EquipmentStaticMesh = nullptr;
 };
 
 /**
@@ -127,5 +149,21 @@ struct FGachaResult
 	/** @brief 이 뽑기가 진행되었을 때의 천장(Pity) 스택 (UI 표기용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	int32 CurrentPityCount = 0;
+
+	// ── 캐릭터 전용 ─────────────────────────────────────────────────────────
+
+	/** @brief [캐릭터 전용] 리빌 시 보여줄 스켈레탈 메시 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha|Character")
+	TObjectPtr<USkeletalMesh> CharacterSkeletalMesh = nullptr;
+
+	/** @brief [캐릭터 전용] 리빌 후 재생할 Idle 애님시퀀스 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha|Character")
+	TObjectPtr<UAnimSequence> CharacterIdleAnim = nullptr;
+
+	// ── 장비 전용 ────────────────────────────────────────────────────────────
+
+	/** @brief [장비 전용] 리빌 시 보여줄 스태틱 메시 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha|Equipment")
+	TObjectPtr<UStaticMesh> EquipmentStaticMesh = nullptr;
 };
 #pragma endregion 데이터 구조체
