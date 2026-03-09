@@ -34,9 +34,19 @@ void ALobbyPlayerController::BeginPlay()
 
 		UE_LOG(LogTemp, Log, TEXT("[LobbyController] 카메라 설정 로드 완료 via SetupActor"));
 	}
+	AParadiseGachaBoxActor* FoundBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
+	if (FoundBox)
+	{
+		CachedGachaBox = FoundBox;
+
+		// 게임 시작 시에는 가챠 상자가 안 보여야 하므로 일단 숨겨둡니다.
+		FoundBox->SetActorHiddenInGame(true);
+
+		UE_LOG(LogTemp, Log, TEXT("✅ [LobbyController] 가챠 박스 캐싱 완료!"));
+	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[LobbyController] 로비 셋업 액터를 찾을 수 없습니다! 태그 방식으로 폴백하거나 배치를 확인하세요."));
+		UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] 맵에 배치된 BP_GachaBoxActor가 없습니다! 맵에 끌어다 놓으세요."));
 	}
 
 	// 2. 초기 카메라 설정

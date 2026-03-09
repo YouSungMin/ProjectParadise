@@ -76,9 +76,9 @@ void UParadiseGachaResultWidget::ShowResults(const TArray<FGachaResult>& Results
 void UParadiseGachaResultWidget::SetupSingleResult(const FGachaResult& Result)
 {
 	// 1. 아이템 아이콘
-	if (Img_SingleItemIcon && Result.ItemIcon)
+	if (Img_SingleItemIcon && Result.ItemCardIllust)
 	{
-		Img_SingleItemIcon->SetBrushFromTexture(Result.ItemIcon);
+		Img_SingleItemIcon->SetBrushFromTexture(Result.ItemCardIllust);
 	}
 
 	// 2. 등급 테두리 텍스처 교체

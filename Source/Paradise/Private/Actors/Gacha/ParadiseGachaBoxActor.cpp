@@ -72,6 +72,11 @@ void AParadiseGachaBoxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 #pragma region 외부 인터페이스 구현
 void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InResults)
 {
+	// 상자를 화면에 다시 보이게 하고 틱/충돌을 켭니다 (재사용)
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
+	BoxMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
 	if (InResults.IsEmpty()) return;
 
 	CachedResults = InResults;
@@ -141,6 +146,10 @@ void AParadiseGachaBoxActor::ResetState()
 		if (IsValid(Item)) Item->Destroy();
 	}
 	SpawnedItems.Empty();
+
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+	BoxMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// 4. 내부 상태 초기화 (박스 자신은 Destroy 하지 않음)
 	CachedResults.Empty();

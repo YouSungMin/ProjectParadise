@@ -10,12 +10,12 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 	// 1. 배너 타입과 확률 세팅 캐싱
 	CurrentBannerType = InBannerData.BannerType;
 	CurrentRarityRates = InBannerData.RarityProbabilities;
-	DefaultPityThreshold = InBannerData.PityThreshold;
+	CurrentPityThreshold = InBannerData.PityThreshold;
+	CachedRequiredAether = InBannerData.RequiredAether;
 
 	//  에테르 비용 캐싱!
-	CachedRequiredAether = InBannerData.RequiredAether; 
+	CachedGachaPool.Empty();
 
-	// 2. 연결된 풀(Pool) 테이블을 비동기/동기로 로드하여 캐싱
 	if (UDataTable* PoolTable = InBannerData.TargetPoolTable.LoadSynchronous())
 	{
 		TArray<FGachaPoolRow*> AllRows;
@@ -28,10 +28,13 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 				CachedGachaPool.FindOrAdd(Row->Rarity).Add(*Row);
 			}
 		}
+
+		UE_LOG(LogTemp, Log, TEXT("[GachaSubsystem] 배너 초기화 완료 | 타입: %d | 천장: %d"),
+			(int32)CurrentBannerType, CurrentPityThreshold);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaSubsystem] 타겟 풀(Pool) 테이블을 로드하지 못했습니다."));
+		UE_LOG(LogTemp, Error, TEXT("❌ [GachaSubsystem] Pool 테이블 로드 실패!"));
 	}
 }
 
@@ -44,39 +47,38 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray
 		return Results;
 	}
 
+	int32& PityStack = GetCurrentPityStackRef();
+
 	for (int32 i = 0; i < PullCount; ++i)
 	{
-		// 1. 천장(Pity) 카운터 증가
-		CurrentPityStack++;
-		bool bIsPityTriggered = (CurrentPityStack >= DefaultPityThreshold);
+		// 1. 천장 카운터 증가
+		PityStack++;
+		const bool bIsPityTriggered = (PityStack >= CurrentPityThreshold);
 
 		// 2. 등급 판정
-		EItemRarity HitRarity = bIsPityTriggered ? EItemRarity::Legendary : RollRarity(CurrentRarityRates);
+		EItemRarity HitRarity = bIsPityTriggered
+			? EItemRarity::Legendary
+			: RollRarity(CurrentRarityRates);
 
 		if (HitRarity == EItemRarity::Legendary)
 		{
-			CurrentPityStack = 0; // 전설 획득 시 천장 초기화
+			PityStack = 0;
 		}
 
-		// 3. 아이템 뽑기 (여기서 Result.ConvertedFragments 에 기본값이 들어옴)
+		// 3. 아이템 추첨
 		FGachaResult Result = PickItemFromRarity(HitRarity);
 
-		// ---------------------------------------------------------
-		// 4. ★ 배너 타입에 따른 중복(Duplicate) 분기 처리 ★
-		// ---------------------------------------------------------
+		// 4. 배너 타입별 중복 처리
 		if (CurrentBannerType == EGachaBannerType::Equipment)
 		{
-			// 장비 배너: 장비는 중복의 개념이 없습니다. 무조건 온전한 장비로 지급됩니다.
 			Result.bIsDuplicate = false;
-			Result.ConvertedFragments = 0; // 조각 보상 없음!
+			Result.ConvertedFragments = 0;
 		}
 		else
 		{
-			// 캐릭터 배너: 보유 중인지 검사하여 조각으로 변환
 			if (OwnedItems.Contains(Result.PulledItemID))
 			{
 				Result.bIsDuplicate = true;
-				// 엑셀 기입 실수 방지용 최소치 보장
 				Result.ConvertedFragments = FMath::Max(10, Result.ConvertedFragments);
 			}
 			else
@@ -86,11 +88,21 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray
 			}
 		}
 
-		Result.CurrentPityCount = CurrentPityStack;
+		Result.CurrentPityCount = PityStack;
 		Results.Add(Result);
 	}
 
 	return Results;
+}
+
+int32 UGachaSubsystem::GetRemainingUntilPity() const
+{
+	return FMath::Max(0, CurrentPityThreshold - GetCurrentPityStackRef());
+}
+
+int32 UGachaSubsystem::GetCurrentPityStack() const
+{
+	return GetCurrentPityStackRef();
 }
 
 EItemRarity UGachaSubsystem::RollRarity(const TMap<EItemRarity, float>& Rates) const
@@ -136,11 +148,27 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 		if (RandomRoll <= 0.0f)
 		{
 			Result.PulledItemID = Item.ItemID;
-			// 여기서 중복 보상량을 미리 세팅해 둡니다.
+			Result.ItemName = Item.ItemDisplayName;
+			Result.ItemIcon = Item.ItemIcon.LoadSynchronous(); 
+			Result.ItemCardIllust = Item.ItemCardIllust.LoadSynchronous();
 			Result.ConvertedFragments = Item.DuplicateFragmentReward;
 			break;
 		}
 	}
 
 	return Result;
+}
+
+int32& UGachaSubsystem::GetCurrentPityStackRef()
+{
+	return (CurrentBannerType == EGachaBannerType::Equipment)
+		? EquipmentPityStack
+		: CharacterPityStack;
+}
+
+const int32& UGachaSubsystem::GetCurrentPityStackRef() const
+{
+	return (CurrentBannerType == EGachaBannerType::Equipment)
+		? EquipmentPityStack
+		: CharacterPityStack;
 }

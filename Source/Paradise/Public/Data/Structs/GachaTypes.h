@@ -57,6 +57,18 @@ struct FGachaPoolRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
 	FName ItemID = NAME_None;
 
+	/** @brief UI 결과창에 표시할 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
+	FName ItemDisplayName = NAME_None;                          
+
+	//** @brief UI 결과창에 표시할 아이콘/일러스트 텍스처 (10연차 슬롯용 - 작은 이미지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
+	TSoftObjectPtr<UTexture2D> ItemIcon = nullptr;
+
+	/** @brief 1연차 전용 세로 카드 일러스트 텍스처 (전신 일러스트 등 큰 이미지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
+	TSoftObjectPtr<UTexture2D> ItemCardIllust = nullptr;
+
 	/** @brief 아이템 등급 (UI 연출 분기용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
 	EItemRarity Rarity = EItemRarity::Common;
@@ -84,9 +96,17 @@ struct FGachaResult
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	FName PulledItemID = NAME_None;
 
-	/** @brief UI 결과창에 표시할 아이템 아이콘/일러스트 텍스처 */
+	/** @brief 캐릭터인지 장비인지 구별하는 분기 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
+	bool bIsCharacter = true;
+
+	/** @brief 10연차 슬롯용 아이콘 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	TObjectPtr<UTexture2D> ItemIcon = nullptr;
+
+	/** @brief 1연차 카드용 전신 일러스트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
+	TObjectPtr<UTexture2D> ItemCardIllust = nullptr;
 
 	/** @brief UI 결과창에 표시할 아이템 이름 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
