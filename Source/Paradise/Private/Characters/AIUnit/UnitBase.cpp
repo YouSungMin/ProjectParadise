@@ -176,6 +176,7 @@ FFXPayload* AUnitBase::GetFXPayload(EFXEventType EventType) const
 
 	return nullptr;
 }
+
 void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 {
 	if (AbilitySystemComponent)
@@ -233,6 +234,8 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 	}
 	if (InAssets)
 	{
+		UnitAssets = *InAssets;
+
 		// 유닛 크기 설정
 		SetActorScale3D(FVector(InAssets->Scale));
 
