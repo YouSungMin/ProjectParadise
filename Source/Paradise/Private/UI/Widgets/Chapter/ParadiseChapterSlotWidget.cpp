@@ -4,7 +4,6 @@
 #include "UI/Widgets/Chapter/ParadiseChapterSlotWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "Framework/Lobby/LobbyPlayerController.h"
 
 #pragma region 생명주기
 void UParadiseChapterSlotWidget::NativeConstruct()
@@ -17,8 +16,6 @@ void UParadiseChapterSlotWidget::NativeConstruct()
 		Btn_Chapter->OnClicked.AddDynamic(this, &UParadiseChapterSlotWidget::OnChapterClicked);
 	}
 
-	// 2. 컨트롤러 1회 캐싱 (최적화)
-	CachedController = GetOwningPlayer<ALobbyPlayerController>();
 }
 
 void UParadiseChapterSlotWidget::NativeDestruct()
@@ -28,8 +25,6 @@ void UParadiseChapterSlotWidget::NativeDestruct()
 	{
 		Btn_Chapter->OnClicked.RemoveAll(this);
 	}
-
-	CachedController = nullptr;
 
 	Super::NativeDestruct();
 }
@@ -52,23 +47,15 @@ void UParadiseChapterSlotWidget::InitSlot(int32 InChapterID, const FText& InChap
 	{
 		Btn_Chapter->SetIsEnabled(bIsUnlocked);
 	}
-
-	if (Text_LockStatus)
-	{
-		// 잠겨있으면 보이게, 열려있으면 숨김
-		Text_LockStatus->SetVisibility(bIsUnlocked ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
-	}
 }
 #pragma endregion 외부 인터페이스 구현
 
 #pragma region 내부 로직 구현
 void UParadiseChapterSlotWidget::OnChapterClicked()
 {
-	// 중앙 컨트롤 타워인 Controller에게 "이 챕터가 선택되었음"만 알립니다.
-	if (CachedController.IsValid())
+	if (OnChapterSelected.IsBound())
 	{
-		//컨트롤러에게 번호와 텍스처를 함께 넘겨줍니다!
-		CachedController->EnterChapterMap(CurrentChapterID, CachedMapTexture);
+		OnChapterSelected.Broadcast(CurrentChapterID, CachedMapTexture);
 	}
 }
 #pragma endregion 내부 로직 구현

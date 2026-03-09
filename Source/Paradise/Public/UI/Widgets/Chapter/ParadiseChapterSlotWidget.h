@@ -13,6 +13,13 @@ class ALobbyPlayerController;
 #pragma endregion 전방 선언
 
 /**
+ * @brief 챕터 슬롯 클릭 델리게이트
+ * @param ChapterID  클릭된 챕터 번호
+ * @param MapTexture 해당 챕터의 3D 지도 배경 텍스처
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChapterSelected, int32, ChapterID, UTexture2D*, MapTexture);
+
+/**
  * @class UParadiseChapterSlotWidget
  * @brief 챕터 리스트의 개별 슬롯 위젯 (예: 챕터 1 버튼)
  */
@@ -35,6 +42,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Chapter")
 	void InitSlot(int32 InChapterID, const FText& InChapterName, bool bIsUnlocked, UTexture2D* InMapTexture);
+
+	/**
+	 * @brief 챕터 버튼이 클릭됐을 때 발사되는 델리게이트
+	 * @details 부모 위젯(ChapterSelectWidget) 이 바인딩하여 컨트롤러에 전달합니다.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Chapter")
+	FOnChapterSelected OnChapterSelected;
 #pragma endregion 외부 인터페이스
 
 #pragma region UI 컴포넌트
@@ -46,10 +60,6 @@ protected:
 	/** @brief 챕터 이름 텍스트 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_ChapterName = nullptr;
-
-	/** @brief 잠김 표시 텍스트 또는 아이콘 ("잠김") */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_LockStatus = nullptr;
 #pragma endregion UI 컴포넌트
 
 #pragma region 내부 로직
@@ -60,9 +70,6 @@ private:
 
 	/** @brief 현재 할당된 챕터 ID */
 	int32 CurrentChapterID = 1;
-
-	/** @brief 컨트롤러 약참조 캐싱 */
-	TWeakObjectPtr<ALobbyPlayerController> CachedController = nullptr;
 
 	/** @brieft 전달받은 텍스처를 들고 있을 변수 추가 */
 	UPROPERTY()

@@ -12,6 +12,7 @@ enum class EParadiseLobbyMenu : uint8
 {
 	None        UMETA(DisplayName = "로비"),       // 기본 로비 상태 (3D 뷰)
 	Battle      UMETA(DisplayName = "전투"),       // 전투 출정
+	StageMap    UMETA(DisplayName = "스테이지맵"), // 챕터 선택
 	Summon      UMETA(DisplayName = "소환"),       // 소환
 	Squad       UMETA(DisplayName = "편성"),       // 편성
 	Enhance     UMETA(DisplayName = "강화"),		   // 강화

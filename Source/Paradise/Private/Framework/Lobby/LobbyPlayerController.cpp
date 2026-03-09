@@ -14,6 +14,7 @@
 #include "Actors/Environment/ParadiseMapEnvironmentActor.h"
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
+#include "UI/Widgets/Lobby/Stage/ParadiseStageSelectWidget.h"
 #include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
@@ -439,6 +440,32 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
     {
         CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
+
+	// 2. [추가됨] 카메라가 지도로 가서 StageMap 상태가 되었을 때만 노드 뷰 띄우기
+	if (CurrentMenu == EParadiseLobbyMenu::StageMap)
+	{
+		if (!CachedStageSelectWidget && StageSelectWidgetClass)
+		{
+			CachedStageSelectWidget = CreateWidget<UParadiseStageSelectWidget>(this, StageSelectWidgetClass);
+			if (CachedStageSelectWidget)
+			{
+				CachedStageSelectWidget->AddToViewport(); // 스테이지 뷰는 전체화면
+			}
+		}
+
+		if (CachedStageSelectWidget)
+		{
+			CachedStageSelectWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+	// 3. StageMap 상태가 아닐 때는 무조건 숨기기 (로비 복귀 시 꼬임 방지)
+	else
+	{
+		if (CachedStageSelectWidget)
+		{
+			CachedStageSelectWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 }
 
 void ALobbyPlayerController::RequestBackToPreviousMenu()
@@ -570,25 +597,28 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 #pragma region 챕터 및 스테이지 제어 구현
 void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture)
 {
-	UE_LOG(LogTemp, Log, TEXT("[LobbyController] %d 챕터 입장 지시 수신! 카메라 및 맵을 세팅합니다."), ChapterID);
-
-	// 1. 현재 선택된 챕터 갱신 (Model 업데이트)
 	CurrentSelectedChapter = ChapterID;
 
-	// 2. 3D 환경 맵 액터 찾기 및 캐싱 (Lazy Initialization / 최적화)
+	// 환경 액터 찾기 및 텍스처 교체
 	if (!CachedMapEnvActor)
 	{
-		CachedMapEnvActor = Cast<class AParadiseMapEnvironmentActor>(
+		CachedMapEnvActor = Cast<AParadiseMapEnvironmentActor>(
 			UGameplayStatics::GetActorOfClass(this, AParadiseMapEnvironmentActor::StaticClass())
 		);
 	}
 
-	// 3. 지도 배경(텍스처) 교체 명령 지시 (SRP: 컨트롤러는 명령만 내림)
 	if (CachedMapEnvActor)
 	{
 		CachedMapEnvActor->ChangeMapBackground(MapTexture);
 	}
-	// 4. 카메라 이동 (완료 후 OnCameraMoveFinished가 자동으로 StageSelect 위젯을 띄움)
-	MoveCameraToMenu(EParadiseLobbyMenu::Battle);
+
+	// 카메라가 이동하기 전에 기존 로비 HUD(메뉴들)를 싹 숨겨줍니다.
+	if (CachedLobbyHUD)
+	{
+		CachedLobbyHUD->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	//  카메라 이동 명령 (완료 시 OnCameraMoveFinished가 자동으로 호출됨)
+	MoveCameraToMenu(EParadiseLobbyMenu::StageMap);
 }
 #pragma endregion 챕터 및 스테이지 제어 구현

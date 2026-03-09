@@ -13,6 +13,8 @@ class UParadiseLobbyHUDWidget;
 class ACameraActor;
 class AParadiseGachaBoxActor;
 class UParadiseGachaResultWidget;
+class UParadiseStageSelectWidget;
+class UParadiseChapterSelectWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -191,27 +193,35 @@ private:
 #pragma region 챕터 및 스테이지 제어
 public:
 	/**
-	 * @brief 챕터 슬롯 버튼을 클릭했을 때 호출되는 진입점 (Controller 로직)
-	 * @details 3D 지도 배경을 변경하고 카메라를 전투 화면으로 이동시킵니다.
-	 * @param ChapterID 진입할 챕터의 고유 번호
+	 * @brief 챕터 슬롯 클릭 시 호출. 카메라를 이동하고 지도를 교체합니다.
+	 * @param ChapterID 선택한 챕터 번호
+	 * @param MapTexture 교체할 지도 이미지
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Stage")
 	void EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture);
 
-	/**
-	 * @brief 현재 선택된 챕터 번호를 조회합니다. (캡슐화 적용)
-	 * @return 현재 선택된 챕터 ID
-	 */
+	/** @brief 현재 선택된 챕터 반환 (StageSelect 위젯이 켜질 때 참고함) */
 	UFUNCTION(BlueprintPure, Category = "Paradise|Stage")
 	int32 GetCurrentSelectedChapter() const { return CurrentSelectedChapter; }
 
+protected:
+	/** * @brief 카메라 이동이 끝난 후 화면에 띄울 스테이지(노드) 선택 위젯 클래스
+	 * @details BP_LobbyPlayerController에서 WBP_StageSelect를 할당합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI")
+	TSubclassOf<class UParadiseStageSelectWidget> StageSelectWidgetClass = nullptr;
+
 private:
-	/** @brief 현재 선택된 챕터를 저장해둡니다 (스테이지 UI 갱신 시 참조용) */
+	/** @brief 현재 선택된 챕터 ID */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Stage", meta = (AllowPrivateAccess = "true"))
 	int32 CurrentSelectedChapter = 1;
 
-	/** @brief 3D 맵 배경을 담당하는 환경 액터 캐싱용 (선택 사항) */
+	/** @brief 3D 지도 배경 액터 캐싱 */
 	UPROPERTY(Transient)
 	TObjectPtr<class AParadiseMapEnvironmentActor> CachedMapEnvActor = nullptr;
+
+	/** @brief 생성된 스테이지 선택 위젯을 재사용하기 위한 캐싱 (Object Pooling) */
+	UPROPERTY(Transient)
+	TObjectPtr<class UParadiseStageSelectWidget> CachedStageSelectWidget = nullptr;
 #pragma endregion 챕터 및 스테이지 제어
 };
