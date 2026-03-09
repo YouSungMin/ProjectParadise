@@ -184,6 +184,7 @@ public:
 
 	#pragma region 저장 및 로드
 
+public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|Save")
 	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
 

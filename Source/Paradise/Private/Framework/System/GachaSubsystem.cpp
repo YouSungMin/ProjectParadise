@@ -2,6 +2,7 @@
 
 
 #include "Framework/System/GachaSubsystem.h"
+#include "Framework/System/ParadiseSaveGame.h"
 #include "Engine/DataTable.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -143,4 +144,18 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 	}
 
 	return Result;
+}
+
+void UGachaSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
+{
+	if (!SaveGameObj) return;
+
+	SaveGameObj->SavedCurrentPityStack = CurrentPityStack;
+}
+
+void UGachaSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
+{
+	if (!SaveGameObj) return;
+
+	CurrentPityStack = SaveGameObj->SavedCurrentPityStack;
 }

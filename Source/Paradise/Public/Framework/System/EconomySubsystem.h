@@ -68,6 +68,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Economy")
 	bool HasEnoughCurrency(ECurrencyType Type, int32 Amount) const;
 
+public:
 	// 세이브 / 로드 연동
 	/**
 	 * @brief 세이브 파일 객체에서 저장된 지갑 데이터를 읽어와 메모리에 복구합니다.

@@ -42,6 +42,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Stage|Flow")
 	FName GetSelectedStageID() const { return SelectedStageID; }
 
+public:
+
 	// 세이브 / 로드 연동
 	UFUNCTION(BlueprintCallable, Category = "Stage|Save")
 	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj) override;
