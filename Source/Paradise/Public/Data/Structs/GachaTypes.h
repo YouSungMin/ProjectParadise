@@ -94,6 +94,13 @@ struct FGachaPoolRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha|Character")
 	TSoftObjectPtr<UAnimSequence> CharacterIdleAnim = nullptr;
 
+	/**
+	 * @brief 리빌 시 표시될 메시의 스케일 (캐릭터/장비 공통)
+	 * @details 캐릭터마다 메시 크기가 다를 경우 기획자가 여기서 조절합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
+	FVector RevealMeshScale = FVector(1.0f, 1.0f, 1.0f);
+
 	// ── 장비 전용 ────────────────────────────────────────────────────────────
 
 	/**
@@ -159,6 +166,10 @@ struct FGachaResult
 	/** @brief [캐릭터 전용] 리빌 후 재생할 Idle 애님시퀀스 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha|Character")
 	TObjectPtr<UAnimSequence> CharacterIdleAnim = nullptr;
+
+	/** @brief 매시 스케일 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
+	FVector RevealMeshScale = FVector(1.0f, 1.0f, 1.0f);
 
 	// ── 장비 전용 ────────────────────────────────────────────────────────────
 

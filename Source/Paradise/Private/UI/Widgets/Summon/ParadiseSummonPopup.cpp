@@ -27,6 +27,12 @@ void UParadiseSummonPopup::NativeConstruct()
 	if (CachedGI.IsValid())
 	{
 		CachedEconomySubsystem = CachedGI->GetSubsystem<UEconomySubsystem>();
+
+		if (CachedEconomySubsystem.IsValid())
+		{
+			CachedEconomySubsystem->OnCurrencyChanged.RemoveDynamic(this, &UParadiseSummonPopup::HandleCurrencyChanged);
+			CachedEconomySubsystem->OnCurrencyChanged.AddDynamic(this, &UParadiseSummonPopup::HandleCurrencyChanged);
+		}
 	}
 
 	// 3. 재화 UI 최초 갱신
@@ -42,6 +48,11 @@ void UParadiseSummonPopup::NativeDestruct()
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Equipment) Btn_Tab_Equipment->OnClicked.RemoveAll(this);
 	if (Btn_Back) Btn_Back->OnClicked.RemoveAll(this);
+
+	if (CachedEconomySubsystem.IsValid())
+	{
+		CachedEconomySubsystem->OnCurrencyChanged.RemoveDynamic(this, &UParadiseSummonPopup::HandleCurrencyChanged);
+	}
 
 	CachedEconomySubsystem = nullptr;
 	CachedPlayerController = nullptr;
@@ -111,5 +122,15 @@ void UParadiseSummonPopup::SwitchTab(int32 NewIndex)
 	// 3. 버튼 스타일 업데이트 (선택된 탭 비활성화 등 시각적 피드백)
 	if (Btn_Tab_Character) Btn_Tab_Character->SetIsEnabled(NewIndex != INDEX_CHARACTER);
 	if (Btn_Tab_Equipment) Btn_Tab_Equipment->SetIsEnabled(NewIndex != INDEX_EQUIPMENT);
+}
+
+void UParadiseSummonPopup::HandleCurrencyChanged(ECurrencyType CurrencyType, int32 OldAmount, int32 NewAmount)
+{
+	// 현재 이 팝업창은 '에테르(Aether)'만 표시하고 있으므로, 
+	// 골드나 다른 재화가 변했을 때는 무시하고 에테르가 변했을 때만 텍스트를 갱신합니다. (최적화)
+	if (CurrencyType == ECurrencyType::Aether)
+	{
+		RefreshCurrencyUI();
+	}
 }
 #pragma endregion 내부 로직

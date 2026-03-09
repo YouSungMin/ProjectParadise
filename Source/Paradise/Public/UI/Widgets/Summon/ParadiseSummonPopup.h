@@ -96,6 +96,10 @@ private:
 
 #pragma region 내부 로직
 private:
+	//EconomySubsystem의 재화 변경 방송을 수신할 전용 핸들러
+	UFUNCTION()
+	void HandleCurrencyChanged(ECurrencyType CurrencyType, int32 OldAmount, int32 NewAmount);
+
 	/** @brief 캐릭터 탭 클릭 핸들러 */
 	UFUNCTION()
 	void OnCharacterTabClicked();

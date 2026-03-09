@@ -3,6 +3,7 @@
 
 #include "Actors/Gacha/ParadiseGachaItemActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -49,6 +50,8 @@ void AParadiseGachaItemActor::BeginPlay()
 	Super::BeginPlay();
 	// 상태 초기화
 	CurrentState = EGachaItemState::Flying;
+
+	CacheGachaCamera();
 }
 
 void AParadiseGachaItemActor::Tick(float DeltaTime)
@@ -130,10 +133,6 @@ void AParadiseGachaItemActor::LaunchToTarget(FVector TargetLocation, float Fligh
 
 void AParadiseGachaItemActor::RevealItem()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[ItemActor] bIsCharacter=%d | SkeletalMesh=%s | Anim=%s"),
-		CachedItemData.bIsCharacter,
-		CachedItemData.CharacterSkeletalMesh ? *CachedItemData.CharacterSkeletalMesh->GetName() : TEXT("NULL"),
-		CachedItemData.CharacterIdleAnim ? *CachedItemData.CharacterIdleAnim->GetName() : TEXT("NULL"));
 
 	// 대기 상태(바닥에 꽂힘)일 때만 터치 리빌 허용
 	if (CurrentState != EGachaItemState::Landed) return;
@@ -147,16 +146,18 @@ void AParadiseGachaItemActor::RevealItem()
 		ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	// 2. 캐릭터 or 장비 메시 표시
+	// 2. 카메라 방향으로 회전 (캐싱된 값 사용)
+	RotateTowardGachaCamera();
+
+	// 3. 캐릭터 or 장비 메시 표시
 	if (CachedItemData.bIsCharacter)
 	{
 		if (RevealCharacterMesh)
 		{
+			RevealCharacterMesh->SetWorldScale3D(CachedItemData.RevealMeshScale);
 			RevealCharacterMesh->SetVisibility(true);
-
 			if (CachedItemData.CharacterIdleAnim)
 			{
-				// ABP 없이 애니메이션 시퀀스 직접 루프 재생
 				RevealCharacterMesh->PlayAnimation(CachedItemData.CharacterIdleAnim, true);
 			}
 		}
@@ -166,11 +167,12 @@ void AParadiseGachaItemActor::RevealItem()
 		// 장비 — 스태틱 메시 표시
 		if (RevealEquipmentMesh)
 		{
+			RevealEquipmentMesh->SetWorldScale3D(CachedItemData.RevealMeshScale);
 			RevealEquipmentMesh->SetVisibility(true);
 		}
 	}
 
-	// 3. 리빌 파티클 + 사운드
+	// 4. 리빌 파티클 + 사운드
 	if (TObjectPtr<UNiagaraSystem>* FxPtr = RevealVFXByRarity.Find(CachedItemData.PulledRarity))
 	{
 		if (FxPtr && *FxPtr)
@@ -185,13 +187,13 @@ void AParadiseGachaItemActor::RevealItem()
 		UGameplayStatics::PlaySoundAtLocation(this, RevealSound, GetActorLocation());
 	}
 
-	// 4. 아우라 끄기
+	// 5. 아우라 끄기
 	if (RarityAuraEffect)
 	{
 		RarityAuraEffect->Deactivate();
 	}
 
-	// 5. 완료 이벤트 방송
+	// 6. 완료 이벤트 방송
 	if (OnItemRevealed.IsBound())
 	{
 		OnItemRevealed.Broadcast(CachedItemData);
@@ -203,6 +205,38 @@ void AParadiseGachaItemActor::SetFlightSpeedMultiplier(float InMultiplier)
 	FlightSpeedMultiplier = FMath::Max(InMultiplier, 0.1f);
 }
 #pragma endregion 외부 인터페이스 
+
+#pragma region 내부 로직 구현
+void AParadiseGachaItemActor::CacheGachaCamera()
+{
+	// 태그로 검색 — BeginPlay에서 1회만 호출되므로 성능 부담 없음
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), GachaCameraTag, FoundActors);
+
+	if (FoundActors.Num() > 0)
+	{
+		CachedGachaCamera = FoundActors[0];
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("⚠️ [GachaItemActor] 태그 '%s'를 가진 카메라를 찾지 못했습니다. 레벨 액터에 태그를 추가하세요."),
+			*GachaCameraTag.ToString());
+	}
+}
+
+void AParadiseGachaItemActor::RotateTowardGachaCamera()
+{
+	if (!CachedGachaCamera.IsValid()) return;
+
+	const FVector CamLoc = CachedGachaCamera.Get()->GetActorLocation();
+	const FVector ToCamera = (CamLoc - GetActorLocation()).GetSafeNormal();
+	const FRotator LookRot = FRotationMatrix::MakeFromX(ToCamera).Rotator();
+
+	// Yaw만 회전 — 캐릭터가 기울지 않도록
+	SetActorRotation(FRotator(0.0f, LookRot.Yaw - 90.0f, 0.0f));
+}
+#pragma endregion 내부 로직 구현
 
 #pragma region 내부 이벤트 핸들러
 // 델리게이트로부터 이벤트를 받아서, 실제 연출 함수인 RevealItem을 호출합니다.

@@ -55,6 +55,14 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Paradise|Gacha")
 	int32 GetCurrentPityStack() const;
+
+	/** @brief 캐릭터 배너의 현재 천장 스택을 반환합니다. */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Gacha|Pity")
+	int32 GetCharacterPityStack() const { return CharacterPityStack; }
+
+	/** @brief 장비 배너의 현재 천장 스택을 반환합니다. */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Gacha|Pity")
+	int32 GetEquipmentPityStack() const { return EquipmentPityStack; }
 #pragma endregion 외부 인터페이스
 
 #pragma region 내부 로직
@@ -90,7 +98,7 @@ private:
 	int32 EquipmentPityStack = 0;
 
 	/** @brief 현재 배너의 천장 임계값 */
-	int32 CurrentPityThreshold = 80;
+	int32 CurrentPityThreshold = 50;
 
 	/** @brief 현재 배너 1회 뽑기 에테르 비용 */
 	int32 CachedRequiredAether = 0;

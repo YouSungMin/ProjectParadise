@@ -19,6 +19,7 @@ class ALevelSequenceActor;
 class UNiagaraSystem;
 class AParadiseGachaItemActor;
 class APlayerController;
+class ACineCameraActor;
 #pragma endregion 전방 선언
 
 /** @brief 1회 소환용: 한 명의 캐릭터 리빌(실루엣 해제) 시점 알림 */
