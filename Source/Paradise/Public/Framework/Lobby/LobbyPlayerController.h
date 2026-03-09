@@ -168,9 +168,23 @@ public:
 	void StartGachaActionSequence(int32 DrawCount);
 
 	/**
+	 * @brief 결과창의 '계속' 버튼이 눌렸을 때 호출됩니다.
+	 * @details 박스·구슬 정리 → CurrentMenu 초기화 → SummonPopup 복귀
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void ReturnFromGachaToSummon();
+
+	/**
 	 * @brief 가챠 박스 연출이 끝나고 결과창을 띄워달라는 델리게이트를 받을 콜백 함수
 	 */
 	UFUNCTION()
 	void OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults);
+
+private:
+	/**
+	 * @brief 현재 씬에 스폰된 가챠 박스 약참조
+	 * @details 매 뽑기마다 새로 스폰되며, CleanupAndDestroy() 후 nullptr 로 초기화됩니다.
+	 */
+	TWeakObjectPtr<AParadiseGachaBoxActor> CachedGachaBox = nullptr;
 #pragma endregion 가챠 연출 제어
 };

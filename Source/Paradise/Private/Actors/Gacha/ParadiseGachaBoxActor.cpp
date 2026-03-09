@@ -122,6 +122,38 @@ void AParadiseGachaBoxActor::SkipGachaSequence()
 	ShowResultScreen();
 }
 
+void AParadiseGachaBoxActor::ResetState()
+{
+	// 1. 타이머 전부 취소
+	for (FTimerHandle& Handle : SpawnTimerHandles)
+	{
+		GetWorldTimerManager().ClearTimer(Handle);
+	}
+	SpawnTimerHandles.Empty();
+	GetWorldTimerManager().ClearTimer(ResultDelayTimerHandle);
+
+	// 2. 시퀀스 정지
+	StopCurrentSequence();
+
+	// 3. 구슬 전부 제거
+	for (TObjectPtr<AParadiseGachaItemActor>& Item : SpawnedItems)
+	{
+		if (IsValid(Item)) Item->Destroy();
+	}
+	SpawnedItems.Empty();
+
+	// 4. 내부 상태 초기화 (박스 자신은 Destroy 하지 않음)
+	CachedResults.Empty();
+	bIsOpening = false;
+	RevealedItemCount = 0;
+	TotalItemCount = 0;
+	LastTouchTime = -1.0f;
+	ShakeIntensity = 0.0f;
+	CurrentStep = EGachaSequenceStep::None;
+
+	if (AuraLight) AuraLight->SetIntensity(0.0f);
+}
+
 void AParadiseGachaBoxActor::SetGachaPlaySpeed(float SpeedMultiplier)
 {
 	if (SequencePlayer && SequencePlayer->IsPlaying())

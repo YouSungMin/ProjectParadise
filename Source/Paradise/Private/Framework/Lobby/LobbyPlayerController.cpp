@@ -421,9 +421,7 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 
 	// 메뉴를 변경하기 직전에 현재 메뉴를 '이전 메뉴'로 저장합니다.
 	PreviousMenu = CurrentMenu;
-
     CurrentMenu = InNewMenu;
-    UE_LOG(LogTemp, Log, TEXT("[Controller] 메뉴 변경: %d"), (int32)CurrentMenu);
 
     // HUD에게 UI 변경 지시
     if (CachedLobbyHUD)
@@ -459,29 +457,57 @@ void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
 		return;
 	}
 
-	// 2. [UI 및 카메라 전환] 
+	// 2. UI 숨기고 가챠 전용 카메라로 즉시 전환
 	if (CachedLobbyHUD) CachedLobbyHUD->OnStartCameraMove();
-	if (Camera_GachaAction) SetViewTargetWithBlend(Camera_GachaAction, 0.0f);
+	if (Camera_GachaAction) SetViewTargetWithBlend(Camera_GachaAction, 0.5f);
 
-	// 3. [데이터 준비] 중복 검사용 배열
+	// 3. 중복 검사용 캐릭터 ID 배열
 	TArray<FName> OwnedCharacterIDs;
 	for (const FOwnedCharacterData& CharData : InvSys->GetOwnedCharacters())
 	{
 		OwnedCharacterIDs.Add(CharData.CharacterID);
 	}
 
-	// 4. [가챠 실행!] 
+	// 4. 가챠 확률 계산 실행
 	TArray<FGachaResult> PulledResults = GachaSys->PerformGacha(DrawCount, OwnedCharacterIDs);
 
-	// 5. [연출 큐 사인] 상자에게 결과 전달 및 연출 시작
-	AParadiseGachaBoxActor* GachaBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
-	if (GachaBox)
+	// 5. 레벨에 캐싱된 박스 유효성 확인
+	if (!CachedGachaBox.IsValid())
 	{
-		GachaBox->OnGachaResultScreenRequested.RemoveDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
-		GachaBox->OnGachaResultScreenRequested.AddDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
-
-		GachaBox->PlayGachaSequence(PulledResults);
+		UE_LOG(LogTemp, Error, TEXT("❌ [Gacha] 레벨에 BP_GachaBoxActor 가 없습니다! 레벨에 배치했는지 확인하세요."));
+		return;
 	}
+
+	// 6. 델리게이트 중복 바인딩 방지 후 연출 시작
+	CachedGachaBox->OnGachaResultScreenRequested.RemoveDynamic(
+		this, &ALobbyPlayerController::OnShowGachaResultScreen);
+	CachedGachaBox->OnGachaResultScreenRequested.AddDynamic(
+		this, &ALobbyPlayerController::OnShowGachaResultScreen);
+
+	CachedGachaBox->PlayGachaSequence(PulledResults);
+}
+
+void ALobbyPlayerController::ReturnFromGachaToSummon()
+{
+	// 1. 구슬 정리 + 박스 내부 상태 리셋 (박스 자신은 레벨에 유지 — 시퀀스 바인딩 보존)
+	if (CachedGachaBox.IsValid())
+	{
+		CachedGachaBox->ResetState();
+	}
+
+	// 2. 결과창 숨기기
+	if (CachedResultWidget)
+	{
+		CachedResultWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// 3. ★ CurrentMenu 강제 초기화
+	//    가챠 연출 중 CurrentMenu 는 Summon 인 채로 남아있으므로
+	//    SetLobbyMenu 의 동일 메뉴 가드에 걸리지 않도록 None 으로 리셋합니다.
+	CurrentMenu = EParadiseLobbyMenu::None;
+
+	// 4. 카메라 블렌드 → SummonPopup 복귀
+	MoveCameraToMenu(EParadiseLobbyMenu::Summon);
 }
 
 void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults)

@@ -59,6 +59,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
 	void SkipGachaSequence();
 
+	/**
+	* @brief 연출 종료 후 구슬을 제거하고 다음 뽑기를 위해 상태를 초기화합니다.
+	* @details 박스 자신은 레벨에 유지됩니다. (레벨 시퀀스 바인딩 보존)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void ResetState();
+
 	/** @brief 현재 재생 속도 배율 설정 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
 	void SetGachaPlaySpeed(float SpeedMultiplier);

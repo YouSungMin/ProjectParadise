@@ -142,7 +142,7 @@ void UParadiseGachaResultWidget::OnConfirmClicked()
 
 	if (CachedPlayerController.IsValid())
 	{
-		CachedPlayerController->SetLobbyMenu(EParadiseLobbyMenu::Summon);
+		CachedPlayerController->ReturnFromGachaToSummon();
 	}
 }
 #pragma endregion 내부 로직
