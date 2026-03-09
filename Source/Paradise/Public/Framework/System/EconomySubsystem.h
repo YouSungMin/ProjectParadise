@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/Enums/GameEnums.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "EconomySubsystem.generated.h"
 
 
@@ -23,7 +24,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCurrencyChangedSignature, ECur
  * 상점, 가챠, 스테이지 보상 등 재화가 오가는 모든 시스템의 허브 역할을 수행합니다.
  */
 UCLASS()
-class PARADISE_API UEconomySubsystem : public UGameInstanceSubsystem
+class PARADISE_API UEconomySubsystem : public UGameInstanceSubsystem , public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 	
@@ -67,20 +68,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Economy")
 	bool HasEnoughCurrency(ECurrencyType Type, int32 Amount) const;
 
+public:
 	// 세이브 / 로드 연동
 	/**
 	 * @brief 세이브 파일 객체에서 저장된 지갑 데이터를 읽어와 메모리에 복구합니다.
 	 * @param SaveGameObj 로드된 세이브 게임 객체 포인터
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Economy|Save")
-	void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj);
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj) override;
 
 	/**
 	 * @brief 현재 서브시스템이 가진 지갑 데이터를 세이브 파일 객체에 기록합니다.
 	 * @param SaveGameObj 기록할 세이브 게임 객체 포인터
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Economy|Save")
-	void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const;
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
 
 
 public:

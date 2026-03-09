@@ -113,7 +113,7 @@ void UEquipmentComponent::UpdateVisuals(APlayerBase* TargetCharacter)
 
 	UE_LOG(LogTemp, Log, TEXT("🎨 [Visual] 캐릭터 외형 업데이트 시작... (Optimized)"));
 
-	//무기(Weapon)를 포함한 모든 슬롯을 하나의 배열로 관리
+	//시각적으로 표현할 메쉬가 있는 슬롯들
 	const TArray<EEquipmentSlot> VisualSlots = {
 		EEquipmentSlot::Weapon,
 		EEquipmentSlot::Hat,
@@ -233,7 +233,7 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 		if (FArmorAssets* ArmorData = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ItemID))
 		{
 			LoadedMesh = ArmorData->ItemMesh.LoadSynchronous();
-			SocketName = ArmorData->AttachmentSocket; // 방어구는 소켓이 없을 수도 있음(None)
+			SocketName = ArmorData->AttachmentSocket; 
 		}
 	}
 
@@ -263,6 +263,7 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 				FAttachmentTransformRules::SnapToTargetIncludingScale,
 				SocketName
 			);
+			UE_LOG(LogTemp, Error, TEXT("❌ [Visual] 소켓 있음: %s."), *SocketName.ToString());
 		}
 		else
 		{
@@ -270,7 +271,6 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 			TargetMeshComp->AttachToComponent(Char->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("hand_r"));
 		}
 	}
-	//소켓 이름이 없다? -> 일반 방어구 (몸에 딱 붙는 옷)
 	else
 	{
 		// 무기는 소켓이 없을 수 없으므로, 방어구만 여기로 옴
