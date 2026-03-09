@@ -33,6 +33,8 @@ void UAutoCombatComponent::SetAutoBattleMode(bool bEnable)
 
     bIsAutoMode = bEnable;
 
+    //자동전투 모드 변경 델리게이트
+    OnAutoBattleStateChanged.Broadcast(bIsAutoMode);
 
     UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
 
