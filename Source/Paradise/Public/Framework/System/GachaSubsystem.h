@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "Data/Structs/GachaTypes.h"
 #include "GachaSubsystem.generated.h"
 
@@ -17,7 +18,7 @@ class UDataTable;
  * @details 캐싱을 통한 최적화로 100연차를 돌려도 프레임 드랍이 발생하지 않습니다.
  */
 UCLASS()
-class PARADISE_API UGachaSubsystem : public UGameInstanceSubsystem
+class PARADISE_API UGachaSubsystem : public UGameInstanceSubsystem ,public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 
@@ -77,6 +78,19 @@ private:
 	int32& GetCurrentPityStackRef();
 	const int32& GetCurrentPityStackRef() const;
 #pragma endregion 내부 로직
+
+
+//0309 김성현 - 가챠 스택 저장 
+#pragma region 게임 데이터 저장 및 로드
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj)override;
+
+#pragma endregion 게임 데이터 저장 및 로드
 
 #pragma region 내부 데이터
 private:

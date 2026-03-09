@@ -10,6 +10,8 @@
 class AInGameController;
 class APlayerBase;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAutoBattleStateChangedSignature, bool, bIsAutoMode);
+
 /**
  * @class UAutoCombatComponent
  * @brief 플레이어 스쿼드의 자동 전투(소환, 이동, 타겟팅, 스킬 사용)를 관리하는 컴포넌트입니다.
@@ -86,6 +88,10 @@ protected:
 private:
 	/** @brief 현재 자동 전투 활성화 여부를 나타내는 플래그 */
 	bool bIsAutoMode = false;
+
+	/** @brief 자동전투 모드 활성화 여부 델리게이트 (UI 버튼 방어) */
+	UPROPERTY(BlueprintAssignable, Category = "AutoCombat|Event")
+	FOnAutoBattleStateChangedSignature OnAutoBattleStateChanged;
 
 	/** @brief 자동 소환 로직(CheckAndAutoSummon)을 반복 실행하기 위한 타이머 핸들 */
 	FTimerHandle AutoSummonTimerHandle;

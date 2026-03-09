@@ -1,10 +1,39 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/Enums/GameEnums.h"
 #include "CombatTypes.generated.h"
 
 class UAnimMontage;
 class UGameplayEffect;
+class UGameplayAbility;
+
+/**
+ * @struct FCombatAbilitySetup
+ * @brief 하나의 전투 행동(평타, 스킬 등)에 필요한 필수 GAS 로직 세트
+ * @details 어빌리티(로직), 이펙트(결과), 투사체(수단)를 하나로 묶어 관리합니다.
+ */
+USTRUCT(BlueprintType)
+struct FCombatAbilitySetup
+{
+	GENERATED_BODY()
+
+public:
+	/** @brief 실행할 게임플레이 어빌리티 (GA) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	/** @brief 적중 시 적에게 적용할 데미지/상태이상 이펙트 (GE) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayEffect> EffectClass;
+
+	/** * @brief 발사할 투사체 액터 클래스
+	 * @note 근거리 공격이나 즉발형 스킬일 경우 비워둡니다 (None).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<AActor> ProjectileClass;
+};
+
 
 /**
  * @struct FActionStatRow
@@ -55,6 +84,10 @@ struct FActionStats : public FTableRowBase
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float ProjectileSpeed;
+
+	/** @brief 스킬의 적용 대상 (적군인지 아군인지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	ETargetFilter TargetFilter = ETargetFilter::Enemy;
 };
 
 USTRUCT(BlueprintType)
@@ -65,7 +98,7 @@ struct FCombatActionData
 public:
 	FCombatActionData()
 		: MontageToPlay(nullptr)
-		, DamageEffectClass(nullptr)
+		, EffectClass(nullptr)
 		, DamageMultiplier(1.0f)
 		, ProjectileClass(nullptr)
 	{
@@ -82,7 +115,7 @@ public:
 	 * (예: GE_DamageStandard, GE_FireDamage)
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	TSubclassOf<UGameplayEffect> EffectClass;
 
 	/** * @brief 데미지 계수 (Damage Multiplier)
 	 * @details 기본값 1.0.
@@ -140,6 +173,9 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	float ProjectileSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	ETargetFilter TargetFilter = ETargetFilter::Enemy;
 };
 
 
