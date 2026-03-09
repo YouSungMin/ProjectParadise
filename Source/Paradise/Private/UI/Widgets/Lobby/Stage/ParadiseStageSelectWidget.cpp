@@ -46,7 +46,7 @@ void UParadiseStageSelectWidget::OnClickBack()
 	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
 	{
 		// "None"으로 이동하면 -> 카메라는 Main으로, UI는 로비 메뉴로 복구됨
-		PC->MoveCameraToMenu(EParadiseLobbyMenu::None);
+		PC->MoveCameraToMenu(EParadiseLobbyMenu::Battle);
 	}
 }
 

@@ -83,9 +83,8 @@ void UParadiseChapterSelectWidget::BuildChapterList()
 	DT_ChapterData->GetAllRows<FChapterData>(TEXT("ChapterList"), AllChapters);
 
 	// 2. 챕터 번호 오름차순 정렬 (데이터 무결성 보장)
-	AllChapters.Sort([](const FChapterData& A, const FChapterData& B)
-		{
-			return A.ChapterID < B.ChapterID;
+	AllChapters.Sort([](const FChapterData& A, const FChapterData& B) {
+		return A.ChapterID < B.ChapterID;
 		});
 
 	// 3. StageSubsystem 루프 외부에서 1회 캐싱 (매 반복 GetSubsystem 호출 방지)
@@ -100,29 +99,34 @@ void UParadiseChapterSelectWidget::BuildChapterList()
 	{
 		if (!Chapter) continue;
 
-		// FirstStageID 가 NAME_None 이면 기본 해금(1챕터), 있으면 서브시스템에 질의
-		const bool bIsUnlocked = (StageSys && !Chapter->FirstStageID.IsNone())
-			? StageSys->IsStageUnlocked(Chapter->FirstStageID)
-			: true;
+		// 1. 해금 검증 (Data-Driven)
+		bool bIsUnlocked = true;
+		if (StageSys && !Chapter->FirstStageID.IsNone())
+		{
+			// 해당 챕터의 첫 스테이지가 서브시스템의 Unlocked 목록에 있는지 확인
+			bIsUnlocked = StageSys->IsStageUnlocked(Chapter->FirstStageID);
+		}
 
-		// 텍스처 동기 로드 (슬롯에 전달 + 슬롯이 나중에 컨트롤러에 재전달)
+		// 2. 🚨 [기획 반영 + 최적화] 잠겨있는 챕터면 아예 UI 객체를 생성하지 않고 스킵합니다!
+		if (!bIsUnlocked)
+		{
+			continue;
+		}
+
+		// 3. 위젯 생성 및 데이터 주입
+		UParadiseChapterSlotWidget* NewSlot = CreateWidget<UParadiseChapterSlotWidget>(this, ChapterSlotClass);
+		if (!NewSlot) continue;
+
 		UTexture2D* LoadedTexture = nullptr;
 		if (!Chapter->ChapterMapTexture.IsNull())
 		{
 			LoadedTexture = Chapter->ChapterMapTexture.LoadSynchronous();
 		}
 
-		UParadiseChapterSlotWidget* NewSlot =
-			CreateWidget<UParadiseChapterSlotWidget>(this, ChapterSlotClass);
-		if (!NewSlot) continue;
+		NewSlot->InitSlot(Chapter->ChapterID, Chapter->ChapterName, true, LoadedTexture);
 
-		// 슬롯에 데이터 주입 (ID, 이름, 해금 여부, 텍스처)
-		NewSlot->InitSlot(Chapter->ChapterID, Chapter->ChapterName, bIsUnlocked, LoadedTexture);
-
-		// ★ 슬롯 클릭 델리게이트 바인딩
-		//   슬롯이 클릭되면 OnChapterSlotClicked(ChapterID, MapTexture) 호출됩니다.
-		NewSlot->OnChapterSelected.AddDynamic(
-			this, &UParadiseChapterSelectWidget::OnChapterSlotClicked);
+		// 4. 슬롯 클릭 이벤트 위임 (SRP)
+		NewSlot->OnChapterSelected.AddDynamic(this, &UParadiseChapterSelectWidget::OnChapterSlotClicked);
 
 		Scroll_ChapterList->AddChild(NewSlot);
 	}

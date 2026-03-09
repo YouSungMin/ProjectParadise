@@ -11,7 +11,7 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 	// 1. 배너 타입과 확률 세팅 캐싱
 	CurrentBannerType = InBannerData.BannerType;
 	CurrentRarityRates = InBannerData.RarityProbabilities;
-	DefaultPityThreshold = InBannerData.PityThreshold;
+	CurrentPityThreshold = InBannerData.PityThreshold;
 
 	//  에테르 비용 캐싱!
 	CachedRequiredAether = InBannerData.RequiredAether; 
@@ -45,49 +45,37 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray
 		return Results;
 	}
 
+	int32& PityStack = GetCurrentPityStackRef();
+
 	for (int32 i = 0; i < PullCount; ++i)
 	{
-		// 1. 천장(Pity) 카운터 증가
-		CurrentPityStack++;
-		bool bIsPityTriggered = (CurrentPityStack >= DefaultPityThreshold);
+		// 1. 천장 카운터 증가
+		++PityStack;
+		const bool bIsPityTriggered = (PityStack >= CurrentPityThreshold);
 
-		// 2. 등급 판정
-		EItemRarity HitRarity = bIsPityTriggered ? EItemRarity::Legendary : RollRarity(CurrentRarityRates);
+		// 2. 등급 판정 (천장 도달 시 최고 등급 확정)
+		const EItemRarity HitRarity = bIsPityTriggered
+			? EItemRarity::Legendary
+			: RollRarity(CurrentRarityRates);
 
 		if (HitRarity == EItemRarity::Legendary)
 		{
-			CurrentPityStack = 0; // 전설 획득 시 천장 초기화
+			PityStack = 0;
 		}
 
-		// 3. 아이템 뽑기 (여기서 Result.ConvertedFragments 에 기본값이 들어옴)
+		// 3. 아이템 추첨
 		FGachaResult Result = PickItemFromRarity(HitRarity);
 
-		// ---------------------------------------------------------
-		// 4. ★ 배너 타입에 따른 중복(Duplicate) 분기 처리 ★
-		// ---------------------------------------------------------
-		if (CurrentBannerType == EGachaBannerType::Equipment)
+		// 4. 중복 여부 플래그 — UI 연출 분기 전용 (bIsDuplicate)
+		//    실제 보상 지급(조각/에테르)은 AddCharacter →
+		//    GrowthSubsystem::HandleDuplicateCharacter 가 전담합니다.
+		if (CurrentBannerType == EGachaBannerType::Character)
 		{
-			// 장비 배너: 장비는 중복의 개념이 없습니다. 무조건 온전한 장비로 지급됩니다.
-			Result.bIsDuplicate = false;
-			Result.ConvertedFragments = 0; // 조각 보상 없음!
+			Result.bIsDuplicate = OwnedItems.Contains(Result.PulledItemID);
 		}
-		else
-		{
-			// 캐릭터 배너: 보유 중인지 검사하여 조각으로 변환
-			if (OwnedItems.Contains(Result.PulledItemID))
-			{
-				Result.bIsDuplicate = true;
-				// 엑셀 기입 실수 방지용 최소치 보장
-				Result.ConvertedFragments = FMath::Max(10, Result.ConvertedFragments);
-			}
-			else
-			{
-				Result.bIsDuplicate = false;
-				Result.ConvertedFragments = 0;
-			}
-		}
+		// 장비 배너는 중복 개념 없음 — bIsDuplicate 기본값 false 유지
 
-		Result.CurrentPityCount = CurrentPityStack;
+		Result.CurrentPityCount = PityStack;
 		Results.Add(Result);
 	}
 
@@ -136,9 +124,22 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 		RandomRoll -= Item.Weight;
 		if (RandomRoll <= 0.0f)
 		{
+			// 결과 구조체에 필요한 데이터 복사
 			Result.PulledItemID = Item.ItemID;
-			// 여기서 중복 보상량을 미리 세팅해 둡니다.
-			Result.ConvertedFragments = Item.DuplicateFragmentReward;
+			Result.ItemName = Item.ItemDisplayName;
+			Result.ItemIcon = Item.ItemIcon.LoadSynchronous();
+			Result.ItemCardIllust = Item.ItemCardIllust.LoadSynchronous();
+			Result.RevealMeshScale = Item.RevealMeshScale;
+
+			// 캐릭터 전용 필드
+			Result.CharacterSkeletalMesh = Item.CharacterSkeletalMesh.LoadSynchronous();
+			Result.CharacterIdleAnim = Item.CharacterIdleAnim.LoadSynchronous();
+
+			// 장비 전용 필드
+			Result.EquipmentStaticMesh = Item.EquipmentStaticMesh.LoadSynchronous();
+
+			// SkeletalMesh 가 있으면 캐릭터, 없으면 장비로 판단
+			Result.bIsCharacter = (Result.CharacterSkeletalMesh != nullptr);
 			break;
 		}
 	}
@@ -146,16 +147,42 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 	return Result;
 }
 
+int32 UGachaSubsystem::GetCurrentPityStack() const
+{
+	return GetCurrentPityStackRef();
+}
+
+int32 UGachaSubsystem::GetRemainingUntilPity() const
+{
+	return FMath::Max(0, CurrentPityThreshold - GetCurrentPityStackRef());
+}
+
+int32& UGachaSubsystem::GetCurrentPityStackRef()
+{
+	return (CurrentBannerType == EGachaBannerType::Equipment)
+		? EquipmentPityStack
+		: CharacterPityStack;
+}
+
+const int32& UGachaSubsystem::GetCurrentPityStackRef() const
+{
+	return (CurrentBannerType == EGachaBannerType::Equipment)
+		? EquipmentPityStack
+		: CharacterPityStack;
+}
+
 void UGachaSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
 {
 	if (!SaveGameObj) return;
 
-	SaveGameObj->SavedCurrentPityStack = CurrentPityStack;
+	SaveGameObj->SavedCurrentPityStack = CharacterPityStack;
+	// 장비 천장도 저장
 }
 
 void UGachaSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 {
 	if (!SaveGameObj) return;
 
-	CurrentPityStack = SaveGameObj->SavedCurrentPityStack;
+	CharacterPityStack = SaveGameObj->SavedCurrentPityStack;
+	// 장비 천장도 저장
 }

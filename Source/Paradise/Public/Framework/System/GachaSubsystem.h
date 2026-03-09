@@ -10,6 +10,7 @@
 
 #pragma region 전방 선언
 class UDataTable;
+class UParadiseSaveGame;
 #pragma endregion 전방 선언
 
 /**
@@ -66,6 +67,18 @@ public:
 	int32 GetEquipmentPityStack() const { return EquipmentPityStack; }
 #pragma endregion 외부 인터페이스
 
+//0309 김성현 - 가챠 스택 저장 
+#pragma region 게임 데이터 저장 및 로드
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj)override;
+
+#pragma endregion 게임 데이터 저장 및 로드
+
 #pragma region 내부 로직
 private:
 	/** @brief 확률에 따라 등급을 추첨합니다. */
@@ -78,19 +91,6 @@ private:
 	int32& GetCurrentPityStackRef();
 	const int32& GetCurrentPityStackRef() const;
 #pragma endregion 내부 로직
-
-
-//0309 김성현 - 가챠 스택 저장 
-#pragma region 게임 데이터 저장 및 로드
-
-public:
-	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
-	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
-
-	UFUNCTION(BlueprintCallable, Category = "Gacha|Save")
-	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj)override;
-
-#pragma endregion 게임 데이터 저장 및 로드
 
 #pragma region 내부 데이터
 private:

@@ -389,7 +389,8 @@ void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 	switch (TargetMenu)
 	{
 	case EParadiseLobbyMenu::None:   TargetCamera = Camera_Main; break;
-	case EParadiseLobbyMenu::Battle: TargetCamera = Camera_Battle; break;
+	case EParadiseLobbyMenu::Battle: TargetCamera = Camera_Main; break;
+	case EParadiseLobbyMenu::StageMap: TargetCamera = Camera_Battle; break;
 	case EParadiseLobbyMenu::Summon: TargetCamera = Camera_Summon; break;
 		// 필요하면Enhance 등도 다른 카메라로 확장 가능
 	default:                         TargetCamera = Camera_Main; break;
@@ -402,6 +403,11 @@ void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 	{
 		// HUD 함수: 이동 중엔 싹 다 숨겨라! (아래에서 구현 예정)
 		CachedLobbyHUD->OnStartCameraMove();
+	}
+
+	if (CachedStageSelectWidget && TargetMenu != EParadiseLobbyMenu::StageMap)
+	{
+		CachedStageSelectWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	// 2. 카메라 블렌드 (부드러운 이동)
@@ -438,7 +444,8 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
     // HUD에게 UI 변경 지시
     if (CachedLobbyHUD)
     {
-        CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
+		CachedLobbyHUD->SetVisibility(ESlateVisibility::Visible);
+		CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
 
 	// 2. [추가됨] 카메라가 지도로 가서 StageMap 상태가 되었을 때만 노드 뷰 띄우기
@@ -610,12 +617,6 @@ void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTex
 	if (CachedMapEnvActor)
 	{
 		CachedMapEnvActor->ChangeMapBackground(MapTexture);
-	}
-
-	// 카메라가 이동하기 전에 기존 로비 HUD(메뉴들)를 싹 숨겨줍니다.
-	if (CachedLobbyHUD)
-	{
-		CachedLobbyHUD->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	//  카메라 이동 명령 (완료 시 OnCameraMoveFinished가 자동으로 호출됨)
