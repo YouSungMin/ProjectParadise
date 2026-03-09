@@ -7,6 +7,7 @@
 #include "Framework/System/GachaSubsystem.h"
 #include "Engine/DataTable.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 
 #pragma region 생명주기
 void UParadiseSummonPanel::NativeConstruct()
@@ -20,6 +21,8 @@ void UParadiseSummonPanel::NativeConstruct()
 	// 2. 컨트롤러 및 데이터 코어(GI) 캐싱 (약참조 최적화)
 	CachedPlayerController = GetOwningPlayer<ALobbyPlayerController>();
 	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
+
+	RefreshPanelData();
 }
 
 void UParadiseSummonPanel::NativeDestruct()
@@ -37,24 +40,29 @@ void UParadiseSummonPanel::NativeDestruct()
 #pragma region 외부 인터페이스
 void UParadiseSummonPanel::RefreshPanelData()
 {
-	// 1. DataTableRowHandle에서 특정 배너의 구조체 데이터를 뽑아옵니다.
-	if (CachedGI.IsValid() && !BannerDataRow.IsNull())
+	if (!CachedGI.IsValid() || BannerDataRow.IsNull())
 	{
-		if (UGachaSubsystem* GachaSys = CachedGI->GetSubsystem<UGachaSubsystem>())
-		{
-			// "SummonPanel"은 에러 발생 시 로그에 찍힐 식별자입니다.
-			if (FGachaBannerData* BannerData = BannerDataRow.GetRow<FGachaBannerData>(TEXT("SummonPanel")))
-			{
-				// 2. 뽑아낸 구조체 데이터를 서브시스템에 전달!
-				GachaSys->InitializeBanner(*BannerData);
-				UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 배너 데이터 세팅 완료: %s"), *BannerDataRow.RowName.ToString());
-			}
-		}
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SummonPanel] BannerDataRow 미설정 또는 GI 없음"));
+		return;
 	}
-	else
+
+	UGachaSubsystem* GachaSys = CachedGI->GetSubsystem<UGachaSubsystem>();
+	if (!GachaSys) return;
+
+	FGachaBannerData* BannerData = BannerDataRow.GetRow<FGachaBannerData>(TEXT("SummonPanel"));
+	if (!BannerData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SummonPanel] BannerDataRow가 BP에 설정되지 않았거나 Subsystem에 접근할 수 없습니다."));
+		UE_LOG(LogTemp, Error, TEXT("❌ [SummonPanel] BannerData 행을 찾지 못했습니다."));
+		return;
 	}
+
+	// 배너 데이터를 서브시스템에 등록 (이 시점에 CurrentBannerType이 결정됨)
+	GachaSys->InitializeBanner(*BannerData);
+
+	// 천장 UI 갱신
+	RefreshPityUI();
+
+	UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 배너 초기화 완료: %s"), *BannerDataRow.RowName.ToString());
 }
 #pragma endregion 외부 인터페이스
 
@@ -71,11 +79,41 @@ void UParadiseSummonPanel::OnMultiSummonClicked()
 
 void UParadiseSummonPanel::RequestSummonAction(int32 DrawCount)
 {
-	// 실제 컨트롤러에게 확률이 어떤지 보내야함
-	if (CachedPlayerController.IsValid())
+	if (!CachedPlayerController.IsValid()) return;
+
+	CachedPlayerController->StartGachaActionSequence(DrawCount);
+
+	// 소환 후 천장 UI 즉시 갱신
+	RefreshPityUI();
+
+	UE_LOG(LogTemp, Log, TEXT("[SummonPanel] %d회 소환 요청"), DrawCount);
+}
+
+void UParadiseSummonPanel::RefreshPityUI()
+{
+	if (!CachedGI.IsValid()) return;
+
+	UGachaSubsystem* GachaSys = CachedGI->GetSubsystem<UGachaSubsystem>();
+	if (!GachaSys) return;
+
+	const int32 Remaining = GachaSys->GetRemainingUntilPity();
+	const int32 Current = GachaSys->GetCurrentPityStack();
+
+	// "천장까지 N회" 텍스트
+	if (Text_PityRemaining)
 	{
-		CachedPlayerController->StartGachaActionSequence(DrawCount);
-		UE_LOG(LogTemp, Log, TEXT("[SummonPanel] Controller에게 %d회 소환 연출을 요청했습니다."), DrawCount);
+		Text_PityRemaining->SetText(
+			FText::Format(NSLOCTEXT("Summon", "PityRemaining", "천장까지 {0}회"), FText::AsNumber(Remaining)));
+	}
+
+	// "N / 50" 스택 텍스트
+	if (Text_PityStack)
+	{
+		const int32 Threshold = Current + Remaining;
+		Text_PityStack->SetText(
+			FText::Format(NSLOCTEXT("Summon", "PityStack", "{0} / {1}"),
+				FText::AsNumber(Current),
+				FText::AsNumber(Threshold)));
 	}
 }
 #pragma endregion 내부 로직

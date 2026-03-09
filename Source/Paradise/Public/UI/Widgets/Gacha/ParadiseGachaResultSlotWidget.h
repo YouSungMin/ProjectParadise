@@ -56,12 +56,12 @@ protected:
 	TObjectPtr<UImage> Img_RarityBorder = nullptr;
 
 	/** @brief 중복 여부 표시 텍스트 ("중복") — 중복이 아니면 Collapsed */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_Duplicate = nullptr;
 
-	/** @brief 환산 재화 수량 텍스트 (예: "200") */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_Value = nullptr;
+	///** @brief 환산 재화 수량 텍스트 (예: "200") */
+	//UPROPERTY(meta = (BindWidgetOptional))
+	//TObjectPtr<UTextBlock> Text_Value = nullptr;
 #pragma endregion UI 컴포넌트 (BindWidget)
 
 	// ─────────────────────────────────────────────────────────────

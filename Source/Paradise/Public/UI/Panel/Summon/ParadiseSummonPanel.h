@@ -48,25 +48,31 @@ protected:
 	FDataTableRowHandle BannerDataRow;
 #pragma endregion 데이터 및 에셋 설정
 
-#pragma region 내부 변수
+#pragma region UI 컴포넌트
 protected:
-	/** @brief 소환 수행 버튼 (1회) */
+	/** @brief 1회 소환 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_SummonSingle = nullptr;
 
-	/** @brief 소환 수행 버튼 (10회) */
+	/** @brief 10회 소환 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_SummonMulti = nullptr;
-#pragma endregion 내부 변수
 
-#pragma region 내부 상태 및 캐싱
-private:
-	/** @brief 가챠 액션(시퀀스 카메라 연출) 요청을 위한 컨트롤러 약참조 */
-	TWeakObjectPtr<ALobbyPlayerController> CachedPlayerController = nullptr;
+	/**
+	 * @brief 천장까지 남은 횟수 텍스트 (예: "천장까지 47회")
+	 * @details WBP에 이 이름으로 TextBlock을 만들어두면 자동으로 업데이트됩니다.
+	 *          없어도 컴파일 에러 없음 (BindWidgetOptional)
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_PityRemaining = nullptr;
 
-	/** @brief 서브시스템(GachaSubsystem) 접근용 게임 인스턴스 약참조 */
-	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
-#pragma endregion 내부 상태 및 캐싱
+	/**
+	 * @brief 현재 쌓인 천장 스택 텍스트 (예: "33 / 80")
+	 * @details 디버그 또는 UI 표기용. 없어도 무방.
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_PityStack = nullptr;
+#pragma endregion UI 컴포넌트
 
 #pragma region 내부 로직
 protected:
@@ -76,6 +82,8 @@ protected:
 	UFUNCTION()
 	virtual void OnMultiSummonClicked();
 
+	/** @brief 천장 UI 텍스트를 현재 서브시스템 값으로 갱신합니다. */
+	void RefreshPityUI();
 private:
 	/**
 	 * @brief 공통 소환 요청 로직 분리
@@ -83,4 +91,13 @@ private:
 	 */
 	void RequestSummonAction(int32 DrawCount);
 #pragma endregion 내부 로직
+
+#pragma region 내부 상태 및 캐싱
+private:
+	/** @brief 가챠 액션(시퀀스 카메라 연출) 요청을 위한 컨트롤러 약참조 */
+	TWeakObjectPtr<ALobbyPlayerController> CachedPlayerController = nullptr;
+
+	/** @brief 서브시스템(GachaSubsystem) 접근용 게임 인스턴스 약참조 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+#pragma endregion 내부 상태 및 캐싱
 };

@@ -11,8 +11,10 @@
 #include "Framework/System/GachaSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+#include "Actors/Environment/ParadiseMapEnvironmentActor.h"
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
+#include "UI/Widgets/Lobby/Stage/ParadiseStageSelectWidget.h"
 #include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
@@ -34,9 +36,19 @@ void ALobbyPlayerController::BeginPlay()
 
 		UE_LOG(LogTemp, Log, TEXT("[LobbyController] 카메라 설정 로드 완료 via SetupActor"));
 	}
+	AParadiseGachaBoxActor* FoundBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
+	if (FoundBox)
+	{
+		CachedGachaBox = FoundBox;
+
+		// 게임 시작 시에는 가챠 상자가 안 보여야 하므로 일단 숨겨둡니다.
+		FoundBox->SetActorHiddenInGame(true);
+
+		UE_LOG(LogTemp, Log, TEXT("✅ [LobbyController] 가챠 박스 캐싱 완료!"));
+	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[LobbyController] 로비 셋업 액터를 찾을 수 없습니다! 태그 방식으로 폴백하거나 배치를 확인하세요."));
+		UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] 맵에 배치된 BP_GachaBoxActor가 없습니다! 맵에 끌어다 놓으세요."));
 	}
 
 	// 2. 초기 카메라 설정
@@ -421,15 +433,39 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 
 	// 메뉴를 변경하기 직전에 현재 메뉴를 '이전 메뉴'로 저장합니다.
 	PreviousMenu = CurrentMenu;
-
     CurrentMenu = InNewMenu;
-    UE_LOG(LogTemp, Log, TEXT("[Controller] 메뉴 변경: %d"), (int32)CurrentMenu);
 
     // HUD에게 UI 변경 지시
     if (CachedLobbyHUD)
     {
         CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
+
+	// 2. [추가됨] 카메라가 지도로 가서 StageMap 상태가 되었을 때만 노드 뷰 띄우기
+	if (CurrentMenu == EParadiseLobbyMenu::StageMap)
+	{
+		if (!CachedStageSelectWidget && StageSelectWidgetClass)
+		{
+			CachedStageSelectWidget = CreateWidget<UParadiseStageSelectWidget>(this, StageSelectWidgetClass);
+			if (CachedStageSelectWidget)
+			{
+				CachedStageSelectWidget->AddToViewport(); // 스테이지 뷰는 전체화면
+			}
+		}
+
+		if (CachedStageSelectWidget)
+		{
+			CachedStageSelectWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+	// 3. StageMap 상태가 아닐 때는 무조건 숨기기 (로비 복귀 시 꼬임 방지)
+	else
+	{
+		if (CachedStageSelectWidget)
+		{
+			CachedStageSelectWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 }
 
 void ALobbyPlayerController::RequestBackToPreviousMenu()
@@ -459,34 +495,62 @@ void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
 		return;
 	}
 
-	// 2. [UI 및 카메라 전환] 
+	// 2. UI 숨기고 가챠 전용 카메라로 즉시 전환
 	if (CachedLobbyHUD) CachedLobbyHUD->OnStartCameraMove();
-	if (Camera_GachaAction) SetViewTargetWithBlend(Camera_GachaAction, 0.0f);
+	if (Camera_GachaAction) SetViewTargetWithBlend(Camera_GachaAction, 0.5f);
 
-	// 3. [데이터 준비] 중복 검사용 배열
+	// 3. 중복 검사용 캐릭터 ID 배열
 	TArray<FName> OwnedCharacterIDs;
 	for (const FOwnedCharacterData& CharData : InvSys->GetOwnedCharacters())
 	{
 		OwnedCharacterIDs.Add(CharData.CharacterID);
 	}
 
-	// 4. [가챠 실행!] 
+	// 4. 가챠 확률 계산 실행
 	TArray<FGachaResult> PulledResults = GachaSys->PerformGacha(DrawCount, OwnedCharacterIDs);
 
-	// 5. [연출 큐 사인] 상자에게 결과 전달 및 연출 시작
-	AParadiseGachaBoxActor* GachaBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
-	if (GachaBox)
+	// 5. 레벨에 캐싱된 박스 유효성 확인
+	if (!CachedGachaBox.IsValid())
 	{
-		GachaBox->OnGachaResultScreenRequested.RemoveDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
-		GachaBox->OnGachaResultScreenRequested.AddDynamic(this, &ALobbyPlayerController::OnShowGachaResultScreen);
-
-		GachaBox->PlayGachaSequence(PulledResults);
+		UE_LOG(LogTemp, Error, TEXT("❌ [Gacha] 레벨에 BP_GachaBoxActor 가 없습니다! 레벨에 배치했는지 확인하세요."));
+		return;
 	}
+
+	// 6. 델리게이트 중복 바인딩 방지 후 연출 시작
+	CachedGachaBox->OnGachaResultScreenRequested.RemoveDynamic(
+		this, &ALobbyPlayerController::OnShowGachaResultScreen);
+	CachedGachaBox->OnGachaResultScreenRequested.AddDynamic(
+		this, &ALobbyPlayerController::OnShowGachaResultScreen);
+
+	CachedGachaBox->PlayGachaSequence(PulledResults);
+}
+
+void ALobbyPlayerController::ReturnFromGachaToSummon()
+{
+	// 1. 구슬 정리 + 박스 내부 상태 리셋 (박스 자신은 레벨에 유지 — 시퀀스 바인딩 보존)
+	if (CachedGachaBox.IsValid())
+	{
+		CachedGachaBox->ResetState();
+	}
+
+	// 2. 결과창 숨기기
+	if (CachedResultWidget)
+	{
+		CachedResultWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// 3. ★ CurrentMenu 강제 초기화
+	//    가챠 연출 중 CurrentMenu 는 Summon 인 채로 남아있으므로
+	//    SetLobbyMenu 의 동일 메뉴 가드에 걸리지 않도록 None 으로 리셋합니다.
+	CurrentMenu = EParadiseLobbyMenu::None;
+
+	// 4. 카메라 블렌드 → SummonPopup 복귀
+	MoveCameraToMenu(EParadiseLobbyMenu::Summon);
 }
 
 void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults)
 {
-	UE_LOG(LogTemp, Log, TEXT("🎉 [Gacha] 연출 종료! 결과창을 띄우고 보상을 지급합니다."));
+	UE_LOG(LogTemp, Log, TEXT("결과창을 띄우고 보상을 지급합니다."));
 
 	// 1. 위젯이 없으면 최초 1회만 생성 (Lazy Initialization)
 	if (!CachedResultWidget && GachaResultWidgetClass)
@@ -504,10 +568,6 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 		CachedResultWidget->SetVisibility(ESlateVisibility::Visible);
 		CachedResultWidget->ShowResults(FinalResults);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ GachaResultWidgetClass가 세팅되지 않았습니다!"));
-	}
 
 	// 3. 실제 보상 인벤토리에 확정 지급 로직
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
@@ -518,31 +578,47 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 		{
 			for (const FGachaResult& Result : FinalResults)
 			{
-				// GameInstance의 유효성 검사 함수를 통해 '장비'인지 '캐릭터'인지 똑똑하게 구분합니다.
 				if (GI->IsValidItemID(Result.PulledItemID))
 				{
-					// [장비] 중복 상관없이 1개씩 온전하게 지급 (0강 상태)
 					InvSys->AddItem(Result.PulledItemID, 1, 0);
 				}
 				else if (GI->IsValidPlayerID(Result.PulledItemID))
 				{
-					// [캐릭터] 중복 여부에 따라 분기
-					if (Result.bIsDuplicate)
-					{
-						// 가챠 풀 엑셀에 적혀있던 그 조각 개수만큼! 정확하게 지급
-						InvSys->AddAwakeningPiece(Result.PulledItemID, Result.ConvertedFragments);
-						UE_LOG(LogTemp, Log, TEXT("🧩 [Gacha] 캐릭터 중복 획득! %s 조각 %d개 지급 완료."), *Result.PulledItemID.ToString(), Result.ConvertedFragments);
-					}
-					else
-					{
-						// 최초 획득 시 온전한 캐릭터 1개 추가
-						InvSys->AddCharacter(Result.PulledItemID);
-					}
+					InvSys->AddCharacter(Result.PulledItemID);
 				}
 			}
 			// 4. 모든 지급이 끝난 후 게임 자동 세이브!
 			GI->SaveGameData();
-			UE_LOG(LogTemp, Log, TEXT("💾 [Gacha] 가챠 보상 지급 및 게임 저장 완료!"));
+			UE_LOG(LogTemp, Log, TEXT("가챠 보상 지급 및 게임 저장 완료!"));
 		}
 	}
 }
+
+#pragma region 챕터 및 스테이지 제어 구현
+void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture)
+{
+	CurrentSelectedChapter = ChapterID;
+
+	// 환경 액터 찾기 및 텍스처 교체
+	if (!CachedMapEnvActor)
+	{
+		CachedMapEnvActor = Cast<AParadiseMapEnvironmentActor>(
+			UGameplayStatics::GetActorOfClass(this, AParadiseMapEnvironmentActor::StaticClass())
+		);
+	}
+
+	if (CachedMapEnvActor)
+	{
+		CachedMapEnvActor->ChangeMapBackground(MapTexture);
+	}
+
+	// 카메라가 이동하기 전에 기존 로비 HUD(메뉴들)를 싹 숨겨줍니다.
+	if (CachedLobbyHUD)
+	{
+		CachedLobbyHUD->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	//  카메라 이동 명령 (완료 시 OnCameraMoveFinished가 자동으로 호출됨)
+	MoveCameraToMenu(EParadiseLobbyMenu::StageMap);
+}
+#pragma endregion 챕터 및 스테이지 제어 구현

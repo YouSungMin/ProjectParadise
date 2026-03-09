@@ -90,6 +90,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<UStaticMeshComponent> ItemMesh = nullptr;
 
+	/** @brief [캐릭터 전용] 리빌 후 Idle 애니메이션을 재생할 스켈레탈 메시 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<USkeletalMeshComponent> RevealCharacterMesh = nullptr;
+
+	/** @brief [장비 전용] 리빌 후 보여줄 장비 스태틱 메시 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<UStaticMeshComponent> RevealEquipmentMesh = nullptr;
+
 	/** @brief 등급별 아우라/빛기둥 이펙트를 담당하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
 	TObjectPtr<UNiagaraComponent> RarityAuraEffect = nullptr;
@@ -104,7 +112,29 @@ protected:
 	/** @brief 터치 시 재생될 사운드 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Visuals")
 	TObjectPtr<USoundBase> RevealSound = nullptr;
+
+	/**
+	 * @brief 가챠 카메라 검색에 사용할 액터 태그
+	 * @details 레벨의 CineCamera_Gacha 액터 디테일 패널 → Tags에 이 값을 추가하세요.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Visuals")
+	FName GachaCameraTag = FName(TEXT("GachaCamera"));
 #pragma endregion 시각 효과 데이터 
+
+#pragma region 내부 로직
+private:
+	/**
+	 * @brief BeginPlay에서 GachaCamera 태그 액터를 찾아 캐싱합니다.
+	 * @details RevealItem 호출 시마다 월드 탐색하지 않도록 최초 1회만 수행합니다.
+	 */
+	void CacheGachaCamera();
+
+	/**
+	 * @brief 캐싱된 카메라 방향으로 액터 Yaw만 회전합니다.
+	 * @details 카메라 참조가 유효하지 않으면 아무 동작도 하지 않습니다.
+	 */
+	void RotateTowardGachaCamera();
+#pragma endregion 내부 로직
 
 #pragma region 내부 상태 및 캐싱
 private:
@@ -115,6 +145,12 @@ private:
 	/** @brief 리빌 시 교체할 원본 머티리얼 캐싱 */
 	UPROPERTY()
 	TObjectPtr<UMaterialInstance> CachedRealMaterial = nullptr;
+
+	/**
+	 * @brief BeginPlay에서 1회 캐싱된 가챠 카메라 약참조
+	 * @details TWeakObjectPtr 사용 — 카메라가 삭제되어도 크래시 없음
+	 */
+	TWeakObjectPtr<AActor> CachedGachaCamera = nullptr;
 
 	/** @brief 현재 액터의 상태기계 */
 	EGachaItemState CurrentState = EGachaItemState::Flying;

@@ -44,7 +44,7 @@ void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)
 	{
 		// [변경] 바로 SetLobbyMenu 하지 않고, 카메라 이동 요청!
 		// (단, Battle처럼 카메라 이동이 필요한 메뉴만. 나머진 바로 띄워도 됨)
-		if (InMenu == EParadiseLobbyMenu::Battle || InMenu == EParadiseLobbyMenu::Summon)
+		if (InMenu == EParadiseLobbyMenu::Summon)
 		{
 			CachedController->MoveCameraToMenu(InMenu);
 		}

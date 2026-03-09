@@ -41,7 +41,15 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 	// -------------------------------------------------------------------------
 	const bool bIsMainLobby = (InCurrentMenu == EParadiseLobbyMenu::None);
 
-	// TopBar를 숨겨야 하는 메뉴인지 확인 (Squad 포함 필수)
+	// StageSelect 위젯은 카메라 이동 후 LobbyPlayerController가 뷰포트에 직접 띄웁니다.
+	if (InCurrentMenu == EParadiseLobbyMenu::StageMap)
+	{
+		WBP_TopBar->SetVisibility(ESlateVisibility::Collapsed);
+		WBP_MenuPanel->SetVisibility(ESlateVisibility::Collapsed);
+		Switcher_Content->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
 	const bool bHideTopBar = (
 		InCurrentMenu == EParadiseLobbyMenu::Battle ||
 		InCurrentMenu == EParadiseLobbyMenu::Summon ||

@@ -50,7 +50,6 @@ void AParadiseGachaBoxActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TickPressUpdate();
 	TickGlowUpdate(DeltaTime);
 }
 
@@ -72,6 +71,11 @@ void AParadiseGachaBoxActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 #pragma region 외부 인터페이스 구현
 void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InResults)
 {
+	// 상자를 화면에 다시 보이게 하고 틱/충돌을 켭니다 (재사용)
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
+	BoxMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
 	if (InResults.IsEmpty()) return;
 
 	CachedResults = InResults;
@@ -120,6 +124,42 @@ void AParadiseGachaBoxActor::SkipGachaSequence()
 
 	// 딜레이 없이 즉시 결과창
 	ShowResultScreen();
+}
+
+void AParadiseGachaBoxActor::ResetState()
+{
+	// 1. 타이머 전부 취소
+	for (FTimerHandle& Handle : SpawnTimerHandles)
+	{
+		GetWorldTimerManager().ClearTimer(Handle);
+	}
+	SpawnTimerHandles.Empty();
+	GetWorldTimerManager().ClearTimer(ResultDelayTimerHandle);
+
+	// 2. 시퀀스 정지
+	StopCurrentSequence();
+
+	// 3. 구슬 전부 제거
+	for (TObjectPtr<AParadiseGachaItemActor>& Item : SpawnedItems)
+	{
+		if (IsValid(Item)) Item->Destroy();
+	}
+	SpawnedItems.Empty();
+
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+	BoxMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// 4. 내부 상태 초기화 (박스 자신은 Destroy 하지 않음)
+	CachedResults.Empty();
+	bIsOpening = false;
+	RevealedItemCount = 0;
+	TotalItemCount = 0;
+	LastTouchTime = -1.0f;
+	ShakeIntensity = 0.0f;
+	CurrentStep = EGachaSequenceStep::None;
+
+	if (AuraLight) AuraLight->SetIntensity(0.0f);
 }
 
 void AParadiseGachaBoxActor::SetGachaPlaySpeed(float SpeedMultiplier)
@@ -308,7 +348,15 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 	FVector TargetLoc = BoxLoc;
 	if (ItemCount == 1)
 	{
-		TargetLoc += GetActorForwardVector() * 200.0f;
+		// 박스의 로컬 좌표계 기준으로 착지 위치 계산
+		// SinglePullLandingOffset = (0,0,0)이면 박스 정중앙 바닥에 착지
+		TargetLoc += GetActorForwardVector() * SinglePullLandingOffset.X
+					+ GetActorRightVector() * SinglePullLandingOffset.Y;
+		TargetLoc.Z += SinglePullLandingOffset.Z + OrbLandingZOffset;
+
+		// 1연차는 높은 아크로 하늘에서 뚝 떨어지는 연출
+		SpawnedItem->LaunchToTarget(TargetLoc, FlightTimeMax, SinglePullArcHeight);
+		return; // 아래 공통 LaunchToTarget 호출 건너뜀
 	}
 	else
 	{
@@ -317,7 +365,7 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 		TargetLoc.Y += FMath::Sin(FMath::DegreesToRadians(AngleDeg)) * EruptRadius;
 	}
 
-	TargetLoc.Z = BoxLoc.Z;
+	TargetLoc.Z = BoxLoc.Z + OrbLandingZOffset;
 
 	const float FlightTime = FMath::RandRange(FlightTimeMin, FlightTimeMax);
 	SpawnedItem->LaunchToTarget(TargetLoc, FlightTime, EruptArcHeight);
@@ -417,40 +465,6 @@ void AParadiseGachaBoxActor::ProcessSingleTap()
 void AParadiseGachaBoxActor::ProcessDoubleTap()
 {
 	SkipGachaSequence();
-}
-
-void AParadiseGachaBoxActor::TickPressUpdate()
-{
-	// 모바일: bIsMobilePressing 플래그로 판단
-	// PC/에디터: PlayerController 에서 왼쪽 마우스 버튼 누름 여부 폴링
-	bool bNewPressing = bIsMobilePressing;
-
-	if (!bNewPressing)
-	{
-		if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
-		{
-			bNewPressing = PC->IsInputKeyDown(EKeys::LeftMouseButton);
-		}
-	}
-
-	// 상태 변화가 있을 때만 배속 적용 (매 Tick SetPlayRate 호출 방지)
-	if (bNewPressing != bIsPressing)
-	{
-		bIsPressing = bNewPressing;
-		const float NewRate = bIsPressing ? PressPlayRate : 1.0f;
-
-		// 1. 시퀀스 배속
-		SetGachaPlaySpeed(NewRate);
-
-		// 2. ★ 날아다니는 구슬들도 동일 배속 적용
-		for (TObjectPtr<AParadiseGachaItemActor>& Item : SpawnedItems)
-		{
-			if (IsValid(Item))
-			{
-				Item->SetFlightSpeedMultiplier(NewRate);
-			}
-		}
-	}
 }
 
 void AParadiseGachaBoxActor::TickGlowUpdate(float DeltaTime)
