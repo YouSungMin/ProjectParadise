@@ -59,9 +59,9 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_Duplicate = nullptr;
 
-	/** @brief 환산 재화 수량 텍스트 (예: "200") */
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> Text_Value = nullptr;
+	///** @brief 환산 재화 수량 텍스트 (예: "200") */
+	//UPROPERTY(meta = (BindWidgetOptional))
+	//TObjectPtr<UTextBlock> Text_Value = nullptr;
 #pragma endregion UI 컴포넌트 (BindWidget)
 
 	// ─────────────────────────────────────────────────────────────

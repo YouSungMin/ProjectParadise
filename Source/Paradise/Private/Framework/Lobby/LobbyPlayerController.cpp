@@ -11,6 +11,7 @@
 #include "Framework/System/GachaSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+#include "Actors/Environment/ParadiseMapEnvironmentActor.h"
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"
@@ -522,7 +523,7 @@ void ALobbyPlayerController::ReturnFromGachaToSummon()
 
 void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults)
 {
-	UE_LOG(LogTemp, Log, TEXT("🎉 [Gacha] 연출 종료! 결과창을 띄우고 보상을 지급합니다."));
+	UE_LOG(LogTemp, Log, TEXT("결과창을 띄우고 보상을 지급합니다."));
 
 	// 1. 위젯이 없으면 최초 1회만 생성 (Lazy Initialization)
 	if (!CachedResultWidget && GachaResultWidgetClass)
@@ -540,10 +541,6 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 		CachedResultWidget->SetVisibility(ESlateVisibility::Visible);
 		CachedResultWidget->ShowResults(FinalResults);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ GachaResultWidgetClass가 세팅되지 않았습니다!"));
-	}
 
 	// 3. 실제 보상 인벤토리에 확정 지급 로직
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
@@ -554,31 +551,44 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 		{
 			for (const FGachaResult& Result : FinalResults)
 			{
-				// GameInstance의 유효성 검사 함수를 통해 '장비'인지 '캐릭터'인지 똑똑하게 구분합니다.
 				if (GI->IsValidItemID(Result.PulledItemID))
 				{
-					// [장비] 중복 상관없이 1개씩 온전하게 지급 (0강 상태)
 					InvSys->AddItem(Result.PulledItemID, 1, 0);
 				}
 				else if (GI->IsValidPlayerID(Result.PulledItemID))
 				{
-					// [캐릭터] 중복 여부에 따라 분기
-					if (Result.bIsDuplicate)
-					{
-						// 가챠 풀 엑셀에 적혀있던 그 조각 개수만큼! 정확하게 지급
-						InvSys->AddAwakeningPiece(Result.PulledItemID, Result.ConvertedFragments);
-						UE_LOG(LogTemp, Log, TEXT("🧩 [Gacha] 캐릭터 중복 획득! %s 조각 %d개 지급 완료."), *Result.PulledItemID.ToString(), Result.ConvertedFragments);
-					}
-					else
-					{
-						// 최초 획득 시 온전한 캐릭터 1개 추가
-						InvSys->AddCharacter(Result.PulledItemID);
-					}
+					InvSys->AddCharacter(Result.PulledItemID);
 				}
 			}
 			// 4. 모든 지급이 끝난 후 게임 자동 세이브!
 			GI->SaveGameData();
-			UE_LOG(LogTemp, Log, TEXT("💾 [Gacha] 가챠 보상 지급 및 게임 저장 완료!"));
+			UE_LOG(LogTemp, Log, TEXT("가챠 보상 지급 및 게임 저장 완료!"));
 		}
 	}
 }
+
+#pragma region 챕터 및 스테이지 제어 구현
+void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture)
+{
+	UE_LOG(LogTemp, Log, TEXT("[LobbyController] %d 챕터 입장 지시 수신! 카메라 및 맵을 세팅합니다."), ChapterID);
+
+	// 1. 현재 선택된 챕터 갱신 (Model 업데이트)
+	CurrentSelectedChapter = ChapterID;
+
+	// 2. 3D 환경 맵 액터 찾기 및 캐싱 (Lazy Initialization / 최적화)
+	if (!CachedMapEnvActor)
+	{
+		CachedMapEnvActor = Cast<class AParadiseMapEnvironmentActor>(
+			UGameplayStatics::GetActorOfClass(this, AParadiseMapEnvironmentActor::StaticClass())
+		);
+	}
+
+	// 3. 지도 배경(텍스처) 교체 명령 지시 (SRP: 컨트롤러는 명령만 내림)
+	if (CachedMapEnvActor)
+	{
+		CachedMapEnvActor->ChangeMapBackground(MapTexture);
+	}
+	// 4. 카메라 이동 (완료 후 OnCameraMoveFinished가 자동으로 StageSelect 위젯을 띄움)
+	MoveCameraToMenu(EParadiseLobbyMenu::Battle);
+}
+#pragma endregion 챕터 및 스테이지 제어 구현

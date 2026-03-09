@@ -28,13 +28,6 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 				CachedGachaPool.FindOrAdd(Row->Rarity).Add(*Row);
 			}
 		}
-
-		UE_LOG(LogTemp, Log, TEXT("[GachaSubsystem] 배너 초기화 완료 | 타입: %d | 천장: %d"),
-			(int32)CurrentBannerType, CurrentPityThreshold);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaSubsystem] Pool 테이블 로드 실패!"));
 	}
 }
 
@@ -68,30 +61,16 @@ TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray
 		// 3. 아이템 추첨
 		FGachaResult Result = PickItemFromRarity(HitRarity);
 
-		// 4. 배너 타입별 중복 처리
-		if (CurrentBannerType == EGachaBannerType::Equipment)
+		// 4. 중복 여부 플래그 — 연출(UI) 분기 전용
+		//    실제 보상량(조각/에테르)은 AddCharacter → GrowthSubsystem::HandleDuplicateCharacter 가
+		//    FCharacterAwakenData 테이블에서 읽어 처리합니다.
+		if (CurrentBannerType == EGachaBannerType::Character)
 		{
-			Result.bIsDuplicate = false;
-			Result.ConvertedFragments = 0;
+			Result.bIsDuplicate = OwnedItems.Contains(Result.PulledItemID);
 		}
-		else
-		{
-			if (OwnedItems.Contains(Result.PulledItemID))
-			{
-				Result.bIsDuplicate = true;
-				Result.ConvertedFragments = FMath::Max(10, Result.ConvertedFragments);
-			}
-			else
-			{
-				Result.bIsDuplicate = false;
-				Result.ConvertedFragments = 0;
-			}
-		}
-
 		Result.CurrentPityCount = PityStack;
 		Results.Add(Result);
 	}
-
 	return Results;
 }
 
@@ -154,7 +133,6 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 			Result.CharacterSkeletalMesh = Item.CharacterSkeletalMesh.LoadSynchronous();
 			Result.CharacterIdleAnim = Item.CharacterIdleAnim.LoadSynchronous();
 			Result.RevealMeshScale = Item.RevealMeshScale;
-			Result.ConvertedFragments = Item.DuplicateFragmentReward;
 			break;
 		}
 	}

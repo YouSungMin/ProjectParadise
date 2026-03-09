@@ -39,14 +39,7 @@ void UParadiseGachaResultSlotWidget::SetSlotData(
 
 		Text_Duplicate->SetVisibility(DupVisibility);
 	}
-
-	// 4. 환산 재화 수량
-	if (Text_Value)
-	{
-		Text_Value->SetText(FText::AsNumber(InResult.ConvertedFragments));
-	}
-
-	// 5. 블루프린트 후처리 (등장 애니메이션 등)
+	// 4. 블루프린트 후처리 (등장 애니메이션 등)
 	OnSlotDataSet(InResult);
 }
 #pragma endregion 외부 인터페이스 구현

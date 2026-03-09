@@ -77,10 +77,6 @@ struct FGachaPoolRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0.0"))
 	float Weight = 1.0f;
 
-	/** @brief 중복 획득 시 변환될 조각(파편)의 개수 (장비는 전부 0으로 해서 조각 X) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0"))
-	int32 DuplicateFragmentReward = 10;
-
 	// ── 캐릭터 전용 ─────────────────────────────────────────────────────────
 
 	/**
@@ -148,10 +144,6 @@ struct FGachaResult
 	/** @brief 중복 여부 (true면 연출 시 "조각 변환!" 이펙트 출력) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
 	bool bIsDuplicate = false;
-
-	/** @brief 중복 시 획득한 조각 개수 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")
-	int32 ConvertedFragments = 0;
 
 	/** @brief 이 뽑기가 진행되었을 때의 천장(Pity) 스택 (UI 표기용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Gacha")

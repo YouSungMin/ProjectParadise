@@ -187,4 +187,31 @@ private:
 	 */
 	TWeakObjectPtr<AParadiseGachaBoxActor> CachedGachaBox = nullptr;
 #pragma endregion 가챠 연출 제어
+
+#pragma region 챕터 및 스테이지 제어
+public:
+	/**
+	 * @brief 챕터 슬롯 버튼을 클릭했을 때 호출되는 진입점 (Controller 로직)
+	 * @details 3D 지도 배경을 변경하고 카메라를 전투 화면으로 이동시킵니다.
+	 * @param ChapterID 진입할 챕터의 고유 번호
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Stage")
+	void EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture);
+
+	/**
+	 * @brief 현재 선택된 챕터 번호를 조회합니다. (캡슐화 적용)
+	 * @return 현재 선택된 챕터 ID
+	 */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Stage")
+	int32 GetCurrentSelectedChapter() const { return CurrentSelectedChapter; }
+
+private:
+	/** @brief 현재 선택된 챕터를 저장해둡니다 (스테이지 UI 갱신 시 참조용) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Stage", meta = (AllowPrivateAccess = "true"))
+	int32 CurrentSelectedChapter = 1;
+
+	/** @brief 3D 맵 배경을 담당하는 환경 액터 캐싱용 (선택 사항) */
+	UPROPERTY(Transient)
+	TObjectPtr<class AParadiseMapEnvironmentActor> CachedMapEnvActor = nullptr;
+#pragma endregion 챕터 및 스테이지 제어
 };
