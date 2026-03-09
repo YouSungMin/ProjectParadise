@@ -5,6 +5,7 @@
 #include "Data/Enums/GameEnums.h"
 #include "GameplayEffect.h"
 #include "Data/Structs/FXStructs.h"
+#include "Data/Structs/CombatTypes.h"
 #include "ItemStructs.generated.h"
 
 class USkeletalMesh;
@@ -245,36 +246,13 @@ public:
 	// [GAS & Logic] 로직 연결
 	// -----------------------------------------------------------------
 
-	/**
-	 * @brief 이 무기의 데미지 공식 GE
-	 * @details 기본적으로 GE_DamageStandard를 할당합니다.
-	 * 독단검, 화염검 등 특수 연산이 필요할 때만 다른 GE를 넣습니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	/** @brief 무기 기본 평타 세트 (어빌리티, 이펙트, 투사체 묶음) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Basic Attack")
+	FCombatAbilitySetup BasicAttackSetup;
 
-	/**
-	 * @brief 기본 공격 어빌리티 (Basic Attack / LMB)
-	 * @details 무기 장착 시 부여되는 '평타' 로직입니다. (예: 검 휘두르기, 활 쏘기)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayAbility> BasicAttackAbility;
-
-	/**
-	 * @brief 무기 전용 스킬 (Weapon Skill / RMB or Q)
-	 * @details 이 무기를 들었을 때만 쓸 수 있는 고유 기술입니다. (예: 올려치기, 멀티샷)
-	 * 특정 키(Special Input)에 매핑됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayAbility> WeaponSkillAbility;
-
-	/**
-	 * @brief 투사체 클래스 (Projectile Class)
-	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
-	 * @note 근거리 무기일 경우 비워둡니다 (None).
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<AActor> ProjectileClass;
+	/** @brief 무기 전용 스킬 세트 (우클릭/Q 스킬 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Skill")
+	FCombatAbilitySetup WeaponSkillSetup;
 
 	// -----------------------------------------------------------------
 	// [FX & Sound] 연출

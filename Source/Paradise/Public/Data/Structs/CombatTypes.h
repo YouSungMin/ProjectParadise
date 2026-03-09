@@ -5,6 +5,34 @@
 
 class UAnimMontage;
 class UGameplayEffect;
+class UGameplayAbility;
+
+/**
+ * @struct FCombatAbilitySetup
+ * @brief 하나의 전투 행동(평타, 스킬 등)에 필요한 필수 GAS 로직 세트
+ * @details 어빌리티(로직), 이펙트(결과), 투사체(수단)를 하나로 묶어 관리합니다.
+ */
+USTRUCT(BlueprintType)
+struct FCombatAbilitySetup
+{
+	GENERATED_BODY()
+
+public:
+	/** @brief 실행할 게임플레이 어빌리티 (GA) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	/** @brief 적중 시 적에게 적용할 데미지/상태이상 이펙트 (GE) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayEffect> EffectClass;
+
+	/** * @brief 발사할 투사체 액터 클래스
+	 * @note 근거리 공격이나 즉발형 스킬일 경우 비워둡니다 (None).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<AActor> ProjectileClass;
+};
+
 
 /**
  * @struct FActionStatRow
