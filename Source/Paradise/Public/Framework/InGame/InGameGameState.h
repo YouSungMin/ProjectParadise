@@ -55,6 +55,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
 	int32 AcquiredAether = 0;
 
+	/** @brief [보상] 이번 스테이지에서 획득한 별 개수 (결과 UI 표시용) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
+	int32 EarnedStars = 0;
+
 	/** @brief [정보] 클리어 후 이동할 다음 스테이지 ID */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage Data")
 	FName NextStageID;

@@ -104,6 +104,14 @@ private:
 	UFUNCTION()
 	void OnNextStageClicked();
 
+	/**
+	 * @brief 별 이미지 위젯에 획득 여부에 따라 텍스처를 세팅합니다.
+	 * @param StarImage 텍스처를 교체할 이미지 위젯
+	 * @param StarIndex 해당 별의 순서 (1-based)
+	 * @param InStarCount 실제 획득한 별 개수
+	 */
+	void SetStarImage(UImage* StarImage, int32 StarIndex, int32 InStarCount);
+
 	/** @brief GameMode로부터 전달받은 다음 스테이지의 식별자(ID) */
 	FName CachedNextStageID = NAME_None;
 #pragma endregion 내부 로직

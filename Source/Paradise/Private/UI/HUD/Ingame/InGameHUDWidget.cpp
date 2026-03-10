@@ -273,7 +273,7 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 	int32 Aether = CachedGameState->AcquiredAether;
 	int32 Exp = CachedGameState->AcquiredExp;
 	FName NextStage = CachedGameState->NextStageID;
-	int32 StarCount = 3; // TODO: GameState의 별점 로직 연동 예정
+	int32 StarCount = CachedGameState->EarnedStars;
 
 	// 2. 참여한 캐릭터 데이터 수집 (최신 인벤토리 동기화)
 	TArray<FResultCharacterData> CharResults;

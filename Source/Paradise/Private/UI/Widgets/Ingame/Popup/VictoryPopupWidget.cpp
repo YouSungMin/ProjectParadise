@@ -52,13 +52,10 @@ void UVictoryPopupWidget::SetVictoryData(
 	if (Text_GoldValue)  Text_GoldValue->SetText(FText::AsNumber(InEarnedGold));
 	if (Text_AetherValue)Text_AetherValue->SetText(FText::AsNumber(InEarnedAether));
 
-	// 3. 별 이미지 갱신 (최적화: 분기문을 삼항 연산자로 깔끔하게 처리)
-	if (StarOnTexture && StarOffTexture)
-	{
-		if (Img_Star1) Img_Star1->SetBrushFromTexture(InStarCount >= 1 ? StarOnTexture : StarOffTexture);
-		if (Img_Star2) Img_Star2->SetBrushFromTexture(InStarCount >= 2 ? StarOnTexture : StarOffTexture);
-		if (Img_Star3) Img_Star3->SetBrushFromTexture(InStarCount >= 3 ? StarOnTexture : StarOffTexture);
-	}
+	// 3. 별 이미지 갱신
+	SetStarImage(Img_Star1, 1, InStarCount);
+	SetStarImage(Img_Star2, 2, InStarCount);
+	SetStarImage(Img_Star3, 3, InStarCount);
 
 	// 4. 캐릭터 슬롯 렌더링을 자식 패널에게 위임 (SRP 준수)
 	if (WBP_CharacterResultPanel)
@@ -79,6 +76,27 @@ void UVictoryPopupWidget::SetVictoryData(
 #pragma endregion 데이터 설정 로직 (View Rendering)
 
 #pragma region 내부 로직
+void UVictoryPopupWidget::SetStarImage(UImage* StarImage, int32 StarIndex, int32 InStarCount)
+{
+	if (!StarImage) return;
+
+	// StarIndex 가 InStarCount 이하면 금색(On), 초과면 흑색(Off)
+	const bool bIsOn = (StarIndex <= InStarCount);
+	UTexture2D* TargetTexture = bIsOn ? StarOnTexture.Get() : StarOffTexture.Get();
+
+	if (TargetTexture)
+	{
+		StarImage->SetBrushFromTexture(TargetTexture);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("⚠️ [VictoryPopup] Star%d 텍스처가 비어있습니다!"
+				" WBP_VictoryPopup 디테일 패널에서 StarOnTexture / StarOffTexture 를 할당하세요."),
+			StarIndex);
+	}
+}
+
 void UVictoryPopupWidget::OnNextStageClicked()
 {
 	// 방어 코드: 다음 스테이지가 비어있으면 무시 (버튼이 숨겨지겠지만 혹시 모를 클릭 방지)
