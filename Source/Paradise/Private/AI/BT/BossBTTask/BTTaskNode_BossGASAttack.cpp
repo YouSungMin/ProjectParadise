@@ -4,32 +4,44 @@
 #include "AI/BT/BossBTTask/BTTaskNode_BossGASAttack.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Characters/AIUnit/UnitBase.h"
+#include "AbilitySystemGlobals.h"
+#include "AbilitySystemComponent.h"
 
 UBTTaskNode_BossGASAttack::UBTTaskNode_BossGASAttack()
 {
-	NodeName = TEXT("Boss GAS Action");
+	NodeName = TEXT("Boss GAS Action (By Tag)");
 }
 
 EBTNodeResult::Type UBTTaskNode_BossGASAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AUnitBase* Unit = Cast<AUnitBase>(OwnerComp.GetAIOwner()->GetPawn());
-	if (!Unit) return EBTNodeResult::Failed;
+	AAIController* AICon = OwnerComp.GetAIOwner();
+	if (!AICon) return EBTNodeResult::Failed;
 
-	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
+	APawn* BossPawn = AICon->GetPawn();
+	if (!BossPawn) return EBTNodeResult::Failed;
 
+	//적을 바라보게 회전
+	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetKey.SelectedKeyName));
 	if (Target)
 	{
-		FVector LookDir = Target->GetActorLocation() - Unit->GetActorLocation();
-		LookDir.Z = 0.f; // 위아래로 기울어지는 것 방지
-		Unit->SetActorRotation(LookDir.Rotation());
+		FVector LookDir = Target->GetActorLocation() - BossPawn->GetActorLocation();
+		LookDir.Z = 0.f;
+		BossPawn->SetActorRotation(LookDir.Rotation());
 	}
 
-	if (ActionInputID == EInputID::Attack)
+	//ASC 가져오기
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(BossPawn);
+
+	if (ASC && AbilityTagToActivate.IsValid())
 	{
-		Unit->GetAbilitySystemComponent();
+		//에디터에서 세팅한 태그 어빌리티 발동
+		bool bSuccess = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTagToActivate));
+
+		if (bSuccess)
+		{
+			return EBTNodeResult::Succeeded;
+		}
 	}
 
-
-	return EBTNodeResult::Type();
+	return EBTNodeResult::Failed;
 }

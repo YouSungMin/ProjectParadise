@@ -121,12 +121,19 @@ void AUnitSpawner::SpawnUnit()
 		// 스탯 및 메시 초기화
 		NewUnit->InitializeUnit(StatData, AssetData);
 
-		AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
-		if (!AIC)
+		if (AssetData->AIController)
+		{
+			NewUnit->AIControllerClass = AssetData->AIController;
+		}
+
+		// 컨트롤러가 없으면 스폰합니다. (이제 테이블에 설정한 보스 컨트롤러가 스폰됨)
+		if (!NewUnit->GetController())
 		{
 			NewUnit->SpawnDefaultController();
-			AIC = Cast<AMyAIController>(NewUnit->GetController());
 		}
+
+		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
+		
 
 		if (AIC)
 		{
@@ -137,8 +144,10 @@ void AUnitSpawner::SpawnUnit()
 				UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
 				if (BT)
 				{
+					// BT 실행
 					AIC->RunBehaviorTree(BT);
 
+					// 🚨 [수정 3] 보스도 쉴 때 본진으로 걸어가야 하므로 똑같이 타겟팅 해줍니다.
 					UBlackboardComponent* BB = AIC->GetBlackboardComponent();
 					if (BB)
 					{
@@ -149,7 +158,7 @@ void AUnitSpawner::SpawnUnit()
 						for (AActor* BaseActor : FoundBases)
 						{
 							AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
-							if (HomeBase && NewUnit->IsHostile(HomeBase))
+							if (HomeBase && NewUnit->IsHostile(HomeBase)) // 기존에 작성하신 IsHostile 유지
 							{
 								TargetFriendlyBase = HomeBase;
 								break;
@@ -158,13 +167,15 @@ void AUnitSpawner::SpawnUnit()
 
 						if (TargetFriendlyBase)
 						{
+							// BB에 목적지(본진) 세팅
 							BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
+							BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
+
 							FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
 							FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
 							FVector TargetLocation = BaseLoc + (Dir * 200.0f);
 
 							BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
-							BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
 						}
 					}
 					// AI 로직 강제 재시작
