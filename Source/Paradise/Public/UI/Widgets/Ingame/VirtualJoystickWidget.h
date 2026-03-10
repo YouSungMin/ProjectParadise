@@ -8,6 +8,8 @@
 
 #pragma region 전방 선언
 class UImage;
+class AInGameController;
+class UAutoCombatComponent;
 #pragma endregion 전방 선언
 
 /** 
@@ -69,6 +71,13 @@ private:
 
 	/** @brief 조이스틱을 중앙으로 초기화하고 입력을 멈춥니다. */
 	void ResetJoystick();
+
+	/**
+	 * @brief 자동 전투 모드 변경 방송 수신부
+	 * @details 오토 모드 켜짐(true) 시 진행 중인 이동을 취소하고 입력을 막습니다.
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩

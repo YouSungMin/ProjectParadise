@@ -11,11 +11,12 @@
 #include "Framework/System/SquadSubsystem.h"
 
 #include "Characters/Player/PlayerData.h"
-#include "Components/SquadControlComponent.h"
-
 #include "Characters/Base/PlayerBase.h"
 
+#include "Components/SquadControlComponent.h"
+#include "Components/AutoCombatComponent.h"
 #include "Components/EquipmentComponent.h"
+
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
 
@@ -65,6 +66,18 @@ void UActionControlPanel::NativeConstruct()
 		SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
 	}
 
+	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	{
+		if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
+		{
+			AutoComp->OnAutoBattleStateChanged.RemoveDynamic(this, &UActionControlPanel::HandleAutoBattleStateChanged);
+			AutoComp->OnAutoBattleStateChanged.AddDynamic(this, &UActionControlPanel::HandleAutoBattleStateChanged);
+
+			// 현재 상태 바로 반영
+			HandleAutoBattleStateChanged(AutoComp->IsAutoMode());
+		}
+	}
+
 	// 5. 로비 데이터 연동 초기화
 	//InitTagButtons();
 }
@@ -85,6 +98,23 @@ void UActionControlPanel::NativeDestruct()
 	CachedPlayer = nullptr;
 
 	Super::NativeDestruct();
+}
+
+void UActionControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
+{
+	// 오토가 켜지면(true) 상호작용은 꺼져야(false) 합니다.
+	const bool bEnableCombatUI = !bIsAuto;
+
+	if (AttackBtn) AttackBtn->SetIsEnabled(bEnableCombatUI);
+	if (SkillSlot_Active) SkillSlot_Active->SetIsEnabled(bEnableCombatUI);
+	if (SkillSlot_Ultimate) SkillSlot_Ultimate->SetIsEnabled(bEnableCombatUI);
+
+	for (TObjectPtr<UParadiseCommonButton> TagBtn : TagButtons)
+	{
+		if (TagBtn) TagBtn->SetIsEnabled(bEnableCombatUI);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[ActionPanel] 오토 모드 상태 변경 수신! 액션 UI %s"), bEnableCombatUI ? TEXT("잠금 해제") : TEXT("잠금 처리"));
 }
 
 #pragma region 외부 인터페이스 구현
@@ -128,7 +158,7 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 	InitActionPanel(CurrentWeaponSkillID, CurrentUltimateID, TargetAttackIcon);
 	UpdateTagButtons(PlayerIndex);
 
-	UE_LOG(LogTemp, Log, TEXT("⚔️ [ActionPanel] UI 자율 갱신 성공 (Index: %d)"), PlayerIndex);
+	UE_LOG(LogTemp, Log, TEXT("[ActionPanel] UI 자율 갱신 성공 (Index: %d)"), PlayerIndex);
 }
 
 void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon)

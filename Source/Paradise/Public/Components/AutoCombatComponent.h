@@ -80,6 +80,11 @@ private:
 	 */
 	float GetDynamicAttackRange(class APlayerBase* PlayerPawn);
 
+public:
+	/** @brief 자동전투 모드 활성화 여부 델리게이트 (UI 버튼 방어) */
+	UPROPERTY(BlueprintAssignable, Category = "AutoCombat|Event")
+	FOnAutoBattleStateChangedSignature OnAutoBattleStateChanged;
+
 protected:
 
 	/** @brief 무거운 연산을 막기 위해 한 번 찾은 적 기지를 기억해두는 캐싱 포인터 */
@@ -88,10 +93,6 @@ protected:
 private:
 	/** @brief 현재 자동 전투 활성화 여부를 나타내는 플래그 */
 	bool bIsAutoMode = false;
-
-	/** @brief 자동전투 모드 활성화 여부 델리게이트 (UI 버튼 방어) */
-	UPROPERTY(BlueprintAssignable, Category = "AutoCombat|Event")
-	FOnAutoBattleStateChangedSignature OnAutoBattleStateChanged;
 
 	/** @brief 자동 소환 로직(CheckAndAutoSummon)을 반복 실행하기 위한 타이머 핸들 */
 	FTimerHandle AutoSummonTimerHandle;

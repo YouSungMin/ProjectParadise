@@ -15,6 +15,7 @@ class AInGameController;
 class UTexture2D;
 class AInGamePlayerState;
 class APlayerData;
+class UAutoCombatComponent;
 #pragma endregion 전방 선언
 
 /**
@@ -105,6 +106,13 @@ private:
 	 * @param CharacterIndex 교체할 대상 캐릭터의 스쿼드 인덱스 (0, 1, 2)
 	 */
 	void OnTagButtonClicked(int32 CharacterIndex);
+
+	/**
+	 * @brief 오토 모드 변경 방송을 수신하여 UI 상호작용을 제어합니다.
+	 * @param bIsAuto 오토 전투 켜짐 여부
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
 #pragma endregion 내부 로직
 
 private:
@@ -138,7 +146,7 @@ private:
 	TArray<TObjectPtr<UParadiseCommonButton>> TagButtons;
 
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
-	TWeakObjectPtr<APlayerBase> CachedPlayer;
+	TWeakObjectPtr<APlayerBase> CachedPlayer = nullptr;
 
 	/** @brief 현재 조작 중인 캐릭터 인덱스 (중복 클릭 방지용) */
 	int32 CurrentActiveTagIndex = 0;

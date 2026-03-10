@@ -12,6 +12,7 @@ class USummonCostWidget;
 class UTexture2D;
 class UCostManageComponent;
 class UFamiliarSummonComponent;
+class UAutoCombatComponent;
 struct FSummonSlotInfo;
 #pragma endregion 전방 선언
 
@@ -49,6 +50,12 @@ private:
 	UFUNCTION()
 	void HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>& Slots);
 
+	/**
+	 * @brief 오토 전투 상태 변경 알림 수신기
+	 * @details 오토 모드 시 수동 소환 터치를 방지합니다.
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
 public:
 	/** @brief UI 버튼 클릭 또는 외부 요청 시 모델에 구매를 요청합니다. */
 	UFUNCTION()
@@ -65,13 +72,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetSummonSlotData(int32 SlotIndex, UTexture2D* Icon, int32 InCost);
-
-	///**
-	// * @brief 특정 슬롯의 쿨타임 상태를 업데이트합니다.
-	// */
-	//UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	//void UpdateSummonCooldown(int32 SlotIndex, float CurrentTime, float MaxTime);
-
 	/**
 	 * @brief 현재 코스트 상태를 패널 내의 코스트 위젯에 전달합니다.
 	 * @details Controller나 PlayerState에서 (성능상 Tick보다는 Timer가 나음) 호출하여 부드럽게 갱신할 것을 권장합니다.

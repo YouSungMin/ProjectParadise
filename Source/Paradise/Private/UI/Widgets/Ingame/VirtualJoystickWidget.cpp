@@ -1,9 +1,10 @@
 // Copyright (C) Project Paradise. All Rights Reserved.
 
 #include "UI/Widgets/InGame/VirtualJoystickWidget.h"
-
 #include "Components/Image.h"
+#include "Components/AutoCombatComponent.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Framework/InGame/InGameController.h"
 
 UVirtualJoystickWidget::UVirtualJoystickWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -17,6 +18,18 @@ void UVirtualJoystickWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	ResetJoystick();
+
+	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	{
+		if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
+		{
+			AutoComp->OnAutoBattleStateChanged.RemoveDynamic(this, &UVirtualJoystickWidget::HandleAutoBattleStateChanged);
+			AutoComp->OnAutoBattleStateChanged.AddDynamic(this, &UVirtualJoystickWidget::HandleAutoBattleStateChanged);
+
+			// 생성 즉시 현재 오토 상태를 받아와서 UI에 반영
+			HandleAutoBattleStateChanged(AutoComp->IsAutoMode());
+		}
+	}
 }
 
 void UVirtualJoystickWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -140,5 +153,25 @@ void UVirtualJoystickWidget::ResetJoystick()
 
 	// 멈춤 신호 전송 (캐릭터 정지)
 	OnJoystickInput.Broadcast(FVector2D::ZeroVector);
+}
+
+void UVirtualJoystickWidget::HandleAutoBattleStateChanged(bool bIsAuto)
+{
+	// 오토 모드가 켜지면 수동 조작을 원천 차단합니다.
+	if (bIsAuto)
+	{
+		// 1. 유저가 드래그 하던 중이었을 수 있으므로 강제로 중앙 복귀 & ZeroVector 송신
+		ResetJoystick();
+
+		// 2. 위젯 자체의 입력(Touch/Mouse)을 완전히 막습니다.
+		SetIsEnabled(false);
+	}
+	else
+	{
+		// 수동 모드로 돌아오면 다시 입력을 활성화합니다.
+		SetIsEnabled(true);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[VirtualJoystick] 오토 모드 상태 변경 수신! 조이스틱 %s"), bIsAuto ? TEXT("잠금 처리") : TEXT("잠금 해제"));
 }
 #pragma endregion 내부 로직

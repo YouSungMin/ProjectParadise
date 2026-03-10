@@ -22,6 +22,7 @@ class USettingsPopupWidget;
 class UTexture2D;
 class UImage;
 class UWidgetAnimation;
+class UAutoCombatComponent;
 #pragma endregion 전방 선언
 
 /**
@@ -90,6 +91,16 @@ private:
 	UFUNCTION()
 	void OnAutoModeButtonClicked();
 
+	/**
+	 * @brief 자동 전투 상태 변경 델리게이트 수신부 (Pure MVC)
+	 * @details 텍스처 변경 및 1.5초(카메라 이동 시간) 동안의 버튼 잠금 처리를 담당합니다.
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
+
+	/** @brief 카메라 연출 시간 종료 후 오토 버튼 잠금 해제 */
+	void UnlockAutoModeButton();
+
 	/** @brief 가상 조이스틱 입력 처리 (캐릭터 이동) */
 	UFUNCTION()
 	void OnJoystickInput(FVector2D InputVector);
@@ -139,6 +150,10 @@ private:
 
 #pragma region 공통 UI 에셋 설정 (Config)
 protected:
+	/** @brief 카메라 이동(연출) 시간 동안 오토 버튼 입력을 막기 위한 대기 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	float CameraBlendTime = 1.5f;
+
 	/** @brief 오토 모드가 꺼져있을 때 (수동) 보여줄 어두운 이미지 */
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
 	TObjectPtr<UTexture2D> Tex_AutoModeOff = nullptr;
@@ -156,6 +171,9 @@ protected:
 private:
 	/** @brief UI 갱신용 타이머 핸들 */
 	FTimerHandle HUDUpdateTimerHandle;
+
+	/** @brief 오토 버튼 연타 방지용 타이머 핸들 */
+	FTimerHandle TimerHandle_AutoModeLock;
 
 	/** @brief 현재 자동 전투 활성화 여부 */
 	bool bIsAutoMode = false;
