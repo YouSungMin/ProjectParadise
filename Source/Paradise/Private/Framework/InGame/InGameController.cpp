@@ -220,14 +220,11 @@ UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
         {
             InGameHUDInstance->AddToViewport();
             InGameHUDInstance->InitializeHUD();
-            UE_LOG(LogTemp, Warning, TEXT("⚡ [Controller] UI 지연 생성(Lazy Init) 발동! InGameHUD를 즉시 띄웠습니다."));
+            
+            FInputModeGameOnly GameInputMode;
+            SetInputMode(GameInputMode);
         }
     }
-    else if (!InGameHUDClass && IsLocalController())
-    {
-        UE_LOG(LogTemp, Error, TEXT("❌ [Controller] InGameHUDClass가 비어있습니다. BP_InGameController에서 클래스를 할당하세요."));
-    }
-
     return InGameHUDInstance;
 }
 
