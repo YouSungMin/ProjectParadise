@@ -4,10 +4,12 @@
 #include "UI/Panel/Ingame/SummonControlPanel.h"
 #include "UI/Widgets/Ingame/SummonSlotWidget.h"
 #include "UI/Widgets/Ingame/SummonCostWidget.h"
-#include "GameFramework/PlayerController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/InGame/InGameController.h"
+#include "GameFramework/PlayerController.h"
 #include "Components/CostManageComponent.h"
 #include "Components/FamiliarSummonComponent.h"
+#include "Components/AutoCombatComponent.h"
 
 #pragma region 생명주기
 void USummonControlPanel::NativeConstruct()
@@ -42,6 +44,12 @@ void USummonControlPanel::NativeConstruct()
 }
 void USummonControlPanel::NativeDestruct()
 {
+	for (TObjectPtr<USummonSlotWidget> SlotWidget : SummonSlots)
+	{
+		if (SlotWidget) SlotWidget->OnSlotClicked.RemoveAll(this);
+	}
+
+	SummonSlots.Empty();
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_InitCost);
@@ -114,7 +122,21 @@ void USummonControlPanel::InitComponents()
 	{
 		bAllComponentsReady = false;
 	}
+	if (AInGameController* InGamePC = Cast<AInGameController>(PC))
+	{
+		if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
+		{
+			AutoComp->OnAutoBattleStateChanged.RemoveDynamic(this, &USummonControlPanel::HandleAutoBattleStateChanged);
+			AutoComp->OnAutoBattleStateChanged.AddDynamic(this, &USummonControlPanel::HandleAutoBattleStateChanged);
 
+			// 즉시 동기화
+			HandleAutoBattleStateChanged(AutoComp->IsAutoMode());
+		}
+		else
+		{
+			bAllComponentsReady = false;
+		}
+	}
 	// 하나라도 없으면 재시도
 	if (bAllComponentsReady)
 	{
@@ -195,6 +217,22 @@ void USummonControlPanel::HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>&
 			SummonSlots[i]->UpdateSlotInfo(LoadedIcon, Cost);
 		}
 	}
+}
+void USummonControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
+{
+	// 오토 시 수동 소환 막기
+	const bool bEnableSummonUI = !bIsAuto;
+
+	// SlotWidget
+	for (TObjectPtr<USummonSlotWidget> SlotWidget : SummonSlots)
+	{
+		if (SlotWidget)
+		{
+			SlotWidget->SetIsEnabled(bEnableSummonUI);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("오토 모드 상태 변경 수신! 소환 UI %s"), bEnableSummonUI ? TEXT("잠금 해제") : TEXT("잠금 처리"));
 }
 #pragma endregion 시스템 초기화
 

@@ -27,6 +27,7 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
 
+#include "Components/AutoCombatComponent.h"
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
@@ -117,6 +118,7 @@ void UInGameHUDWidget::NativeDestruct()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HUDUpdateTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoModeLock);
 	}
 
 	// 2. 델리게이트 안전 해제
@@ -142,6 +144,55 @@ void UInGameHUDWidget::InitializeHUD()
 
 		// 현재 상태 즉시 반영 (이미 게임 진행 중일 경우 대비)
 		HandleGamePhaseChanged(GS->CurrentPhase);
+	}
+
+	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	{
+		if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
+		{
+			AutoComp->OnAutoBattleStateChanged.RemoveDynamic(this, &UInGameHUDWidget::HandleAutoBattleStateChanged);
+			AutoComp->OnAutoBattleStateChanged.AddDynamic(this, &UInGameHUDWidget::HandleAutoBattleStateChanged);
+
+			// 초기 생성 시 현재 상태 즉시 동기화
+			HandleAutoBattleStateChanged(AutoComp->IsAutoMode());
+		}
+	}
+}
+
+void UInGameHUDWidget::HandleAutoBattleStateChanged(bool bIsAuto)
+{
+	// 1. 상태 동기화
+	bIsAutoMode = bIsAuto;
+
+	// 2. UI 시각적 갱신 (텍스처 및 글로우)
+	if (Btn_AutoMode)
+	{
+		UTexture2D* TargetTexture = bIsAutoMode ? Tex_AutoModeOn : Tex_AutoModeOff;
+		Btn_AutoMode->SetButtonIcon(TargetTexture);
+		Btn_AutoMode->SetGlowRingActive(bIsAutoMode);
+
+		// 3. 카메라가 이동하는 1.5초 동안 중복 터치 차단 (Lock)
+		Btn_AutoMode->SetIsEnabled(false);
+
+		if (GetWorld())
+		{
+			GetWorld()->GetTimerManager().SetTimer(
+				TimerHandle_AutoModeLock,
+				this,
+				&UInGameHUDWidget::UnlockAutoModeButton,
+				CameraBlendTime,
+				false
+			);
+		}
+	}
+}
+
+void UInGameHUDWidget::UnlockAutoModeButton()
+{
+	if (Btn_AutoMode)
+	{
+		Btn_AutoMode->SetIsEnabled(true);
+		UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 카메라 연출(1.5초) 종료. 오토 버튼 재활성화 완료."));
 	}
 }
 
@@ -222,7 +273,7 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 	int32 Aether = CachedGameState->AcquiredAether;
 	int32 Exp = CachedGameState->AcquiredExp;
 	FName NextStage = CachedGameState->NextStageID;
-	int32 StarCount = 3; // TODO: GameState의 별점 로직 연동 예정
+	int32 StarCount = CachedGameState->EarnedStars;
 
 	// 2. 참여한 캐릭터 데이터 수집 (최신 인벤토리 동기화)
 	TArray<FResultCharacterData> CharResults;
@@ -321,25 +372,6 @@ void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)
 			OwnedPawn->AddMovementInput(CameraRight, InputVector.X);
 		}
 	}
-
-	// 조이스틱 입력이 오면 폰(캐릭터)에게 이동 명령 전달
-	//if (APawn* OwnedPawn = GetOwningPlayerPawn())
-	//{
-	//	// 조이스틱에서 넘어온 순수 입력값을 90도 회전하여 보정
-	//	FVector2D TransformedInput;
-	//	TransformedInput.X = InputVector.Y;
-	//	TransformedInput.Y = -InputVector.X;
-
-	//	const FRotator ControlRot = GetOwningPlayer()->GetControlRotation();
-	//	const FRotator YawRot(0, ControlRot.Yaw, 0);
-
-	//	const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	//	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-	//	// 보정된 벡터(TransformedInput)를 기준으로 캐릭터 이동 적용
-	//	OwnedPawn->AddMovementInput(ForwardDir, TransformedInput.Y * -1.0f);
-	//	OwnedPawn->AddMovementInput(RightDir, TransformedInput.X);
-	//}
 }
 
 void UInGameHUDWidget::OnUpdateHUD()

@@ -412,6 +412,8 @@ void AInGameGameMode::DistributeStageRewards()
 		UE_LOG(LogTemp, Warning, TEXT("🌟 남은 시간 비율: %.1f%% -> 획득 별: %d개"), TimeRatio * 100.f, EarnedStars);
 
 		//초회 3별 보상 검사
+		CachedGameState->EarnedStars = EarnedStars;
+
 		int32 PreviousStars = StageSys->GetStageClearStar(CurrentStageID);
 
 		//이번에 3별을 땄고, 예전 기록이 3별 미만일 때만 True

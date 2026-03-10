@@ -12,12 +12,14 @@ class APlayerData;
 class AAIController;
 class UAutoCombatComponent;
 class USquadControlComponent;
+class UUltimateEffectComponent;
 class UParadiseGameInstance;
 class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
-struct FInputActionValue;
 class UInGameHUDWidget; //[추가] 26/02/04, 담당자 : 최지원 
+
+struct FInputActionValue;
 
 /**
  * @brief 인게임 플레이어 컨트롤러
@@ -41,7 +43,9 @@ public:
 	class UAutoCombatComponent* GetAutoCombatComponent() { return AutoCombatComponent; }
 	class USquadControlComponent* GetSquadControlComponent() { return SquadControlComponent; }
 
-
+	/** @brief 궁극기 화면 연출 컴포넌트를 반환합니다. */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Effect")
+	class UUltimateEffectComponent* GetUltimateEffectComponent() const { return UltimateEffectComponent; }
 #pragma endregion Getter 함수
 
 
@@ -62,8 +66,12 @@ public:
 	/** @brief 캐릭터 사망 시 호출되어 다음 생존 캐릭터로 자동 교체합니다. */
 	void OnPlayerDied(APlayerBase* DeadPlayer);
 
-
-
+#pragma region 화면 연출 컴포넌트
+protected:
+	/** @brief 궁극기 사용 시 포스트 프로세스 연출을 담당하는 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<class UUltimateEffectComponent> UltimateEffectComponent = nullptr;
+#pragma endregion 화면 연출 컴포넌트
 
 #pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
 public:
@@ -105,16 +113,6 @@ private:
 	void OnInputSwitchHero1(const FInputActionValue& Value);
 	void OnInputSwitchHero2(const FInputActionValue& Value);
 	void OnInputSwitchHero3(const FInputActionValue& Value);
-
-//#pragma region 내부 헬퍼 함수
-//public:
-//	/**
-//	 * @brief 캐릭터 교체 후 스킬 및 궁극기 UI를 갱신합니다.
-//	 * @details 준수를 위해 RequestSwitchPlayer에서 UI 데이터 추출 및 갱신 로직
-//	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
-//	 */
-//	void UpdateActionPanelUI(int32 PlayerIndex);
-//#pragma endregion 내부 헬퍼 함수
 
 #pragma region 자동 모드 관련
 
