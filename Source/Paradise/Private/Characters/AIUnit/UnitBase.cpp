@@ -216,15 +216,6 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 			}
 		}
 
-		// ⭐ 중요: GAS 시스템에도 태그 등록 (타겟팅/필터링용)
-		if (AbilitySystemComponent && FactionTag.IsValid())
-		{
-			// 기존 태그가 있다면 제거 (재활용 시 꼬임 방지)
-			AbilitySystemComponent->RemoveLooseGameplayTag(FactionTag);
-
-			// 새 태그 등록
-			AbilitySystemComponent->AddLooseGameplayTag(FactionTag);
-		}
 
 		// [Movement]
 		if (GetCharacterMovement())
@@ -261,6 +252,19 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
 		CachedActionFX = InAssets->ActionFX;  // 공격 연출 블록 캐싱
 		this->FactionTag = InAssets->FactionTag;
+
+
+
+		// ⭐ 중요: GAS 시스템에도 태그 등록 (타겟팅/필터링용)
+		if (AbilitySystemComponent && FactionTag.IsValid())
+		{
+			// 기존 태그가 있다면 제거 (재활용 시 꼬임 방지)
+			AbilitySystemComponent->RemoveLooseGameplayTag(FactionTag);
+
+			// 새 태그 등록
+			AbilitySystemComponent->AddLooseGameplayTag(FactionTag);
+		}
+
 
 		// 어빌리티 부여 (Grant Ability)
 		if (AbilitySystemComponent)

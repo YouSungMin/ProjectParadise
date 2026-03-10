@@ -50,4 +50,8 @@ protected:
 	 */
 	UFUNCTION()
 	void OnGameplayEventReceived(FGameplayEventData Payload);
+
+
+	UFUNCTION()
+	void OnMontageFinished();
 };

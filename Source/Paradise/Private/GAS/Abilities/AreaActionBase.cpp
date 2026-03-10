@@ -40,7 +40,14 @@ void UAreaActionBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		AvatarChar->SetCurrentActionData(CombatData);
 	}
 
-	PlayMontageAndWaitCallback(CombatData.MontageToPlay);
+	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+		this, NAME_None, CombatData.MontageToPlay
+	);
+
+	MontageTask->OnCompleted.AddDynamic(this, &UAreaActionBase::OnMontageFinished);
+	MontageTask->OnInterrupted.AddDynamic(this, &UAreaActionBase::OnMontageFinished);
+	MontageTask->OnCancelled.AddDynamic(this, &UAreaActionBase::OnMontageFinished);
+	MontageTask->ReadyForActivation();
 
 	// 타격 이벤트 대기 (WaitGameplayEvent)
 	UAbilityTask_WaitGameplayEvent* EventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
@@ -50,7 +57,6 @@ void UAreaActionBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	EventTask->EventReceived.AddDynamic(this, &UAreaActionBase::OnGameplayEventReceived);
 	EventTask->ReadyForActivation();
 
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 }
 
 void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
@@ -86,4 +92,10 @@ void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		// 5. 적용 (Apply)
 		ApplySpecHandleToTarget(TargetActor, SpecHandle);
 	}
+}
+
+void UAreaActionBase::OnMontageFinished()
+{
+	UE_LOG(LogTemp, Warning, TEXT("🏁 [AreaActionBase] 몽타주 재생 종료. EndAbility를 호출합니다!"));
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

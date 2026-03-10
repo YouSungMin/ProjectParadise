@@ -5,6 +5,7 @@
 #include "AIController.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
+#include "GameplayTagContainer.h"
 
 
 UBTDecorator_CanUseAbilityByTag::UBTDecorator_CanUseAbilityByTag()
@@ -20,38 +21,57 @@ bool UBTDecorator_CanUseAbilityByTag::CalculateRawConditionValue(UBehaviorTreeCo
 	APawn* ControlledPawn = AICon->GetPawn();
 	if (!ControlledPawn) return false;
 
+	// ASC 가져오기
 	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(ControlledPawn);
 	if (!ASC || !AbilityTagToCheck.IsValid()) return false;
 
+	// ASC에 부여된 모든 어빌리티를 순회
 	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
 	{
+		// 어빌리티가 우리가 찾는 태그를 가지고 있는지 확인
 		if (Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTagToCheck))
 		{
+			// 실패 사유를 담을 빈 태그 컨테이너
 			FGameplayTagContainer FailureTags;
+
+			// 태그가 일치하면, GAS 자체 로직(마나, 쿨타임 검사)을 돌려서 true/false 반환
 			bool bCanActivate = Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get(), &FailureTags);
 
 			if (bCanActivate)
 			{
-				UE_LOG(LogTemp, Log, TEXT("✅ [보스 AI] '%s' 실행 가능!"), *AbilityTagToCheck.ToString());
+				UE_LOG(LogTemp, Log, TEXT("✅ [보스 AI] '%s' 스킬 사용 가능! (조건 통과)"), *AbilityTagToCheck.ToString());
 				return true;
 			}
 			else
 			{
-				// 🚨 [추가된 디버깅 로직] 실패 사유 분석
+				// 🚨 쿨타임 정보를 담을 변수 선언
+				float TimeRemaining = 0.f;
+				float CooldownDuration = 0.f;
+
+				// 어빌리티로부터 실제 쿨타임 정보를 받아옵니다.
+				Spec.Ability->GetCooldownTimeRemainingAndDuration(Spec.Handle, ASC->AbilityActorInfo.Get(), TimeRemaining, CooldownDuration);
+
 				if (Spec.IsActive())
 				{
-					// 스킬이 이미 켜져있는 상태일 때
-					UE_LOG(LogTemp, Error, TEXT("🛑 [보스 AI] '%s' 불가 사유: 스킬이 이미 실행 중입니다! (블루프린트에서 EndAbility가 제대로 호출되었는지 확인하세요)"), *AbilityTagToCheck.ToString());
+					// 스킬이 아직 안 끝나서(EndAbility 미호출) 못 쓰는 경우
+					UE_LOG(LogTemp, Error, TEXT("🛑 [보스 AI] '%s' 불가 사유: 스킬이 이미 실행 중입니다!"), *AbilityTagToCheck.ToString());
 				}
-				else if (FailureTags.IsEmpty())
+				else if (TimeRemaining > 0.f)
 				{
-					// 켜져있지도 않고 태그도 없을 때 (코스트/쿨타임 GE 세팅 누락 등)
-					UE_LOG(LogTemp, Error, TEXT("❓ [보스 AI] '%s' 불가 사유: 시스템 거부 (태그 없음). ActorInfo가 깨졌거나, Cooldown GE 설정이 잘못되었을 수 있습니다."), *AbilityTagToCheck.ToString());
+					// 정확히 쿨타임에 걸려있는 경우 (몇 초 남았는지 출력)
+					UE_LOG(LogTemp, Warning, TEXT("⏳ [보스 AI] '%s' 쿨타임 대기 중... (남은 시간: %.1f초 / 전체 쿨타임: %.1f초)"),
+						*AbilityTagToCheck.ToString(), TimeRemaining, CooldownDuration);
+				}
+				else if (!FailureTags.IsEmpty())
+				{
+					// 마나 부족 등 다른 태그에 의한 실패
+					UE_LOG(LogTemp, Warning, TEXT("🚫 [보스 AI] '%s' 불가 사유: %s"),
+						*AbilityTagToCheck.ToString(), *FailureTags.ToStringSimple());
 				}
 				else
 				{
-					// 정상적인 쿨타임/마나 부족 등
-					UE_LOG(LogTemp, Warning, TEXT("⏳ [보스 AI] '%s' 불가 사유: %s"), *AbilityTagToCheck.ToString(), *FailureTags.ToStringSimple());
+					// 그 외 시스템적 실패 (GE 설정 누락 등)
+					UE_LOG(LogTemp, Error, TEXT("❓ [보스 AI] '%s' 불가 사유: 알 수 없음 (태그 없음)"), *AbilityTagToCheck.ToString());
 				}
 
 				return false;
