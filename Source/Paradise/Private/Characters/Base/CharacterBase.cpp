@@ -69,13 +69,13 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 	}
 
 	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
-	TraceStart += GetActorForwardVector() * CurrentActiveActionData.ForwardOffset;
+	TraceStart += GetActorForwardVector() * CurrentActiveActionData.Stats.ForwardOffset;
 
 	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
-	FVector TraceEnd = TraceStart + (GetActorForwardVector() * CurrentActiveActionData.AttackRange);
+	FVector TraceEnd = TraceStart + (GetActorForwardVector() * CurrentActiveActionData.Stats.AttackRange);
 
 	TArray<AActor*> ActorsToIgnore;
-	if (CurrentActiveActionData.TargetFilter == ETargetFilter::Enemy)
+	if (CurrentActiveActionData.Stats.TargetFilter == ETargetFilter::Enemy)
 	{
 		ActorsToIgnore.Add(this);
 	}
@@ -85,7 +85,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 		GetWorld(),
 		TraceStart,      // 시작점
 		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
-		CurrentActiveActionData.AttackRadius,    // 반경
+		CurrentActiveActionData.Stats.AttackRadius,    // 반경
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		ActorsToIgnore,
@@ -122,7 +122,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 			HitActors.Add(HitActor);
 
 			bool bIsHostile = IsHostile(HitChar);
-			ETargetFilter Filter = CurrentActiveActionData.TargetFilter;
+			ETargetFilter Filter = CurrentActiveActionData.Stats.TargetFilter;
 
 			if (Filter == ETargetFilter::Enemy && !bIsHostile)
 			{

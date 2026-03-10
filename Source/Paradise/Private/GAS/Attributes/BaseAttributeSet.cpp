@@ -70,10 +70,23 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		NewValue = FMath::Max(NewValue, 0.1f);
 	}
 	// 사거리, 이속, 쿨타임, 공격력, 방어력 등
+	else if (Attribute == GetAttackPowerAttribute())
+	{
+		float CurrentAttackPower = GetAttackPower(); // 변하기 전의 현재 공격력
+		NewValue = FMath::Max(NewValue, 0.0f);       // 음수 방지
+
+		// 값이 실제로 변했을 때만 로그를 찍도록 설정 (소수점 오차 무시)
+		if (!FMath::IsNearlyEqual(CurrentAttackPower, NewValue))
+		{
+			float Difference = NewValue - CurrentAttackPower;
+			UE_LOG(LogTemp, Warning, TEXT("⚔️ [버프/디버프] 공격력 변경! 이전: %.1f ➡️ 현재: %.1f (변화량: %+.1f)"),
+				CurrentAttackPower, NewValue, Difference);
+		}
+	}
+	// 사거리, 이속, 쿨타임, 방어력 등
 	else if (Attribute == GetAttackRangeAttribute() ||
 		Attribute == GetMoveSpeedAttribute() ||
 		Attribute == GetCooldownAttribute() ||
-		Attribute == GetAttackPowerAttribute() ||
 		Attribute == GetDefenseAttribute())
 	{
 		// 음수 방지

@@ -75,21 +75,26 @@ void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	// 3. GE 스펙 생성 (Make Spec)
+	// GE 스펙 생성 (Make Spec)
 	// BaseGameplayAbility에 구현된 Helper 함수 사용
 	FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
 
 	if (SpecHandle.IsValid())
 	{
-		// 4. [매우 중요] 데미지 계수 전달 (SetByCaller)
-		// 스킬 계수(1.5 등)를 "Data.Damage.Multiplier" 태그로 포장해서 보냅니다.
-		// 이 값은 ExecCalcCombat(계산식)에서 꺼내 씁니다.
+		// 데미지 계수 전달 (SetByCaller)
 		SpecHandle.Data->SetSetByCallerMagnitude(
 			FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
-			CombatData.DamageMultiplier
+			CombatData.Stats.DamageMultiplier
 		);
 
-		// 5. 적용 (Apply)
+		if (CombatData.Stats.BuffDuration > 0.0f) // 또는 CombatData.Stats.BuffDuration
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(
+				FGameplayTag::RequestGameplayTag(FName("Data.Buff.Duration")),
+				CombatData.Stats.BuffDuration
+			);
+		}
+		// 적용 (Apply)
 		ApplySpecHandleToTarget(TargetActor, SpecHandle);
 	}
 }

@@ -54,7 +54,7 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
-	UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.ProjectileSpeed);
+	UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.Stats.ProjectileSpeed);
 
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
@@ -65,7 +65,7 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 
 	// 발사 위치(Transform) 계산
 	FVector SpawnLocation = AvatarChar->GetMuzzleLocation(MuzzleSocketName);
-	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.ForwardOffset;
+	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
 	FRotator SpawnRotation = AvatarChar->GetActorRotation(); // 임시로 캐릭터가 보는 방향
 
 	// (선택) 타겟팅 시스템이 있다면 타겟 방향으로 Rotation을 돌려주면 유도탄처럼 날아갑니다.
@@ -101,13 +101,13 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
 				SpecHandle.Data->SetSetByCallerMagnitude(
 					FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
-					CombatData.DamageMultiplier
+					CombatData.Stats.DamageMultiplier
 				);
 				Proj->SetDamageSpecHandle(SpecHandle);
 			}
 
 			// 사거리(길이)와 반경(두께) 전달하여 투사체 갱신
-			Proj->ApplyCombatData(CombatData.AttackRange, CombatData.AttackRadius, CombatData.ProjectileSpeed);
+			Proj->ApplyCombatData(CombatData.Stats.AttackRange, CombatData.Stats.AttackRadius, CombatData.Stats.ProjectileSpeed);
 		}
 	}
 }

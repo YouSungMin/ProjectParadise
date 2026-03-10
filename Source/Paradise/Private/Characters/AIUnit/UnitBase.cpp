@@ -122,21 +122,8 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 
 	if (ActionType == ECombatActionType::BasicAttack)
 	{
-		Result.MontageToPlay = BasicAttackData.MontageToPlay;
-		Result.EffectClass = BasicAttackData.EffectClass;
-		Result.ProjectileClass = BasicAttackData.ProjectileClass;
-		Result.DamageMultiplier = BasicAttackData.DamageMultiplier;
-		Result.AttackRange = BasicAttackData.AttackRange;
-		Result.AttackRadius = BasicAttackData.AttackRadius;
-		Result.ForwardOffset = BasicAttackData.ForwardOffset;
-		Result.TargetFilter = BasicAttackData.TargetFilter;
+		Result = BasicAttackData;
 	}
-	else if (ActionType == ECombatActionType::WeaponSkill)
-	{
-		// 몬스터 전용 스킬 로직이 필요하다면 여기서 분기 처리
-		// 예: Result.MontageToPlay = CachedSkillMontage;
-	}
-
 
 	return Result;
 }
@@ -198,20 +185,16 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 				{
 					// 액션 테이블에 정의된 평타 사거리로 AttributeSet을 초기화합니다.
 					BaseSet->InitAttackRange(ActionRow->AttackRange);
-					BasicAttackData.AttackRange = ActionRow->AttackRange; // 캐싱 변수도 함께 업데이트
-					BasicAttackData.DamageMultiplier = ActionRow->DamageMultiplier;
-					BasicAttackData.AttackRadius = ActionRow->AttackRadius;
-					BasicAttackData.ForwardOffset = ActionRow->ForwardOffset;
+					BasicAttackData.Stats = *ActionRow; // 캐싱 변수도 함께 업데이트
 				}
 				else
 				{
 					// 만약 데이터를 찾지 못했을 경우의 안전 장치
 					BaseSet->InitAttackRange(150.0f);
-					BasicAttackData.AttackRange = 150.0f;
-					BasicAttackData.DamageMultiplier = 1.0f;
-
-					BasicAttackData.AttackRadius = 40.0f;
-					BasicAttackData.ForwardOffset = 0.0f;
+					BasicAttackData.Stats.AttackRange = 150.0f;
+					BasicAttackData.Stats.DamageMultiplier = 1.0f;
+					BasicAttackData.Stats.AttackRadius = 40.0f;
+					BasicAttackData.Stats.ForwardOffset = 0.0f;
 				}
 			}
 		}

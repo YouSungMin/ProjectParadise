@@ -102,10 +102,10 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 
 		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
-		if (CombatData.Cooldown > 0.0f)
+		if (CombatData.Stats.Cooldown > 0.0f)
 		{
 			FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Data.Cooldown"));
-			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Cooldown);
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Stats.Cooldown);
 		}
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
@@ -121,12 +121,12 @@ bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, co
 
 	FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
-	if (CombatData.ManaCost <= 0.0f) return true;
+	if (CombatData.Stats.ManaCost <= 0.0f) return true;
 
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
 		float CurrentMana = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
-		if (CurrentMana < CombatData.ManaCost)
+		if (CurrentMana < CombatData.Stats.ManaCost)
 		{
 			return false; // 마나 부족 실패
 		}
@@ -143,10 +143,10 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 
 		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
-		if (CombatData.ManaCost > 0.0f)
+		if (CombatData.Stats.ManaCost > 0.0f)
 		{
 			FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(FName("Data.Cost.Mana"));
-			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.ManaCost);
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.Stats.ManaCost);
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 		}
 	}
