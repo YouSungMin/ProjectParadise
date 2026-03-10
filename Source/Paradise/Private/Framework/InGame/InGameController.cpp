@@ -13,6 +13,7 @@
 #include "Components/SquadControlComponent.h"
 #include "Components/FamiliarSummonComponent.h"
 #include "Components/EquipmentComponent.h"
+#include "Components/UltimateEffectComponent.h"
 
 #include "AIController.h"
 #include "AI/Squad/SquadAIController.h"
@@ -35,6 +36,7 @@ AInGameController::AInGameController()
 {
     AutoCombatComponent = CreateDefaultSubobject<UAutoCombatComponent>(TEXT("AutoCombatComponent"));
     SquadControlComponent = CreateDefaultSubobject<USquadControlComponent>(TEXT("SquadControlComponent"));
+    UltimateEffectComponent = CreateDefaultSubobject<UUltimateEffectComponent>(TEXT("UltimateEffectComponent"));
 
     PlayerCameraManagerClass = AParadiseCameraManager::StaticClass();
 }

@@ -16,6 +16,8 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 	//  에테르 비용 캐싱!
 	CachedRequiredAether = InBannerData.RequiredAether; 
 
+	CachedGachaPool.Empty();
+
 	// 2. 연결된 풀(Pool) 테이블을 비동기/동기로 로드하여 캐싱
 	if (UDataTable* PoolTable = InBannerData.TargetPoolTable.LoadSynchronous())
 	{

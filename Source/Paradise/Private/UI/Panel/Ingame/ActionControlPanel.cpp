@@ -16,6 +16,7 @@
 #include "Components/SquadControlComponent.h"
 #include "Components/AutoCombatComponent.h"
 #include "Components/EquipmentComponent.h"
+#include "Components/UltimateEffectComponent.h"
 
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
@@ -299,13 +300,24 @@ void UActionControlPanel::OnUltimateSkillRequested()
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 {
-
 	//0303 김성현 - Fix 스위치 한 영웅이 어빌리티를 발동하지 않는 문제 수정
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
 
 	if (CurrentActivePawn)
 	{
 		CurrentActivePawn->SendAbilityInputToASC(InputID, true);
+		// 2. 궁극기일때 컨트롤러에 화면연출을 틀어라 라고 호출
+		if (InputID == EInputID::Ultimate)
+		{
+			if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+			{
+				if (UUltimateEffectComponent* UltEffectComp = InGamePC->GetUltimateEffectComponent())
+				{
+					// 연출 시간은 Data-Driven하게 스탯 테이블에서 가져올 수도 있지만, 일단 2.5초로 세팅
+					UltEffectComp->PlayUltimateEffect(2.5f);
+				}
+			}
+		}
 		UE_LOG(LogTemp, Warning, TEXT("[ActionPanel] 현재 빙의된 %s가 어빌리티를 발동합니다."), *CurrentActivePawn->GetName());
 	}
 	else

@@ -7,6 +7,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Components/SquadControlComponent.h"
 #include "Components/EquipmentComponent.h"
+#include "Components/UltimateEffectComponent.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Characters/AIUnit/UnitBase.h"
@@ -161,6 +162,14 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     if (CanUseAbility(EInputID::Ultimate))
     {
         PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
+        //자동으로 궁극기를 써도 컨트롤러에게 화면 연출을 틀어라 라고 호출
+        if (AInGameController* OwnerPC = GetOwnerController())
+        {
+            if (UUltimateEffectComponent* UltEffectComp = OwnerPC->GetUltimateEffectComponent())
+            {
+                UltEffectComp->PlayUltimateEffect(2.5f);
+            }
+        }
         UE_LOG(LogTemp, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
         return;
     }
