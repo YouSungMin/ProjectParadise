@@ -35,14 +35,14 @@ AProjectileBase::AProjectileBase()
 
 void AProjectileBase::OnPoolActivate_Implementation()
 {
-	// 1. 액터 보이기 & 충돌 켜기
+	// 액터 보이기 & 충돌 켜기
 	SetActorHiddenInGame(false);
 	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	// 2. 나이아가라 파티클 처음부터 재생 (스태틱 매쉬 대신)
+	// 나이아가라 파티클 재생 
 	if (NiagaraComp) NiagaraComp->Activate(true);
 
-	// 3. 이동 컴포넌트 재시작 및 발사 방향 리셋
+	// 이동 컴포넌트 재시작 및 발사 방향 리셋
 	if (ProjectileMovementComp)
 	{
 		ProjectileMovementComp->SetComponentTickEnabled(true);
@@ -51,7 +51,7 @@ void AProjectileBase::OnPoolActivate_Implementation()
 		ProjectileMovementComp->Velocity = GetActorForwardVector() * ProjectileMovementComp->InitialSpeed;
 	}
 
-	// 4. 수명 타이머 세팅
+	// 수명 타이머 세팅
 	if (LifeTime > 0.0f)
 	{
 		GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
@@ -102,7 +102,7 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 		ProjectileMovementComp->InitialSpeed = InSpeed;
 		ProjectileMovementComp->MaxSpeed = InSpeed;
 
-		// [중요] 풀링에서 꺼내진 상태이므로 Velocity를 직접 갱신해 줘야 바로 적용됩니다!
+		// 풀링에서 꺼내진 상태 Velocity를 직접 갱신
 		ProjectileMovementComp->Velocity = GetActorForwardVector() * InSpeed;
 	}
 
@@ -113,9 +113,8 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 		LifeTime = InAttackRange / CurrentSpeed;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
+	
 	// 타이머 재설정
-	// 이미 OnPoolActivate에서 기본 LifeTime으로 타이머가 돌고 있으므로,
-	// 기존 타이머를 취소하고 계산된 정확한 생존 시간으로 다시 타이머를 가동합니다.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(LifeTimerHandle);

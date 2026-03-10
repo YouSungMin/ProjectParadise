@@ -33,10 +33,7 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 		// 엑셀 데이터 로드 (사거리, 데미지 배율 등)
 		if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->SkillActionIDs[i]))
 		{
-			SkillData.AttackRange = ActionRow->AttackRange;
-			SkillData.DamageMultiplier = ActionRow->DamageMultiplier;
-			SkillData.AttackRadius = ActionRow->AttackRadius;
-			SkillData.ForwardOffset = ActionRow->ForwardOffset;
+			SkillData.Stats = *ActionRow;
 		}
 
 		// 스킬 셋업 (이펙트, 투사체 포장 & GAS 어빌리티 부여)

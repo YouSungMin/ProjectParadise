@@ -274,12 +274,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			Result.MontageToPlay = CharAssets->UltimateMontage.LoadSynchronous(); // 구조체에 이 필드가 있다고 가정
 			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CharStats->SkillActionID))
 			{
-				Result.DamageMultiplier = ActionRow->DamageMultiplier;
-				Result.AttackRange = ActionRow->AttackRange;
-				Result.AttackRadius = ActionRow->AttackRadius;
-				Result.ForwardOffset = ActionRow->ForwardOffset;
-				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
-				Result.TargetFilter = ActionRow->TargetFilter;
+				Result.Stats = *ActionRow;
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
@@ -342,13 +337,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			{
 				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
 				{
-					Result.DamageMultiplier = ActionRow->DamageMultiplier;
-					Result.AttackRange = ActionRow->AttackRange;
-					Result.AttackRadius = ActionRow->AttackRadius;
-					Result.ForwardOffset = ActionRow->ForwardOffset;
-					Result.Cooldown = ActionRow->Cooldown;
-					Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
-					Result.ManaCost = ActionRow->ManaCost;
+					Result.Stats = *ActionRow;
 				}
 				else
 				{

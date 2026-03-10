@@ -51,7 +51,7 @@ public:
 
 	/** @brief 캐싱된 기본 공격 사거리 반환 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	float GetAttackRange() const { return BasicAttackData.AttackRange; }
+	float GetAttackRange() const { return BasicAttackData.Stats.AttackRange; }
 
 	/** @brief 부모의 가상 함수 오버라이드 */
 	virtual UAnimMontage* GetDeathMontage() const override;
