@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "Data/Enums/GameEnums.h"
 #include "BTTaskNode_BossGASAttack.generated.h"
 
 /**
@@ -23,7 +22,11 @@ protected:
 
 protected:
 
-	/** 발동할 GAS 어빌리티 InputID */
+	/** 에디터에서 보스가 발동할 어빌리티 태그 (Ability.Type.BossPattern 서브태그)지정 */
 	UPROPERTY(EditAnywhere, Category = "GAS")
-	EInputID ActionInputID = EInputID::Attack;
+	FGameplayTag AbilityTagToActivate;
+
+	/** 타겟을 바라보기 위해 블랙보드에서 타겟을 가져올 키 */
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	FBlackboardKeySelector TargetKey;
 };

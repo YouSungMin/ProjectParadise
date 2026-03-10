@@ -1,3 +1,4 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
@@ -48,6 +49,8 @@ void UAreaActionBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 	EventTask->EventReceived.AddDynamic(this, &UAreaActionBase::OnGameplayEventReceived);
 	EventTask->ReadyForActivation();
+
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 }
 
 void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
