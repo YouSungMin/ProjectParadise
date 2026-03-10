@@ -7,8 +7,6 @@
 #include "UltimateEffectComponent.generated.h"
 
 #pragma region 전방 선언
-class UPostProcessComponent;
-class UMaterialInterface;
 class APostProcessVolume;
 #pragma endregion 전방 선언
 
@@ -44,18 +42,12 @@ public:
 	void StopUltimateEffect();
 #pragma endregion 외부 인터페이스 (Controller -> Component)
 
-#pragma region 내부 컴포넌트 및 에셋
-private:
-	/** @brief 전역 화면 효과를 담당할 포스트 프로세스 컴포넌트 (동적 생성) */
-	UPROPERTY(VisibleAnywhere, Category = "Paradise|Components")
-	TObjectPtr<UPostProcessComponent> PostProcessComp = nullptr;
-
-	/** * @brief 기획자/아티스트가 할당할 궁극기 전용 화면 머티리얼 (어둡게, 비네팅 등)
-	 * @details BP_InGameController의 디테일 패널에서 세팅합니다. (Data-Driven)
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Effect|Config")
-	TObjectPtr<UMaterialInterface> UltimatePPMaterial = nullptr;
-#pragma endregion 내부 컴포넌트 및 에셋
+//#pragma region 내부 컴포넌트 및 에셋
+//private:
+//	/** @brief 전역 화면 효과를 담당할 포스트 프로세스 컴포넌트 (동적 생성) */
+//	UPROPERTY(VisibleAnywhere, Category = "Paradise|Components")
+//	TObjectPtr<UPostProcessComponent> PostProcessComp = nullptr;
+//#pragma endregion 내부 컴포넌트 및 에셋
 
 #pragma region 데이터 드리븐 설정
 private:
