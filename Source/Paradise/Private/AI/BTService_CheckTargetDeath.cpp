@@ -2,6 +2,7 @@
 
 
 #include "AI/BTService_CheckTargetDeath.h"
+#include "Paradise/Paradise.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Characters/AIUnit/UnitBase.h"
 #include "AIController.h"
@@ -31,7 +32,7 @@ void UBTService_CheckTargetDeath::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		{
 			// 3. 죽었다면 블랙보드 키를 비워줌
 			BB->ClearValue(TargetActorKey.SelectedKeyName);
-			UE_LOG(LogTemp, Log, TEXT("Target is Dead. Clearing Blackboard Key."));
+			UE_LOG(LogParadiseAI, Log, TEXT("Target is Dead. Clearing Blackboard Key."));
 		}
 	}
 }

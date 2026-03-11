@@ -14,6 +14,7 @@
 #include "Characters/Player/PlayerData.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Kismet/GameplayStatics.h"
+#include "Paradise/Paradise.h"
 
 
 UParadiseGameInstance::UParadiseGameInstance()
@@ -68,11 +69,11 @@ void UParadiseGameInstance::SaveGameData()
 	//슬롯 이름으로 디스크에 실제 파일 쓰기
 	if (UGameplayStatics::SaveGameToSlot(SaveObj, SaveGameSlotName, 0))
 	{
-		UE_LOG(LogTemp, Log, TEXT("💾 [SaveSystem] 게임 데이터 영구 저장 완료! (슬롯: %s)"), *SaveGameSlotName);
+		UE_LOG(LogParadiseSaveGame, Log, TEXT("💾 [SaveSystem] 게임 데이터 영구 저장 완료! (슬롯: %s)"), *SaveGameSlotName);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [SaveSystem] 게임 저장에 실패했습니다."));
+		UE_LOG(LogParadiseSaveGame, Error, TEXT("❌ [SaveSystem] 게임 저장에 실패했습니다."));
 	}
 }
 
@@ -113,13 +114,13 @@ void UParadiseGameInstance::LoadGameData()
 				StageSys->LoadFromSaveGame(LoadObj);
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
+			UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 		}
 	}
 	else
 	{
 		//세이브 파일이 없다면 (처음 게임을 켰거나 데이터가 날아간 경우)
-		UE_LOG(LogTemp, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 빈 인벤토리로 시작합니다."));
+		UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 빈 인벤토리로 시작합니다."));
 
 		//만약 튜토리얼 기본 지급 영웅/무기가 필요하다면 여기서 AddCharacter() 등을 호출하시면 됩니다.
 	}

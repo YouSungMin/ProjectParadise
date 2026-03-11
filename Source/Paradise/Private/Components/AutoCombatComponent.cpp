@@ -15,6 +15,7 @@
 #include "Components/FamiliarSummonComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Paradise/Paradise.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -37,7 +38,7 @@ void UAutoCombatComponent::SetAutoBattleMode(bool bEnable)
     //자동전투 모드 변경 델리게이트
     OnAutoBattleStateChanged.Broadcast(bIsAutoMode);
 
-    UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
+    UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
 
     UWorld* World = GetWorld();
     if (!World) return;
@@ -80,7 +81,7 @@ void UAutoCombatComponent::CheckAndAutoSummon()
         // 돈이 모여서 성공적으로 뽑았다면 로그 출력!
         if (bSuccess)
         {
-            UE_LOG(LogTemp, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
+            UE_LOG(LogParadiseAutoCombat, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
         }
     }
 }
@@ -170,7 +171,7 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
                 UltEffectComp->PlayUltimateEffect(2.5f);
             }
         }
-        UE_LOG(LogTemp, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
+        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
         return;
     }
 
@@ -178,7 +179,7 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     if (CanUseAbility(EInputID::Skill))
     {
         PlayerPawn->SendAbilityInputToASC(EInputID::Skill, true);
-        UE_LOG(LogTemp, Log, TEXT("🤖 [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
+        UE_LOG(LogParadiseAutoCombat, Log, TEXT("🤖 [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
         return;
     }
 
@@ -324,6 +325,6 @@ float UAutoCombatComponent::GetDynamicAttackRange(APlayerBase* PlayerPawn)
     }
 
     // 🚨 데이터를 찾지 못했을 때만 에러 파악을 위해 경고 로그 출력
-    UE_LOG(LogTemp, Warning, TEXT("⚠️ [AutoCombat] 액션 데이터를 찾지 못했습니다. 기본 사거리(%.1f) 반환."), DefaultRange);
+    UE_LOG(LogParadiseAutoCombat, Warning, TEXT("⚠️ [AutoCombat] 액션 데이터를 찾지 못했습니다. 기본 사거리(%.1f) 반환."), DefaultRange);
     return DefaultRange;
 }
