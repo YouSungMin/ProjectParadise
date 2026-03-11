@@ -30,10 +30,4 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	FName SocketName = FName("hand_r");
-
-	/**
-	 * @brief 공격 판정 반경 (단위: cm)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float AttackRadius = 50.0f;
 };

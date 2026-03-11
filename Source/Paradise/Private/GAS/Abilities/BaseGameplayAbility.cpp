@@ -156,9 +156,33 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 {
 	if (!MontageToPlay) return nullptr;
 
+	float FinalPlayRate = 1.0f;
+
+	// 캐싱된 전투 데이터에서 애니메이션 재생속도 가져오기
+	float AnimSpeed = 1.0f;
+	if (bIsDataCached)
+	{
+		AnimSpeed = CachedCombatData.Stats.AnimPlayRate;
+		if (AnimSpeed <= 0.0f) AnimSpeed = 1.0f; // 방어 코드
+	}
+
+	// 어트리뷰트 셋의 현재 공격속도 가져오기
+	float AttackSpeed = 1.0f;
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		float FoundSpeed = ASC->GetNumericAttribute(UBaseAttributeSet::GetAttackSpeedAttribute());
+		if (FoundSpeed > 0.0f)
+		{
+			AttackSpeed = FoundSpeed;
+		}
+	}
+
+	// 최종 속도 계산
+	FinalPlayRate = AnimSpeed * AttackSpeed;
+
 	// 몽타주 재생 태스크 생성 
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, TaskInstanceName, MontageToPlay, 1.0f, NAME_None, false
+		this, TaskInstanceName, MontageToPlay, FinalPlayRate, NAME_None, false
 	);
 
 	if (MontageTask)

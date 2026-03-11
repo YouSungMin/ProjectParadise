@@ -21,7 +21,6 @@ UBaseAttributeSet::UBaseAttributeSet()
 
 	InitMoveSpeed(400.0f);
 	InitAttackSpeed(1.0f);
-	InitCooldown(0.0f);
 	InitAttackRange(100.0f);
 }
 
@@ -86,7 +85,6 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	// 사거리, 이속, 쿨타임, 방어력 등
 	else if (Attribute == GetAttackRangeAttribute() ||
 		Attribute == GetMoveSpeedAttribute() ||
-		Attribute == GetCooldownAttribute() ||
 		Attribute == GetDefenseAttribute())
 	{
 		// 음수 방지

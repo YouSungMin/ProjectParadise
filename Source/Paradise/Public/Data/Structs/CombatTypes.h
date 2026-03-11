@@ -92,6 +92,10 @@ struct FActionStats : public FTableRowBase
 	/** @brief 버프/디버프 지속 시간 (0이면 즉발형) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	float BuffDuration = 0.0f;
+
+	/** @brief 애니메이션 기본 재생 속도 배율, 기본값은 1.0입니다.*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	float AnimPlayRate = 1.0f;
 };
 
 USTRUCT(BlueprintType)
