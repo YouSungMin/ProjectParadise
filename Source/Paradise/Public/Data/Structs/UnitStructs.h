@@ -181,14 +181,6 @@ struct FAIUnitStats : public FUnitBaseStats
 	// =========================================================
 
 	/**
-	 * @brief 공격 속도 배율 (Attack Speed Multiplier)
-	 * @details 기본값 1.0을 기준으로, 높을수록 공격 속도가 빨라집니다.
-	 * 예: 1.2 = 20% 더 빠름. 애니메이션 재생 속도(PlayRate)에 곱해집니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.1", UIMin = "0.1"))
-	float AttackSpeed;
-
-	/**
 	 * @brief AI 기본 공격 액션 ID
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")

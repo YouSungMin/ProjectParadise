@@ -149,14 +149,6 @@ public:
 	FGameplayAttributeData AttackSpeed;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackSpeed)
 
-	/**
-	* @brief 재사용 대기시간 / 공격 주기 (Cooldown)
-	* @details 기술 사용 후 다음 사용까지 걸리는 시간(초)입니다.
-	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Combat")
-	FGameplayAttributeData Cooldown;
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Cooldown)
-
 	// =====================================================
 	//  메타 어트리뷰트 (Meta Attributes)
 	// =====================================================

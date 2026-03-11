@@ -30,7 +30,7 @@ void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	if (!CombatData.MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [RangeBase] 재생할 몽타주가 없습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("❌ [ProjectileAttackBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -54,12 +54,12 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
-	UE_LOG(LogTemp, Warning, TEXT("🏹 [RangeBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.Stats.ProjectileSpeed);
+	UE_LOG(LogTemp, Warning, TEXT("🏹 [ProjectileAttackBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.Stats.ProjectileSpeed);
 
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [RangeBase] 발사할 ProjectileClass가 없습니다!"));
+		UE_LOG(LogTemp, Error, TEXT("❌ [ProjectileAttackBase] 발사할 ProjectileClass가 없습니다!"));
 		return;
 	}
 
@@ -67,8 +67,6 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	FVector SpawnLocation = AvatarChar->GetMuzzleLocation(MuzzleSocketName);
 	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
 	FRotator SpawnRotation = AvatarChar->GetActorRotation(); // 임시로 캐릭터가 보는 방향
-
-	// (선택) 타겟팅 시스템이 있다면 타겟 방향으로 Rotation을 돌려주면 유도탄처럼 날아갑니다.
 
 	// 스폰 파라미터 설정
 	FActorSpawnParameters SpawnParams;
