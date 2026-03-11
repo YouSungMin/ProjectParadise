@@ -7,11 +7,13 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbilityTypes.h"
 
 UBTTaskNode_BossGASAttack::UBTTaskNode_BossGASAttack()
 {
 	NodeName = TEXT("Boss GAS Action (By Tag)");
-	bNotifyTick = true;
+	bNotifyTick = false;
+	bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UBTTaskNode_BossGASAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -32,58 +34,60 @@ EBTNodeResult::Type UBTTaskNode_BossGASAttack::ExecuteTask(UBehaviorTreeComponen
 	}
 
 	//ASC 가져오기
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(BossPawn);
-
-	if (ASC && AbilityTagToActivate.IsValid())
+	CachedASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(BossPawn);
+	if (!CachedASC || !AbilityTagToActivate.IsValid())
 	{
-		//에디터에서 세팅한 태그 어빌리티 발동
-		bool bSuccess = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTagToActivate));
-
-		if (bSuccess)
-		{
-			return EBTNodeResult::InProgress;
-		}
+		return EBTNodeResult::Failed;
 	}
 
-	return EBTNodeResult::Failed;
+	CachedOwnerComp = &OwnerComp;
+
+
+	AbilityEndedDelegateHandle = CachedASC->OnAbilityEnded.AddUObject(this, &UBTTaskNode_BossGASAttack::OnAbilityEnded);
+
+
+	bool bSuccess = CachedASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTagToActivate));
+
+	if (bSuccess)
+	{
+		// 성공했으니 트리는 틱 연산 없이 완전한 수면(대기) 상태로 들어갑니다.
+		return EBTNodeResult::InProgress;
+	}
+	else
+	{
+		// 발동 실패 시 찌꺼기가 남지 않게 구독 취소 후 실패 반환
+		CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		return EBTNodeResult::Failed;
+	}
 }
 
-void UBTTaskNode_BossGASAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+EBTNodeResult::Type UBTTaskNode_BossGASAttack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
-
-	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!AICon) return;
-
-	APawn* BossPawn = AICon->GetPawn();
-	if (!BossPawn) return;
-
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(BossPawn);
-	if (!ASC)
+	if (CachedASC && AbilityEndedDelegateHandle.IsValid())
 	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-		return;
+		CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		AbilityEndedDelegateHandle.Reset();
 	}
 
-	// 우리가 실행했던 태그의 스킬이 아직 실행 중(Active)인지 검사합니다.
-	bool bIsAbilityActive = false;
+	return Super::AbortTask(OwnerComp, NodeMemory);
+}
 
-	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+void UBTTaskNode_BossGASAttack::OnAbilityEnded(const FAbilityEndedData& AbilityEndedData)
+{
+	if (AbilityEndedData.AbilityThatEnded && AbilityEndedData.AbilityThatEnded->AbilityTags.HasTag(AbilityTagToActivate))
 	{
-		if (Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTagToActivate))
+		// 더 이상 연락받지 않도록 구독 취소 (메모리 누수 방지)
+		if (CachedASC && AbilityEndedDelegateHandle.IsValid())
 		{
-			if (Spec.IsActive())
-			{
-				bIsAbilityActive = true;
-				break;
-			}
+			CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+			AbilityEndedDelegateHandle.Reset();
+		}
+
+		// 자고 있던 트리를 깨워서 다음 노드(Move To 등)로 넘김!
+		if (CachedOwnerComp)
+		{
+			FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 		}
 	}
-
-	// 스킬 실행이 모두 끝났다면 (몽타주 종료 등)
-	if (!bIsAbilityActive)
-	{
-		// 이 노드 작업을 성공적으로 끝마쳤다고 BT에게 알려주고, 비로소 다음 노드로 넘깁니다!
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}
 }
+

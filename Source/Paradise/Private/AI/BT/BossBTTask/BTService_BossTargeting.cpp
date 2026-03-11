@@ -58,7 +58,7 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 
 	AActor* BestTarget = nullptr;
 	int32 HighestPriority = 999;
-
+	float ClosestDistance = MAX_flt;
 	//시야 반경 내의 대상들 순회 (플레이어와 유닛만 검사)
 	if (bHit)
 	{
@@ -66,24 +66,21 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 		{
 			AActor* HitActor = Hit.GetActor();
 			if (!HitActor) continue;
-			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-			//UE_LOG(LogParadiseAI, Warning, TEXT("👀 [보스 타겟팅] 탐색된 Pawn: %s"), *HitActor->GetName());
 
 			if (ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor))
 			{
-				if (HitChar->IsDead()) continue; // 죽은 타겟은 무시
+				if (HitChar->IsDead()) continue;
 			}
 
 			int32 CurrentPriority = 999;
 			bool bIsEnemy = false;
 
-			// 1순위: 플레이어
+			// 1순위: 플레이어, 2순위: 적 유닛 판별 로직 (기존과 동일)
 			if (HitActor->IsA<APlayerBase>())
 			{
 				bIsEnemy = true;
 				CurrentPriority = 1;
 			}
-			// 2순위: 적 유닛 (퍼밀리어 등)
 			else if (AUnitBase* HitUnit = Cast<AUnitBase>(HitActor))
 			{
 				if (BossUnit->IsEnemy(HitUnit))
@@ -93,15 +90,32 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 				}
 			}
 
-			// 적군일 경우 타겟 갱신
-			if (bIsEnemy && CurrentPriority < HighestPriority)
+			if (bIsEnemy)
 			{
-				HighestPriority = CurrentPriority;
-				BestTarget = HitActor;
+				// 🚨 [추가] 보스와 이 타겟 사이의 실제 거리를 계산합니다.
+				float DistanceToTarget = FVector::DistSquared(BossLocation, HitActor->GetActorLocation());
 
-				// 1순위(플레이어)를 찾았다면 주변 탐색 즉시 종료
-				if (HighestPriority == 1) break;
+				// 경우 1: 기존 타겟보다 "우선순위가 더 높은(숫자가 작은) 적"을 발견했을 때 (예: 유닛 치려다가 플레이어 발견)
+				if (CurrentPriority < HighestPriority)
+				{
+					HighestPriority = CurrentPriority;
+					ClosestDistance = DistanceToTarget; // 거리 갱신
+					BestTarget = HitActor;
+				}
+				// 경우 2: "같은 우선순위"의 적을 발견했을 때 (예: 플레이어를 발견했는데, 또 다른 플레이어 발견)
+				else if (CurrentPriority == HighestPriority)
+				{
+					// 누가 더 가까운지 비교해서, 더 가까운 놈으로 타겟을 갈아치웁니다!
+					if (DistanceToTarget < ClosestDistance)
+					{
+						ClosestDistance = DistanceToTarget; // 더 짧은 거리로 갱신
+						BestTarget = HitActor;
+					}
+				}
 			}
+
+			// 🚨 [삭제] 기존에 있던 'if (HighestPriority == 1) break;' 구문은 반드시 지워주세요! 
+			// 모든 적을 끝까지 비교해야 가장 가까운 놈을 찾을 수 있습니다.
 		}
 	}
 	// 거리 상관없이 맵 전체에서 '적 기지'를 찾아서 기본 타겟으로 설정

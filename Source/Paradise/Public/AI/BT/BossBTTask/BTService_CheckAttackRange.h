@@ -31,5 +31,5 @@ public:
 	int32 ActionIndex = -1;
 
 	UPROPERTY(EditAnywhere, Category = "Condition")
-	float AcceptableRadius = 50.0f;
+	float AcceptableRadius = 100.0f;
 };
