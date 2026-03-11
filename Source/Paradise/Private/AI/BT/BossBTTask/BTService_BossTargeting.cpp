@@ -53,7 +53,7 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 
 	if (!bHit)
 	{
-		UE_LOG(LogAI, Error, TEXT("🛑 [보스 타겟팅] 주변(반경 %.1f)에 아무것도 겹치지 않음!"), SearchRadius);
+		UE_LOG(LogParadiseAI, Error, TEXT("🛑 [보스 타겟팅] 주변(반경 %.1f)에 아무것도 겹치지 않음!"), SearchRadius);
 	}
 
 	AActor* BestTarget = nullptr;
@@ -67,7 +67,7 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 			AActor* HitActor = Hit.GetActor();
 			if (!HitActor) continue;
 			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-			UE_LOG(LogAI, Warning, TEXT("👀 [보스 타겟팅] 탐색된 Pawn: %s"), *HitActor->GetName());
+			//UE_LOG(LogParadiseAI, Warning, TEXT("👀 [보스 타겟팅] 탐색된 Pawn: %s"), *HitActor->GetName());
 
 			if (ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor))
 			{

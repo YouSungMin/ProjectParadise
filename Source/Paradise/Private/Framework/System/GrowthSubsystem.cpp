@@ -22,7 +22,7 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 	int32 CurrentLevel = CharData->Level;
 	int32 CurrentExp = CharData->CurrentExp + ExpAmount;
 
-	UE_LOG(LogGrowth, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, CurrentExp);
+	UE_LOG(LogParadiseGrowth, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, CurrentExp);
 
 	//레벨업 계산 루프 (데이터 테이블 기반)
 	while (true)
@@ -35,7 +35,7 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 		// 만렙 도달 시
 		if (!LevelData)
 		{
-			UE_LOG(LogGrowth, Warning, TEXT("👑 [%s] 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), CurrentLevel);
+			UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), CurrentLevel);
 			CurrentExp = 0; // 초과 경험치 증발
 			break;
 		}
@@ -44,7 +44,7 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 		{
 			CurrentExp -= LevelData->RequiredExp;
 			CurrentLevel++;
-			UE_LOG(LogGrowth, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d -> %d)"), *CharacterID.ToString(), CurrentLevel - 1, CurrentLevel);
+			UE_LOG(LogParadiseGrowth, Warning, TEXT("🎉 [%s] 레벨 업! (Lv.%d -> %d)"), *CharacterID.ToString(), CurrentLevel - 1, CurrentLevel);
 		}
 		else
 		{
@@ -91,13 +91,13 @@ void UGrowthSubsystem::HandleDuplicateCharacter(FName CharacterID)
 		// 갱신된 데이터를 다시 가져와서 로그에 출력
 		const FOwnedCharacterData* UpdatedCharData = InvSys->GetCharacterDataByID(CharacterID);
 
-		UE_LOG(LogGrowth, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 필요 총량: %d)"),
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("✨ [%s] 중복 획득! 영웅의 돌파 조각을 얻었습니다. (현재: %d / 필요 총량: %d)"),
 			*CharacterID.ToString(), UpdatedCharData->AwakeningPieces, TotalRequiredPieces);
 	}
 	else
 	{
 		//이미 최대 각성이거나, 최대 각성까지 가기 위한 조각을 미리 다 모아둔 경우
-		UE_LOG(LogGrowth, Warning, TEXT("👑 [%s] 이미 최대 각성 상태이거나 필요한 조각을 모두 보유 중입니다! (마일리지 등 대체 재화 지급)"), *CharacterID.ToString());
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 이미 최대 각성 상태이거나 필요한 조각을 모두 보유 중입니다! (마일리지 등 대체 재화 지급)"), *CharacterID.ToString());
 
 		//최대각성이므로 범용재화 에테르 지급
 		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
@@ -129,21 +129,21 @@ bool UGrowthSubsystem::AwakenCharacter(FName CharacterID)
 
 	if (!AwakenInfo)
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("👑 [%s] 최대 각성 레벨에 도달했습니다!"), *CharacterID.ToString());
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 최대 각성 레벨에 도달했습니다!"), *CharacterID.ToString());
 		return false;
 	}
 
 	//재화 조건 검증 
 	if (CharData->AwakeningPieces < AwakenInfo->RequiredAwakeningPieces)
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("❌ [%s] 각성 조각이 부족합니다. (필요: %d, 현재: %d)"), *CharacterID.ToString(), AwakenInfo->RequiredAwakeningPieces, CharData->AwakeningPieces);
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("❌ [%s] 각성 조각이 부족합니다. (필요: %d, 현재: %d)"), *CharacterID.ToString(), AwakenInfo->RequiredAwakeningPieces, CharData->AwakeningPieces);
 		return false;
 	}
 
 	//각성에 골드는 필요하지 않으나 추후 추가시 적용위함
 	if (!EconSys->HasEnoughCurrency(ECurrencyType::Gold, AwakenInfo->RequiredGold))
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("❌ 골드가 부족합니다!"));
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("❌ 골드가 부족합니다!"));
 		return false;
 	}
 
@@ -160,7 +160,7 @@ bool UGrowthSubsystem::AwakenCharacter(FName CharacterID)
 	//UI 델리게이트 발송
 	InvSys->OnInventoryUpdated.Broadcast();
 
-	UE_LOG(LogGrowth, Log, TEXT("🌟 [%s] 캐릭터가 %d단계로 각성했습니다!"), *CharacterID.ToString(), NextAwakenLevel);
+	UE_LOG(LogParadiseGrowth, Log, TEXT("🌟 [%s] 캐릭터가 %d단계로 각성했습니다!"), *CharacterID.ToString(), NextAwakenLevel);
 	return true;
 }
 
@@ -192,7 +192,7 @@ bool UGrowthSubsystem::EnhanceEquipment(FGuid ItemUID)
 	//강화 불가 아이템 체크 (None일 경우)
 	if (TargetCostID.IsNone())
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("❌ 해당 아이템은 강화할 수 없는 아이템입니다."));
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("❌ 해당 아이템은 강화할 수 없는 아이템입니다."));
 		return false;
 	}
 
@@ -201,14 +201,14 @@ bool UGrowthSubsystem::EnhanceEquipment(FGuid ItemUID)
 
 	if (!EnhanceInfo)
 	{
-		UE_LOG(LogGrowth, Error, TEXT("❌ 강화 데이터 테이블에서 %s 를 찾을 수 없습니다."), *TargetCostID.ToString());
+		UE_LOG(LogParadiseGrowth, Error, TEXT("❌ 강화 데이터 테이블에서 %s 를 찾을 수 없습니다."), *TargetCostID.ToString());
 		return false;
 	}
 
 	//최대 레벨 도달 여부 확인
 	if (ItemData->EnhancementLevel >= EnhanceInfo->MaxEnhanceLevel)
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("👑 아이템이 최대 강화 레벨(+%d)에 도달했습니다!"), EnhanceInfo->MaxEnhanceLevel);
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 아이템이 최대 강화 레벨(+%d)에 도달했습니다!"), EnhanceInfo->MaxEnhanceLevel);
 		return false;
 	}
 
@@ -218,7 +218,7 @@ bool UGrowthSubsystem::EnhanceEquipment(FGuid ItemUID)
 	//재화 검증 및 소모
 	if (!EconSys->HasEnoughCurrency(ECurrencyType::Gold, RequiredGold))
 	{
-		UE_LOG(LogGrowth, Warning, TEXT("❌ 장비 강화 실패: 골드가 부족합니다! (필요: %d G)"), RequiredGold);
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("❌ 장비 강화 실패: 골드가 부족합니다! (필요: %d G)"), RequiredGold);
 		return false;
 	}
 
@@ -234,6 +234,6 @@ bool UGrowthSubsystem::EnhanceEquipment(FGuid ItemUID)
 	InvSys->OnInventoryUpdated.Broadcast();
 	InvSys->OnEquipmentUpdated.Broadcast();
 
-	UE_LOG(LogGrowth, Log, TEXT("🔨 [%s] 장비가 +%d(으)로 강화되었습니다! (소모 골드: %d)"), *ItemData->ItemID.ToString(), ItemData->EnhancementLevel, RequiredGold);
+	UE_LOG(LogParadiseGrowth, Log, TEXT("🔨 [%s] 장비가 +%d(으)로 강화되었습니다! (소모 골드: %d)"), *ItemData->ItemID.ToString(), ItemData->EnhancementLevel, RequiredGold);
 	return true;
 }

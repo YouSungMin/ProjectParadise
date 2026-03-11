@@ -20,6 +20,7 @@ public:
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 protected:
 
 	/** 에디터에서 보스가 발동할 어빌리티 태그 (Ability.Type.BossPattern 서브태그)지정 */

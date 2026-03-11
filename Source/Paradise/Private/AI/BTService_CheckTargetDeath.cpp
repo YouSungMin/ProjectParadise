@@ -32,7 +32,7 @@ void UBTService_CheckTargetDeath::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		{
 			// 3. 죽었다면 블랙보드 키를 비워줌
 			BB->ClearValue(TargetActorKey.SelectedKeyName);
-			UE_LOG(LogAI, Log, TEXT("Target is Dead. Clearing Blackboard Key."));
+			UE_LOG(LogParadiseAI, Log, TEXT("Target is Dead. Clearing Blackboard Key."));
 		}
 	}
 }
