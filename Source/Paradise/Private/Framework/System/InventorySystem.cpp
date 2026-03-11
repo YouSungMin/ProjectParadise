@@ -5,6 +5,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ParadiseSaveGame.h"
 #include "Framework/System/GrowthSubsystem.h"
+#include "Paradise/Paradise.h"
 
 // Sets default values for this component's properties
 UInventorySystem::UInventorySystem()
@@ -45,7 +46,7 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[Inventory] 영웅 유효성 실패(Asset/Stat 누락): %s"), *InHeroes[i].CharacterID.ToString());
+				UE_LOG(LogInventory, Warning, TEXT("[Inventory] 영웅 유효성 실패(Asset/Stat 누락): %s"), *InHeroes[i].CharacterID.ToString());
 			}
 		}
 	}
@@ -61,7 +62,7 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[Inventory] 퍼밀리어 유효성 실패(Asset/Stat 누락): %s"), *InFamiliars[i].FamiliarID.ToString());
+				UE_LOG(LogInventory, Warning, TEXT("[Inventory] 퍼밀리어 유효성 실패(Asset/Stat 누락): %s"), *InFamiliars[i].FamiliarID.ToString());
 			}
 		}
 	}
@@ -79,7 +80,7 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[Inventory] 아이템 유효성 실패(Asset/Stat 누락): %s"), *ID.ToString());
+				UE_LOG(LogInventory, Warning, TEXT("[Inventory] 아이템 유효성 실패(Asset/Stat 누락): %s"), *ID.ToString());
 			}
 		}
 	}
@@ -89,7 +90,7 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 		OnInventoryUpdated.Broadcast();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ 인벤토리 로드 완료 (영웅:%d, 병사:%d, 아이템:%d)"),
+	UE_LOG(LogInventory, Log, TEXT("✅ 인벤토리 로드 완료 (영웅:%d, 병사:%d, 아이템:%d)"),
 		OwnedCharacters.Num(), OwnedFamiliars.Num(), OwnedItems.Num());
 }
 
@@ -104,7 +105,7 @@ void UInventorySystem::AddItem(FName ItemID, int32 Count, int32 EnhancementLvl)
 	// 둘 다 아니면 실패
 	if (!bExist)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AddItem] 실패: ID(%s)가 무기/방어구 테이블(Assets & Stats) 쌍에 존재하지 않습니다."), *ItemID.ToString());
+		UE_LOG(LogInventory, Warning, TEXT("[AddItem] 실패: ID(%s)가 무기/방어구 테이블(Assets & Stats) 쌍에 존재하지 않습니다."), *ItemID.ToString());
 		return;
 	}
 
@@ -118,7 +119,7 @@ void UInventorySystem::AddItem(FName ItemID, int32 Count, int32 EnhancementLvl)
 
 		OwnedItems.Add(NewItem);
 
-		UE_LOG(LogTemp, Log, TEXT("✨ [AddItem] 장비 개별 획득: %s (UID: %s)"),
+		UE_LOG(LogInventory, Log, TEXT("✨ [AddItem] 장비 개별 획득: %s (UID: %s)"),
 			*ItemID.ToString(), *NewItem.ItemUID.ToString());
 	}
 
@@ -168,7 +169,7 @@ void UInventorySystem::AddFamiliar(FName FamiliarID)
 	bool bExist = GI->IsValidFamiliarID(FamiliarID);
 	if (!bExist)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AddFamiliar] 실패: ID(%s)가 퍼밀리어 Assets 혹은 Stats 테이블에 없습니다."), *FamiliarID.ToString());
+		UE_LOG(LogInventory, Warning, TEXT("[AddFamiliar] 실패: ID(%s)가 퍼밀리어 Assets 혹은 Stats 테이블에 없습니다."), *FamiliarID.ToString());
 		return;
 	}
 
@@ -181,7 +182,7 @@ void UInventorySystem::AddFamiliar(FName FamiliarID)
 
 	OwnedFamiliars.Add(NewFamiliar);
 
-	UE_LOG(LogTemp, Log, TEXT("🥚 [AddFamiliar] 병사 영입: %s (UID: %s)"),
+	UE_LOG(LogInventory, Log, TEXT("🥚 [AddFamiliar] 병사 영입: %s (UID: %s)"),
 		*FamiliarID.ToString(), *NewFamiliar.FamiliarUID.ToString());
 
 	if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
@@ -213,12 +214,12 @@ bool UInventorySystem::RemoveObjectByGUID(FGuid TargetGUID, int32 Count)
 			if (OwnedItems[i].Quantity > Count)
 			{
 				OwnedItems[i].Quantity -= Count;
-				UE_LOG(LogTemp, Log, TEXT("📉 아이템 수량 감소: %s"), *TargetGUID.ToString());
+				UE_LOG(LogInventory, Log, TEXT("📉 아이템 수량 감소: %s"), *TargetGUID.ToString());
 			}
 			else
 			{
 				OwnedItems.RemoveAt(i);
-				UE_LOG(LogTemp, Log, TEXT("🗑️ 아이템 삭제 완료: %s"), *TargetGUID.ToString());
+				UE_LOG(LogInventory, Log, TEXT("🗑️ 아이템 삭제 완료: %s"), *TargetGUID.ToString());
 			}
 
 			if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
@@ -233,7 +234,7 @@ bool UInventorySystem::RemoveObjectByGUID(FGuid TargetGUID, int32 Count)
 		{
 			// 병사는 개별 관리이므로 즉시 삭제
 			OwnedFamiliars.RemoveAt(i);
-			UE_LOG(LogTemp, Log, TEXT("🗑️ 퍼밀리어 삭제 완료: %s"), *TargetGUID.ToString());
+			UE_LOG(LogInventory, Log, TEXT("🗑️ 퍼밀리어 삭제 완료: %s"), *TargetGUID.ToString());
 
 			if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
 			return true;
@@ -246,14 +247,14 @@ bool UInventorySystem::RemoveObjectByGUID(FGuid TargetGUID, int32 Count)
 		if (OwnedCharacters[i].CharacterUID == TargetGUID)
 		{
 			OwnedCharacters.RemoveAt(i);
-			UE_LOG(LogTemp, Log, TEXT("👋 영웅 삭제(해고) 완료: %s"), *TargetGUID.ToString());
+			UE_LOG(LogInventory, Log, TEXT("👋 영웅 삭제(해고) 완료: %s"), *TargetGUID.ToString());
 
 			if (OnInventoryUpdated.IsBound()) OnInventoryUpdated.Broadcast();
 			return true;
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("❌ [Remove] 해당 GUID를 가진 객체를 찾을 수 없습니다: %s"), *TargetGUID.ToString());
+	UE_LOG(LogInventory, Warning, TEXT("❌ [Remove] 해당 GUID를 가진 객체를 찾을 수 없습니다: %s"), *TargetGUID.ToString());
 	return false;
 }
 
@@ -345,7 +346,7 @@ EEquipmentSlot UInventorySystem::FindEquipmentSlot(FName ItemID) const
 		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag("Item.Type.Armor.Ring")))  return EEquipmentSlot::Ring;
 
 		// 매칭되는 태그가 없으면 경고
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [FindSlot] 알 수 없는 방어구 태그: %s"), *Tag.ToString());
+		UE_LOG(LogInventory, Warning, TEXT("⚠️ [FindSlot] 알 수 없는 방어구 태그: %s"), *Tag.ToString());
 	}
 
 	return EEquipmentSlot::Unknown;
@@ -376,7 +377,7 @@ void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)
 	FOwnedItemData* ItemData = GetItemByGUID(ItemUID);
 	if (!ItemData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ 인벤토리에 없는 아이템 GUID입니다."));
+		UE_LOG(LogInventory, Warning, TEXT("❌ 인벤토리에 없는 아이템 GUID입니다."));
 		return;
 	}
 
@@ -393,7 +394,7 @@ void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)
 
 	if (!TargetChar)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ 보유하지 않은 캐릭터 UID입니다: %s"), *CharacterUID.ToString());
+		UE_LOG(LogInventory, Warning, TEXT("❌ 보유하지 않은 캐릭터 UID입니다: %s"), *CharacterUID.ToString());
 		return;
 	}
 
@@ -416,7 +417,7 @@ void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)
 					if (It.Value() == ItemUID)
 					{
 						It.RemoveCurrent();
-						UE_LOG(LogTemp, Warning, TEXT("🔄 [%s]가 끼고 있던 장비를 교체합니다!"), *OldOwner.CharacterID.ToString());
+						UE_LOG(LogInventory, Warning, TEXT("🔄 [%s]가 끼고 있던 장비를 교체합니다!"), *OldOwner.CharacterID.ToString());
 						break;
 					}
 				}
@@ -446,7 +447,7 @@ void UInventorySystem::EquipItemToCharacter(FGuid CharacterUID, FGuid ItemUID)
 		OnInventoryUpdated.Broadcast();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 캐릭터에게 장비 장착 완료: %s"), *CharacterUID.ToString(), *ItemUID.ToString());
+	UE_LOG(LogInventory, Log, TEXT("⚔️ [%s] 캐릭터에게 장비 장착 완료: %s"), *CharacterUID.ToString(), *ItemUID.ToString());
 }
 
 void UInventorySystem::UnEquipItemFromCharacter(FGuid CharacterUID, EEquipmentSlot Slot)
@@ -469,7 +470,7 @@ void UInventorySystem::UnEquipItemFromCharacter(FGuid CharacterUID, EEquipmentSl
 			{
 				OnInventoryUpdated.Broadcast();
 			}
-			UE_LOG(LogTemp, Log, TEXT("🛡️ [%s] 캐릭터의 슬롯[%d] 장비 해제 완료"), *CharacterUID.ToString(), (int32)Slot);
+			UE_LOG(LogInventory, Log, TEXT("🛡️ [%s] 캐릭터의 슬롯[%d] 장비 해제 완료"), *CharacterUID.ToString(), (int32)Slot);
 			return;
 		}
 	}

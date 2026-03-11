@@ -2,12 +2,13 @@
 
 
 #include "AI/BT/BossBTTask/BTService_BossTargeting.h"
+#include "Paradise/Paradise.h" //로그
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/AIUnit/UnitBase.h"
 #include "Objects/HomeBase.h"
-
+#include "Kismet/GameplayStatics.h"
 UBTService_BossTargeting::UBTService_BossTargeting()
 {
 	NodeName = TEXT("Boss Priority Targeting");
@@ -19,86 +20,112 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	// 1. 필요한 컴포넌트 및 폰 가져오기
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController) return;
 
 	APawn* BossPawn = AIController->GetPawn();
 	if (!BossPawn) return;
 
+	AUnitBase* BossUnit = Cast<AUnitBase>(BossPawn);
+	if (!BossUnit) return;
+
 	UWorld* World = BossPawn->GetWorld();
 	if (!World) return;
 
-	// 2. 오버랩 탐색 준비 (보스 주변 SearchRadius 반경)
+	//오버랩 탐색 준비
 	FVector BossLocation = BossPawn->GetActorLocation();
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(BossPawn); // 자기 자신은 탐색에서 제외
+	CollisionParams.AddIgnoredActor(BossPawn); // 자기 자신 무시
 
-	// 💡 ECC_Pawn은 임시 채널입니다. 만약 플레이어/유닛 전용 TraceChannel을 만들었다면 그걸로 변경하세요.
-	bool bHit = World->OverlapMultiByChannel(
+	//채널 검사가 아니라, 'Pawn' 오브젝트 타입만 찝어서 검사합니다!
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	bool bHit = World->OverlapMultiByObjectType(
 		OverlapResults,
 		BossLocation,
 		FQuat::Identity,
-		ECC_Pawn,
+		ObjectQueryParams, // 변경된 부분
 		FCollisionShape::MakeSphere(SearchRadius),
 		CollisionParams
 	);
 
-	AActor* BestTarget = nullptr;
-	int32 HighestPriority = 999; // 숫자가 작을수록 높은 우선순위
+	if (!bHit)
+	{
+		UE_LOG(LogAI, Error, TEXT("🛑 [보스 타겟팅] 주변(반경 %.1f)에 아무것도 겹치지 않음!"), SearchRadius);
+	}
 
-	// 3. 탐색된 대상들을 순회하며 우선순위 비교
+	AActor* BestTarget = nullptr;
+	int32 HighestPriority = 999;
+
+	//시야 반경 내의 대상들 순회 (플레이어와 유닛만 검사)
 	if (bHit)
 	{
 		for (const FOverlapResult& Hit : OverlapResults)
 		{
 			AActor* HitActor = Hit.GetActor();
 			if (!HitActor) continue;
+			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+			UE_LOG(LogAI, Warning, TEXT("👀 [보스 타겟팅] 탐색된 Pawn: %s"), *HitActor->GetName());
 
 			if (ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor))
 			{
-				if (HitChar->IsDead())
-				{
-					continue;
-				}
+				if (HitChar->IsDead()) continue; // 죽은 타겟은 무시
 			}
 
 			int32 CurrentPriority = 999;
+			bool bIsEnemy = false;
 
-			// 우선순위 판별 (1: 플레이어, 2: 유닛, 3: 본진)
+			// 1순위: 플레이어
 			if (HitActor->IsA<APlayerBase>())
 			{
+				bIsEnemy = true;
 				CurrentPriority = 1;
 			}
-			else if (HitActor->IsA<AUnitBase>())
+			// 2순위: 적 유닛 (퍼밀리어 등)
+			else if (AUnitBase* HitUnit = Cast<AUnitBase>(HitActor))
 			{
-				CurrentPriority = 2;
-			}
-			else if (HitActor->IsA<AHomeBase>())
-			{
-				CurrentPriority = 3;
+				if (BossUnit->IsEnemy(HitUnit))
+				{
+					bIsEnemy = true;
+					CurrentPriority = 2;
+				}
 			}
 
-			// 현재 저장된 타겟보다 우선순위가 높다면 교체
-			if (CurrentPriority < HighestPriority)
+			// 적군일 경우 타겟 갱신
+			if (bIsEnemy && CurrentPriority < HighestPriority)
 			{
 				HighestPriority = CurrentPriority;
 				BestTarget = HitActor;
 
-				// 만약 1순위(플레이어)를 찾았다면 더 이상 찾을 필요가 없으므로 루프 즉시 종료 (최적화)
-				if (HighestPriority == 1)
-				{
-					break;
-				}
+				// 1순위(플레이어)를 찾았다면 주변 탐색 즉시 종료
+				if (HighestPriority == 1) break;
+			}
+		}
+	}
+	// 거리 상관없이 맵 전체에서 '적 기지'를 찾아서 기본 타겟으로 설정
+	if (!BestTarget)
+	{
+		TArray<AActor*> FoundBases;
+		UGameplayStatics::GetAllActorsOfClass(World, AHomeBase::StaticClass(), FoundBases);
+
+		for (AActor* BaseActor : FoundBases)
+		{
+			AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
+			// 기지의 팩션 태그와 내 태그가 다르면 적 기지!
+			if (HomeBase && !BossUnit->GetFactionTag().MatchesTag(HomeBase->GetFactionTag()))
+			{
+				BestTarget = HomeBase;
+				break; // 적 기지를 찾았으므로 루프 종료
 			}
 		}
 	}
 
-	// 4. 최종 결정된 타겟을 블랙보드에 기록
+	//최종 결정된 타겟(적, 혹은 적 기지)을 블랙보드에 기록
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (BlackboardComp)
 	{
-		BlackboardComp->SetValueAsObject(TargetKey.SelectedKeyName, BestTarget);
+		BlackboardComp->SetValueAsObject(TEXT("TargetActor"), BestTarget);
 	}
 }

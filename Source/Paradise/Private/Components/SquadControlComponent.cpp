@@ -9,6 +9,7 @@
 #include "Characters/Player/PlayerData.h"
 #include "AI/Squad/SquadAIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Paradise/Paradise.h"
 
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Panel/Ingame/ActionControlPanel.h"
@@ -63,7 +64,7 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
 
     if (!ActiveSquadPawns.IsValidIndex(PlayerIndex) || ActiveSquadPawns[PlayerIndex] == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Controller] 잘못된 인덱스 요청이거나 빈 슬롯입니다: %d"), PlayerIndex);
+        UE_LOG(LogSquad, Warning, TEXT("⚠️ [Controller] 잘못된 인덱스 요청이거나 빈 슬롯입니다: %d"), PlayerIndex);
         return;
     }
 
@@ -106,7 +107,7 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
     FString Msg = FString::Printf(TEXT("Switch -> Hero %d"), PlayerIndex + 1);
     GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, Msg);
 
-    UE_LOG(LogTemp, Warning, TEXT("🔄 [Controller] 캐릭터 교체 완료 (%s -> %s)"),
+    UE_LOG(LogSquad, Warning, TEXT("🔄 [Controller] 캐릭터 교체 완료 (%s -> %s)"),
         OldPlayer ? *OldPlayer->GetName() : TEXT("None"),
         *NewPlayer->GetName());
 
@@ -133,7 +134,7 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS || !ActiveSquadPawns.IsValidIndex(PlayerIndex))
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
+        UE_LOG(LogSquad, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
         return;
     }
 
@@ -142,11 +143,11 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
 
     if (ActiveSquadPawns[PlayerIndex] && !ActiveSquadPawns[PlayerIndex]->IsDead())
     {
-        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
+        UE_LOG(LogSquad, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
         return;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("✨ [Respawn] 멤버 %d (%s) 부활 시퀀스 시작!"), PlayerIndex, *Soul->GetName());
+    UE_LOG(LogSquad, Warning, TEXT("✨ [Respawn] 멤버 %d (%s) 부활 시퀀스 시작!"), PlayerIndex, *Soul->GetName());
 
     FVector PlayerSpawnLocation = FVector::ZeroVector;
     FRotator PlayerSpawnRotation = FRotator::ZeroRotator;
@@ -183,7 +184,7 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
         //전멸 판정 시 PC->GetPawn 사용
         if (bIsSquadWipedOut || PC->GetPawn() == nullptr)
         {
-            UE_LOG(LogTemp, Warning, TEXT("✨ [Respawn] 전멸 위기에서 %s 부활! 제어권을 획득합니다."), *NewBody->GetName());
+            UE_LOG(LogSquad, Warning, TEXT("✨ [Respawn] 전멸 위기에서 %s 부활! 제어권을 획득합니다."), *NewBody->GetName());
 
             bIsSquadWipedOut = false;
             PC->Possess(NewBody);
@@ -214,7 +215,7 @@ void USquadControlComponent::InitializeSquadPawns()
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS) return;
 
-    UE_LOG(LogTemp, Warning, TEXT("🎮 [Controller] 육체(Pawn) 소환 시작..."));
+    UE_LOG(LogSquad, Warning, TEXT("🎮 [Controller] 육체(Pawn) 소환 시작..."));
 
     int32 SquadSize = PS->GetSquadSize();
     ActiveSquadPawns.Init(nullptr, SquadSize);
@@ -262,7 +263,7 @@ void USquadControlComponent::InitializeSquadPawns()
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ [Controller] 스폰된 캐릭터가 아무도 없습니다!"));
+        UE_LOG(LogSquad, Error, TEXT("❌ [Controller] 스폰된 캐릭터가 아무도 없습니다!"));
     }
 }
 
@@ -301,7 +302,7 @@ void USquadControlComponent::PossessAI(APlayerBase* TargetCharacter)
             SquadAI->SetLeader(PC ? PC->GetPawn() : nullptr);
         }
 
-        UE_LOG(LogTemp, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
+        UE_LOG(LogSquad, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
     }
 }
 

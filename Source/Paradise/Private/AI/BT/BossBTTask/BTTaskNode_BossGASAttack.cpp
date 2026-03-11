@@ -2,6 +2,7 @@
 
 
 #include "AI/BT/BossBTTask/BTTaskNode_BossGASAttack.h"
+#include "Paradise/Paradise.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AbilitySystemGlobals.h"
