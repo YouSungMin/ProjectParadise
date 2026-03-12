@@ -34,7 +34,7 @@ bool UBTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeComp
 
 	// 1. 사거리 값 꺼내기
 	float AttackRange = 0.0f;
-	FString ActionName = TEXT("평타");
+	//FString ActionName = TEXT("평타");
 
 	if (ActionIndex == -1) // 🚨 변수명 변경 적용
 	{
@@ -43,7 +43,7 @@ bool UBTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeComp
 	else
 	{
 		AttackRange = BossChar->GetSkillActionData(ActionIndex).Stats.AttackRange; // 🚨 변수명 변경 적용
-		ActionName = FString::Printf(TEXT("%d번 스킬"), ActionIndex);
+		//ActionName = FString::Printf(TEXT("%d번 스킬"), ActionIndex);
 	}
 
 	//보스와 타겟 사이의 거리 계산
@@ -52,14 +52,14 @@ bool UBTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeComp
 	//타겟이 "사거리 + 오차 허용치" 안쪽에 들어왔는지 판별
 	bool bIsInRange = DistanceToTarget <= (AttackRange + AcceptableRadius);
 	
-	UE_LOG(LogParadiseAI, Warning, TEXT("📏 [사거리 체크] 대상: %s | 액션: %s | 사거리(%.1f) + 오차(%.1f) vs 현재 거리(%.1f) => 결과: %s"),
+	/*UE_LOG(LogParadiseAI, Warning, TEXT("📏 [사거리 체크] 대상: %s | 액션: %s | 사거리(%.1f) + 오차(%.1f) vs 현재 거리(%.1f) => 결과: %s"),
 		*TargetActor->GetName(),
 		*ActionName,
 		AttackRange,
 		AcceptableRadius,
 		DistanceToTarget,
 		bIsInRange ? TEXT("✅ 통과 (공격 가능)") : TEXT("❌ 불가 (너무 멂)")
-	);
+	);*/
 
 	return bIsInRange;
 }
