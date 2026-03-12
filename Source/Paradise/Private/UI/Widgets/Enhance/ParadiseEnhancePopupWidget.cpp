@@ -53,6 +53,7 @@ void UParadiseEnhancePopupWidget::NativeConstruct()
 	{
 		Panel_Detail->OnEnhanceClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::RequestEnhance);
 		Panel_Detail->OnBreakthroughClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::RequestBreakthrough);
+		Panel_Detail->OnEnhanceAnimFinished.AddDynamic(this, &UParadiseEnhancePopupWidget::RefreshAfterEnhancement);
 	}
 
 	SwitchTab(SquadTabs::Weapon); // 기본 탭을 무기로 시작
@@ -72,6 +73,7 @@ void UParadiseEnhancePopupWidget::NativeDestruct()
 	{
 		Panel_Detail->OnEnhanceClicked.RemoveAll(this);
 		Panel_Detail->OnBreakthroughClicked.RemoveAll(this);
+		Panel_Detail->OnEnhanceAnimFinished.RemoveAll(this);
 	}
 
 	// 인벤토리 델리게이트 해제
@@ -159,7 +161,7 @@ void UParadiseEnhancePopupWidget::RefreshInventory()
 void UParadiseEnhancePopupWidget::RefreshAfterEnhancement()
 {
 	RefreshInventory(); // 리스트 갱신
-	if (SelectedItem.InstanceUID.IsValid())
+	if (SelectedItem.InstanceUID.IsValid() || !SelectedItem.ID.IsNone())
 	{
 		HandleInventoryItemClicked(SelectedItem); // 디테일 패널 갱신
 	}
@@ -370,7 +372,6 @@ void UParadiseEnhancePopupWidget::RequestEnhance()
 		bool bSuccess = GrowthSys->EnhanceEquipment(SelectedItem.InstanceUID);
 
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
-		if (bSuccess) RefreshAfterEnhancement();
 	}
 
 	CachedGI->SaveGameData();
@@ -387,7 +388,6 @@ void UParadiseEnhancePopupWidget::RequestBreakthrough()
 		bool bSuccess = GrowthSys->AwakenCharacter(SelectedItem.ID);
 
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
-		if (bSuccess) RefreshAfterEnhancement();
 	}
 
 	CachedGI->SaveGameData();

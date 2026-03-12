@@ -12,10 +12,18 @@ class UImage;
 class UButton;
 class UTextBlock;
 class USizeBox;
+class UDragDropOperation;
+class UParadiseSquadDragDrop;
 #pragma endregion 전방 선언
 
 /** @brief 슬롯 클릭 시 인덱스 전달 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSquadSlotClicked, int32, Index);
+
+/** @brief [신규] 편성 슬롯에서 드래그가 시작되었을 때 메인 위젯에 알림 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSquadSlotDragStarted, UParadiseSquadDragDrop*, DragOperation);
+
+/** @brief [신규] 누군가 이 슬롯 위에 드롭했을 때 메인 위젯에 알림 (내 인덱스, 출발지 인덱스, 떨어뜨린 데이터) */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnSquadSlotDropped, int32, TargetIndex, int32, SourceIndex, FSquadItemUIData, DroppedData);
 
 /**
  * @class UParadiseSquadSlot
@@ -68,6 +76,25 @@ public:
 	float SlotHeight = 150.0f;
 #pragma endregion 설정
 
+#pragma region 드래그 앤 드롭 및 입력 제어
+protected:
+	/** @brief 마우스 다운: 빈 슬롯이 아닐 때만 드래그 판정 시작 */
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+
+	/** @brief 버튼 위젯을 대체할 클릭 처리용 */
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+
+	/** @brief 편성된 캐릭터를 끌어올릴 때 (자리 스왑용) */
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+
+	/** @brief 드래그 중인 데이터가 이 슬롯 위에 떨어졌을 때 */
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+
+	/** @brief 드래그 종료 시 반투명해진 원본 슬롯을 원상 복구 */
+	UFUNCTION()
+	void RestoreDragState(UDragDropOperation* Operation);
+#pragma endregion 드래그 앤 드롭 및 입력 제어
+
 #pragma region UI 바인딩
 protected:
 	/** @brief 최상위 루트 사이즈 박스 (크기 강제용) */
@@ -102,11 +129,22 @@ private:
 
 	/** @brief 현재 데이터가 비어있는지 여부 */
 	bool bIsEmpty = true;
+
+	/** @brief 슬롯에 렌더링 된 현재 데이터를 캐싱 (드래그 시 페이로드에 담기 위함) */
+	FSquadItemUIData CachedData;
 #pragma endregion 내부 상태
 
-#pragma region 델리게이트
+#pragma region 델리게이트S
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnSquadSlotClicked OnSlotClicked;
+
+	/** @brief 스왑/해제를 위해 편성 슬롯에서 드래그를 시작함 */
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnSquadSlotDragStarted OnDragStarted;
+
+	/** @brief 이 슬롯 위에 무언가가 드롭됨 */
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnSquadSlotDropped OnSlotDropped;
 #pragma endregion 델리게이트
 };
