@@ -74,7 +74,7 @@ EBTNodeResult::Type UBTTaskNode_BossGASAttack::AbortTask(UBehaviorTreeComponent&
 
 void UBTTaskNode_BossGASAttack::OnAbilityEnded(const FAbilityEndedData& AbilityEndedData)
 {
-	if (AbilityEndedData.AbilityThatEnded && AbilityEndedData.AbilityThatEnded->AbilityTags.HasTag(AbilityTagToActivate))
+	if (AbilityEndedData.AbilityThatEnded && AbilityEndedData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTagToActivate))
 	{
 		// 더 이상 연락받지 않도록 구독 취소 (메모리 누수 방지)
 		if (CachedASC && AbilityEndedDelegateHandle.IsValid())

@@ -30,7 +30,7 @@ bool UBTDecorator_CanUseAbilityByTag::CalculateRawConditionValue(UBehaviorTreeCo
 	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
 	{
 		// 어빌리티가 우리가 찾는 태그를 가지고 있는지 확인
-		if (Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTagToCheck))
+		if (Spec.Ability && Spec.Ability->GetAssetTags().HasTag(AbilityTagToCheck))
 		{
 			// 실패 사유를 담을 빈 태그 컨테이너
 			FGameplayTagContainer FailureTags;
