@@ -9,7 +9,7 @@
 UBTService_CheckAttackRange::UBTService_CheckAttackRange()
 {
 	NodeName = TEXT("Check Attack Range (Service)");
-	Interval = 0.05f; // 🚨 0.1초마다 매우 빠르게 감시해서 즉각 반응하게 만듭니다.
+	Interval = 0.2f; // 🚨 0.1초마다 매우 빠르게 감시해서 즉각 반응하게 만듭니다.
 	RandomDeviation = 0.0f;
 }
 
