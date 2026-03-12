@@ -47,6 +47,7 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 			{
 				FGameplayAbilitySpec Spec(SkillClass, 1, i);
 				SkillAbilityHandles.Add(AbilitySystemComponent->GiveAbility(Spec));
+				UE_LOG(LogTemp,Log,TEXT("ASkillCasterUnit %d 번째 패턴 어빌리티 부여 성공 "),i);
 			}
 		}
 

@@ -106,10 +106,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	FCombatActionData GetCurrentActionData() const { return CurrentActiveActionData; }
 
-	/** @brief 무기 또는 몸통에서 소켓 위치를 찾아 반환합니다. */
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	FVector GetMuzzleLocation(FName SocketName) const;
-
 	/** @brief 자식 클래스들이 무기 메쉬를 던져줄 수 있도록 가상 함수 선언 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual USceneComponent* GetWeaponMesh() const;
@@ -129,6 +125,14 @@ public:
 	/** @brief 애니메이션이 끝나거나 노티파이에서 호출될 가상 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnDeathAnimationFinished();
+
+	/** @brief 노티파이에서 발사 소켓 정보(타겟+이름)를 캐릭터에 저장(캐싱)해주는 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetCurrentMuzzleSocketInfo(FName InSocketName, ESocketTargetType InSocketTarget);
+
+	/** @brief 캐싱된 타겟(무기 or 몸체)을 기준으로 최종 발사 트랜스폼(위치+회전) 반환 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	FTransform GetCurrentMuzzleTransform() const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -145,10 +149,6 @@ protected:
 	*/
 	UFUNCTION(BlueprintCallable)
 	void ResetHitFlash();
-
-
-
-
 public:
 	/** * @brief 소속 진영 태그
 		 * @details 데이터 테이블에서 로드되어 부여되며, 피아식별(IsHostile) 및 GAS 타겟팅에 사용됩니다.
@@ -204,6 +204,15 @@ protected:
 	// 에디터에서 할당할 데미지 텍스트 블루프린트 클래스 (BP_DamageTextActor)
 	UPROPERTY(EditAnywhere, Category = "Combat|UI")
 	TSubclassOf<class ADamageTextActor> DamageTextClass;
+
+	/** @brief 투사체를 발사할 최신 소켓 이름 (노티파이에서 세팅됨) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	FName CurrentMuzzleSocketName = NAME_None;
+
+	/** @brief 투사체 발사 소켓을 찾을 메쉬 대상 (몸체 vs 무기) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	ESocketTargetType CurrentMuzzleSocketTarget = ESocketTargetType::CharacterBody;
+
 private:
 		
 	/*

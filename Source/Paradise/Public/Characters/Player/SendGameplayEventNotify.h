@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "GameplayTagContainer.h"
+#include "Data/Enums/GameEnums.h"
 #include "SendGameplayEventNotify.generated.h"
 
 /**
@@ -19,6 +20,14 @@ class PARADISE_API USendGameplayEventNotify : public UAnimNotify
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag EventTag;
+
+	/** @brief 소켓을 어디서 찾을 것인가? (몸체 vs 무기) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ESocketTargetType SocketTarget = ESocketTargetType::CharacterBody;
+
+	/** @brief 투사체 발사 기준 소켓 이름 (안 쓰면 None) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	FName SocketName = NAME_None;
 
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 };

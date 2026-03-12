@@ -63,10 +63,16 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	// 발사 위치(Transform) 계산
-	FVector SpawnLocation = AvatarChar->GetMuzzleLocation(MuzzleSocketName);
+	FTransform MuzzleTransform = AvatarChar->GetCurrentMuzzleTransform();
+
+	// 소켓의 월드 좌표 가져오기
+	FVector SpawnLocation = MuzzleTransform.GetLocation();
+
+	// 기존처럼 캐릭터가 바라보는 앞으로 Offset만큼 띄워주기
 	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
-	FRotator SpawnRotation = AvatarChar->GetActorRotation(); // 임시로 캐릭터가 보는 방향
+
+	// 임시로 캐릭터가 보는 방향으로 발사
+	FRotator SpawnRotation = AvatarChar->GetActorRotation();
 
 	// 스폰 파라미터 설정
 	FActorSpawnParameters SpawnParams;

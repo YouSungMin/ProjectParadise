@@ -57,7 +57,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 		}
 	}
 
-	// 3결정된 TargetMesh에서 소켓 위치 찾기
+	// 결정된 TargetMesh에서 소켓 위치 찾기
 	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
 	{
 		TraceStart = TargetMesh->GetSocketLocation(SocketName);
@@ -173,35 +173,6 @@ bool ACharacterBase::IsHostile(ACharacterBase* Target) const
 	// Friendly 그룹이고 상대도 Friendly 그룹이면 false (아군)
 	// Friendly 그룹인데 상대가 아니면(Enemy면) true (적군)
 	return bAmIFriendly != bIsTargetFriendly;
-}
-
-FVector ACharacterBase::GetMuzzleLocation(FName SocketName) const
-{
-	if (USceneComponent* WeaponComp = GetWeaponMesh())
-	{
-		// 무기 메쉬에서 소켓 찾기
-		if (WeaponComp->DoesSocketExist(SocketName))
-		{
-			return WeaponComp->GetSocketLocation(SocketName);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("❌ 무기 메쉬(%s)를 찾았으나 '%s' 소켓이 없습니다!"), *WeaponComp->GetName(), *SocketName.ToString());
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ GetWeaponMesh()가 Null입니다! (무기 메쉬가 없음)"));
-	}
-
-	// 무기가 없거나 무기에 소켓이 없다면 캐릭터 몸통에서 찾기
-	if (GetMesh() && GetMesh()->DoesSocketExist(SocketName))
-	{
-		return GetMesh()->GetSocketLocation(SocketName);
-	}
-
-	// 둘 다 없으면 기본 높이(가슴/배꼽) 반환
-	return GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
 }
 
 USceneComponent* ACharacterBase::GetWeaponMesh() const
@@ -331,6 +302,35 @@ void ACharacterBase::ResetHitFlash()
 		//4번인덱스의 float값 변경 //투명도
 		MyMesh->SetCustomPrimitiveDataFloat(4, 0.0f);
 	}
+}
+
+void ACharacterBase::SetCurrentMuzzleSocketInfo(FName InSocketName, ESocketTargetType InSocketTarget)
+{
+	CurrentMuzzleSocketName = InSocketName;
+	CurrentMuzzleSocketTarget = InSocketTarget;
+}
+
+FTransform ACharacterBase::GetCurrentMuzzleTransform() const
+{
+	// 무기(Weapon)에서 소켓을 찾는 경우
+	if (CurrentMuzzleSocketTarget == ESocketTargetType::EquippedWeapon && CurrentWeaponActor)
+	{
+		// 무기 액터가 가진 메쉬 컴포넌트를 탐색 (Static/Skeletal 모두 대응)
+		if (UMeshComponent* WeaponMesh = CurrentWeaponActor->FindComponentByClass<UMeshComponent>())
+		{
+			// 해당 무기 메쉬에서 지정된 소켓의 월드 트랜스폼 추출
+			return WeaponMesh->GetSocketTransform(CurrentMuzzleSocketName);
+		}
+	}
+
+	// 캐릭터 몸체(CharacterBody)에서 찾거나, 무기를 장착하지 않은 상태일 경우
+	if (USkeletalMeshComponent* BodyMesh = GetMesh())
+	{
+		return BodyMesh->GetSocketTransform(CurrentMuzzleSocketName);
+	}
+
+	// 만약 위에서 아무것도 찾지 못했다면 안전망으로 캐릭터 본체의 트랜스폼 반환
+	return GetActorTransform();
 }
 
 void ACharacterBase::SpawnDamagePopup(float DamageAmount, bool bIsCritical)
