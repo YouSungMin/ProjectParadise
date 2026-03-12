@@ -28,13 +28,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	FGameplayTag FireEventTag;
 
-	/**
-	 * @brief 투사체가 발사될 소켓의 이름입니다.
-	 * 캐릭터 메쉬나 무기 메쉬에 이 이름의 소켓이 있어야 합니다.
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-	FName MuzzleSocketName = FName("MuzzleSocket");
-
 	// =========================================================================
 	// Callbacks
 	// =========================================================================
