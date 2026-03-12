@@ -8,6 +8,9 @@
 
 #pragma region 전방 선언
 class UTextBlock;
+class UMaterialInterface;
+class UWidgetAnimation;
+class URetainerBox;
 #pragma endregion 전방 선언
 
 /**
@@ -48,18 +51,16 @@ public:
 #pragma region 데이터 드리븐 설정
 protected:
 	/**
-	 * @brief 일반 데미지 텍스트 색상.
-	 * @details 기획자가 BP 디테일 패널에서 조절할 수 있습니다.
+	 * @brief 일반 데미지용 폰트 머티리얼 
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamageText|Style", meta = (DisplayName = "일반 데미지 색상"))
-	FLinearColor NormalDamageColor = FLinearColor::White;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamageText|Style", meta = (DisplayName = "일반 데미지 스킨"))
+	TObjectPtr<UMaterialInterface> NormalDamageMaterial = nullptr;
 
 	/**
-	 * @brief 크리티컬 데미지 텍스트 색상.
-	 * @details 기획자가 BP 디테일 패널에서 조절할 수 있습니다.
+	 * @brief 크리티컬 데미지용 폰트 머티리얼 
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamageText|Style", meta = (DisplayName = "크리티컬 데미지 색상"))
-	FLinearColor CriticalDamageColor = FLinearColor::Red;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamageText|Style", meta = (DisplayName = "크리티컬 데미지 스킨"))
+	TObjectPtr<UMaterialInterface> CriticalDamageMaterial = nullptr;
 
 	/**
 	 * @brief 크리티컬 히트 시 텍스트 크기 배율.
@@ -74,6 +75,10 @@ protected:
 	/** @brief 데미지 숫자 텍스트 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> Text_Damage = nullptr;
+
+	/** @brief 머티리얼 효과를 씌우기 위한 RetainerBox */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URetainerBox> RetainerBox_Damage = nullptr;
 #pragma endregion 바인딩 위젯
 
 #pragma region 애니메이션
