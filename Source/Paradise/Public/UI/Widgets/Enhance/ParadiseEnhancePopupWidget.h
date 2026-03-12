@@ -75,6 +75,7 @@ private:
 	void HandleClose();
 
 	/** @brief 강화/돌파 후 화면을 최신 상태로 갱신합니다. */
+	UFUNCTION()
 	void RefreshAfterEnhancement();
 
 	/** @brief ID와 레벨 정보를 받아 UI 표시용 데이터로 변환합니다. */

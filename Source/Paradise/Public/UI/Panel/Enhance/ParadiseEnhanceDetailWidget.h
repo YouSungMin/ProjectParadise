@@ -12,11 +12,14 @@ class UImage;
 class UTextBlock;
 class UButton;
 class USoundBase;
-class UNiagaraSystem;
+class UWidgetAnimation;
 #pragma endregion 전방 선언
 
 // 팝업(부모)에게 클릭 이벤트를 토스하기 위한 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnhanceActionClicked);
+
+/** @brief 연출(애니메이션/머티리얼)이 끝났음을 상위 팝업에게 알리는 델리게이트 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnhanceAnimationFinished);
 
 /**
  * @class UParadiseEnhanceDetailWidget
@@ -56,6 +59,8 @@ public:
 public:
 	UPROPERTY(BlueprintAssignable) FOnEnhanceActionClicked OnEnhanceClicked;
 	UPROPERTY(BlueprintAssignable) FOnEnhanceActionClicked OnBreakthroughClicked;
+
+	UPROPERTY(BlueprintAssignable) FOnEnhanceAnimationFinished OnEnhanceAnimFinished;
 #pragma endregion 델리게이트
 
 #pragma region 생명주기
@@ -68,6 +73,9 @@ protected:
 private:
 	UFUNCTION() void HandleEnhanceBtn();
 	UFUNCTION() void HandleBreakthroughBtn();
+
+	/** @brief UMG 애니메이션 종료 시 호출될 콜백 함수 */
+	UFUNCTION() void HandleAnimationFinished();
 #pragma endregion 내부 이벤트 핸들러
 
 #pragma region UI 컴포넌트 바인딩
@@ -80,9 +88,12 @@ protected:
 
 	/** @brief 무기/방어구용 강화 버튼 */
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Enhance = nullptr;
-
 	/** @brief 캐릭터용 돌파 버튼 */
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Breakthrough = nullptr;
+
+	/** @brief 강화 성공 시 재생할 UMG 애니메이션 (머티리얼 Opacity 제어용) */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_SuccessFX = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
 
 #pragma region 데이터 드리븐 설정
@@ -94,9 +105,5 @@ protected:
 	/** @brief 강화/돌파 실패 시 재생할 사운드 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Enhancement|FX")
 	TObjectPtr<USoundBase> Sound_EnhanceFail = nullptr;
-
-	/** @brief 강화/돌파 성공 시 재생할 파티클 시스템 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Enhancement|FX")
-	TObjectPtr<UNiagaraSystem> FX_EnhanceSuccess = nullptr;
 #pragma endregion 데이터 드리븐 설정
 };
