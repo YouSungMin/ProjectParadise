@@ -13,6 +13,7 @@
 
 #include "Actors/Environment/ParadiseMapEnvironmentActor.h"
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
+#include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "UI/Widgets/Lobby/Stage/ParadiseStageSelectWidget.h"
 #include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"

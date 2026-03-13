@@ -346,6 +346,12 @@ public:
 	TSoftObjectPtr<UTexture2D> AwakeningPieceIcon;
 
 	/**
+	 * @brief 로비레벨에서 캐릭터 연출용 Idle 
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UAnimSequence> IdleAnim;
+
+	/**
 	 * @brief 인게임 궁극기 UI 아이콘
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")

@@ -6,6 +6,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Components/WidgetSwitcher.h"
 
+#include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
@@ -146,9 +147,18 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 		}
 		Switcher_Content->SetActiveWidget(TargetWidget);
 	}
-	else
+	if (InCurrentMenu == EParadiseLobbyMenu::Squad)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[HUD] 위젯 생성 실패! 메뉴: %d"), (int32)InCurrentMenu);
+		// 1. TMap에서 이미 생성/캐싱된 Squad 위젯 포인터를 찾습니다.
+		if (auto* FoundWidget = CreatedMenuWidgets.Find(EParadiseLobbyMenu::Squad))
+		{
+			// 2. 찾아낸 UserWidget을 SquadMainWidget으로 캐스팅합니다.
+			if (UParadiseSquadMainWidget* SquadWidget = Cast<UParadiseSquadMainWidget>(*FoundWidget))
+			{
+				// 3. 카메라 전환 및 3D 모델링 갱신 함수 실행!
+				SquadWidget->OnEnterSquadUI();
+			}
+		}
 	}
 }
 

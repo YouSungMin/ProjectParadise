@@ -2,8 +2,6 @@
 
 
 #include "UI/Widgets/Squad/ParadiseSquadSlot.h"
-#include "UI/Widgets/Squad/ParadiseSquadDragDrop.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -129,97 +127,3 @@ void UParadiseSquadSlot::OnButtonClicked()
 	}
 }
 #pragma endregion 로직 구현
-
-#pragma region 드래그 앤 드롭 및 입력 제어
-FReply UParadiseSquadSlot::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-
-	// 슬롯이 비어있지 않을 때(bIsEmpty == false)만 끌어낼 수 있도록 합니다.
-	if (!bIsEmpty && InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-	{
-		return UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton).NativeReply;
-	}
-
-	return FReply::Unhandled();
-}
-
-FReply UParadiseSquadSlot::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
-
-	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-	{
-		// 드래그 없이 제자리에서 마우스를 뗐다면 클릭으로 간주!
-		if (InGeometry.IsUnderLocation(InMouseEvent.GetScreenSpacePosition()))
-		{
-			OnButtonClicked(); // 기존에 뚫어두신 슬롯 클릭 델리게이트 실행
-		}
-		return FReply::Handled();
-	}
-
-	return FReply::Unhandled();
-}
-
-void UParadiseSquadSlot::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
-{
-	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
-
-	UParadiseSquadDragDrop* DragOperation = Cast<UParadiseSquadDragDrop>(
-		UWidgetBlueprintLibrary::CreateDragDropOperation(UParadiseSquadDragDrop::StaticClass())
-	);
-
-	if (DragOperation)
-	{
-		// 데이터 포장 (현재 편성되어 있는 캐릭터의 데이터를 페이로드에 담음)
-		DragOperation->DraggedData = CachedData;
-		DragOperation->SourceSlotIndex = SlotIndex;
-
-		// 마우스를 따라다닐 시각적 복제본 생성
-		if (UParadiseSquadSlot* DragVisual = CreateWidget<UParadiseSquadSlot>(GetWorld(), GetClass()))
-		{
-			DragVisual->InitSlot(SlotIndex);
-			DragVisual->UpdateSlot(CachedData);
-			DragOperation->DefaultDragVisual = DragVisual;
-		}
-
-		//  원본 슬롯 반투명 처리 및 복구 이벤트 바인딩
-		SetRenderOpacity(0.3f);
-		DragOperation->OnDragCancelled.AddDynamic(this, &UParadiseSquadSlot::RestoreDragState);
-		DragOperation->OnDrop.AddDynamic(this, &UParadiseSquadSlot::RestoreDragState);
-
-		OutOperation = DragOperation;
-
-		if (OnDragStarted.IsBound())
-		{
-			OnDragStarted.Broadcast(DragOperation);
-		}
-	}
-}
-
-bool UParadiseSquadSlot::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
-{
-	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
-
-	// 우리가 만든 택배 상자가 떨어졌는지 확인
-	if (UParadiseSquadDragDrop* DragOp = Cast<UParadiseSquadDragDrop>(InOperation))
-	{
-		// 이 슬롯(View)은 자기가 무슨 타입인지, 교체해야 하는지 판단하지 않습니다. 
-		// "내 인덱스(Target)로 누군가(Source) 들어왔어!" 라고 Controller에 보고만 합니다.
-		if (OnSlotDropped.IsBound())
-		{
-			OnSlotDropped.Broadcast(SlotIndex, DragOp->SourceSlotIndex, DragOp->DraggedData);
-		}
-
-		return true; // 드롭 이벤트를 성공적으로 처리했음을 엔진에 알림
-	}
-
-	return false;
-}
-
-void UParadiseSquadSlot::RestoreDragState(UDragDropOperation* Operation)
-{
-	// 드래그 종료 시 슬롯 투명도 복구
-	SetRenderOpacity(1.0f);
-}
-#pragma endregion 드래그 앤 드롭 및 입력 제어
