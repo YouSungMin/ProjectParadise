@@ -10,15 +10,10 @@
 #pragma region 전방 선언
 class UImage;
 class UButton;
-class UDragDropOperation;
-class UParadiseSquadDragDrop;
 #pragma endregion 전방 선언
 
 /** @brief 슬롯 클릭 시 데이터와 함께 메인 위젯으로 알림 (부모/자식 공용) */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemSlotBaseClicked, FSquadItemUIData, ItemData);
-
-/** @brief [신규] 드래그 시작 시 메인 위젯(Controller)에 알림 */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemSlotDragStarted, UParadiseSquadDragDrop*, DragOperation);
 
 /**
  * @class UParadiseItemSlotBase
@@ -54,29 +49,6 @@ protected:
 	void UpdateRankColor(EItemRarity Rarity);
 #pragma endregion 내부 로직
 
-#pragma region 드래그 앤 드롭 로직
-protected:
-	/**
-	 * @brief 마우스/터치 다운 시 드래그 감지를 시작합니다.
-	 */
-	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-
-	/**
-	 * @brief 마우스/터치 업: 드래그 없이 제자리에서 손을 떼면 '클릭'으로 판정
-	 */
-	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-
-	/**
-	 * @brief 드래그가 확실히 감지되었을 때 페이로드(택배 상자)를 생성합니다.
-	 */
-	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
-
-	/**
-	 * @brief 드래그가 종료(성공/취소)되었을 때 원본 슬롯의 투명도를 원상 복구합니다.
-	 */
-	UFUNCTION()
-	void RestoreDragState(UDragDropOperation* Operation);
-#pragma endregion 드래그 앤 드롭 로직
 
 #pragma region 공통 UI 바인딩
 protected:
@@ -110,9 +82,5 @@ public:
 	/** @brief 클릭 이벤트 전파 델리게이트 (다형성을 위해 부모에 선언) */
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnItemSlotBaseClicked OnSlotClicked;
-
-	/** @brief 드래그가 시작되었음을 알리는 델리게이트 */
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnItemSlotDragStarted OnDragStarted;
 #pragma endregion 델리게이트
 };

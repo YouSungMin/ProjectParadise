@@ -55,9 +55,9 @@ protected:
 #pragma region UI 바인딩
 protected:
 	// --- 캐릭터 슬롯 ---
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UParadiseSquadSlot> Slot_Main = nullptr;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UParadiseSquadSlot> Slot_Sub1 = nullptr;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UParadiseSquadSlot> Slot_Sub2 = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UParadiseSquadSlot> Slot_Main = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UParadiseSquadSlot> Slot_Sub1 = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UParadiseSquadSlot> Slot_Sub2 = nullptr;
 
 	// --- 유닛 슬롯 (5개) ---
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UParadiseSquadSlot> Slot_Unit1 = nullptr;

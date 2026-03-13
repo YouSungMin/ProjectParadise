@@ -67,7 +67,7 @@ protected:
 	TObjectPtr<UTextBlock> Text_PityRemaining = nullptr;
 
 	/**
-	 * @brief 현재 쌓인 천장 스택 텍스트 (예: "33 / 80")
+	 * @brief 현재 쌓인 천장 스택 텍스트 (예: "33 / 50")
 	 * @details 디버그 또는 UI 표기용. 없어도 무방.
 	 */
 	UPROPERTY(meta = (BindWidgetOptional))

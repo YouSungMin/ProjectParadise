@@ -21,6 +21,9 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 
+#include "Actors/Squad/ParadiseSquadSceneManager.h" 
+#include "Kismet/GameplayStatics.h"
+
 void UParadiseStageDetailWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -198,6 +201,21 @@ void UParadiseStageDetailWidget::OnClickFormation()
 	if (CachedLobbyPC.IsValid())
 	{
 		CachedLobbyPC->SetLobbyMenu(EParadiseLobbyMenu::Squad);
+	}
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		// 월드에 배치된 스튜디오 매니저를 찾아옵니다.
+		AActor* SceneManager = UGameplayStatics::GetActorOfClass(GetWorld(), AParadiseSquadSceneManager::StaticClass());
+
+		if (SceneManager)
+		{
+			// 블렌딩 없이 즉시 카메라 시점을 스튜디오로 이동!
+			PC->SetViewTarget(SceneManager);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageDetail] 맵에 배치된 AParadiseSquadSceneManager를 찾을 수 없어 카메라 전환을 스킵합니다."));
+		}
 	}
 }
 
