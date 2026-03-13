@@ -86,6 +86,8 @@ void UParadiseSummonPanel::RequestSummonAction(int32 DrawCount)
 	// 소환 후 천장 UI 즉시 갱신
 	RefreshPityUI();
 
+	CachedGI->SaveGameData();
+
 	UE_LOG(LogTemp, Log, TEXT("[SummonPanel] %d회 소환 요청"), DrawCount);
 }
 

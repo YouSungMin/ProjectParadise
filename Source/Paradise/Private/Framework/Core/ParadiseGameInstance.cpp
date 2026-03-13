@@ -114,6 +114,12 @@ void UParadiseGameInstance::LoadGameData()
 				StageSys->LoadFromSaveGame(LoadObj);
 			}
 
+			// 가챠 천장 정보 로드
+			if (UGachaSubsystem* GachaSys = GetSubsystem<UGachaSubsystem>())
+			{
+				GachaSys->LoadFromSaveGame(LoadObj);
+			}
+
 			UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 		}
 	}
