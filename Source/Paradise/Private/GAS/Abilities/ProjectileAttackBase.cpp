@@ -127,7 +127,7 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 					Proj->ApplyCombatData(
 						CombatData.Stats.AttackRange,
 						CombatData.Stats.AttackRadius,
-						CombatData.ProjectileStats.ProjectileSpeed
+						CombatData.ProjectileStats
 					);
 				}
 			}

@@ -112,11 +112,25 @@ struct FProjectileStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float SpreadAngle = 0.0f;
 
-	/** @brief 투사체 비행 속도 (기존 메인 테이블에서 이사 옴!) */
+	/** @brief 투사체 비행 속도 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float ProjectileSpeed = 1500.0f;
 
-	// 유도탄 여부, 폭발 반경, 중력 값 등 투사체에만 필요한 설정 추가 가능
+	/** @brief 투사체 관통 수 (0이면 단일 타겟, 1 이상이면 관통) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	int32 MaxPierceCount = 0; // 0이면 단일 타겟, 1 이상이면 관통
+
+	/** @brief 충돌 시 폭발 범위 (0이면 폭발 없음, 0보다 크면 광역 폭발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	float ExplosionRadius = 0.0f;
+
+	/** @brief 발사 시 딜레이 (0이면 동시 발사(샷건), 0.1 등 값이 있으면 연사(머신건) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float BurstDelay = 0.0f;
+
+	/** @brief 랜덤 탄퍼짐 오차 (예: 5.0f면 위아래좌우 5도 오차 발생) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float RandomSpreadAngle = 0.0f;
 };
 
 USTRUCT(BlueprintType)
