@@ -141,7 +141,9 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
     // APlayerData의 장비 외형 데이터 테이블의 한줄을 읽어서 외형 업데이트
     if (USkeletalMeshComponent* Mymesh = GetMesh())
     {
-        Mymesh->SetSkeletalMesh(LinkedPlayerData->CachedMesh);
+        Mymesh->SetAnimInstanceClass(nullptr);
+
+        Mymesh->SetSkeletalMeshAsset(LinkedPlayerData->CachedMesh);
         Mymesh->SetAnimInstanceClass(LinkedPlayerData->CachedAnimBP);
     }
 
