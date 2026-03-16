@@ -275,6 +275,13 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CharStats->SkillActionID))
 			{
 				Result.Stats = *ActionRow;
+				if (!ActionRow->ProjectileDataHandle.IsNull())
+				{
+					if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("PlayerUltimateProjectileLookup")))
+					{
+						Result.ProjectileStats = *ProjRow;
+					}
+				}
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
@@ -338,6 +345,15 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
 				{
 					Result.Stats = *ActionRow;
+
+					if (!ActionRow->ProjectileDataHandle.IsNull())
+					{
+						if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("PlayerWeaponProjectileLookup")))
+						{
+							Result.ProjectileStats = *ProjRow;
+							UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
+						}
+					}
 				}
 				else
 				{

@@ -54,8 +54,6 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
-	UE_LOG(LogTemp, Warning, TEXT("🏹 [ProjectileAttackBase] 투사체 생성 직전! 읽어온 투사체 속도: %.1f"), CombatData.Stats.ProjectileSpeed);
-
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
 	{
@@ -71,8 +69,17 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	// 기존처럼 캐릭터가 바라보는 앞으로 Offset만큼 띄워주기
 	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
 
-	// 임시로 캐릭터가 보는 방향으로 발사
-	FRotator SpawnRotation = AvatarChar->GetActorRotation();
+	// 캐릭터가 보는 방향으로 발사
+	FRotator BaseRotation = AvatarChar->GetActorRotation();
+
+	int32 PCount = FMath::Max(1, CombatData.ProjectileStats.ProjectileCount);
+	float SAngle = CombatData.ProjectileStats.SpreadAngle;
+
+	// 각도 간격 계산: 1발이면 0도, 여러 발이면 전체 각도를 (발사수-1)로 나눔
+	float AngleStep = (PCount > 1) ? (SAngle / (PCount - 1)) : 0.0f;
+
+	// 첫 번째 투사체가 쏘아질 시작 각도 (부채꼴의 가장 왼쪽 끝)
+	float StartAngle = (PCount > 1) ? -(SAngle / 2.0f) : 0.0f;
 
 	// 스폰 파라미터 설정
 	FActorSpawnParameters SpawnParams;
@@ -80,38 +87,50 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	SpawnParams.Instigator = AvatarChar;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UE_LOG(LogTemp, Warning, TEXT("🎯 [Debug] 투사체 발사 위치(MuzzleSocket): %s"), *SpawnLocation.ToString());
-	// 투사체 스폰
-	AActor* SpawnedProjectile = nullptr;
-
 	if (UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
 	{
-		SpawnedProjectile = PoolSubsystem->SpawnPoolActor<AActor>(
-			CombatData.ProjectileClass,
-			SpawnLocation,
-			SpawnRotation,
-			AvatarChar,  // Owner
-			AvatarChar   // Instigator
-		);
-	}
-
-	if (SpawnedProjectile)
-	{
-		if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
+		// 💡 데이터 테이블에 적힌 발사 개수(PCount)만큼 반복해서 스폰합니다!
+		for (int32 i = 0; i < PCount; ++i)
 		{
-			// 데미지 이펙트 세팅
-			if (CombatData.EffectClass)
-			{
-				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
-				SpecHandle.Data->SetSetByCallerMagnitude(
-					FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
-					CombatData.Stats.DamageMultiplier
-				);
-				Proj->SetDamageSpecHandle(SpecHandle);
-			}
+			// 기준 회전(앞)에서 계산된 각도만큼 Yaw(좌우)를 비틂
+			FRotator PelletRotation = BaseRotation;
+			PelletRotation.Yaw += StartAngle + (AngleStep * i);
 
-			// 사거리(길이)와 반경(두께) 전달하여 투사체 갱신
-			Proj->ApplyCombatData(CombatData.Stats.AttackRange, CombatData.Stats.AttackRadius, CombatData.Stats.ProjectileSpeed);
+			AActor* SpawnedProjectile = PoolSubsystem->SpawnPoolActor<AActor>(
+				CombatData.ProjectileClass,
+				SpawnLocation,
+				PelletRotation, // 💡 계산된 부채꼴 각도 적용!
+				AvatarChar,
+				AvatarChar
+			);
+
+			if (SpawnedProjectile)
+			{
+				if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
+				{
+					// [중요] 오브젝트 풀링 버그 방지를 위한 오너 확실한 재각인!
+					Proj->SetOwner(AvatarChar);
+					Proj->SetInstigator(AvatarChar);
+
+					// 데미지 이펙트 세팅
+					if (CombatData.EffectClass)
+					{
+						FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
+						SpecHandle.Data->SetSetByCallerMagnitude(
+							FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
+							CombatData.Stats.DamageMultiplier
+						);
+						Proj->SetDamageSpecHandle(SpecHandle);
+					}
+
+					// 💡 변경: 투사체의 속도를 ProjectileStats에서 꺼내옵니다!
+					Proj->ApplyCombatData(
+						CombatData.Stats.AttackRange,
+						CombatData.Stats.AttackRadius,
+						CombatData.ProjectileStats.ProjectileSpeed
+					);
+				}
+			}
 		}
 	}
 }

@@ -79,12 +79,6 @@ struct FActionStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
 	float ManaCost = 0.0f;
 
-	/** * @brief 투사체 비행 속도
-	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
-	float ProjectileSpeed;
-
 	/** @brief 스킬의 적용 대상 (적군인지 아군인지) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	ETargetFilter TargetFilter = ETargetFilter::Enemy;
