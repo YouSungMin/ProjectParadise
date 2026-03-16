@@ -96,6 +96,33 @@ struct FActionStats : public FTableRowBase
 	/** @brief 애니메이션 기본 재생 속도 배율, 기본값은 1.0입니다.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	float AnimPlayRate = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|Extra")
+	FDataTableRowHandle ProjectileDataHandle;
+};
+
+/**
+ * @struct FProjectileStats
+ * @brief 원거리 스킬(투사체)에만 사용되는 전용 전투 수치 데이터 (별도의 엑셀 테이블로 관리)
+ */
+USTRUCT(BlueprintType)
+struct FProjectileStats : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** @brief 한 번에 발사할 투사체 개수 (기본 1발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	int32 ProjectileCount = 1;
+
+	/** @brief 다중 발사 시 퍼지는 총 각도 (예: 부채꼴 45도) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float SpreadAngle = 0.0f;
+
+	/** @brief 투사체 비행 속도 (기존 메인 테이블에서 이사 옴!) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileSpeed = 1500.0f;
+
+	// 유도탄 여부, 폭발 반경, 중력 값 등 투사체에만 필요한 설정 추가 가능
 };
 
 USTRUCT(BlueprintType)
@@ -140,6 +167,18 @@ public:
 	/** @brief 엑셀(데이터 테이블)에서 개별 액션(평타1, 스킬1, 몬스터공격 등)의 수치를 정의하는 구조체*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	FActionStats Stats;
+
+	// ==========================================================
+	// 투사체 전용 데이터 캐싱 공간
+	// ==========================================================
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	FProjectileStats ProjectileStats;
+
+	/** @brief 이 액션이 투사체 데이터를 가지고 있는지(원거리인지) 확인하는 헬퍼 함수 */
+	bool HasProjectileStats() const
+	{
+		return !Stats.ProjectileDataHandle.IsNull();
+	}
 };
 
 
