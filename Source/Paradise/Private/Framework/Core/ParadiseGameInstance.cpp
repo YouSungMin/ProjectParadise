@@ -2,6 +2,7 @@
 
 
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/Core/ParadiseSaveManager.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/ParadiseSaveGame.h"
 #include "Framework/System/GachaSubsystem.h"
@@ -66,14 +67,14 @@ void UParadiseGameInstance::SaveGameData()
 		}
 	}
 
-	//슬롯 이름으로 디스크에 실제 파일 쓰기
-	if (UGameplayStatics::SaveGameToSlot(SaveObj, SaveGameSlotName, 0))
+	//저장 데이터 위변조 방지 암호화 적용
+	if (UParadiseSaveManager::SaveGameEncrypted(SaveObj, SaveGameSlotName))
 	{
-		UE_LOG(LogParadiseSaveGame, Log, TEXT("💾 [SaveSystem] 게임 데이터 영구 저장 완료! (슬롯: %s)"), *SaveGameSlotName);
+		UE_LOG(LogParadiseSaveGame, Log, TEXT("💾 [SaveSystem] 게임 데이터 [보안 암호화] 영구 저장 완료! (슬롯: %s)"), *SaveGameSlotName);
 	}
 	else
 	{
-		UE_LOG(LogParadiseSaveGame, Error, TEXT("❌ [SaveSystem] 게임 저장에 실패했습니다."));
+		UE_LOG(LogParadiseSaveGame, Error, TEXT("❌ [SaveSystem] 게임 데이터 보안 저장에 실패했습니다."));
 	}
 }
 
@@ -82,46 +83,42 @@ void UParadiseGameInstance::LoadGameData()
 	UInventorySystem* MainInventory = GetMainInventory();
 	if (!MainInventory) return;
 
-	//디스크에 해당 이름의 세이브 파일이 있는지 확인
-	if (UGameplayStatics::DoesSaveGameExist(SaveGameSlotName, 0))
+	UParadiseSaveGame* LoadObj = Cast<UParadiseSaveGame>(UParadiseSaveManager::LoadGameEncrypted(SaveGameSlotName));
+
+	if (LoadObj)
 	{
-		//파일이 있다면 메모리로 불러오기
-		UParadiseSaveGame* LoadObj = Cast<UParadiseSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveGameSlotName, 0));
-		if (LoadObj)
+		//세이브 객체에 들어있는 배열들을 인벤토리의 InitInventory 함수에 호출
+		//InitInventory 함수 내부에서 자동으로 유효성 검사 후 인벤토리 초기화
+		MainInventory->InitInventory(
+			LoadObj->SavedOwnedCharacters,
+			LoadObj->SavedOwnedFamiliars,
+			LoadObj->SavedOwnedInventoryItems
+		);
+
+		//스쿼드 편성 정보 로드
+		if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
 		{
-			//세이브 객체에 들어있는 배열들을 인벤토리의 InitInventory 함수에 호출
-			//InitInventory 함수 내부에서 자동으로 유효성 검사 후 인벤토리 초기화
-			MainInventory->InitInventory(
-				LoadObj->SavedOwnedCharacters,
-				LoadObj->SavedOwnedFamiliars,
-				LoadObj->SavedOwnedInventoryItems
-			);
-
-			//스쿼드 편성 정보 로드
-			if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
-			{
-				SquadSys->LoadFromSaveGame(LoadObj);
-			}
-
-			//플레이어 보유 재화 정보 로드
-			if (UEconomySubsystem* EconomySys = GetSubsystem<UEconomySubsystem>())
-			{
-				EconomySys->LoadFromSaveGame(LoadObj);
-			}
-
-			//스테이지 정보 로드
-			if (UStageSubsystem* StageSys = GetSubsystem<UStageSubsystem>()) {
-				StageSys->LoadFromSaveGame(LoadObj);
-			}
-
-			// 가챠 천장 정보 로드
-			if (UGachaSubsystem* GachaSys = GetSubsystem<UGachaSubsystem>())
-			{
-				GachaSys->LoadFromSaveGame(LoadObj);
-			}
-
-			UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
+			SquadSys->LoadFromSaveGame(LoadObj);
 		}
+
+		//플레이어 보유 재화 정보 로드
+		if (UEconomySubsystem* EconomySys = GetSubsystem<UEconomySubsystem>())
+		{
+			EconomySys->LoadFromSaveGame(LoadObj);
+		}
+
+		//스테이지 정보 로드
+		if (UStageSubsystem* StageSys = GetSubsystem<UStageSubsystem>()) {
+			StageSys->LoadFromSaveGame(LoadObj);
+		}
+
+		// 가챠 천장 정보 로드
+		if (UGachaSubsystem* GachaSys = GetSubsystem<UGachaSubsystem>())
+		{
+			GachaSys->LoadFromSaveGame(LoadObj);
+		}
+
+		UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 	}
 	else
 	{
