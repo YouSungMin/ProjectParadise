@@ -100,12 +100,33 @@ void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, U
 		ItemMesh->SetMaterial(0, InSilhouetteMat);
 	}
 
+	//0316 - 김성현 메쉬 관련 fatal error 잡기용 로그 추가 추후 삭제 예정
 	// 캐릭터 메시 미리 세팅 (숨김 상태) — 리빌 시 SetVisibility만 하면 됨
-	if (CachedItemData.bIsCharacter)
+	if (RevealCharacterMesh && CachedItemData.CharacterSkeletalMesh)
 	{
-		if (RevealCharacterMesh && CachedItemData.CharacterSkeletalMesh)
+		bool bIsSafe = true;
+		const FReferenceSkeleton& RefSkel = CachedItemData.CharacterSkeletalMesh->GetRefSkeleton();
+		const TArray<FTransform>& RefBonePose = RefSkel.GetRefBonePose();
+
+		// 지뢰(스케일 0) 탐지기 작동!
+		for (int32 i = 0; i < RefBonePose.Num(); ++i)
 		{
-			RevealCharacterMesh->SetSkeletalMesh(CachedItemData.CharacterSkeletalMesh);
+			if (RefBonePose[i].GetScale3D().ContainsNaN() || RefBonePose[i].GetScale3D().IsNearlyZero())
+			{
+				bIsSafe = false;
+				break;
+			}
+		}
+
+		// 지뢰가 없을 때만 메쉬를 입힘
+		if (bIsSafe)
+		{
+			RevealCharacterMesh->SetSkeletalMeshAsset(CachedItemData.CharacterSkeletalMesh);
+		}
+		else
+		{
+			// 지뢰가 발견되면 메쉬를 입히지 않고 투명한 상태로 둠 (엔진 크래시 완벽 방어)
+			UE_LOG(LogTemp, Error, TEXT("🛑 [방어막 작동] %s에 스케일 0인 뼈가 있어 렌더링을 차단했습니다!"), *CachedItemData.CharacterSkeletalMesh->GetName());
 		}
 	}
 	// 장비 메시 미리 세팅 (숨김 상태)
