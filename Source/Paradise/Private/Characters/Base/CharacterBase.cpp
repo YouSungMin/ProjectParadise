@@ -41,6 +41,7 @@ void ACharacterBase::TestKillSelf()
 void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 {
 	FVector TraceStart;
+	FVector TraceDirection;
 
 	USceneComponent* TargetMesh = GetMesh();
 
@@ -61,6 +62,8 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
 	{
 		TraceStart = TargetMesh->GetSocketLocation(SocketName);
+
+		TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
 	}
 	else
 	{
@@ -72,7 +75,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 	TraceStart += GetActorForwardVector() * CurrentActiveActionData.Stats.ForwardOffset;
 
 	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
-	FVector TraceEnd = TraceStart + (GetActorForwardVector() * CurrentActiveActionData.Stats.AttackRange);
+	FVector TraceEnd = TraceStart + (TraceDirection * CurrentActiveActionData.Stats.AttackRange);
 
 	TArray<AActor*> ActorsToIgnore;
 	if (CurrentActiveActionData.Stats.TargetFilter == ETargetFilter::Enemy)

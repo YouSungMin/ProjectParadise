@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/ObjectPoolInterface.h"
 #include "GameplayEffectTypes.h"
+#include "Data/Structs/CombatTypes.h"
 #include "ProjectileBase.generated.h"
 
 
@@ -36,9 +37,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SetDamageSpecHandle(const FGameplayEffectSpecHandle & InSpecHandle);
 
-	/** 사거리(비행 거리)와 반경(판정 크기)을 적용합니다. */
+	/** @brief 투사체의 정보를 적용하는 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed);
+	void ApplyCombatData(float InAttackRange, float InAttackRadius, const FProjectileStats& InProjStats);
+
+	/** @brief 내부 데미지 적용 헬퍼 함수 */
+	void ApplyDamageToTarget(AActor* TargetActor);
 
 protected:
 	// =========================================================================
@@ -77,6 +81,15 @@ protected:
 	/** @brief 투사체의 최대 생존 시간 (초). 이 시간이 지나면 풀로 돌아갑니다. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float LifeTime = 3.0f;
+
+	UPROPERTY()
+	FProjectileStats CachedProjStats;
+
+	int32 CurrentPierceCount = 0;
+
+	/** @brief 중복 타격 방지용 명단 */
+	UPROPERTY()
+	TSet<AActor*> HitActors;
 
 	/** @brief 배달해야 할 데미지 택배 상자 */
 	FGameplayEffectSpecHandle DamageSpecHandle;

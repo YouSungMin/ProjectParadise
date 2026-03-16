@@ -34,6 +34,20 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 		if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->SkillActionIDs[i]))
 		{
 			SkillData.Stats = *ActionRow;
+
+			if (!ActionRow->ProjectileDataHandle.IsNull())
+			{
+				// GetRow<타입>("에러로그용_문자열") 을 호출하면 알아서 엑셀을 찾아줌
+				if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("SkillProjectileLookup")))
+				{
+					SkillData.ProjectileStats = *ProjRow;
+					UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 스킬 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("❌ [%s] 투사체 외래키가 등록되어 있으나 실제 데이터를 찾을 수 없습니다! 엑셀을 확인하세요."), *GetName());
+				}
+			}
 		}
 
 		// 스킬 셋업 (이펙트, 투사체 포장 & GAS 어빌리티 부여)
@@ -63,7 +77,7 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 			CachedSkillMontages.Add(nullptr); // 인덱스 꼬임 방지
 		}
 
-		// 완성된 종합 선물 세트를 배열에 쏙!
+		// 완성된 스킬 데이터를 배열에 추가
 		CachedSkillDataArray.Add(SkillData);
 	}
 

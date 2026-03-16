@@ -9,6 +9,7 @@
 #include "AbilitySystemComponent.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Characters/Base/CharacterBase.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values
 AProjectileBase::AProjectileBase()
@@ -35,6 +36,10 @@ AProjectileBase::AProjectileBase()
 
 void AProjectileBase::OnPoolActivate_Implementation()
 {
+	// 풀에서 꺼내 질때 타격 명탄 및 관통 횟수 초기화
+	HitActors.Empty();
+	CurrentPierceCount = 0;
+
 	// 액터 보이기 & 충돌 켜기
 	SetActorHiddenInGame(false);
 	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -85,25 +90,15 @@ void AProjectileBase::SetDamageSpecHandle(const FGameplayEffectSpecHandle& InSpe
 	DamageSpecHandle = InSpecHandle;
 }
 
-void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed)
+void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius, const FProjectileStats& InProjStats)
 {
-	// 투사체 판정 크기(두께) 변경
-	if (SphereComp)
+	CachedProjStats = InProjStats; // 스탯 캐싱
+
+	// 속도 적용
+	if (ProjectileMovementComp)
 	{
-		SphereComp->SetSphereRadius(InAttackRadius);
-	}
-
-	// 시각적 메쉬 크기 조절
-	float ScaleRatio = InAttackRadius / 15.0f;
-	SetActorScale3D(FVector(ScaleRatio));
-
-	if (InSpeed > 0.0f)
-	{
-		ProjectileMovementComp->InitialSpeed = InSpeed;
-		ProjectileMovementComp->MaxSpeed = InSpeed;
-
-		// 풀링에서 꺼내진 상태 Velocity를 직접 갱신
-		ProjectileMovementComp->Velocity = GetActorForwardVector() * InSpeed;
+		ProjectileMovementComp->InitialSpeed = CachedProjStats.ProjectileSpeed;
+		ProjectileMovementComp->MaxSpeed = CachedProjStats.ProjectileSpeed;
 	}
 
 	// 사거리(거리)를 기반으로 생존 시간(LifeTime) 계산 (시간 = 거리 / 속력)
@@ -127,20 +122,77 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 	}
 }
 
+void AProjectileBase::ApplyDamageToTarget(AActor* TargetActor)
+{
+	if (DamageSpecHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor))
+		{
+			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
+		}
+	}
+}
+
 void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 자기 자신이나, 나를 쏜 주인(Instigator)은 무시
-	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator()) return;
+	if (!IsValidTarget(OtherActor)) return;
 
-	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
+	// 이미 맞은 적 무시 (다단히트 방지)
+	if (HitActors.Contains(OtherActor)) return;
+
+	// 타격 명단 등록 및 데미지 적용
+	HitActors.Add(OtherActor);
+	ApplyDamageToTarget(OtherActor);
+
+	// ==========================================================
+	// 4. 폭발 기믹 검사 (스플래시 데미지)
+	// ==========================================================
+	if (CachedProjStats.ExplosionRadius > 0.0f)
 	{
-		if (ACharacterBase* TargetChar = Cast<ACharacterBase>(OtherActor))
+		TArray<AActor*> IgnoredActors = HitActors.Array();
+		IgnoredActors.Add(this);
+		IgnoredActors.Add(GetInstigator());
+
+		TArray<FHitResult> HitResults;
+		UKismetSystemLibrary::SphereTraceMulti(
+			this, GetActorLocation(), GetActorLocation(), CachedProjStats.ExplosionRadius,
+			UEngineTypes::ConvertToTraceType(ECC_Pawn), false, IgnoredActors,
+			EDrawDebugTrace::None, HitResults, true // 디버그를 끄려면 EDrawDebugTrace::None 유지
+		);
+
+		for (const FHitResult& Hit : HitResults)
 		{
-			if (!Shooter->IsHostile(TargetChar))
+			// 스플래시 데미지도 피아식별이 필요하므로 IsHostile 체크
+			if (ACharacterBase* TargetChar = Cast<ACharacterBase>(Hit.GetActor()))
 			{
-				return;
+				if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
+				{
+					if (Shooter->IsHostile(TargetChar))
+					{
+						ApplyDamageToTarget(TargetChar);
+					}
+				}
 			}
 		}
+
+		// 폭발했으면 관통 여부 상관없이 소멸!
+		ReturnSelfToPool();
+		return;
+	}
+
+	// ==========================================================
+	// 5. 관통 기믹 검사
+	// ==========================================================
+	if (CurrentPierceCount < CachedProjStats.MaxPierceCount)
+	{
+		// 뚫고 지나가므로 카운트만 올리고 소멸시키지 않음!
+		CurrentPierceCount++;
+	}
+	else
+	{
+		// 관통 횟수를 다 썼거나 단일 타겟(MaxPierce=0)이면 소멸
+		ReturnSelfToPool();
 	}
 }
 

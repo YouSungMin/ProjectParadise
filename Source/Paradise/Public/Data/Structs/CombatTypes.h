@@ -79,12 +79,6 @@ struct FActionStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
 	float ManaCost = 0.0f;
 
-	/** * @brief 투사체 비행 속도
-	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
-	float ProjectileSpeed;
-
 	/** @brief 스킬의 적용 대상 (적군인지 아군인지) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	ETargetFilter TargetFilter = ETargetFilter::Enemy;
@@ -96,6 +90,47 @@ struct FActionStats : public FTableRowBase
 	/** @brief 애니메이션 기본 재생 속도 배율, 기본값은 1.0입니다.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	float AnimPlayRate = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|Extra")
+	FDataTableRowHandle ProjectileDataHandle;
+};
+
+/**
+ * @struct FProjectileStats
+ * @brief 원거리 스킬(투사체)에만 사용되는 전용 전투 수치 데이터 (별도의 엑셀 테이블로 관리)
+ */
+USTRUCT(BlueprintType)
+struct FProjectileStats : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** @brief 한 번에 발사할 투사체 개수 (기본 1발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	int32 ProjectileCount = 1;
+
+	/** @brief 다중 발사 시 퍼지는 총 각도 (예: 부채꼴 45도) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float SpreadAngle = 0.0f;
+
+	/** @brief 투사체 비행 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileSpeed = 1500.0f;
+
+	/** @brief 투사체 관통 수 (0이면 단일 타겟, 1 이상이면 관통) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	int32 MaxPierceCount = 0; // 0이면 단일 타겟, 1 이상이면 관통
+
+	/** @brief 충돌 시 폭발 범위 (0이면 폭발 없음, 0보다 크면 광역 폭발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	float ExplosionRadius = 0.0f;
+
+	/** @brief 발사 시 딜레이 (0이면 동시 발사(샷건), 0.1 등 값이 있으면 연사(머신건) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float BurstDelay = 0.0f;
+
+	/** @brief 랜덤 탄퍼짐 오차 (예: 5.0f면 위아래좌우 5도 오차 발생) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float RandomSpreadAngle = 0.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -140,6 +175,18 @@ public:
 	/** @brief 엑셀(데이터 테이블)에서 개별 액션(평타1, 스킬1, 몬스터공격 등)의 수치를 정의하는 구조체*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
 	FActionStats Stats;
+
+	// ==========================================================
+	// 투사체 전용 데이터 캐싱 공간
+	// ==========================================================
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	FProjectileStats ProjectileStats;
+
+	/** @brief 이 액션이 투사체 데이터를 가지고 있는지(원거리인지) 확인하는 헬퍼 함수 */
+	bool HasProjectileStats() const
+	{
+		return !Stats.ProjectileDataHandle.IsNull();
+	}
 };
 
 

@@ -186,6 +186,13 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 					// 액션 테이블에 정의된 평타 사거리로 AttributeSet을 초기화합니다.
 					BaseSet->InitAttackRange(ActionRow->AttackRange);
 					BasicAttackData.Stats = *ActionRow; // 캐싱 변수도 함께 업데이트
+					if (!ActionRow->ProjectileDataHandle.IsNull())
+					{
+						if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("BasicAttackProjectileLookup")))
+						{
+							BasicAttackData.ProjectileStats = *ProjRow;
+						}
+					}
 				}
 				else
 				{
