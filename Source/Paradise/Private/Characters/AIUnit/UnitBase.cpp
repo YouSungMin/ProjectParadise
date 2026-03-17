@@ -179,9 +179,9 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 			BaseSet->InitHealth(BaseSet->GetMaxHealth());
 			BaseSet->InitAttackPower(InStats->BaseAttackPower);
 			BaseSet->InitDefense(InStats->BaseDefense);
-			if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance()))
+			if (!InStats->BasicAttackActionHandle.IsNull())
 			{
-				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->BasicAttackActionID))
+				if (FActionStats* ActionRow = InStats->BasicAttackActionHandle.GetRow<FActionStats>(TEXT("BasicAttackLookup")))
 				{
 					// 액션 테이블에 정의된 평타 사거리로 AttributeSet을 초기화합니다.
 					BaseSet->InitAttackRange(ActionRow->AttackRange);

@@ -3,6 +3,7 @@
 
 #include "Objects/ProjectileBase.h"
 #include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbilitySystemGlobals.h"
@@ -22,6 +23,11 @@ AProjectileBase::AProjectileBase()
 	SphereComp->InitSphereRadius(15.0f);
 	SphereComp->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnSphereOverlap);
+
+	StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
+	StaticMeshComp->SetupAttachment(SphereComp);
+	StaticMeshComp->SetCollisionProfileName(TEXT("NoCollision"));
+	StaticMeshComp->SetGenerateOverlapEvents(false);
 
 	NiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComp"));
 	NiagaraComp->SetupAttachment(SphereComp);
@@ -43,6 +49,8 @@ void AProjectileBase::OnPoolActivate_Implementation()
 	// 액터 보이기 & 충돌 켜기
 	SetActorHiddenInGame(false);
 	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	if (StaticMeshComp) StaticMeshComp->SetVisibility(true);
 
 	// 나이아가라 파티클 재생 
 	if (NiagaraComp) NiagaraComp->Activate(true);
@@ -78,6 +86,8 @@ void AProjectileBase::OnPoolDeactivate_Implementation()
 
 	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetActorHiddenInGame(true);
+
+	if (StaticMeshComp) StaticMeshComp->SetVisibility(false);
 
 	if (NiagaraComp) NiagaraComp->Deactivate();
 
@@ -146,7 +156,7 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 	ApplyDamageToTarget(OtherActor);
 
 	// ==========================================================
-	// 4. 폭발 기믹 검사 (스플래시 데미지)
+	// 폭발 기믹 검사 (스플래시 데미지)
 	// ==========================================================
 	if (CachedProjStats.ExplosionRadius > 0.0f)
 	{
@@ -163,16 +173,9 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 		for (const FHitResult& Hit : HitResults)
 		{
-			// 스플래시 데미지도 피아식별이 필요하므로 IsHostile 체크
-			if (ACharacterBase* TargetChar = Cast<ACharacterBase>(Hit.GetActor()))
+			if (IsValidTarget(Hit.GetActor()))
 			{
-				if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
-				{
-					if (Shooter->IsHostile(TargetChar))
-					{
-						ApplyDamageToTarget(TargetChar);
-					}
-				}
+				ApplyDamageToTarget(Hit.GetActor());
 			}
 		}
 
@@ -182,11 +185,11 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 	}
 
 	// ==========================================================
-	// 5. 관통 기믹 검사
+	// 관통 기믹 검사
 	// ==========================================================
 	if (CurrentPierceCount < CachedProjStats.MaxPierceCount)
 	{
-		// 뚫고 지나가므로 카운트만 올리고 소멸시키지 않음!
+		// 뚫고 지나가므로 카운트만 올리고 소멸시키지 않음
 		CurrentPierceCount++;
 	}
 	else
@@ -216,6 +219,11 @@ bool AProjectileBase::IsValidTarget(AActor* OtherActor)
 	// 예외 대상 무시
 	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
 		return false;
+
+	if (OtherActor->IsA<AProjectileBase>())
+	{
+		return false;
+	}
 
 	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
 	{

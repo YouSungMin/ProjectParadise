@@ -7,7 +7,6 @@
 #include "Engine/DataTable.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayAbilitySpecHandle.h"
-#include "Data/Structs/CombatTypes.h"
 #include "Data/Enums/GameEnums.h"
 #include "Data/Structs/UnitStructs.h"
 #include "GameplayTagContainer.h"

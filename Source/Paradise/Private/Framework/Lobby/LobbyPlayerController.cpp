@@ -9,6 +9,7 @@
 #include "Framework/System/GrowthSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/System/GachaSubsystem.h"
+#include "Framework/System/StageSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Actors/Environment/ParadiseMapEnvironmentActor.h"
@@ -380,8 +381,6 @@ void ALobbyPlayerController::CheatGrantAll()
 	}
 }
 
-
-
 void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 {
 	ACameraActor* TargetCamera = nullptr;
@@ -449,7 +448,7 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 		CachedLobbyHUD->UpdateMenuStats(CurrentMenu);
     }
 
-	// 2. [추가됨] 카메라가 지도로 가서 StageMap 상태가 되었을 때만 노드 뷰 띄우기
+	// 2. 카메라가 지도로 가서 StageMap 상태가 되었을 때만 노드 뷰 띄우기
 	if (CurrentMenu == EParadiseLobbyMenu::StageMap)
 	{
 		if (!CachedStageSelectWidget && StageSelectWidgetClass)
@@ -463,6 +462,7 @@ void ALobbyPlayerController::SetLobbyMenu(EParadiseLobbyMenu InNewMenu)
 
 		if (CachedStageSelectWidget)
 		{
+			CachedStageSelectWidget->InitStageMap(CurrentSelectedChapter);
 			CachedStageSelectWidget->SetVisibility(ESlateVisibility::Visible);
 		}
 	}

@@ -82,3 +82,4 @@ void UStageSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj)const
 	SaveGameObj->SavedStageClearStars = StageClearStars;
 	SaveGameObj->SavedMaxClearedStageIndex = MaxClearedStageIndex;
 }
+

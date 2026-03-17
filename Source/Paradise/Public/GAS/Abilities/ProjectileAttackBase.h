@@ -20,6 +20,10 @@ public:
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+	
+	virtual void OnMontageCompleted() override;
+
 protected:
 	/**
 	 * @brief 발사 시점을 감지할 이벤트 태그입니다.
@@ -32,9 +36,24 @@ protected:
 	// Callbacks
 	// =========================================================================
 
-	/**
-	 * @brief WaitGameplayEvent 태스크에서 발사 이벤트가 감지되었을 때 호출됩니다.
-	 */
+	/** @brief WaitGameplayEvent 태스크에서 발사 이벤트가 감지되었을 때 호출됩니다 */
 	UFUNCTION()
 	void OnGameplayEventReceived(FGameplayEventData Payload);
+
+	/** @brief 투사체 1발을 실제로 스폰하는 헬퍼 함수 (타이머가 반복 호출함) */
+	UFUNCTION()
+	void FireSinglePellet();
+
+protected:
+	/** @brief 현재 몇 발째 발사 중인지 카운트 */
+	int32 BurstCurrentCount = 0;
+
+	/** @brief 총구 위치 캐싱 */
+	FTransform CachedMuzzleTransform;
+
+	/** @brief 연사(타이머)가 진행 중인지 체크 */
+	bool bIsShooting = false;
+
+	/** @brief 애니메이션 몽타주가 끝났는지 체크 */
+	bool bMontageFinished = false;
 };

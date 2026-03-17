@@ -178,8 +178,8 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 
 	if (!GI || !PS) return;
 
-	FName CurrentWeaponSkillID = NAME_None;
-	FName CurrentUltimateID = NAME_None;
+	FDataTableRowHandle CurrentWeaponSkillHandle;
+	FDataTableRowHandle CurrentUltimateHandle;
 	UTexture2D* TargetAttackIcon = Tex_DefaultAttackIcon.Get(); // 기본 아이콘으로 초기화
 
 	// 2. [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
@@ -188,7 +188,7 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 		// A. 캐릭터 스탯 테이블로부터 궁극기(Ultimate) ID 획득
 		if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
 		{
-			CurrentUltimateID = CharStats->SkillActionID;
+			CurrentUltimateHandle = CharStats->UltimateActionHandle;
 		}
 
 		// B. 장비 컴포넌트로부터 무기 스킬(Weapon Skill) ID 획득
@@ -200,20 +200,20 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 			{
 				if (const FWeaponStats* WeaponStats = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, EquippedWeaponID))
 				{
-					CurrentWeaponSkillID = WeaponStats->SkillActionID;
+					CurrentWeaponSkillHandle = WeaponStats->SkillActionHandle;
 				}
 			}
 		}
 	}
 
 	// 3. 추출된 데이터를 자신의 패널에 주입
-	InitActionPanel(CurrentWeaponSkillID, CurrentUltimateID, TargetAttackIcon);
+	InitActionPanel(CurrentWeaponSkillHandle, CurrentUltimateHandle, TargetAttackIcon);
 	UpdateTagButtons(PlayerIndex);
 
 	UE_LOG(LogTemp, Log, TEXT("[ActionPanel] UI 자율 갱신 성공 (Index: %d)"), PlayerIndex);
 }
 
-void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon)
+void UActionControlPanel::InitActionPanel(FDataTableRowHandle WeaponActionHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon)
 {
 	// 게임 인스턴스의 공용 데이터 테이블 로직을 활용합니다.
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
@@ -228,29 +228,29 @@ void UActionControlPanel::InitActionPanel(FName WeaponActionID, FName UltimateAc
 		AttackBtn->SetButtonIcon(AttackIcon);
 	}
 
-	if (WeaponActionID != NAME_None)
+	if (!WeaponActionHandle.IsNull())
 	{
-		 if (const FActionStats* WeaponActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WeaponActionID))
+		 if (const FActionStats* WeaponActionData = WeaponActionHandle.GetRow<FActionStats>(TEXT("WeaponActionLookup")))
 		 {
 		 	if (SkillSlot_Active)
 		 	{
 				//SkillSlot_Active->SetSkillIcon(WeaponActionData->SkillIcon);
 		 	}
 		 }
-		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 액티브 스킬 ID 연결 완료: %s"), *WeaponActionID.ToString());
+		 UE_LOG(LogTemp, Log, TEXT("✅ [UI] 액티브 스킬 연결 완료: %s"), *WeaponActionHandle.RowName.ToString());
 	}
 
 	/** @section 2. 캐릭터 스킬 (궁극기) 데이터 연동 */
-	if (UltimateActionID != NAME_None)
+	if (!UltimateActionHandle.IsNull())
 	{
-		 if (const FActionStats* UltimateActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, UltimateActionID))
-		 {
-		 	if (SkillSlot_Ultimate)
-		 	{
+		if (const FActionStats* UltimateActionData = UltimateActionHandle.GetRow<FActionStats>(TEXT("UltimateActionLookup")))
+		{
+			if (SkillSlot_Ultimate)
+			{
 				//SkillSlot_Ultimate->SetSkillIcon(UltimateActionData->SkillIcon);
-		 	}
-		 }
-		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 궁극기 ID 연결 완료: %s"), *UltimateActionID.ToString());
+			}
+		}
+		UE_LOG(LogTemp, Log, TEXT("✅ [UI] 궁극기 연결 완료: %s"), *UltimateActionHandle.RowName.ToString());
 	}
 }
 

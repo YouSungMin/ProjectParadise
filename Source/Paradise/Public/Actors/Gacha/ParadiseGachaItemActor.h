@@ -19,6 +19,9 @@ class USoundBase;
 /** @brief 아이템이 터치되어 실루엣이 해제되었을 때 상자나 UI에 알리는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGachaItemRevealed, const FGachaResult&, ItemResult);
 
+/** @brief 구슬이 목표 지점에 착지 완료되었을 때 BoxActor에 알리는 델리게이트 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGachaItemLanded);
+
 /**
  * @class AParadiseGachaItemActor
  * @brief 오버워치 스타일 가챠 연출에서 튀어나오는 개별 아이템 액터
@@ -64,6 +67,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha|Item")
 	void RevealItem();
+
+	/**
+	 * @brief BoxActor가 모든 구슬 착지 확인 후 호출 — 그 시점부터 터치 가능
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Gacha|Item")
+	void EnableTouch();
 
 	/**
 	 * @brief 비행 속도 배율을 설정합니다. (BoxActor 의 꾹 누름 배속과 연동)
@@ -155,11 +164,19 @@ private:
 	/** @brief 현재 액터의 상태기계 */
 	EGachaItemState CurrentState = EGachaItemState::Flying;
 
-	// --- 비행 수학 계산용 변수 (Tick 최적화) ---
+	/** @brief 비행 시작 위치 */
 	FVector StartLoc = FVector::ZeroVector;
+
+	/** @brief 비행 목표 위치 */
 	FVector EndLoc = FVector::ZeroVector;
+
+	/** @brief 총 비행 시간 (초) */
 	float TotalFlightTime = 1.0f;
+
+	/** @brief 현재까지 경과한 비행 시간 (초) */
 	float CurrentFlightTime = 0.0f;
+
+	/** @brief 포물선 최고점 높이 */
 	float MaxArcHeight = 300.0f;
 
 	/**
@@ -167,6 +184,9 @@ private:
 	 * @details SetFlightSpeedMultiplier() 로 외부에서 설정합니다.
 	 */
 	float FlightSpeedMultiplier = 1.0f;
+
+	/** @brief EnableTouch() 호출 전까지 터치 입력을 차단하는 게이트 플래그 */
+	bool bTouchEnabled = false;
 #pragma endregion 내부 상태 및 캐싱
 
 #pragma region 델리게이트
@@ -174,5 +194,9 @@ public:
 	/** @brief 리빌(연출)이 완료되었음을 알리는 이벤트 방송 */
 	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
 	FOnGachaItemRevealed OnItemRevealed;
+
+	/** @brief 마지막 구슬이 바닥에 닿았을때 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnGachaItemLanded OnItemLanded;
 #pragma endregion 델리게이트
 };

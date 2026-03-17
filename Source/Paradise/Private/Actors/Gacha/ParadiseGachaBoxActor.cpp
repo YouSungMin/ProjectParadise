@@ -337,7 +337,8 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 	}
 
 	SpawnedItem->InitializeItemData(CachedResults[Index], TargetSilhouetteMat, nullptr);
-
+	// 착지 완료 콜백 바인딩
+	SpawnedItem->OnItemLanded.AddDynamic(this, &AParadiseGachaBoxActor::OnItemLandedCallback);
 	// 리빌 완료 콜백 바인딩
 	SpawnedItem->OnItemRevealed.AddDynamic(this, &AParadiseGachaBoxActor::OnItemRevealedCallback);
 
@@ -373,6 +374,19 @@ void AParadiseGachaBoxActor::SpawnSingleItem(int32 Index)
 #pragma endregion 내부 시퀀스 로직 구현
 
 #pragma region 내부 리빌 카운트 로직 구현
+void AParadiseGachaBoxActor::OnItemLandedCallback()
+{
+	++LandedItemCount;
+
+	// 모든 구슬이 착지 완료되면 일괄 터치 활성화
+	if (LandedItemCount >= TotalItemCount)
+	{
+		for (TObjectPtr<AParadiseGachaItemActor>& Item : SpawnedItems)
+		{
+			if (IsValid(Item)) Item->EnableTouch();
+		}
+	}
+}
 void AParadiseGachaBoxActor::OnItemRevealedCallback(const FGachaResult& ItemData)
 {
 	++RevealedItemCount;
