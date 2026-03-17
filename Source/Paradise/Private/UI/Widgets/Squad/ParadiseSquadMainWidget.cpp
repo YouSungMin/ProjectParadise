@@ -536,11 +536,12 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
 		{
-			// 캐릭터는 일단 기본값이나 별도 로직 처리
-			Result.Rarity = EItemRarity::Common;
+			Result.Name = FText::FromName(ID);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
+			Result.Rarity = Asset->Rarity;
+
 			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
 			Result.Icon = TargetIcon.LoadSynchronous();
 		}
@@ -625,7 +626,7 @@ void UParadiseSquadMainWidget::HandleFormationSlotSelected(int32 SlotIndex)
 	}
 	else
 	{
-		CurrentState = bIsUnitSlot ? ESquadUIState::CharacterSwap : ESquadUIState::CharacterSwap;
+		CurrentState = ESquadUIState::CharacterSwap;
 
 		PendingSelection = FSquadItemUIData();
 		RefreshDetailPanelForCurrentSlot();

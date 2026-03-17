@@ -183,6 +183,7 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 			// 강화 인벤토리에서도 전신(Body)을 보여주려면 bUseBodyIcon을 활용
 			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
 			Result.Icon = TargetIcon.LoadSynchronous();
+			Result.Rarity = Asset->Rarity;
 		}
 	}
 	else if (TabType == SquadTabs::Weapon)

@@ -356,6 +356,9 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> UltimateIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	EItemRarity Rarity = EItemRarity::Common;
 	// =========================================================
 	//  GAS & Montage (Player Only)
 	// =========================================================
