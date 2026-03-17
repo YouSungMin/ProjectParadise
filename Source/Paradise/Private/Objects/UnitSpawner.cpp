@@ -100,7 +100,7 @@ void AUnitSpawner::SpawnUnit()
 
 	TSubclassOf<AUnitBase> ClassToSpawn = UnitClass;
 
-	if (StatData->SkillActionIDs.Num() > 0 && SkillCasterClass)
+	if (StatData->PatternActionHandles.Num() > 0 && SkillCasterClass)
 	{
 		ClassToSpawn = SkillCasterClass; // 보스(스킬 캐스터) 클래스로 변경!
 	}

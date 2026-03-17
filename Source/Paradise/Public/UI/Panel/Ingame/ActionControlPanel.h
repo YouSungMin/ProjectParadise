@@ -48,7 +48,7 @@ public:
 	 * @param AttackIcon 무기별 기본 공격 아이콘 (추가)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void InitActionPanel(FName WeaponActionID, FName UltimateActionID, UTexture2D* AttackIcon = nullptr);
+	void InitActionPanel(FDataTableRowHandle WeaponActionHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon = nullptr);
 
 	/**
 	 * @brief 로비 편성 데이터(SquadSubsystem)를 읽어와 태그 버튼의 얼굴 이미지를 세팅합니다.

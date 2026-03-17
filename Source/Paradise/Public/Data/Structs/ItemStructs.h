@@ -112,19 +112,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "1.0"))
 	float CritDamage;
 
-	/**
-	 * @brief 평타 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName BasicAttackActionID; // 예: "Sword_BasicCombo"
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle BasicAttackActionHandle;
 
-	/**
-	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName SkillActionID;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle SkillActionHandle;
 };
 
 /**

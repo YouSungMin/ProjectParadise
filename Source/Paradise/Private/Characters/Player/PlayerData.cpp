@@ -7,6 +7,7 @@
 #include "Framework/System/InventorySystem.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
+#include "Data/Structs/CombatTypes.h"
 #include "Data/Assets/FXDataAsset.h"
 #include "AbilitySystemComponent.h"
 #include "Components/EquipmentComponent.h"
@@ -140,9 +141,9 @@ void APlayerData::InitCombatAttributes()
 					EquipAttackSpeed += WeaponStats->AttackSpeed;
 
 					// 사거리 스탯 추출
-					if (!WeaponStats->BasicAttackActionID.IsNone())
+					if (!WeaponStats->BasicAttackActionHandle.IsNull())
 					{
-						if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WeaponStats->BasicAttackActionID))
+						if (FActionStats* ActionRow = WeaponStats->BasicAttackActionHandle.GetRow<FActionStats>(TEXT("BasicAttackLookup")))
 						{
 							FinalAttackRange = ActionRow->AttackRange;
 						}
@@ -272,7 +273,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 		if (CharAssets)
 		{
 			Result.MontageToPlay = CharAssets->UltimateMontage.LoadSynchronous(); // 구조체에 이 필드가 있다고 가정
-			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CharStats->SkillActionID))
+			if (FActionStats* ActionRow = CharStats->UltimateActionHandle.GetRow<FActionStats>(TEXT("UltimateSkillLookup")))
 			{
 				Result.Stats = *ActionRow;
 				if (!ActionRow->ProjectileDataHandle.IsNull())
@@ -320,7 +321,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			Result.ProjectileClass = WeaponAssets->WeaponSkillSetup.ProjectileClass;
 		}
 
-		FName TargetActionID = NAME_None;
+		FDataTableRowHandle TargetActionHandle;
 
 		FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID);
 
@@ -331,18 +332,18 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			{
 			case ECombatActionType::BasicAttack:
 				Result.MontageToPlay = MyAnimSet.BasicAttackMontage.LoadSynchronous();
-				TargetActionID = WeaponStats->BasicAttackActionID;
+				TargetActionHandle = WeaponStats->BasicAttackActionHandle;
 				break;
 
 			case ECombatActionType::WeaponSkill:
 				Result.MontageToPlay = MyAnimSet.SkillMontage.LoadSynchronous();
-				TargetActionID = WeaponStats->SkillActionID;
+				TargetActionHandle = WeaponStats->SkillActionHandle;
 				break;
 			}
 
-			if (!TargetActionID.IsNone())
+			if (!TargetActionHandle.IsNull())
 			{
-				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+				if (FActionStats* ActionRow = TargetActionHandle.GetRow<FActionStats>(TEXT("WeaponActionLookup")))
 				{
 					Result.Stats = *ActionRow;
 
@@ -357,7 +358,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 				}
 				else
 				{
-					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 ActionID(%s)를 찾을 수 없습니다!"), *TargetActionID.ToString());
+					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 Action 데이터를 찾을 수 없습니다!"));
 				}
 			}
 		}

@@ -298,26 +298,26 @@ float UAutoCombatComponent::GetDynamicAttackRange(APlayerBase* PlayerPawn)
     APlayerData* Soul = PS->GetSquadMemberData(SquadComp->GetCurrentControlledIndex());
     if (!Soul) return DefaultRange;
 
-    FName TargetActionID = NAME_None;
+    FDataTableRowHandle TargetActionHandle;
 
     // 1순위: 궁극기 검사
     if (CanUseAbility(EInputID::Ultimate))
     {
         if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
-            TargetActionID = CharStats->SkillActionID;
+            TargetActionHandle = CharStats->UltimateActionHandle;
     }
     // 2, 3순위: 무기 스킬 및 평타 검사
     else if (UEquipmentComponent* EquipComp = Soul->GetEquipmentComponent())
     {
         FName WeaponID = EquipComp->GetEquippedItemID(EEquipmentSlot::Weapon);
         if (const FWeaponStats* WeaponStats = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, WeaponID))
-            TargetActionID = CanUseAbility(EInputID::Skill) ? WeaponStats->SkillActionID : WeaponStats->BasicAttackActionID;
+            TargetActionHandle = CanUseAbility(EInputID::Skill) ? WeaponStats->SkillActionHandle : WeaponStats->BasicAttackActionHandle;
     }
 
     // 최종 사거리 반환
-    if (TargetActionID != NAME_None && GI->ActionStatsDataTable)
+    if (!TargetActionHandle.IsNull())
     {
-        if (const FActionStats* ActionStats = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+        if (const FActionStats* ActionStats = TargetActionHandle.GetRow<FActionStats>(TEXT("AutoCombatRangeLookup")))
         {
             // AI의 헛방 방지를 위해 실제 사거리의 90%를 적용 (버퍼)
             return ActionStats->AttackRange * 0.9f;

@@ -131,11 +131,12 @@ public:
 	// =========================================================
 
 	/**
-	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
+	 * @brief 스킬 - FUltimateStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체를 직접 참조합니다.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName SkillActionID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle UltimateActionHandle;
 };
 
 /**
@@ -181,18 +182,18 @@ struct FAIUnitStats : public FUnitBaseStats
 	// =========================================================
 
 	/**
-	 * @brief AI 기본 공격 액션 ID
+	 * @brief AI 기본 공격 액션 데이터 핸들
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName BasicAttackActionID;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle BasicAttackActionHandle;
 
 	/**
-	 * @brief AI 스킬 액션 ID 목록
+	 * @brief AI 스킬 액션 데이터 핸들 목록
 	 * @details FAIUnitAssets의 SkillAbilities 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
 	 * 예: 인덱스 0 = 돌진 스킬, 인덱스 1 = 브레스 스킬
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	TArray<FName> SkillActionIDs;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	TArray<FDataTableRowHandle> PatternActionHandles;
 };
 
 /**

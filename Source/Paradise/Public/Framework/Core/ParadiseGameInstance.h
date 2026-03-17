@@ -165,10 +165,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.WeaponStats"))
 	TObjectPtr<class UDataTable> WeaponStatsDataTable = nullptr;
 
-	/*스킬 데미지 적용에 사용할 스탯 데이터 테이블 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.ActionStats"))
-	TObjectPtr<class UDataTable> ActionStatsDataTable = nullptr;
-
 	//스테이지 데이터 테이블
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Stage", meta = (RowType = "StatgeStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.StatgeStats"))
 	TObjectPtr<class UDataTable> StatgeStatsDataTable = nullptr;
