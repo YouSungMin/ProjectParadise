@@ -14,6 +14,7 @@
 #include "Characters/Base/PlayerBase.h"
 
 #include "Components/SquadControlComponent.h"
+#include "Components/SkillIndicatorComponent.h"
 #include "Components/AutoCombatComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "Components/UltimateEffectComponent.h"
@@ -44,28 +45,61 @@ void UActionControlPanel::NativeConstruct()
 	}
 #pragma endregion 태그 버튼 배열화 및 캐싱
 
-	// 2. 기본 공격 버튼 바인딩
+
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+	// 2. 기본 공격 버튼 바인딩 (Common UI의 기본 OnPressed/OnReleased 사용)
 	if (AttackBtn)
 	{
-		// Common UI의 OnSelected 혹은 OnClicked를 사용합니다.
-		AttackBtn->OnClicked().RemoveAll(this);
-		AttackBtn->OnClicked().AddUObject(this, &UActionControlPanel::OnAttackButtonClicked);
-		UE_LOG(LogTemp, Warning, TEXT(" 공격 키 바인드 됨 "));
+		AttackBtn->OnPressed().RemoveAll(this);
+		AttackBtn->OnPressed().AddUObject(this, &UActionControlPanel::OnAttackButtonPressed);
+
+		AttackBtn->OnReleased().RemoveAll(this);
+		AttackBtn->OnReleased().AddUObject(this, &UActionControlPanel::OnAttackButtonReleased);
 	}
 
-	// 3. 액티브 스킬 슬롯 바인딩
+	// 3. 액티브 스킬 슬롯 바인딩 (이전에 추가한 OnSkillPressed/Released 델리게이트 사용)
 	if (SkillSlot_Active)
 	{
-		SkillSlot_Active->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
-		SkillSlot_Active->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
+		SkillSlot_Active->OnSkillPressed.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillPressed);
+		SkillSlot_Active->OnSkillPressed.AddDynamic(this, &UActionControlPanel::OnActiveSkillPressed);
+
+		SkillSlot_Active->OnSkillReleased.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillReleased);
+		SkillSlot_Active->OnSkillReleased.AddDynamic(this, &UActionControlPanel::OnActiveSkillReleased);
 	}
 
-	//  4. 궁극기 스킬 슬롯 바인딩
+	// 4. 궁극기 스킬 슬롯 바인딩
 	if (SkillSlot_Ultimate)
 	{
-		SkillSlot_Ultimate->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
-		SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
+		SkillSlot_Ultimate->OnSkillPressed.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillPressed);
+		SkillSlot_Ultimate->OnSkillPressed.AddDynamic(this, &UActionControlPanel::OnUltimateSkillPressed);
+
+		SkillSlot_Ultimate->OnSkillReleased.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillReleased);
+		SkillSlot_Ultimate->OnSkillReleased.AddDynamic(this, &UActionControlPanel::OnUltimateSkillReleased);
 	}
+
+
+	//// 2. 기본 공격 버튼 바인딩
+	//if (AttackBtn)
+	//{
+	//	// Common UI의 OnSelected 혹은 OnClicked를 사용합니다.
+	//	AttackBtn->OnClicked().RemoveAll(this);
+	//	AttackBtn->OnClicked().AddUObject(this, &UActionControlPanel::OnAttackButtonClicked);
+	//	UE_LOG(LogTemp, Warning, TEXT(" 공격 키 바인드 됨 "));
+	//}
+
+	//// 3. 액티브 스킬 슬롯 바인딩
+	//if (SkillSlot_Active)
+	//{
+	//	SkillSlot_Active->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
+	//	SkillSlot_Active->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
+	//}
+
+	////  4. 궁극기 스킬 슬롯 바인딩
+	//if (SkillSlot_Ultimate)
+	//{
+	//	SkillSlot_Ultimate->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
+	//	SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
+	//}
 
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
@@ -85,10 +119,27 @@ void UActionControlPanel::NativeConstruct()
 
 void UActionControlPanel::NativeDestruct()
 {
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+	if (AttackBtn)
+	{
+		AttackBtn->OnPressed().RemoveAll(this);
+		AttackBtn->OnReleased().RemoveAll(this);
+	}
+	if (SkillSlot_Active)
+	{
+		SkillSlot_Active->OnSkillPressed.RemoveAll(this);
+		SkillSlot_Active->OnSkillReleased.RemoveAll(this);
+	}
+	if (SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->OnSkillPressed.RemoveAll(this);
+		SkillSlot_Ultimate->OnSkillReleased.RemoveAll(this);
+	}
+
 	// 위젯 파괴 시 남아있는 포인터들을 깔끔하게 정리 (메모리 릭 원천 차단)
-	if (AttackBtn) AttackBtn->OnClicked().RemoveAll(this);
+	/*if (AttackBtn) AttackBtn->OnClicked().RemoveAll(this);
 	if (SkillSlot_Active) SkillSlot_Active->OnSkillActionRequested.RemoveAll(this);
-	if (SkillSlot_Ultimate) SkillSlot_Ultimate->OnSkillActionRequested.RemoveAll(this);
+	if (SkillSlot_Ultimate) SkillSlot_Ultimate->OnSkillActionRequested.RemoveAll(this);*/
 
 	for (TObjectPtr<UCommonButtonBase> Btn : TagButtons)
 	{
@@ -164,6 +215,13 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 
 void UActionControlPanel::InitActionPanel(FDataTableRowHandle WeaponActionHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon)
 {
+	// 게임 인스턴스의 공용 데이터 테이블 로직을 활용합니다.
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	CachedWeaponActionID = WeaponActionID;
+	CachedUltimateActionID = UltimateActionID;
+
 	/** @section 1. 무기 스킬 (일반 스킬) 데이터 연동 */
 	if (AttackBtn && AttackIcon)
 	{
@@ -277,22 +335,108 @@ void UActionControlPanel::SetOwningPlayerBase(APlayerBase* InPlayer)
 	CachedPlayer = InPlayer;
 	UE_LOG(LogTemp, Log, TEXT("✅ [ActionPanel] 플레이어 폰 주입 완료!"));
 }
-void UActionControlPanel::OnAttackButtonClicked()
+
+void UActionControlPanel::OnAttackButtonPressed()
 {
-	ProcessAbilityInput(EInputID::Attack);
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(250.0f);
+	}
 }
 
-void UActionControlPanel::OnActiveSkillRequested()
+void UActionControlPanel::OnAttackButtonReleased()
 {
-	UE_LOG(LogTemp, Log, TEXT("스킬키 입력 들어옴"));
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		CurrentActivePawn->GetSkillIndicatorComponent()->HideIndicator();
+	}
+	ProcessAbilityInput(EInputID::Attack);
+}
+void UActionControlPanel::OnActiveSkillPressed()
+{
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		float ActualRadius = 600.0f;
+		float ActualOffset = 0.0f; // 추가!
+
+		UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+		if (GI && CachedWeaponActionID != NAME_None)
+		{
+			if (const FActionStats* ActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CachedWeaponActionID))
+			{
+				// 💡 [핵심] 실제 판정에 쓰이는 반경과 오프셋을 그대로 가져옵니다.
+				// 만약 Radius가 0인 투사체 스킬이면 Range를 쓰도록 예외 처리
+				ActualRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : ActionData->AttackRange;
+				ActualOffset = ActionData->ForwardOffset;
+			}
+		}
+
+		// 반경(Radius)과 앞으로 쏠린 거리(Offset)를 모두 전달!
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(ActualRadius, ActualOffset);
+	}
+}
+
+void UActionControlPanel::OnUltimateSkillPressed()
+{
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		float ActualUltimateRange = 1000.0f; // 기본값
+
+		UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+		if (GI && CachedUltimateActionID != NAME_None)
+		{
+			// 이번엔 궁극기 ID로 데이터 검색
+			if (const FActionStats* UltimateActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CachedUltimateActionID))
+			{
+				// 궁극기의 실제 사거리 적용!
+				ActualUltimateRange = UltimateActionData->AttackRange;
+			}
+		}
+
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(ActualUltimateRange);
+	}
+}
+
+void UActionControlPanel::OnActiveSkillReleased()
+{
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		CurrentActivePawn->GetSkillIndicatorComponent()->HideIndicator();
+	}
 	ProcessAbilityInput(EInputID::Skill);
 }
 
-void UActionControlPanel::OnUltimateSkillRequested()
+void UActionControlPanel::OnUltimateSkillReleased()
 {
-	UE_LOG(LogTemp, Log, TEXT("궁극키 입력 들어옴"));
-	ProcessAbilityInput(EInputID::Ultimate);
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		CurrentActivePawn->GetSkillIndicatorComponent()->HideIndicator();
+	}
+	ProcessAbilityInput(EInputID::Ultimate); // 진짜 발동
 }
+
+//void UActionControlPanel::OnAttackButtonClicked()
+//{
+//	ProcessAbilityInput(EInputID::Attack);
+//}
+//
+//void UActionControlPanel::OnActiveSkillRequested()
+//{
+//	UE_LOG(LogTemp, Log, TEXT("스킬키 입력 들어옴"));
+//	ProcessAbilityInput(EInputID::Skill);
+//}
+//
+//void UActionControlPanel::OnUltimateSkillRequested()
+//{
+//	UE_LOG(LogTemp, Log, TEXT("궁극키 입력 들어옴"));
+//	ProcessAbilityInput(EInputID::Ultimate);
+//}
 
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 {

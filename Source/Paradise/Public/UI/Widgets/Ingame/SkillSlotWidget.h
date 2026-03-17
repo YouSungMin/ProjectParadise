@@ -15,7 +15,11 @@ class UTexture2D;
 #pragma endregion 전방 선언
 
 // 쿨타임이 없을 때 스킬 사용을 부모에게 요청하는 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
+
+//0317 - //0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillPressed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillReleased);
 
 /**
  * @class USkillSlotWidget
@@ -64,7 +68,7 @@ public:
 private:
 #pragma region 내부 로직 (최적화)
 	/** @brief 버튼 클릭 시 호출될 델리게이트 바인딩 함수입니다. */
-	void OnSkillButtonClicked();
+	//void OnSkillButtonClicked();
 
 	/** @brief 타이머에 의해 주기적으로 호출되어 쿨타임 UI를 갱신합니다. */
 	void UpdateCooldownVisual();
@@ -82,8 +86,15 @@ private:
 
 public:
 	/** @brief 스킬 사용 조건이 충족되었을 때 발생 */
-	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
-	FOnSkillActionRequested OnSkillActionRequested;
+	/*UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnSkillActionRequested OnSkillActionRequested;*/
+
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+	UPROPERTY(BlueprintAssignable, Category = "Skill Events")
+	FOnSkillPressed OnSkillPressed;
+
+	UPROPERTY(BlueprintAssignable, Category = "Skill Events")
+	FOnSkillReleased OnSkillReleased;
 
 private:
 #pragma region 쿨타임 설정

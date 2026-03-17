@@ -30,6 +30,17 @@ public:
 
 	virtual void Shutdown() override;
 
+#pragma region 디버그 함수 
+
+	// 특정 폴더의 모든 스켈레탈 메쉬를 검사하여 스케일 0인 뼈(지뢰)를 찾아내는 디버그 함수
+	// 게임 중 콘솔 창(~ 키)에 'CheckMeshScale' 이라고 치면 실행됩니다.
+	UFUNCTION(Exec)
+	void CheckMeshScale(FString FolderPath = TEXT("/Game/External_Assets/ScaledPlayerMesh"));
+
+
+#pragma endregion 디버그 함수 
+
+
 #pragma region 게임 데이터 저장 및 로드
 
 public:
@@ -46,6 +57,10 @@ public:
 
 	// 기본 슬롯 이름
 	const FString DefaultSaveSlot = TEXT("SaveSlot_01");
+
+private:
+	/** @brief 로드 성공 체크용 변수 */
+	bool bIsGameDataLoaded = false;
 
 #pragma endregion 게임 데이터 저장 및 로드
 

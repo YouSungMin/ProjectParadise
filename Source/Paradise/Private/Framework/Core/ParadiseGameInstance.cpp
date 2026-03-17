@@ -16,6 +16,9 @@
 #include "Data/Structs/ItemStructs.h"
 #include "Kismet/GameplayStatics.h"
 #include "Paradise/Paradise.h"
+//0317 김성현 - CheckMeshScale 디버그 함수때문에 추가 추후 삭제
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "Engine/SkeletalMesh.h"
 
 
 UParadiseGameInstance::UParadiseGameInstance()
@@ -50,8 +53,79 @@ void UParadiseGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
+void UParadiseGameInstance::CheckMeshScale(FString FolderPath)
+{
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("🔍 [지뢰 탐지기 작동] 스켈레탈 메쉬 스케일 검사를 시작합니다."));
+	UE_LOG(LogTemp, Warning, TEXT("📂 검사 경로: %s"), *FolderPath);
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+
+	// 에셋 레지스트리를 통해 폴더 내의 모든 에셋 정보를 가져옵니다.
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> AssetDataList;
+
+	// 폴더 내 에셋 검색 (true = 하위 폴더까지 전부 검색)
+	AssetRegistryModule.Get().GetAssetsByPath(FName(*FolderPath), AssetDataList, true);
+
+	int32 TotalChecked = 0;
+	int32 TotalBadMeshes = 0;
+
+	for (const FAssetData& AssetData : AssetDataList)
+	{
+		// 이 에셋이 스켈레탈 메쉬인지 확인
+		if (AssetData.GetClass() == USkeletalMesh::StaticClass())
+		{
+			// 검사를 위해 에셋 메모리에 로드
+			USkeletalMesh* SkelMesh = Cast<USkeletalMesh>(AssetData.GetAsset());
+			if (SkelMesh)
+			{
+				TotalChecked++;
+				bool bIsSafe = true;
+				FString BadBoneNames = TEXT("");
+
+				// 뼈대 정보 가져오기
+				const FReferenceSkeleton& RefSkel = SkelMesh->GetRefSkeleton();
+				const TArray<FTransform>& RefBonePose = RefSkel.GetRefBonePose();
+
+				// 모든 뼈 검사
+				for (int32 i = 0; i < RefBonePose.Num(); ++i)
+				{
+					FVector BoneScale = RefBonePose[i].GetScale3D();
+
+					// 스케일이 0이거나 NaN이면 지뢰로 판정
+					if (BoneScale.ContainsNaN() || BoneScale.IsNearlyZero())
+					{
+						bIsSafe = false;
+						FName BoneName = RefSkel.GetBoneName(i);
+						BadBoneNames += FString::Printf(TEXT("\n    👉 뼈: [%s], 스케일: %s"), *BoneName.ToString(), *BoneScale.ToString());
+					}
+				}
+
+				// 지뢰가 발견되었다면 빨간색 에러 로그로 출력!
+				if (!bIsSafe)
+				{
+					TotalBadMeshes++;
+					UE_LOG(LogTemp, Error, TEXT("💣 [지뢰 발견] 에셋: %s %s"), *SkelMesh->GetName(), *BadBoneNames);
+				}
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("🏁 [검사 완료] 총 %d개의 메쉬 검사됨 / 💣 지뢰(불량 메쉬) %d개 발견됨!"), TotalChecked, TotalBadMeshes);
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+
+}
+
 void UParadiseGameInstance::SaveGameData()
 {
+	//이미 세이브 파일이 존재하는데 로드에 실패했던 상태라면, 빈 데이터 저장을 차단합니다.
+	if (!bIsGameDataLoaded && UGameplayStatics::DoesSaveGameExist(SaveGameSlotName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("🛑 [SaveSystem] 비정상적인 로드 상태이므로 기존 데이터를 보호하기 위해 덮어쓰기를 취소합니다!"));
+		return;
+	}
+
 	//저장할 SaveGame 객체 생성
 	UParadiseSaveGame* SaveObj = Cast<UParadiseSaveGame>(UGameplayStatics::CreateSaveGameObject(UParadiseSaveGame::StaticClass()));
 	if (!SaveObj) return;
@@ -87,6 +161,8 @@ void UParadiseGameInstance::LoadGameData()
 
 	if (LoadObj)
 	{
+
+		bIsGameDataLoaded = true;
 		//세이브 객체에 들어있는 배열들을 인벤토리의 InitInventory 함수에 호출
 		//InitInventory 함수 내부에서 자동으로 유효성 검사 후 인벤토리 초기화
 		MainInventory->InitInventory(
@@ -125,7 +201,12 @@ void UParadiseGameInstance::LoadGameData()
 		//세이브 파일이 없다면 (처음 게임을 켰거나 데이터가 날아간 경우)
 		UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 빈 인벤토리로 시작합니다."));
 
-		//만약 튜토리얼 기본 지급 영웅/무기가 필요하다면 여기서 AddCharacter() 등을 호출하시면 됩니다.
+		if (!UGameplayStatics::DoesSaveGameExist(SaveGameSlotName, 0))
+		{
+			bIsGameDataLoaded = true;
+			//만약 튜토리얼 기본 지급 영웅/무기가 필요하다면 여기서 AddCharacter() 등을 호출하시면 됩니다.
+
+		}
 	}
 }
 
