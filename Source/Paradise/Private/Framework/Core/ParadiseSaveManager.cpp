@@ -24,7 +24,9 @@ bool UParadiseSaveManager::SaveGameEncrypted(USaveGame* SaveGameObject, const FS
 	// 2. AES 블록 사이즈(16바이트)에 맞게 패딩(빈 공간) 추가
 	int32 OriginalSize = SaveData.Num();
 	int32 PaddedSize = Align(OriginalSize, FAES::AESBlockSize);
-	SaveData.SetNum(PaddedSize); // 크기를 늘리고 빈 곳은 0으로 채움
+
+	// 쓰레기 값이 암호화되어 해시 위변조(Tamper) 에러가 터지는 것을 방지합니다.
+	SaveData.SetNumZeroed(PaddedSize);
 
 	// 3. AES 암호화 수행 (SaveData 배열 내부 데이터가 암호문으로 덮어씌워짐)
 	FAES::EncryptData(SaveData.GetData(), PaddedSize, AES_SECRET_KEY);

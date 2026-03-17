@@ -4,6 +4,7 @@
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Components/EquipmentComponent.h"
+#include "Components/SkillIndicatorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Framework/InGame/InGameController.h"
@@ -50,6 +51,8 @@ void APlayerBase::InitializeComponents()
     WeaponMesh->SetupAttachment(GetMesh(), TEXT("hand_r")); // 기본 소켓
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 무기 자체 충돌은 끔
     WeaponMesh->SetComponentTickEnabled(false); // 무기 자체 틱은 불필요하므로 끔 (최적화)
+
+    SkillIndicatorComp = CreateDefaultSubobject<USkillIndicatorComponent>(TEXT("SkillIndicatorComp"));
 }
 
 void APlayerBase::PossessedBy(AController* NewController)
@@ -172,6 +175,15 @@ USkeletalMeshComponent* APlayerBase::GetArmorComponent(EEquipmentSlot Slot) cons
     case EEquipmentSlot::Weapon:  return WeaponMesh;
     default: return nullptr;
     }
+}
+
+USkillIndicatorComponent* APlayerBase::GetSkillIndicatorComponent() const
+{
+    if (SkillIndicatorComp)
+    {
+        return SkillIndicatorComp;
+    }
+    return nullptr;
 }
 
 FCombatActionData APlayerBase::GetCombatActionData(ECombatActionType ActionType) const

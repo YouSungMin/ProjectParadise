@@ -11,7 +11,9 @@
 
 
 class UInputAction;
+class USkillIndicatorComponent;
 struct FInputActionValue;
+
 /**
  * 
  */
@@ -41,6 +43,12 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Visual")
 	USkeletalMeshComponent* GetArmorComponent(EEquipmentSlot Slot) const;
+
+	/**
+	 * @brief 스킬 사거리 컴포넌트 Getter함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Getter")
+	USkillIndicatorComponent* GetSkillIndicatorComponent() const;
 
 	/**
 	 * @brief 현재 장착된 무기를 기반으로 특정 행동(평타/스킬)에 필요한 전투 데이터를 반환합니다.
@@ -166,6 +174,10 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<class UCameraComponent> FollowCamera = nullptr;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USkillIndicatorComponent> SkillIndicatorComp =nullptr;
 
 	
 	/*
