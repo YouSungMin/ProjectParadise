@@ -66,6 +66,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> SphereComp;
 
+	// @brief 투사체의 뼈대 외형을 보여줄 스태틱 메시 (구, 화살 등)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UStaticMeshComponent> StaticMeshComp;
+
 	/** @brief 투사체의 외형 (나이아가라 이펙트) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UNiagaraComponent> NiagaraComp;

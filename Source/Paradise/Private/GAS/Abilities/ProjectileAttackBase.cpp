@@ -8,6 +8,7 @@
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Objects/ProjectileBase.h"
 #include "Characters/Base/CharacterBase.h"
+#include "TimerManager.h"
 
 UProjectileAttackBase::UProjectileAttackBase()
 {
@@ -17,6 +18,9 @@ UProjectileAttackBase::UProjectileAttackBase()
 
 void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	bIsShooting = false;
+	bMontageFinished = false;
+
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// 코스트 및 쿨타임 확인 (Commit)
@@ -47,6 +51,29 @@ void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	EventTask->ReadyForActivation();
 }
 
+void UProjectileAttackBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearAllTimersForObject(this);
+	}
+
+	bIsShooting = false;
+	bMontageFinished = false;
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UProjectileAttackBase::OnMontageCompleted()
+{
+	bMontageFinished = true; // 애니메이션 종료 기록
+
+	if (!bIsShooting)
+	{
+		Super::OnMontageCompleted();
+	}
+}
+
 void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 {
 	ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo());
@@ -61,76 +88,114 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	FTransform MuzzleTransform = AvatarChar->GetCurrentMuzzleTransform();
+	BurstCurrentCount = 0; // 발사 카운트 초기화
 
-	// 소켓의 월드 좌표 가져오기
-	FVector SpawnLocation = MuzzleTransform.GetLocation();
-
-	// 기존처럼 캐릭터가 바라보는 앞으로 Offset만큼 띄워주기
-	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
-
-	// 캐릭터가 보는 방향으로 발사
-	FRotator BaseRotation = AvatarChar->GetActorRotation();
-
-	int32 PCount = FMath::Max(1, CombatData.ProjectileStats.ProjectileCount);
-	float SAngle = CombatData.ProjectileStats.SpreadAngle;
-
-	// 각도 간격 계산: 1발이면 0도, 여러 발이면 전체 각도를 (발사수-1)로 나눔
-	float AngleStep = (PCount > 1) ? (SAngle / (PCount - 1)) : 0.0f;
-
-	// 첫 번째 투사체가 쏘아질 시작 각도 (부채꼴의 가장 왼쪽 끝)
-	float StartAngle = (PCount > 1) ? -(SAngle / 2.0f) : 0.0f;
-
-	// 스폰 파라미터 설정
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = AvatarChar;
-	SpawnParams.Instigator = AvatarChar;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
+	if (CombatData.ProjectileStats.BurstDelay <= 0.0f)
 	{
-		// 💡 데이터 테이블에 적힌 발사 개수(PCount)만큼 반복해서 스폰합니다!
+		// 샷건 모드 (한 번에 다 스폰)
+		int32 PCount = FMath::Max(1, CombatData.ProjectileStats.ProjectileCount);
 		for (int32 i = 0; i < PCount; ++i)
 		{
-			// 기준 회전(앞)에서 계산된 각도만큼 Yaw(좌우)를 비틂
-			FRotator PelletRotation = BaseRotation;
-			PelletRotation.Yaw += StartAngle + (AngleStep * i);
+			FireSinglePellet();
+		}
 
-			AActor* SpawnedProjectile = PoolSubsystem->SpawnPoolActor<AActor>(
-				CombatData.ProjectileClass,
-				SpawnLocation,
-				PelletRotation, // 💡 계산된 부채꼴 각도 적용!
-				AvatarChar,
-				AvatarChar
-			);
+		if (bMontageFinished)
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}
+	}
+	else
+	{
+		// [머신건 모드]
+		bIsShooting = true;
 
-			if (SpawnedProjectile)
+		FTimerHandle BurstTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			BurstTimerHandle,
+			this,
+			&UProjectileAttackBase::FireSinglePellet,
+			CombatData.ProjectileStats.BurstDelay,
+			true,  // 반복 켜기
+			0.0f   // 첫 발 즉시 발사
+		);
+	}
+}
+
+void UProjectileAttackBase::FireSinglePellet()
+{
+	ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo());
+	if (!AvatarChar) return;
+
+	FCombatActionData CombatData = GetCombatDataFromActor();
+
+	int32 TotalCount = FMath::Max(1, CombatData.ProjectileStats.ProjectileCount);
+	float SAngle = CombatData.ProjectileStats.SpreadAngle;
+
+	float AngleStep = (TotalCount > 1) ? (SAngle / (TotalCount - 1)) : 0.0f;
+	float StartAngle = (TotalCount > 1) ? -(SAngle / 2.0f) : 0.0f;
+
+	// 스폰 위치 계산
+	FTransform MuzzleTransform = AvatarChar->GetCurrentMuzzleTransform();
+	FVector SpawnLocation = MuzzleTransform.GetLocation();
+	SpawnLocation += AvatarChar->GetActorForwardVector() * CombatData.Stats.ForwardOffset;
+
+	FRotator BaseRotation = AvatarChar->GetActorRotation();
+
+	// 부채꼴 각도 적용 (현재 발사된 카운트인 BurstCurrentCount에 맞춰서 벌어짐)
+	FRotator PelletRotation = BaseRotation;
+	PelletRotation.Yaw += StartAngle + (AngleStep * BurstCurrentCount);
+
+	// 랜덤 탄퍼짐 오차 적용
+	if (CombatData.ProjectileStats.RandomSpreadAngle > 0.0f)
+	{
+		float RandomPitch = FMath::RandRange(-CombatData.ProjectileStats.RandomSpreadAngle, CombatData.ProjectileStats.RandomSpreadAngle);
+		float RandomYaw = FMath::RandRange(-CombatData.ProjectileStats.RandomSpreadAngle, CombatData.ProjectileStats.RandomSpreadAngle);
+
+		PelletRotation.Pitch += RandomPitch;
+		PelletRotation.Yaw += RandomYaw;
+	}
+
+	// 스폰 및 데이터 적용
+	if (UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>())
+	{
+		AActor* SpawnedProjectile = PoolSubsystem->SpawnPoolActor<AActor>(
+			CombatData.ProjectileClass,
+			SpawnLocation,
+			PelletRotation,
+			AvatarChar,
+			AvatarChar
+		);
+
+		if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
+		{
+			Proj->SetOwner(AvatarChar);
+			Proj->SetInstigator(AvatarChar);
+
+			if (CombatData.EffectClass)
 			{
-				if (AProjectileBase* Proj = Cast<AProjectileBase>(SpawnedProjectile))
-				{
-					// [중요] 오브젝트 풀링 버그 방지를 위한 오너 확실한 재각인!
-					Proj->SetOwner(AvatarChar);
-					Proj->SetInstigator(AvatarChar);
-
-					// 데미지 이펙트 세팅
-					if (CombatData.EffectClass)
-					{
-						FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
-						SpecHandle.Data->SetSetByCallerMagnitude(
-							FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")),
-							CombatData.Stats.DamageMultiplier
-						);
-						Proj->SetDamageSpecHandle(SpecHandle);
-					}
-
-					// 💡 변경: 투사체의 속도를 ProjectileStats에서 꺼내옵니다!
-					Proj->ApplyCombatData(
-						CombatData.Stats.AttackRange,
-						CombatData.Stats.AttackRadius,
-						CombatData.ProjectileStats
-					);
-				}
+				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
+				SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")), CombatData.Stats.DamageMultiplier);
+				Proj->SetDamageSpecHandle(SpecHandle);
 			}
+
+			// 투사체 속성 넘기기
+			Proj->ApplyCombatData(CombatData.Stats.AttackRange, CombatData.Stats.AttackRadius, CombatData.ProjectileStats);
+		}
+	}
+
+	// 한 발 쐈으니 카운트 증가
+	BurstCurrentCount++;
+
+	// 총 발사 개수(TotalCount)만큼 다 쐈으면 타이머 종료
+	if (BurstCurrentCount >= TotalCount)
+	{
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+		bIsShooting = false;
+
+		// 연사가 끝났는데 애니메이션도 다 끝났다면 어빌리티 종료
+		if (bMontageFinished)
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 		}
 	}
 }
