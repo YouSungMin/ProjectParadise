@@ -35,7 +35,7 @@ public:
 	 * @note UI에서 스킬 버튼을 누르고 있을 때(Hold) 또는 AI가 공격을 준비(Cast)할 때 호출하세요.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Skill Indicator")
-	void ShowIndicator(float Range);
+	void ShowIndicator(float Radius, float ForwardOffset = 0.0f);
 
 	/**
 	 * @brief 켜져 있는 사거리 장판을 즉시 숨깁니다.

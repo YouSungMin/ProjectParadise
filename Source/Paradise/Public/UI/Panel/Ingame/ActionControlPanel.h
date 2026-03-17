@@ -80,17 +80,34 @@ public:
 #pragma endregion 외부 인터페이스
 private:
 #pragma region 내부 로직
-	/** @brief 공격 버튼 클릭 시 발생할 이벤트 핸들러 */
+
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
 	UFUNCTION()
-	void OnAttackButtonClicked();
+	void OnAttackButtonPressed();
+	UFUNCTION()
+	void OnAttackButtonReleased();
 
-	/** 액티브 스킬 델리게이트 수신용 래퍼 함수 */
-	UFUNCTION() 
-	void OnActiveSkillRequested();
+	UFUNCTION()
+	void OnActiveSkillPressed();
+	UFUNCTION()
+	void OnActiveSkillReleased();
 
-	/** 궁극기 델리게이트 수신용 래퍼 함수 */
-	UFUNCTION() 
-	void OnUltimateSkillRequested();
+	UFUNCTION()
+	void OnUltimateSkillPressed();
+	UFUNCTION()
+	void OnUltimateSkillReleased();
+
+	///** @brief 공격 버튼 클릭 시 발생할 이벤트 핸들러 */
+	//UFUNCTION()
+	//void OnAttackButtonClicked();
+
+	///** 액티브 스킬 델리게이트 수신용 래퍼 함수 */
+	//UFUNCTION() 
+	//void OnActiveSkillRequested();
+
+	///** 궁극기 델리게이트 수신용 래퍼 함수 */
+	//UFUNCTION() 
+	//void OnUltimateSkillRequested();
 
 	/**
 	 * @brief UI 버튼 입력을 통합하여 플레이어의 ASC로 전달하는 중앙 제어 함수입니다.
@@ -170,4 +187,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Button")
 	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 #pragma endregion 데이터 드리븐 설정
+
+
+#pragma region 사거리 표시용 데이터
+
+	UPROPERTY()
+	FName CachedWeaponActionID;
+
+	UPROPERTY()
+	FName CachedUltimateActionID;
+
+#pragma region 사거리 표시용 데이터
 };

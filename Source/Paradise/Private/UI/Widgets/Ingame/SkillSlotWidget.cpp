@@ -23,7 +23,7 @@ void USkillSlotWidget::NativeConstruct()
 	// 입력 처리는 버튼에게 위임하고, 위젯은 그 결과만 받아 처리합니다.
 	if (Btn_SkillAction)
 	{
-		Btn_SkillAction->OnClicked().AddUObject(this, &USkillSlotWidget::OnSkillButtonClicked);
+		//Btn_SkillAction->OnClicked().AddUObject(this, &USkillSlotWidget::OnSkillButtonClicked);
 
 		Btn_SkillAction->OnPressed().AddUObject(this, &USkillSlotWidget::OnSkillButtonPressed);
 		Btn_SkillAction->OnReleased().AddUObject(this, &USkillSlotWidget::OnSkillButtonReleased);
@@ -118,6 +118,14 @@ void USkillSlotWidget::OnSkillButtonPressed()
 	{
 		Img_SkillIcon->SetColorAndOpacity(PressedTintColor);
 	}
+
+	if (CurrentCooldown <= 0.0f)
+	{
+		if (OnSkillPressed.IsBound())
+		{
+			OnSkillPressed.Broadcast();
+		}
+	}
 }
 
 void USkillSlotWidget::OnSkillButtonReleased()
@@ -126,21 +134,29 @@ void USkillSlotWidget::OnSkillButtonReleased()
 	{
 		Img_SkillIcon->SetColorAndOpacity(NormalTintColor);
 	}
-}
 
-void USkillSlotWidget::OnSkillButtonClicked()
-{
-	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
-
-	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
 	if (CurrentCooldown <= 0.0f)
 	{
-		if (OnSkillActionRequested.IsBound())
+		if (OnSkillReleased.IsBound())
 		{
-			OnSkillActionRequested.Broadcast();
+			OnSkillReleased.Broadcast();
 		}
 	}
 }
+
+//void USkillSlotWidget::OnSkillButtonClicked()
+//{
+//	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
+//
+//	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
+//	if (CurrentCooldown <= 0.0f)
+//	{
+//		if (OnSkillActionRequested.IsBound())
+//		{
+//			OnSkillActionRequested.Broadcast();
+//		}
+//	}
+//}
 
 void USkillSlotWidget::UpdateCooldownVisual()
 {

@@ -49,14 +49,20 @@ void USkillIndicatorComponent::BeginPlay()
 
 }
 
-void USkillIndicatorComponent::ShowIndicator(float Range)
+void USkillIndicatorComponent::ShowIndicator(float Radius, float ForwardOffset)
 {
 	if (RangeDecal)
 	{
-		// 데칼의 크기를 설정합니다. 
-		// X축은 투사 깊이(Depth), Y와 Z축이 원의 반지름(Radius) 역할을 합니다.
-		RangeDecal->DecalSize = FVector(DecalDepth, Range, Range);
+		// X: 깊이, Y/Z: 반지름(Radius)
+		RangeDecal->DecalSize = FVector(DecalDepth, Radius, Radius);
+
+		// 캐릭터 앞으로 ForwardOffset만큼 밀어주고, Z축으로 바닥에 붙임(-80.0f)
+		RangeDecal->SetRelativeLocation(FVector(ForwardOffset, 0.0f, -80.0f));
+
 		RangeDecal->SetVisibility(true);
+
+		// [로그 추가] 장판에 실제로 적용된 반지름과 오프셋 수치 출력
+		UE_LOG(LogTemp, Warning, TEXT("🔵 [SkillIndicator] 장판 표시 완료! (Radius: %f / ForwardOffset: %f)"), Radius, ForwardOffset);
 	}
 }
 
