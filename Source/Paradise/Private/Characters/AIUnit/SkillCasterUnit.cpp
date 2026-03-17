@@ -26,12 +26,12 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 	}
 	SkillAbilityHandles.Empty();
 
-	for (int32 i = 0; i < InStats->SkillActionIDs.Num(); ++i)
+	for (int32 i = 0; i < InStats->PatternActionHandles.Num(); ++i)
 	{
 		FCombatActionData SkillData;
 
 		// 엑셀 데이터 로드 (사거리, 데미지 배율 등)
-		if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, InStats->SkillActionIDs[i]))
+		if (FActionStats* ActionRow = InStats->PatternActionHandles[i].GetRow<FActionStats>(TEXT("SkillLookup")))
 		{
 			SkillData.Stats = *ActionRow;
 

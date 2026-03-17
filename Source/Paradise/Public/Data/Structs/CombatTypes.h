@@ -44,6 +44,15 @@ struct FActionStats : public FTableRowBase
 {
 	GENERATED_BODY()
 
+
+	/** @brief UI에 표시될 스킬 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|UI")
+	FText ActionName;
+
+	/** @brief UI에 표시될 스킬 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|UI")
+	FText ActionDescription;
+
 	/** @brief 데미지 배율 (기본 1.0) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
 	float DamageMultiplier = 1.0f;

@@ -96,7 +96,15 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 			float CurAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
 
 			FinalStatString = FString::Printf(TEXT("Lv.%d\n체력: %d / 공격력: %d"), Level, FMath::RoundToInt(CurHP), FMath::RoundToInt(CurAtk));
-			SkillInfoString = FString::Printf(TEXT("고유 스킬: %s"), *CharStat->SkillActionID.ToString());
+			SkillInfoString = TEXT("고유 스킬: 없음");
+			if (!CharStat->UltimateActionHandle.IsNull())
+			{
+				if (FActionStats* ActionRow = CharStat->UltimateActionHandle.GetRow<FActionStats>(TEXT("UI_SkillNameLookup")))
+				{
+					// 엑셀에 적힌 진짜 스킬 이름을 가져옵니다!
+					SkillInfoString = FString::Printf(TEXT("고유 스킬: %s"), *ActionRow->ActionName.ToString());
+				}
+			}
 		}
 
 		// 편성창일 경우 장비 아이콘 업데이트 (기존 로직)
@@ -126,7 +134,14 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 			FinalStatString = FString::Printf(TEXT("강화 +%d\n공격력: %d / 치명타: %d%%"),
 				InData.Level, FMath::RoundToInt(WpnStat->AttackPower * AtkBonus), FMath::RoundToInt(WpnStat->CritRate * 100.0f));
 
-			SkillInfoString = FString::Printf(TEXT("무기 스킬: %s"), *WpnStat->SkillActionID.ToString());
+			SkillInfoString = TEXT("무기 스킬: 없음");
+			if (!WpnStat->SkillActionHandle.IsNull())
+			{
+				if (FActionStats* ActionRow = WpnStat->SkillActionHandle.GetRow<FActionStats>(TEXT("UI_WeaponSkillNameLookup")))
+				{
+					SkillInfoString = FString::Printf(TEXT("무기 스킬: %s"), *ActionRow->ActionName.ToString());
+				}
+			}
 		}
 	}
 	break;
@@ -152,7 +167,15 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 			FinalStatString = FString::Printf(TEXT("체력: %d / 공격력: %d\n소환 코스트: %d"),
 				FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower), UnitStat->SummonCost);
 
-			SkillInfoString = UnitStat->SkillActionIDs.Num() > 0 ? FString::Printf(TEXT("주요 스킬: %s"), *UnitStat->SkillActionIDs[0].ToString()) : TEXT("스킬 없음");
+			SkillInfoString = TEXT("주요 스킬: 없음");
+			if (UnitStat->PatternActionHandles.Num() > 0 && !UnitStat->PatternActionHandles[0].IsNull())
+			{
+				if (FActionStats* ActionRow = UnitStat->PatternActionHandles[0].GetRow<FActionStats>(TEXT("UI_FamiliarSkillNameLookup")))
+				{
+					// 첫 번째 스킬의 이름을 가져옵니다.
+					SkillInfoString = FString::Printf(TEXT("주요 스킬: %s"), *ActionRow->ActionName.ToString());
+				}
+			}
 		}
 	}
 	break;
