@@ -249,6 +249,13 @@ private:
 #pragma region 내부 리빌 카운트 로직
 private:
 	/**
+	 * @brief 구슬 하나가 착지했을 때 호출됩니다. (ItemActor::OnItemLanded에 바인딩)
+	 * @details 모든 구슬이 착지하면 전체 EnableTouch()를 일괄 호출합니다.
+	 */
+	UFUNCTION()
+	void OnItemLandedCallback();
+
+	/**
 	 * @brief 구슬 하나가 리빌됐을 때 호출 (각 ItemActor 의 OnItemRevealed 에 바인딩)
 	 * @param ItemData 리빌된 아이템 데이터
 	 */
@@ -334,6 +341,9 @@ private:
 	/** @brief 결과창 지연 타이머 핸들 */
 	FTimerHandle ResultDelayTimerHandle;
 
+	/** @brief 착지 완료된 구슬 수 */
+	int32 LandedItemCount = 0;
+
 	/** @brief 리빌 완료된 구슬 수 */
 	int32 RevealedItemCount = 0;
 
@@ -353,7 +363,7 @@ protected:
 	 * @brief 구슬 착지 시 바닥에서 띄울 Z 오프셋 (구슬 절반 높이)
 	 * @details 구슬이 바닥에 반쯤 잠기면 이 값을 높여주세요.
 	 */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.0"))
-		float OrbLandingZOffset = 50.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.0"))
+	float OrbLandingZOffset = 50.0f;
 
 };

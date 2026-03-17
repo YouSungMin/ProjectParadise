@@ -84,6 +84,10 @@ void AParadiseGachaItemActor::Tick(float DeltaTime)
 		{
 			RarityAuraEffect->Activate(true);
 		}
+		if (OnItemLanded.IsBound())
+		{
+			OnItemLanded.Broadcast();
+		}
 	}
 }
 #pragma endregion 초기화 및 생명주기
@@ -111,22 +115,19 @@ void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, U
 		// 지뢰(스케일 0) 탐지기 작동!
 		for (int32 i = 0; i < RefBonePose.Num(); ++i)
 		{
-			if (RefBonePose[i].GetScale3D().ContainsNaN() || RefBonePose[i].GetScale3D().IsNearlyZero())
+			if (RefBonePose[i].GetScale3D().ContainsNaN())
 			{
 				bIsSafe = false;
+				UE_LOG(LogTemp, Error,
+					TEXT("[방어막 작동] %s의 %d번 뼈에 NaN 스케일이 있어 렌더링을 차단했습니다!"),
+					*CachedItemData.CharacterSkeletalMesh->GetName(), i);
 				break;
 			}
 		}
 
-		// 지뢰가 없을 때만 메쉬를 입힘
 		if (bIsSafe)
 		{
 			RevealCharacterMesh->SetSkeletalMeshAsset(CachedItemData.CharacterSkeletalMesh);
-		}
-		else
-		{
-			// 지뢰가 발견되면 메쉬를 입히지 않고 투명한 상태로 둠 (엔진 크래시 완벽 방어)
-			UE_LOG(LogTemp, Error, TEXT("🛑 [방어막 작동] %s에 스케일 0인 뼈가 있어 렌더링을 차단했습니다!"), *CachedItemData.CharacterSkeletalMesh->GetName());
 		}
 	}
 	// 장비 메시 미리 세팅 (숨김 상태)
@@ -141,6 +142,7 @@ void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, U
 
 void AParadiseGachaItemActor::LaunchToTarget(FVector TargetLocation, float FlightDuration, float ArcHeight)
 {
+	bTouchEnabled = false;
 	StartLoc = GetActorLocation();
 	EndLoc = TargetLocation;
 	TotalFlightTime = FMath::Max(FlightDuration, 0.1f); // 0으로 나누기 방지
@@ -221,6 +223,16 @@ void AParadiseGachaItemActor::RevealItem()
 	}
 }
 
+void AParadiseGachaItemActor::EnableTouch()
+{
+	bTouchEnabled = true;
+
+	if (ItemMesh)
+	{
+		ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
+}
+
 void AParadiseGachaItemActor::SetFlightSpeedMultiplier(float InMultiplier)
 {
 	FlightSpeedMultiplier = FMath::Max(InMultiplier, 0.1f);
@@ -268,6 +280,8 @@ void AParadiseGachaItemActor::HandleItemClicked(UPrimitiveComponent* TouchedComp
 
 void AParadiseGachaItemActor::HandleItemTouchEnd(ETouchIndex::Type FingerIndex, UPrimitiveComponent* TouchedComponent)
 {
+	// 모든 구슬 착지 전 터치 완전 차단
+	if (!bTouchEnabled) return;
 	RevealItem();
 }
 #pragma endregion 내부 이벤트 핸들러

@@ -7,9 +7,11 @@
 #include "ParadiseStageSelectWidget.generated.h"
 
 #pragma region 전방 선언
-class UCanvasPanel;
+class UWidgetSwitcher;
+//class UCanvasPanel;
 class UDataTable;
 class UButton;
+class UImage;
 class UParadiseStageDetailWidget;
 class UParadiseGameInstance;
 #pragma endregion 전방 선언
@@ -29,14 +31,34 @@ protected:
 	virtual void NativeDestruct() override;
 #pragma region UI 컴포넌트
 protected:
-	/** @brief 노드들이 배치된 컨테이너 (지도 배경이 깔린 패널) */
+	/**
+	 * @brief 챕터에 따라 동적으로 바뀔 지도 배경 이미지
+	 * @details Z-Order를 가장 낮게(계층구조 맨 위) 설정하여 노드들 뒤에 깔리도록 해야 합니다.
+	 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_MapBackground = nullptr;
+
+	/**
+	 * @brief 챕터별 캔버스들을 담아두고 교체해 줄 스위처
+	 * @details 인덱스 0 = 1챕터 캔버스, 인덱스 1 = 2챕터 캔버스 ...
+	 */
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCanvasPanel> Canvas_MapArea = nullptr;
+	TObjectPtr<UWidgetSwitcher> Switcher_ChapterMaps = nullptr; // 🚨 [교체]
 
 	/** @brief 로비로 돌아가는 뒤로가기 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Back = nullptr;
 #pragma endregion UI 컴포넌트
+
+#pragma region 외부 인터페이스
+public:
+	/**
+	 * @brief 컨트롤러에서 호출하여 현재 챕터 번호에 맞는 스테이지 노드들을 세팅합니다.
+	 * @param InChapterID 현재 진입한 챕터 번호
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Stage")
+	void InitStageMap(int32 InChapterID);
+#pragma endregion 외부 인터페이스
 
 #pragma region 데이터 (Data)
 protected:
@@ -80,5 +102,8 @@ private:
 private:
 	/** @brief 게임 인스턴스 1회 캐싱 */
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+
+	/** @brief 현재 선택된 챕터 번호 보관용 */
+	int32 CurrentChapterID = 1;
 #pragma endregion 내부 캐싱
 };

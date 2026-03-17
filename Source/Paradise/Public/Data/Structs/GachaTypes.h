@@ -73,6 +73,10 @@ struct FGachaPoolRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
 	EItemRarity Rarity = EItemRarity::Common;
 
+	/** @brief 이 항목의 배너 타입 (캐릭터 배너인지 장비 배너인지 필터링용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha")
+	EGachaBannerType ItemBannerType = EGachaBannerType::Character;
+
 	/** @brief 등장 가중치 (픽업 이벤트 시 이 값을 높임) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Gacha", meta = (ClampMin = "0.0"))
 	float Weight = 1.0f;
