@@ -536,11 +536,12 @@ FSquadItemUIData UParadiseSquadMainWidget::MakeUIData(FName ID, int32 InLevel, i
 	{
 		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
 		{
-			// 캐릭터는 일단 기본값이나 별도 로직 처리
-			Result.Rarity = EItemRarity::Common;
+			Result.Name = FText::FromName(ID);
 		}
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
+			Result.Rarity = Asset->Rarity;
+
 			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
 			Result.Icon = TargetIcon.LoadSynchronous();
 		}
@@ -625,12 +626,13 @@ void UParadiseSquadMainWidget::HandleFormationSlotSelected(int32 SlotIndex)
 	}
 	else
 	{
-		// 탭 전환을 건너뛰고 선택 대기열만 비운 뒤, 디테일 창을 새 슬롯 정보로 수동 갱신합니다!
-		PendingSelection = FSquadItemUIData();
+		CurrentState = ESquadUIState::CharacterSwap;
 
+		PendingSelection = FSquadItemUIData();
 		RefreshDetailPanelForCurrentSlot();
-		RefreshInventoryUI(); // 테두리 하이라이트 등 갱신
+		RefreshInventoryUI();
 	}
+	UpdateDetailPanelState();
 }
 
 void UParadiseSquadMainWidget::HandleSwapEquipmentMode()

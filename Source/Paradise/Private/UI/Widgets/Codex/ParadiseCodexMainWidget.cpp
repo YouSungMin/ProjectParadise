@@ -87,6 +87,7 @@ void UParadiseCodexMainWidget::RefreshCodexList()
 				if (FCharacterAssets* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, CharID))
 				{
 					UIData.Icon = Asset->BodyIcon.LoadSynchronous();
+					UIData.Rarity = Asset->Rarity;
 				}
 				CodexDataList.Add(UIData);
 			}
