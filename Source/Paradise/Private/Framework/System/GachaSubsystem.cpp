@@ -116,6 +116,25 @@ FGachaResult UGachaSubsystem::PickItemFromRarity(EItemRarity TargetRarity) const
 		return Result;
 	}
 
+	// 현재 배너 타입과 일치하는 항목만 필터링
+	TArray<const FGachaPoolRow*> FilteredPool;
+	for (const FGachaPoolRow& Item : *RarityPool)
+	{
+		if (Item.ItemBannerType == CurrentBannerType)
+		{
+			FilteredPool.Add(&Item);
+		}
+	}
+
+	if (FilteredPool.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("❌ [GachaSubsystem] 배너 타입[%d]에 맞는 항목이 풀에 없습니다. 데이터 테이블을 확인하세요."),
+			static_cast<int32>(CurrentBannerType));
+		Result.PulledItemID = NAME_None;
+		return Result;
+	}
+
 	// 가중치 합산 및 픽업 계산
 	float TotalWeight = 0.0f;
 	for (const FGachaPoolRow& Item : *RarityPool) TotalWeight += Item.Weight;
