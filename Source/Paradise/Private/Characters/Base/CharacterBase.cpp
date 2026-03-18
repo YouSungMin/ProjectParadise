@@ -69,6 +69,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 	{
 		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
 		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
+		TraceDirection = GetActorForwardVector();
 	}
 
 	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.

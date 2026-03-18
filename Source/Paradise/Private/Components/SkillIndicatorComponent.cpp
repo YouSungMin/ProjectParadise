@@ -48,21 +48,31 @@ void USkillIndicatorComponent::BeginPlay()
 	}
 
 }
-
-void USkillIndicatorComponent::ShowIndicator(float Radius, float ForwardOffset)
+void USkillIndicatorComponent::ShowIndicator(float AttackRange, float AttackRadius, float ForwardOffset)
 {
 	if (RangeDecal)
 	{
-		// X: 깊이, Y/Z: 반지름(Radius)
-		RangeDecal->DecalSize = FVector(DecalDepth, Radius, Radius);
+		// CheckHit의 기본 오프셋 보정
+		float BaseOffset = 100.0f;
 
-		// 캐릭터 앞으로 ForwardOffset만큼 밀어주고, Z축으로 바닥에 붙임(-80.0f)
-		RangeDecal->SetRelativeLocation(FVector(ForwardOffset, 0.0f, -80.0f));
+		// 실제 스피어 트레이스가 시작되는 중심점 위치
+		float ActualTraceStart = BaseOffset + ForwardOffset;
 
+		// 실제 데칼 절반 길이
+		float ActualHalfLength = (AttackRange * 0.5f) + AttackRadius;
+
+		// 데칼 크기 적용
+		// X: 투사 깊이, Y: 좌우 두께(Radius), Z: 캡슐의 절반 길이
+		RangeDecal->DecalSize = FVector(DecalDepth, AttackRadius, ActualHalfLength);
+
+		// 데칼 위치 적용 (캡슐의 정중앙)
+		float CenterX = ActualTraceStart + (AttackRange * 0.5f);
+
+		RangeDecal->SetRelativeLocation(FVector(CenterX, 0.0f, -80.0f));
 		RangeDecal->SetVisibility(true);
 
-		// [로그 추가] 장판에 실제로 적용된 반지름과 오프셋 수치 출력
-		UE_LOG(LogTemp, Warning, TEXT("🔵 [SkillIndicator] 장판 표시 완료! (Radius: %f / ForwardOffset: %f)"), Radius, ForwardOffset);
+		// [로그 추가] 수치 확인용
+		UE_LOG(LogTemp, Warning, TEXT("🔵 [SkillIndicator] 완벽 보정 적용! (실제 시작점: %f, 총길이: %f)"), ActualTraceStart - AttackRadius, ActualHalfLength * 2.0f);
 	}
 }
 

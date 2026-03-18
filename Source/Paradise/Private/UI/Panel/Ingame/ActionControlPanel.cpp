@@ -243,7 +243,7 @@ void UActionControlPanel::InitActionPanel(FDataTableRowHandle WeaponActionHandle
 	/** @section 2. 캐릭터 스킬 (궁극기) 데이터 연동 */
 	if (!UltimateActionHandle.IsNull())
 	{
-		if (const FActionStats* UltimateActionData = UltimateActionHandle.GetRow<FActionStats>(TEXT("UltimateActionLookup")))
+		if (const FActionStats* UltimateActionData = UltimateActionHandle.GetRow<FActionStats>(TEXT("AttackIndicatorLookup")))
 		{
 			if (SkillSlot_Ultimate)
 			{
@@ -341,7 +341,71 @@ void UActionControlPanel::OnAttackButtonPressed()
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
 	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
 	{
-		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(250.0f);
+		float AttackRange = 100.0f;
+		float AttackRadius = 100.0f;
+		float ForwardOffset = 100.0f;
+
+		if (!CachedWeaponActionHandle.IsNull())
+		{
+			if (const FActionStats* ActionData = CachedWeaponActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
+			{
+				AttackRange = (ActionData->AttackRange > 0.0f) ? ActionData->AttackRange : 0.0f;
+				AttackRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : 0.0f;
+				ForwardOffset = ActionData->ForwardOffset;
+			}
+		}
+
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
+			AttackRange, AttackRadius, ForwardOffset);
+	}
+}
+
+void UActionControlPanel::OnActiveSkillPressed()
+{
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		float SkillAttackRange = 100.0f;
+		float SkillAttackRadius = 100.0f;
+		float SkillForwardOffset = 100.0f;
+
+		if (!CachedWeaponActionHandle.IsNull())
+		{
+			if (const FActionStats* ActionData = CachedWeaponActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
+			{
+				SkillAttackRange = (ActionData->AttackRange > 0.0f) ? ActionData->AttackRange : 0.0f;
+				SkillAttackRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : 0.0f;
+				SkillForwardOffset = ActionData->ForwardOffset;
+			}
+		}
+
+		// 반경(Radius)과 앞으로 쏠린 거리(Offset)를 모두 전달!
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
+			SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
+	}
+}
+
+void UActionControlPanel::OnUltimateSkillPressed()
+{
+	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
+	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
+	{
+		float UltimateAttackRange = 100.0f;
+		float UltimateAttackRadius = 100.0f;
+		float UltimateForwardOffset = 100.0f;
+
+		if (!CachedUltimateActionHandle.IsNull())
+		{
+			if (const FActionStats* UltimateActionData = CachedUltimateActionHandle.GetRow<FActionStats>(TEXT("UltIndicatorLookup")))
+			{
+				UltimateAttackRange = (UltimateActionData->AttackRange > 0.0f) ? UltimateActionData->AttackRange : 0.0f;
+				UltimateAttackRadius = (UltimateActionData->AttackRadius > 0.0f) ? UltimateActionData->AttackRadius : 0.0f;
+				UltimateForwardOffset = UltimateActionData->ForwardOffset;
+			}
+		}
+
+		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
+			UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset );
 	}
 }
 
@@ -353,46 +417,6 @@ void UActionControlPanel::OnAttackButtonReleased()
 		CurrentActivePawn->GetSkillIndicatorComponent()->HideIndicator();
 	}
 	ProcessAbilityInput(EInputID::Attack);
-}
-void UActionControlPanel::OnActiveSkillPressed()
-{
-	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
-	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
-	{
-		float ActualRadius = 600.0f;
-		float ActualOffset = 0.0f; // 추가!
-
-		if (!CachedWeaponActionHandle.IsNull())
-		{
-			if (const FActionStats* ActionData = CachedWeaponActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
-			{
-				ActualRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : ActionData->AttackRange;
-				ActualOffset = ActionData->ForwardOffset;
-			}
-		}
-
-		// 반경(Radius)과 앞으로 쏠린 거리(Offset)를 모두 전달!
-		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(ActualRadius, ActualOffset);
-	}
-}
-
-void UActionControlPanel::OnUltimateSkillPressed()
-{
-	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
-	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
-	{
-		float ActualUltimateRange = 1000.0f; // 기본값
-
-		if (!CachedUltimateActionHandle.IsNull())
-		{
-			if (const FActionStats* UltimateActionData = CachedUltimateActionHandle.GetRow<FActionStats>(TEXT("UltIndicatorLookup")))
-			{
-				ActualUltimateRange = UltimateActionData->AttackRange;
-			}
-		}
-
-		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(ActualUltimateRange);
-	}
 }
 
 void UActionControlPanel::OnActiveSkillReleased()
