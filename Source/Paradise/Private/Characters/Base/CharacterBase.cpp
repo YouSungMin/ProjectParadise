@@ -40,8 +40,8 @@ void ACharacterBase::TestKillSelf()
 
 void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 {
-	FVector TraceStart;
-	FVector TraceDirection;
+	FVector TraceStart = FVector::ZeroVector;
+	FVector TraceDirection = FVector::ZeroVector;
 
 	USceneComponent* TargetMesh = GetMesh();
 
@@ -69,10 +69,12 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 	{
 		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
 		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
+		TraceDirection = GetActorForwardVector();
 	}
 
 	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
 	TraceStart += GetActorForwardVector() * CurrentActiveActionData.Stats.ForwardOffset;
+	//TraceDirection
 
 	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
 	FVector TraceEnd = TraceStart + (TraceDirection * CurrentActiveActionData.Stats.AttackRange);
