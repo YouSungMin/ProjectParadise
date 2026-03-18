@@ -191,11 +191,13 @@ protected:
 
 #pragma region 사거리 표시용 데이터
 
+	/** @brief 현재 활성화된 무기 스킬 핸들 캐싱 (인디케이터 표시용) */
 	UPROPERTY()
-	FName CachedWeaponActionID;
+	FDataTableRowHandle CachedWeaponActionHandle;
 
+	/** @brief 현재 활성화된 궁극기 스킬 핸들 캐싱 (인디케이터 표시용) */
 	UPROPERTY()
-	FName CachedUltimateActionID;
+	FDataTableRowHandle CachedUltimateActionHandle;
 
 #pragma region 사거리 표시용 데이터
 };

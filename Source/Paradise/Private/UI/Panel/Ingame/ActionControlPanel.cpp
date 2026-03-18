@@ -219,8 +219,8 @@ void UActionControlPanel::InitActionPanel(FDataTableRowHandle WeaponActionHandle
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
 
-	CachedWeaponActionID = WeaponActionID;
-	CachedUltimateActionID = UltimateActionID;
+	CachedWeaponActionHandle = WeaponActionHandle;
+	CachedUltimateActionHandle = UltimateActionHandle;
 
 	/** @section 1. 무기 스킬 (일반 스킬) 데이터 연동 */
 	if (AttackBtn && AttackIcon)
@@ -362,13 +362,10 @@ void UActionControlPanel::OnActiveSkillPressed()
 		float ActualRadius = 600.0f;
 		float ActualOffset = 0.0f; // 추가!
 
-		UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-		if (GI && CachedWeaponActionID != NAME_None)
+		if (!CachedWeaponActionHandle.IsNull())
 		{
-			if (const FActionStats* ActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CachedWeaponActionID))
+			if (const FActionStats* ActionData = CachedWeaponActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
 			{
-				// 💡 [핵심] 실제 판정에 쓰이는 반경과 오프셋을 그대로 가져옵니다.
-				// 만약 Radius가 0인 투사체 스킬이면 Range를 쓰도록 예외 처리
 				ActualRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : ActionData->AttackRange;
 				ActualOffset = ActionData->ForwardOffset;
 			}
@@ -386,13 +383,10 @@ void UActionControlPanel::OnUltimateSkillPressed()
 	{
 		float ActualUltimateRange = 1000.0f; // 기본값
 
-		UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-		if (GI && CachedUltimateActionID != NAME_None)
+		if (!CachedUltimateActionHandle.IsNull())
 		{
-			// 이번엔 궁극기 ID로 데이터 검색
-			if (const FActionStats* UltimateActionData = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CachedUltimateActionID))
+			if (const FActionStats* UltimateActionData = CachedUltimateActionHandle.GetRow<FActionStats>(TEXT("UltIndicatorLookup")))
 			{
-				// 궁극기의 실제 사거리 적용!
 				ActualUltimateRange = UltimateActionData->AttackRange;
 			}
 		}
