@@ -177,7 +177,7 @@ protected:
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<USkillIndicatorComponent> SkillIndicatorComp =nullptr;
+	TObjectPtr<USkillIndicatorComponent> SkillIndicatorComp2 =nullptr;
 
 	
 	/*
