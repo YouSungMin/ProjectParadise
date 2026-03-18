@@ -48,7 +48,7 @@ public:
 	 * @param AttackIcon 무기별 기본 공격 아이콘 (추가)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void InitActionPanel(FDataTableRowHandle WeaponActionHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon = nullptr);
+	void InitActionPanel(FDataTableRowHandle WeaponAttackHandle,FDataTableRowHandle WeaponSkillHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon = nullptr);
 
 	/**
 	 * @brief 로비 편성 데이터(SquadSubsystem)를 읽어와 태그 버튼의 얼굴 이미지를 세팅합니다.
@@ -191,9 +191,13 @@ protected:
 
 #pragma region 사거리 표시용 데이터
 
+	/** @brief 현재 활성화된 무기 기본 공격 핸들 캐싱 (인디케이터 표시용) */
+	UPROPERTY()
+	FDataTableRowHandle CachedWeaponAttackActionHandle;
+
 	/** @brief 현재 활성화된 무기 스킬 핸들 캐싱 (인디케이터 표시용) */
 	UPROPERTY()
-	FDataTableRowHandle CachedWeaponActionHandle;
+	FDataTableRowHandle CachedWeaponSkillActionHandle;
 
 	/** @brief 현재 활성화된 궁극기 스킬 핸들 캐싱 (인디케이터 표시용) */
 	UPROPERTY()
