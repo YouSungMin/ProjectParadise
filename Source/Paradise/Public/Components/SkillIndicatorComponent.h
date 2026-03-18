@@ -44,6 +44,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill Indicator")
 	void HideIndicator();
 
+private:
+
+	/** * @brief 사거리 내 타겟을 실시간으로 스캔하여 외곽선을 활성화합니다.
+ */
+	void ScanTargets();
+
+	/** * @brief 현재 켜진 모든 외곽선 효과를 해제하고 대상 목록을 비웁니다.
+	 */
+	void ClearTargetOutlines();
+
 protected:
 
 	/**
@@ -65,5 +75,23 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Indicator")
 	float DecalDepth = 200.0f;
+
+private:
+
+	/** @brief 외곽선 효과가 적용된 적들을 추적하기 위한 배열 */
+	UPROPERTY()
+	TArray<class ACharacterBase*> HighlightedEnemies;
+
+	/** @brief 조준 중 스캔 함수(ScanTargets)를 주기적으로 실행하는 타이머 핸들 */
+	FTimerHandle ScanTimerHandle;
+
+	/** @brief 타겟 스캔 연산에 사용할 사거리 캐싱 데이터 */
+	float CachedRange;
+
+	/** @brief 타겟 스캔 연산에 사용할 반경 캐싱 데이터 */
+	float CachedRadius;
+
+	/** @brief 타겟 스캔 연산에 사용할 전방 오프셋 캐싱 데이터 */
+	float CachedOffset;
 		
 };

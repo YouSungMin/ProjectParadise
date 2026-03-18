@@ -21,6 +21,7 @@
 
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Paradise/Paradise.h"
 
 void UActionControlPanel::NativeConstruct()
 {
@@ -372,9 +373,7 @@ void UActionControlPanel::OnAttackButtonPressed()
 				ForwardOffset = ActionData->ForwardOffset;
 			}
 		}
-
-		// [로그 추가] 행 이름(Row) 포함하여 출력
-		UE_LOG(LogTemp, Warning, TEXT("🟢 [Normal Attack | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, AttackRange, AttackRadius, ForwardOffset);
+		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🟢 [Normal Attack | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, AttackRange, AttackRadius, ForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
 			AttackRange, AttackRadius, ForwardOffset);
@@ -402,9 +401,7 @@ void UActionControlPanel::OnActiveSkillPressed()
 				SkillForwardOffset = ActionData->ForwardOffset;
 			}
 		}
-
-		// [로그 추가] 행 이름(Row) 포함하여 출력
-		UE_LOG(LogTemp, Warning, TEXT("🔵 [Active Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
+		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🔵 [Active Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
 			SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
@@ -433,8 +430,7 @@ void UActionControlPanel::OnUltimateSkillPressed()
 			}
 		}
 
-		// [로그 추가] 행 이름(Row) 포함하여 출력
-		UE_LOG(LogTemp, Warning, TEXT("🟣 [Ultimate Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset);
+		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🟣 [Ultimate Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
 			UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset);

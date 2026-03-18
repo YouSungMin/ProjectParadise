@@ -52,7 +52,7 @@ void APlayerBase::InitializeComponents()
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 무기 자체 충돌은 끔
     WeaponMesh->SetComponentTickEnabled(false); // 무기 자체 틱은 불필요하므로 끔 (최적화)
 
-    SkillIndicatorComp = CreateDefaultSubobject<USkillIndicatorComponent>(TEXT("SkillIndicatorComp"));
+    SkillIndicatorComp2 = CreateDefaultSubobject<USkillIndicatorComponent>(TEXT("SkillIndicatorComp"));
 }
 
 void APlayerBase::PossessedBy(AController* NewController)
@@ -179,9 +179,9 @@ USkeletalMeshComponent* APlayerBase::GetArmorComponent(EEquipmentSlot Slot) cons
 
 USkillIndicatorComponent* APlayerBase::GetSkillIndicatorComponent() const
 {
-    if (SkillIndicatorComp)
+    if (SkillIndicatorComp2)
     {
-        return SkillIndicatorComp;
+        return SkillIndicatorComp2;
     }
     return nullptr;
 }
