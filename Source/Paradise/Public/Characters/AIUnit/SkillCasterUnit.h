@@ -23,7 +23,7 @@ public:
 	FCombatActionData GetSkillActionData(int32 SkillIndex) const;
 
 	/** @brief 인덱스를 기반으로 특정 스킬의 FX 연출 데이터(Payload)를 반환합니다. */
-	virtual struct FFXPayload* GetSkillFXPayload(int32 SkillIndex) const;
+	virtual TArray<struct FFXPayload*> GetSkillFXPayloads(int32 SkillIndex) const;
 
 	/** @brief 인덱스를 기반으로 특정 스킬의 몽타주를 가져옵니다. */
 	UFUNCTION(BlueprintCallable, Category = "Combat|Skill")
@@ -37,7 +37,7 @@ public:
 
 	// 2. 부모(UnitBase)의 가상 함수 오버라이드!
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override;
 protected:
 	/** @brief 스킬 어빌리티 핸들 목록 (부여된 스킬 관리용) */
 	UPROPERTY()

@@ -128,40 +128,49 @@ FCombatActionData AUnitBase::GetCombatActionData(ECombatActionType ActionType) c
 	return Result;
 }
 
-FFXPayload* AUnitBase::GetFXPayload(EFXEventType EventType) const
+TArray<FFXPayload*> AUnitBase::GetFXPayloads(EFXEventType EventType) const
 {
-	UFXDataAsset* TargetAsset = nullptr;
-	FGameplayTag TargetTag;
+	TArray<FFXPayload*> ResultPayloads;
 
-	// 몬스터는 궁극기(Ultimate)가 없으므로 Reaction과 Action만 처리합니다.
+	// 요청 타입(Enum)에 따라 딱 필요한 에셋만 동기 로드합니다!
 	switch (EventType)
 	{
 	case EFXEventType::Hit:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.HitTag;
-		break;
-	case EFXEventType::Death:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.DeathTag;
-		break;
-	case EFXEventType::BasicAttack:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.BasicAttackTag;
-		break;
-	case EFXEventType::Skill:
-		//TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		//TargetTag = CachedActionFX.SkillTag;
-		break;
-	case EFXEventType::Ultimate:
-		return nullptr; // 몬스터는 궁극기가 없음
-	}
-
-	if (TargetAsset && TargetTag.IsValid())
 	{
-		return TargetAsset->FindEffect(TargetTag);
+		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.HitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
 	}
 
-	return nullptr;
+	case EFXEventType::Death:
+	{
+		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.DeathTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::BasicAttack:
+	{
+		if (UFXDataAsset* ActionAsset = CachedActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ActionAsset->FindEffect(CachedActionFX.BasicAttackTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	case EFXEventType::Skill:
+	case EFXEventType::Ultimate:
+		// 스킬은 ASkillCasterUnit에서 처리하고, 몬스터는 궁극기가 없으므로 패스
+		break;
+	}
+
+	return ResultPayloads;
 }
 
 void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)

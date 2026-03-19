@@ -40,5 +40,5 @@ public:
 	 * @param EventType 피격, 공격, 사망 등 요청할 연출의 종류
 	 * @return FFXPayload* 사운드, 파티클 등이 담긴 구조체 포인터 (없으면 nullptr)
 	 */
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const = 0;
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const = 0;
 };
