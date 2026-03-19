@@ -135,7 +135,7 @@ public:
 
 	/** @brief 미리 로드된 피격/사망 등 생존 반응 연출 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FReactionFXSettings CachedReactionFX;
+	FCharacterFXSettings CachedCharacterFX;
 
 	/** @brief 미리 로드된 캐릭터 고유 궁극기 연출 태그 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
@@ -143,11 +143,7 @@ public:
 
 	/** @brief 장착 중인 무기의 공격/스킬 연출 데이터 캐싱 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FActionFXSettings CachedWeaponActionFX;
-
-	/** @brief 캐릭터 공격/스킬 연출 데이터 캐싱 */
-	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FActionFXSettings CachedCharacterActionFX;
+	FWeaponFXSettings CachedWeaponFX;
 
 	/* * 현재 빙의 중인 육체 (약한 참조)
 	 * @details PlayerBase는 언제든 파괴될 수 있으므로 WeakPtr로 참조합니다.

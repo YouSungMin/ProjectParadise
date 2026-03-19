@@ -137,9 +137,9 @@ TArray<FFXPayload*> AUnitBase::GetFXPayloads(EFXEventType EventType) const
 	{
 	case EFXEventType::Hit:
 	{
-		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		if (UFXDataAsset* ReactionAsset = CachedAIUnitFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.HitTag))
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedAIUnitFX.HitTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -147,9 +147,9 @@ TArray<FFXPayload*> AUnitBase::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::Death:
 	{
-		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		if (UFXDataAsset* ReactionAsset = CachedAIUnitFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.DeathTag))
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedAIUnitFX.DeathTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -157,9 +157,9 @@ TArray<FFXPayload*> AUnitBase::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::BasicAttack:
 	{
-		if (UFXDataAsset* ActionAsset = CachedActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* ActionAsset = CachedAIUnitFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = ActionAsset->FindEffect(CachedActionFX.BasicAttackTag))
+			if (FFXPayload* Payload = ActionAsset->FindEffect(CachedAIUnitFX.BasicAttackTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -248,8 +248,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		BasicAttackData.ProjectileClass = InAssets->BasicAttackSetup.ProjectileClass;
 		CachedDeathMontage = InAssets->DeathMontage.LoadSynchronous();
 		CachedHitMontage = InAssets->HitMontage.LoadSynchronous();
-		CachedReactionFX = InAssets->ReactionFX; // 피격/사망 블록 캐싱
-		CachedActionFX = InAssets->ActionFX;  // 공격 연출 블록 캐싱
+		CachedAIUnitFX = InAssets->AIUnitFX;
 		this->FactionTag = InAssets->FactionTag;
 
 

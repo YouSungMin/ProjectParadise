@@ -81,13 +81,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Data")
 	FCombatActionData BasicAttackData;
 
-	/** @brief 피격/사망 등 생존 반응 연출 캐싱 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	FReactionFXSettings CachedReactionFX;
-
-	/** @brief 평타/스킬 등 공격 행동 연출 캐싱 (몬스터 본체용) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
-	FActionFXSettings CachedActionFX;
+	/** @brief AI 유닛 연출 캐싱 */
+	FAIUnitFXSettings CachedAIUnitFX;
 
 	/** @brief 사망 몽타주 캐싱 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")

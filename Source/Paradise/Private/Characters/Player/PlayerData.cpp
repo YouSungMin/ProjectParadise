@@ -203,8 +203,7 @@ void APlayerData::InitPlayerAssets()
 	this->CachedHitMontage = Assets->HitMontage.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
 	this->FactionTag = Assets->FactionTag;
-	this->CachedReactionFX = Assets->ReactionFX;
-	this->CachedCharacterActionFX = Assets->ActionFX;
+	this->CachedCharacterFX = Assets->CharacterFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
 	//ASC 세팅
@@ -414,13 +413,13 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	// ---------------------------------------------------------
 	if (WeaponData)
 	{
-		CachedWeaponActionFX = WeaponData->ActionFX;
+		CachedWeaponFX = WeaponData->WeaponFX;
 		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
 	}
 	else
 	{
 		// 무기를 해제했을 경우 비워줌
-		CachedWeaponActionFX = FActionFXSettings();
+		CachedWeaponFX = FWeaponFXSettings();
 	}
 }
 
@@ -539,9 +538,9 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 	{
 	case EFXEventType::Hit:
 	{
-		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		if (UFXDataAsset* ReactionAsset = CachedCharacterFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.HitTag))
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedCharacterFX.HitTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -549,9 +548,9 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::Death:
 	{
-		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		if (UFXDataAsset* ReactionAsset = CachedCharacterFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.DeathTag))
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedCharacterFX.DeathTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -559,14 +558,14 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::BasicAttack:
 	{
-		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterActionFX.BasicAttackTag))
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.BasicAttackTag))
 				ResultPayloads.Add(Payload);
 		}
-		if (UFXDataAsset* WpnAsset = CachedWeaponActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponActionFX.BasicAttackTag))
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.BasicAttackTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -574,14 +573,14 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::Skill:
 	{
-		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterActionFX.SkillTag))
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.SkillTag))
 				ResultPayloads.Add(Payload);
 		}
-		if (UFXDataAsset* WpnAsset = CachedWeaponActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
 		{
-			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponActionFX.SkillTag))
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.SkillTag))
 				ResultPayloads.Add(Payload);
 		}
 		break;
@@ -589,7 +588,7 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 
 	case EFXEventType::Ultimate:
 	{
-		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
 		{
 			if (FFXPayload* Payload = CharAsset->FindEffect(CachedUltimateFXTag))
 				ResultPayloads.Add(Payload);

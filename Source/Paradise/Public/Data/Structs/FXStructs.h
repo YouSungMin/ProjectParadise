@@ -36,39 +36,70 @@ public:
 };
 
 /**
- * @struct FReactionFXSettings
- * @brief 피격 및 생존 반응 전용 FX, Tags
+ * @struct FWeaponFXSettings
+ * @brief 무기 전용 FX 구조체 (Weapon)
  */
 USTRUCT(BlueprintType)
-struct FReactionFXSettings
+struct FWeaponFXSettings
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
-	TSoftObjectPtr<class UFXDataAsset> ReactionFXData; // 피격음, 피 튀기는 이펙트 등
+	TSoftObjectPtr<class UFXDataAsset> FXData; // 검기, 휘두르는 소리 등
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
-	FGameplayTag HitTag;
+	FGameplayTag BasicAttackTag; // 평타 태그
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
-	FGameplayTag DeathTag;
+	FGameplayTag SkillTag;       // 스킬 태그
 };
 
 /**
- * @struct FReactionFXSettings
- * @brief 공격 행동 전용, FX, Tags
+ * @struct FCharacterFXSettings
+ * @brief 플레이어 캐릭터 전용 FX 구조체 (Character)
  */
 USTRUCT(BlueprintType)
-struct FActionFXSettings
+struct FCharacterFXSettings
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
-	TSoftObjectPtr<class UFXDataAsset> ActionFXData; // 무기 휘두르는 소리, 검기 이펙트 등
+	TSoftObjectPtr<class UFXDataAsset> FXData; // 기합 소리, 피격음 등
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
-	FGameplayTag BasicAttackTag;
+	FGameplayTag BasicAttackTag; // 평타 시 기합
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
-	FGameplayTag SkillTag;
+	FGameplayTag SkillTag;       // 스킬 시 기합
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag UltimateTag;    // 궁극기 연출
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag HitTag;         // 피격 태그
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag DeathTag;       // 사망 태그
+};
+
+/**
+ * @struct FAIUnitFXSettings
+ * @brief 몬스터 / 패밀리어 공통 FX 구조체
+ */
+USTRUCT(BlueprintType)
+struct FAIUnitFXSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Asset")
+	TSoftObjectPtr<class UFXDataAsset> FXData; // 몬스터 소리, 피격 등
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag BasicAttackTag; // 평타
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag HitTag;         // 피격
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag DeathTag;       // 사망
 };
