@@ -38,124 +38,205 @@ void ACharacterBase::TestKillSelf()
 	Die();
 }
 
-void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
+void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 {
-	FVector TraceStart = FVector::ZeroVector;
-	FVector TraceDirection = FVector::ZeroVector;
+	// 1. 트레이스 좌표 설정 (인디케이터와 100% 동일한 공식 적용!)
+	// 애니메이션의 무기 소켓 위치를 쓰지 않고, 오직 데이터 테이블의 수치만 따릅니다.
 
-	USceneComponent* TargetMesh = GetMesh();
+	float BaseOffset = 100.0f; // 인디케이터에서 썼던 기본 오프셋
+	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
+	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
+	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
 
-	// 노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
-	if (TargetType == ESocketTargetType::EquippedWeapon)
-	{
-		if (USceneComponent* WpnMesh = GetWeaponMesh())
-		{
-			TargetMesh = WpnMesh; // 타겟 성공적 교체
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 소켓을 찾으려 했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
-		}
-	}
+	// 시작점: 캐릭터 몸통 + 기본오프셋 + 데이터테이블 오프셋
+	FVector TraceStart = GetActorLocation() + (GetActorForwardVector() * (BaseOffset + ForwardOffset));
 
-	// 결정된 TargetMesh에서 소켓 위치 찾기
-	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
-	{
-		TraceStart = TargetMesh->GetSocketLocation(SocketName);
+	// 끝점: 시작점 + 데이터테이블 사거리
+	FVector TraceEnd = TraceStart + (GetActorForwardVector() * AttackRange);
 
-		TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
-	}
-	else
-	{
-		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
-		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
-		TraceDirection = GetActorForwardVector();
-	}
-
-	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
-	TraceStart += GetActorForwardVector() * CurrentActiveActionData.Stats.ForwardOffset;
-	//TraceDirection
-
-	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
-	FVector TraceEnd = TraceStart + (TraceDirection * CurrentActiveActionData.Stats.AttackRange);
-
+	// 본인은 스캔에서 무조건 제외
 	TArray<AActor*> ActorsToIgnore;
-	if (CurrentActiveActionData.Stats.TargetFilter == ETargetFilter::Enemy)
-	{
-		ActorsToIgnore.Add(this);
-	}
+	ActorsToIgnore.Add(this);
+
+	// 2. 🟢 다중 광역 타격을 위한 ForObjects 스캔 적용
+
+	// 찾고자 하는 대상 타입 설정 (Pawn)
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
 	TArray<FHitResult> HitResults;
-	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+
+	
+	bool bHit = UKismetSystemLibrary::SphereTraceMultiForObjects(
 		GetWorld(),
-		TraceStart,      // 시작점
-		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
-		CurrentActiveActionData.Stats.AttackRadius,    // 반경
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+		TraceStart,      // 장판과 동일한 시작점
+		TraceEnd,        // 장판과 동일한 끝점
+		AttackRadius,    // 장판과 동일한 반경
+		ObjectTypes,     // 🟢 채널 대신 오브젝트 타입 배열 사용 (관통 가능해짐)
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::None, // 디버그 선을 보고 싶다면 ForDuration으로 변경하세요
 		HitResults,
 		true
 	);
 
-	// 3. 결과 처리
+	// 3. 결과 처리 (다수 타격 및 아군/적군 필터링)
 	if (bHit)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("[트레이스 적중!] 스피어에 뭔가 닿았습니다. 총 %d개"), HitResults.Num());
-
 		for (const FHitResult& Result : HitResults)
 		{
 			AActor* HitActor = Result.GetActor();
 			if (!HitActor) continue;
 
-			// ACharacterBase로 캐스팅 시도
 			ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor);
+			if (HitChar == nullptr) continue;
 
-			// 캐스팅 실패 시 (바닥, 배경 프랍 등) 무시하고 다음 타겟으로 넘어감
-			if (HitChar == nullptr)
-			{
-				//UE_LOG(LogTemp, Warning, TEXT("⚠️ [CheckHit] 캐릭터가 아닌 대상(%s)을 쳤습니다. 무시합니다."), *HitActor->GetName());
-				continue;
-			}
-
-			// 중복 타격 방지 (캐릭터인 경우에만 리스트에 추가)
-			if (HitActors.Contains(HitActor))
-			{
-				continue;
-			}
+			// 중복 타격 방지 (한 번 휘두를 때 이미 맞은 놈은 무시)
+			if (HitActors.Contains(HitActor)) continue;
 			HitActors.Add(HitActor);
 
+			// 🟢 타겟 필터링 (아군 / 적군)
 			bool bIsHostile = IsHostile(HitChar);
 			ETargetFilter Filter = CurrentActiveActionData.Stats.TargetFilter;
 
-			if (Filter == ETargetFilter::Enemy && !bIsHostile)
-			{
-				// 적 공격용 스킬인데 아군이면 무시
-				continue;
-			}
-			else if (Filter == ETargetFilter::Friendly && bIsHostile)
-			{
-				// 아군 버프용 스킬인데 적군이면 무시
-				continue;
-			}
+			// 필터가 Enemy(적군)인데, 적이 아니라면(아군이라면) 무시
+			if (Filter == ETargetFilter::Enemy && !bIsHostile) continue;
 
-			// GAS 이벤트 전송
+			// 필터가 Ally(아군)인데, 적군이라면 무시 
+			if (Filter == ETargetFilter::Friendly && bIsHostile) continue;
+
+			// 4. GAS 이벤트 전송 (최종 데미지/버프 적용)
 			FGameplayEventData Payload;
 			Payload.Instigator = this;
 			Payload.Target = HitActor;
 			Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Result);
 
-			// 태그를 고정하거나, 인자로 받을 수도 있음
-			FGameplayTag EventTag;
-			EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
-
+			FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, Payload);
 
-			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 타격 성공! 대상: %s (소켓: %s)"), *GetName(), *HitActor->GetName(), *SocketName.ToString());
+			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 다중 타격 성공! 대상: %s"), *GetName(), *HitActor->GetName());
 		}
 	}
 }
+
+//void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
+//{
+//	FVector TraceStart = FVector::ZeroVector;
+//	FVector TraceDirection = FVector::ZeroVector;
+//
+//	USceneComponent* TargetMesh = GetMesh();
+//
+//	// 노티파이에서 '무기' 타겟이라고 넘겨줬다면 메쉬 교체
+//	if (TargetType == ESocketTargetType::EquippedWeapon)
+//	{
+//		if (USceneComponent* WpnMesh = GetWeaponMesh())
+//		{
+//			TargetMesh = WpnMesh; // 타겟 성공적 교체
+//		}
+//		else
+//		{
+//			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 소켓을 찾으려 했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
+//		}
+//	}
+//
+//	// 결정된 TargetMesh에서 소켓 위치 찾기
+//	if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+//	{
+//		TraceStart = TargetMesh->GetSocketLocation(SocketName);
+//
+//		TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
+//	}
+//	else
+//	{
+//		// 예외 처리: 소켓이 없거나 이름이 틀렸을 때
+//		TraceStart = GetActorLocation() + (GetActorForwardVector() * 100.0f);
+//		TraceDirection = GetActorForwardVector();
+//	}
+//
+//	// ForwardOffset 적용: 시작점을 캐릭터 전방으로 밀어줍니다.
+//	TraceStart += GetActorForwardVector() * CurrentActiveActionData.Stats.ForwardOffset;
+//	//TraceDirection
+//
+//	// 사거리(AttackRange) 적용: 밀어낸 시작점으로부터 '사거리'만큼 뻗어나갑니다. 
+//	FVector TraceEnd = TraceStart + (TraceDirection * CurrentActiveActionData.Stats.AttackRange);
+//
+//	TArray<AActor*> ActorsToIgnore;
+//	if (CurrentActiveActionData.Stats.TargetFilter == ETargetFilter::Enemy)
+//	{
+//		ActorsToIgnore.Add(this);
+//	}
+//
+//	TArray<FHitResult> HitResults;
+//	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+//		GetWorld(),
+//		TraceStart,      // 시작점
+//		TraceEnd,        // 끝점 (앞으로 길게 뻗음)
+//		CurrentActiveActionData.Stats.AttackRadius,    // 반경
+//		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+//		false,
+//		ActorsToIgnore,
+//		EDrawDebugTrace::None,
+//		HitResults,
+//		true
+//	);
+//
+//	// 3. 결과 처리
+//	if (bHit)
+//	{
+//		//UE_LOG(LogTemp, Warning, TEXT("[트레이스 적중!] 스피어에 뭔가 닿았습니다. 총 %d개"), HitResults.Num());
+//
+//		for (const FHitResult& Result : HitResults)
+//		{
+//			AActor* HitActor = Result.GetActor();
+//			if (!HitActor) continue;
+//
+//			// ACharacterBase로 캐스팅 시도
+//			ACharacterBase* HitChar = Cast<ACharacterBase>(HitActor);
+//
+//			// 캐스팅 실패 시 (바닥, 배경 프랍 등) 무시하고 다음 타겟으로 넘어감
+//			if (HitChar == nullptr)
+//			{
+//				//UE_LOG(LogTemp, Warning, TEXT("⚠️ [CheckHit] 캐릭터가 아닌 대상(%s)을 쳤습니다. 무시합니다."), *HitActor->GetName());
+//				continue;
+//			}
+//
+//			// 중복 타격 방지 (캐릭터인 경우에만 리스트에 추가)
+//			if (HitActors.Contains(HitActor))
+//			{
+//				continue;
+//			}
+//			HitActors.Add(HitActor);
+//
+//			bool bIsHostile = IsHostile(HitChar);
+//			ETargetFilter Filter = CurrentActiveActionData.Stats.TargetFilter;
+//
+//			if (Filter == ETargetFilter::Enemy && !bIsHostile)
+//			{
+//				// 적 공격용 스킬인데 아군이면 무시
+//				continue;
+//			}
+//			else if (Filter == ETargetFilter::Friendly && bIsHostile)
+//			{
+//				// 아군 버프용 스킬인데 적군이면 무시
+//				continue;
+//			}
+//
+//			// GAS 이벤트 전송
+//			FGameplayEventData Payload;
+//			Payload.Instigator = this;
+//			Payload.Target = HitActor;
+//			Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Result);
+//
+//			// 태그를 고정하거나, 인자로 받을 수도 있음
+//			FGameplayTag EventTag;
+//			EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
+//
+//			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, Payload);
+//
+//			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 타격 성공! 대상: %s (소켓: %s)"), *GetName(), *HitActor->GetName(), *SocketName.ToString());
+//		}
+//	}
+//}
 
 void ACharacterBase::ResetHitActors()
 {

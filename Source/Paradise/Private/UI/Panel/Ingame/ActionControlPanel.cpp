@@ -360,23 +360,26 @@ void UActionControlPanel::OnAttackButtonPressed()
 		float AttackRange = 100.0f;
 		float AttackRadius = 100.0f;
 		float ForwardOffset = 100.0f;
+		ETargetFilter AttackTargetFilter = ETargetFilter::Enemy;
+
 		FString DataRowName = TEXT("None(Default)"); // 기본값
 
 		if (!CachedWeaponAttackActionHandle.IsNull())
 		{
 			DataRowName = CachedWeaponAttackActionHandle.RowName.ToString(); // 행 이름 저장
 
-			if (const FActionStats* ActionData = CachedWeaponAttackActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
+			if (const FActionStats* AttackActionData = CachedWeaponAttackActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
 			{
-				AttackRange = (ActionData->AttackRange > 0.0f) ? ActionData->AttackRange : 0.0f;
-				AttackRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : 0.0f;
-				ForwardOffset = ActionData->ForwardOffset;
+				AttackRange = (AttackActionData->AttackRange > 0.0f) ? AttackActionData->AttackRange : 0.0f;
+				AttackRadius = (AttackActionData->AttackRadius > 0.0f) ? AttackActionData->AttackRadius : 0.0f;
+				ForwardOffset = AttackActionData->ForwardOffset;
+				AttackTargetFilter = AttackActionData->TargetFilter;
 			}
 		}
 		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🟢 [Normal Attack | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, AttackRange, AttackRadius, ForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
-			AttackRange, AttackRadius, ForwardOffset);
+			AttackRange, AttackRadius, ForwardOffset, AttackTargetFilter);
 	}
 }
 
@@ -388,23 +391,25 @@ void UActionControlPanel::OnActiveSkillPressed()
 		float SkillAttackRange = 100.0f;
 		float SkillAttackRadius = 100.0f;
 		float SkillForwardOffset = 100.0f;
+		ETargetFilter SkillTargetFilter = ETargetFilter::Enemy;
 		FString DataRowName = TEXT("None(Default)");
 
 		if (!CachedWeaponSkillActionHandle.IsNull())
 		{
 			DataRowName = CachedWeaponSkillActionHandle.RowName.ToString(); // 행 이름 저장
 
-			if (const FActionStats* ActionData = CachedWeaponSkillActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
+			if (const FActionStats* SkillActionData = CachedWeaponSkillActionHandle.GetRow<FActionStats>(TEXT("SkillIndicatorLookup")))
 			{
-				SkillAttackRange = (ActionData->AttackRange > 0.0f) ? ActionData->AttackRange : 0.0f;
-				SkillAttackRadius = (ActionData->AttackRadius > 0.0f) ? ActionData->AttackRadius : 0.0f;
-				SkillForwardOffset = ActionData->ForwardOffset;
+				SkillAttackRange = (SkillActionData->AttackRange > 0.0f) ? SkillActionData->AttackRange : 0.0f;
+				SkillAttackRadius = (SkillActionData->AttackRadius > 0.0f) ? SkillActionData->AttackRadius : 0.0f;
+				SkillForwardOffset = SkillActionData->ForwardOffset;
+				SkillTargetFilter = SkillActionData->TargetFilter;
 			}
 		}
 		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🔵 [Active Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
-			SkillAttackRange, SkillAttackRadius, SkillForwardOffset);
+			SkillAttackRange, SkillAttackRadius, SkillForwardOffset, SkillTargetFilter);
 	}
 }
 
@@ -416,6 +421,7 @@ void UActionControlPanel::OnUltimateSkillPressed()
 		float UltimateAttackRange = 100.0f;
 		float UltimateAttackRadius = 100.0f;
 		float UltimateForwardOffset = 100.0f;
+		ETargetFilter UltimateTargetFilter = ETargetFilter::Enemy;
 		FString DataRowName = TEXT("None(Default)");
 
 		if (!CachedUltimateActionHandle.IsNull())
@@ -427,13 +433,14 @@ void UActionControlPanel::OnUltimateSkillPressed()
 				UltimateAttackRange = (UltimateActionData->AttackRange > 0.0f) ? UltimateActionData->AttackRange : 0.0f;
 				UltimateAttackRadius = (UltimateActionData->AttackRadius > 0.0f) ? UltimateActionData->AttackRadius : 0.0f;
 				UltimateForwardOffset = UltimateActionData->ForwardOffset;
+				UltimateTargetFilter = UltimateActionData->TargetFilter;
 			}
 		}
 
 		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("🟣 [Ultimate Skill | Row: %s] 최종 적용 수치 - Range: %f / Radius: %f / Offset: %f"), *DataRowName, UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset);
 
 		CurrentActivePawn->GetSkillIndicatorComponent()->ShowIndicator(
-			UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset);
+			UltimateAttackRange, UltimateAttackRadius, UltimateForwardOffset, UltimateTargetFilter);
 	}
 }
 void UActionControlPanel::OnAttackButtonReleased()

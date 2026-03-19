@@ -55,14 +55,14 @@ void UBTService_CheckAttackRange::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	bool bIsInRange = DistanceToTarget <= (AttackRange + AcceptableRadius);
 
 	// 🚨 [추가] 사거리 계산 결과 로그 출력
-	UE_LOG(LogParadiseAI, Warning, TEXT("📏 [사거리 체크] 대상: %s | 액션: %s | 사거리(%.1f) + 오차(%.1f) vs 현재 거리(%.1f) => 결과: %s"),
+	/*UE_LOG(LogParadiseAI, Warning, TEXT("📏 [사거리 체크] 대상: %s | 액션: %s | 사거리(%.1f) + 오차(%.1f) vs 현재 거리(%.1f) => 결과: %s"),
 		*TargetActor->GetName(),
 		*ActionName,
 		AttackRange,
 		AcceptableRadius,
 		DistanceToTarget,
 		bIsInRange ? TEXT("✅ 통과 (공격 가능)") : TEXT("❌ 불가 (너무 멂)")
-	);
+	);*/
 
 	// 4. 계산된 결과를 블랙보드에 덮어쓰기 (데코레이터 인터럽트 발동)
 	BlackboardComp->SetValueAsBool(ResultBoolKey.SelectedKeyName, bIsInRange);

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Data/Enums/GameEnums.h"
 #include "SkillIndicatorComponent.generated.h"
 
 class UDecalComponent;
@@ -35,7 +36,7 @@ public:
 	 * @note UI에서 스킬 버튼을 누르고 있을 때(Hold) 또는 AI가 공격을 준비(Cast)할 때 호출하세요.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Skill Indicator")
-	void ShowIndicator(float AttackRange, float AttackRadius, float ForwardOffset);
+	void ShowIndicator(float AttackRange, float AttackRadius, float ForwardOffset, ETargetFilter TargetFilter);
 
 	/**
 	 * @brief 켜져 있는 사거리 장판을 즉시 숨깁니다.
@@ -93,5 +94,8 @@ private:
 
 	/** @brief 타겟 스캔 연산에 사용할 전방 오프셋 캐싱 데이터 */
 	float CachedOffset;
+
+	/** @brief 타겟 필터 캐싱 데이터*/
+	ETargetFilter CachedTargetFilter;
 		
 };
