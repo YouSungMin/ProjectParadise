@@ -27,4 +27,29 @@ public:
     {
         return EffectMap.Find(Tag);
     }
+
+    UFUNCTION(BlueprintCallable, Category = "Editor Scripting")
+    void ClearEffectMap()
+    {
+        EffectMap.Empty();
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "Editor Scripting")
+    void AddTagToEffectMap(FString TagString)
+    {
+        //문자열을 GameplayTag로 변환
+        FGameplayTag NewTag = FGameplayTag::RequestGameplayTag(FName(*TagString), false);
+
+        //태그가 유효하다면 Map에 빈 구조체와 함께 추가
+        if (NewTag.IsValid())
+        {
+            EffectMap.Add(NewTag, FFXPayload());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("⚠️ 등록되지 않은 태그입니다: %s"), *TagString);
+        }
+    }
+
 };
+
