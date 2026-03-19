@@ -102,23 +102,27 @@ FCombatActionData ASkillCasterUnit::GetSkillActionData(int32 SkillIndex) const
 	return FCombatActionData();
 }
 
-FFXPayload* ASkillCasterUnit::GetSkillFXPayload(int32 SkillIndex) const
+TArray<FFXPayload*> ASkillCasterUnit::GetSkillFXPayloads(int32 SkillIndex) const
 {
+	TArray<FFXPayload*> ResultPayloads;
+
 	if (CachedSkillEffectTags.IsValidIndex(SkillIndex))
 	{
 		FGameplayTag TargetTag = CachedSkillEffectTags[SkillIndex];
 
-		// 부모 클래스(AUnitBase)에 있는 CachedActionFX.ActionFXData 활용
 		if (CachedActionFX.ActionFXData && TargetTag.IsValid())
 		{
-			UFXDataAsset* LoadedAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-			if (LoadedAsset)
+			if (UFXDataAsset* LoadedAsset = CachedActionFX.ActionFXData.LoadSynchronous())
 			{
-				return LoadedAsset->FindEffect(TargetTag);
+				if (FFXPayload* Payload = LoadedAsset->FindEffect(TargetTag))
+				{
+					ResultPayloads.Add(Payload);
+				}
 			}
 		}
 	}
-	return nullptr;
+
+	return ResultPayloads;
 }
 
 UAnimMontage* ASkillCasterUnit::GetSkillMontage(int32 SkillIndex) const
@@ -144,12 +148,12 @@ FCombatActionData ASkillCasterUnit::GetCombatActionData(ECombatActionType Action
 	return Super::GetCombatActionData(ActionType);
 }
 
-FFXPayload* ASkillCasterUnit::GetFXPayload(EFXEventType EventType) const
+TArray<FFXPayload*> ASkillCasterUnit::GetFXPayloads(EFXEventType EventType) const
 {
 	if (EventType == EFXEventType::Skill && CurrentCastingSkillIndex != INDEX_NONE)
 	{
-		return GetSkillFXPayload(CurrentCastingSkillIndex);
+		return GetSkillFXPayloads(CurrentCastingSkillIndex);
 	}
 
-	return Super::GetFXPayload(EventType);
+	return Super::GetFXPayloads(EventType);
 }
