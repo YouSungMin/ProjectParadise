@@ -18,10 +18,6 @@ struct FChapterData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
 	int32 ChapterID = 1;
 
-	/** @brief 챕터 이름 (예: "시작의 숲", "불타는 화산") */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
-	FText ChapterName;
-
 	/**
 	 * @brief 이 챕터가 열렸는지 확인하기 위한 '첫 번째 스테이지 ID'
 	 * @details 예: "Stage_2_1". StageSubsystem에서 이 스테이지가 Unlocked 상태면 해당 챕터를 엽니다.
@@ -32,6 +28,13 @@ struct FChapterData : public FTableRowBase
 	/** @brief 이 챕터 입장 시 3D 환경 맵(지도) 판넬에 입혀질 텍스처 이미지 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
 	TSoftObjectPtr<UTexture2D> ChapterMapTexture = nullptr;
+
+	/**
+	 * @brief 챕터 선택 슬롯의 버튼을 덮어씌울 포토샵 디자인 머티리얼
+	 * @details 폰트를 대체하여 화려한 타이포그래피와 배경을 렌더링합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
+	TSoftObjectPtr<class UMaterialInterface> ChapterButtonMaterial = nullptr;
 };
 
 /**
