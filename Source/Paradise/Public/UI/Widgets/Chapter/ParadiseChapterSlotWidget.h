@@ -9,7 +9,7 @@
 #pragma region 전방 선언
 class UButton;
 class UTextBlock;
-class ALobbyPlayerController;
+class UMaterialInterface;
 #pragma endregion 전방 선언
 
 /**
@@ -37,11 +37,12 @@ public:
 	/**
 	 * @brief 챕터 슬롯의 시각적 요소를 초기화합니다. (Data-Driven)
 	 * @param InChapterID 챕터 고유 번호
-	 * @param InChapterName UI에 표시될 챕터 이름
 	 * @param bIsUnlocked 해당 챕터의 해금(입장 가능) 여부
+	 * @param InMapTexture 챕터 진입 시 배경으로 깔릴 3D 지도 텍스처
+	 * @param InButtonMaterial 버튼 표면을 덮을 전용 머티리얼
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Chapter")
-	void InitSlot(int32 InChapterID, const FText& InChapterName, bool bIsUnlocked, UTexture2D* InMapTexture);
+	void InitSlot(int32 InChapterID, bool bIsUnlocked, UTexture2D* InMapTexture, UMaterialInterface* InButtonMaterial);
 
 	/**
 	 * @brief 챕터 버튼이 클릭됐을 때 발사되는 델리게이트
@@ -56,10 +57,6 @@ protected:
 	/** @brief 챕터 진입 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Chapter = nullptr;
-
-	/** @brief 챕터 이름 텍스트 */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> Text_ChapterName = nullptr;
 #pragma endregion UI 컴포넌트
 
 #pragma region 내부 로직

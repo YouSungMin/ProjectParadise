@@ -91,7 +91,7 @@ protected:
 	TObjectPtr<UImage> Img_SingleRarityBorder = nullptr;
 
 	/** @brief 1연차 카드 아이템 이름 텍스트 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_SingleItemName = nullptr;
 
 	// ── 10연차 전용 컴포넌트 ────────────────────────────────

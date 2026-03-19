@@ -6,6 +6,7 @@
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Materials/MaterialInterface.h"
 #include "Data/Structs/StageStructs.h"
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
@@ -107,7 +108,7 @@ void UParadiseChapterSelectWidget::BuildChapterList()
 			bIsUnlocked = StageSys->IsStageUnlocked(Chapter->FirstStageID);
 		}
 
-		// 2. 🚨 [기획 반영 + 최적화] 잠겨있는 챕터면 아예 UI 객체를 생성하지 않고 스킵합니다!
+		// 2. 잠겨있는 챕터면 아예 UI 객체를 생성하지 않고 스킵합니다!
 		if (!bIsUnlocked)
 		{
 			continue;
@@ -117,15 +118,20 @@ void UParadiseChapterSelectWidget::BuildChapterList()
 		UParadiseChapterSlotWidget* NewSlot = CreateWidget<UParadiseChapterSlotWidget>(this, ChapterSlotClass);
 		if (!NewSlot) continue;
 
-		UTexture2D* LoadedTexture = nullptr;
+		UTexture2D* LoadedMapTexture = nullptr;
 		if (!Chapter->ChapterMapTexture.IsNull())
 		{
-			LoadedTexture = Chapter->ChapterMapTexture.LoadSynchronous();
+			LoadedMapTexture = Chapter->ChapterMapTexture.LoadSynchronous();
 		}
 
-		NewSlot->InitSlot(Chapter->ChapterID, Chapter->ChapterName, true, LoadedTexture);
+		UMaterialInterface* LoadedButtonMaterial = nullptr;
+		if (!Chapter->ChapterButtonMaterial.IsNull())
+		{
+			LoadedButtonMaterial = Chapter->ChapterButtonMaterial.LoadSynchronous();
+		}
 
-		// 4. 슬롯 클릭 이벤트 위임 (SRP)
+		// 4. 데이터 주입
+		NewSlot->InitSlot(Chapter->ChapterID, true, LoadedMapTexture, LoadedButtonMaterial);
 		NewSlot->OnChapterSelected.AddDynamic(this, &UParadiseChapterSelectWidget::OnChapterSlotClicked);
 
 		Scroll_ChapterList->AddChild(NewSlot);

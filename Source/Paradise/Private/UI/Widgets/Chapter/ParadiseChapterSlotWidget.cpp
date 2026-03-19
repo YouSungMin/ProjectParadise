@@ -3,7 +3,7 @@
 
 #include "UI/Widgets/Chapter/ParadiseChapterSlotWidget.h"
 #include "Components/Button.h"
-#include "Components/TextBlock.h"
+#include "Materials/MaterialInterface.h"
 
 #pragma region 생명주기
 void UParadiseChapterSlotWidget::NativeConstruct()
@@ -31,21 +31,33 @@ void UParadiseChapterSlotWidget::NativeDestruct()
 #pragma endregion 생명주기
 
 #pragma region 외부 인터페이스 구현
-void UParadiseChapterSlotWidget::InitSlot(int32 InChapterID, const FText& InChapterName, bool bIsUnlocked, UTexture2D* InMapTexture)
+void UParadiseChapterSlotWidget::InitSlot(int32 InChapterID, bool bIsUnlocked, UTexture2D* InMapTexture, UMaterialInterface* InButtonMaterial)
 {
 	CurrentChapterID = InChapterID;
 	CachedMapTexture = InMapTexture;
 
-	// 1. 챕터 이름 텍스트 세팅
-	if (Text_ChapterName)
-	{
-		Text_ChapterName->SetText(InChapterName);
-	}
-
-	// 2. 해금 상태에 따른 UI 처리 (버튼 비활성화 및 잠김 UI 노출)
 	if (Btn_Chapter)
 	{
+		// 해금 여부에 따른 비활성화 처리
 		Btn_Chapter->SetIsEnabled(bIsUnlocked);
+
+		// [Data-Driven] 전달받은 머티리얼로 버튼 이미지를 교체합니다.
+		if (InButtonMaterial)
+		{
+			FButtonStyle NewStyle = Btn_Chapter->GetStyle();
+
+			// Normal, Hovered, Pressed 모든 상태에 머티리얼 할당
+			NewStyle.Normal.SetResourceObject(InButtonMaterial);
+			NewStyle.Hovered.SetResourceObject(InButtonMaterial);
+			NewStyle.Pressed.SetResourceObject(InButtonMaterial);
+
+			// UI 머티리얼이 슬롯 영역을 꽉 채우도록 DrawAs를 Image로 설정
+			NewStyle.Normal.DrawAs = ESlateBrushDrawType::Image;
+			NewStyle.Hovered.DrawAs = ESlateBrushDrawType::Image;
+			NewStyle.Pressed.DrawAs = ESlateBrushDrawType::Image;
+
+			Btn_Chapter->SetStyle(NewStyle);
+		}
 	}
 }
 #pragma endregion 외부 인터페이스 구현
