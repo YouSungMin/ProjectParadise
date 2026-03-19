@@ -164,6 +164,7 @@ UENUM(BlueprintType)
 enum class EFXEventType : uint8
 {
 	Hit			UMETA(DisplayName = "Hit (피격)"),
+	Attack		UMETA(DisplayName = "Attack (타격)"),
 	Death		UMETA(DisplayName = "Death (사망)"),
 	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
 	Skill		UMETA(DisplayName = "Skill (스킬)"),
