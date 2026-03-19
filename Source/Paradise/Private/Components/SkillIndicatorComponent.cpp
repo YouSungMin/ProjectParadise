@@ -184,12 +184,12 @@ void USkillIndicatorComponent::ScanTargets()
 					{
 						EnemyMesh->SetRenderCustomDepth(true);
 
-						// [옵션] 아군/적군 색상 다르게 하기
-						// 엔진 프로젝트 세팅에서 Custom Depth-Stencil Pass 설정이 되어있다면
-						// int32 StencilValue = (CachedTargetFilter == ETargetFilter::Ally) ? 2 : 1;
-						// EnemyMesh->SetCustomDepthStencilValue(StencilValue);
+						//아군/적군 색상 다르게 하기
+						int32 StencilValue = bIsHostile ? 1 : 2;
+						EnemyMesh->SetCustomDepthStencilValue(StencilValue);
 
-						HighlightedEnemies.Add(HitEnemy);
+
+						HighlightedEnemies.Add(HitEnemy); 
 					}
 				}
 			}

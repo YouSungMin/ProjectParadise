@@ -75,7 +75,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		ObjectTypes,     // 🟢 채널 대신 오브젝트 타입 배열 사용 (관통 가능해짐)
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration, // 디버그 선을 보고 싶다면 ForDuration으로 변경하세요
+		EDrawDebugTrace::None, // 디버그 선을 보고 싶다면 ForDuration으로 변경하세요
 		HitResults,
 		true
 	);
