@@ -204,6 +204,7 @@ void APlayerData::InitPlayerAssets()
 	this->CachedAnimBP = Assets->AnimBlueprint;
 	this->FactionTag = Assets->FactionTag;
 	this->CachedReactionFX = Assets->ReactionFX;
+	this->CachedCharacterActionFX = Assets->ActionFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
 	//ASC 세팅
@@ -413,13 +414,13 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	// ---------------------------------------------------------
 	if (WeaponData)
 	{
-		CachedActionFX = WeaponData->ActionFX;
+		CachedWeaponActionFX = WeaponData->ActionFX;
 		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
 	}
 	else
 	{
 		// 무기를 해제했을 경우 비워줌
-		CachedActionFX = FActionFXSettings();
+		CachedWeaponActionFX = FActionFXSettings();
 	}
 }
 
@@ -531,43 +532,73 @@ void APlayerData::ResetStateForRespawn()
 	}
 }
 
-FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
+TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 {
-	UFXDataAsset* TargetAsset = nullptr;
-	FGameplayTag TargetTag;
-
-	// 요청 타입(Enum)에 따라 알맞은 에셋과 태그를 매핑 (라우팅)
+	TArray<FFXPayload*> ResultPayloads;
 	switch (EventType)
 	{
 	case EFXEventType::Hit:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.HitTag;
-		break;
-	case EFXEventType::Death:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.DeathTag;
-		break;
-	case EFXEventType::BasicAttack:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.BasicAttackTag;
-		break;
-	case EFXEventType::Skill:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.SkillTag;
-		break;
-	case EFXEventType::Ultimate:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedUltimateFXTag;
-		break;
-	}
-
-	// 에셋이 있고, 태그가 유효하다면 직접 검색해서 보따리(Payload) 반환
-	if (TargetAsset && TargetTag.IsValid())
 	{
-		return TargetAsset->FindEffect(TargetTag);
+		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.HitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
 	}
 
-	return nullptr;
+	case EFXEventType::Death:
+	{
+		if (UFXDataAsset* ReactionAsset = CachedReactionFX.ReactionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedReactionFX.DeathTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::BasicAttack:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterActionFX.BasicAttackTag))
+				ResultPayloads.Add(Payload);
+		}
+		if (UFXDataAsset* WpnAsset = CachedWeaponActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponActionFX.BasicAttackTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::Skill:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterActionFX.SkillTag))
+				ResultPayloads.Add(Payload);
+		}
+		if (UFXDataAsset* WpnAsset = CachedWeaponActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponActionFX.SkillTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::Ultimate:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterActionFX.ActionFXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedUltimateFXTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	}
+
+	return ResultPayloads;
 }
 
 void APlayerData::ApplySetBonuses()

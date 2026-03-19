@@ -42,7 +42,7 @@ public:
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override { return FCombatActionData();}
 
 	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override { return nullptr; }
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override { return {}; }
 
 	/*
 	 * @brief 죽은후 Destroy() 하는 함수

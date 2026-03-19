@@ -101,7 +101,7 @@ public:
 	FCombatActionData GetCombatActionData(ECombatActionType ActionType) const;
 
 	/** @brief 상황에 맞는 최종 연출 데이터를 캐싱된 에셋에서 찾아 반환합니다. */
-	struct FFXPayload* GetFXPayload(EFXEventType EventType) const;
+	TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const;
 
 	/** @brief 현재 계산된 장비 세트 효과를 ASC에 적용합니다. */
 	UFUNCTION(BlueprintCallable, Category = "Equipment|SetBonus")
@@ -143,7 +143,11 @@ public:
 
 	/** @brief 장착 중인 무기의 공격/스킬 연출 데이터 캐싱 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FActionFXSettings CachedActionFX;
+	FActionFXSettings CachedWeaponActionFX;
+
+	/** @brief 캐릭터 공격/스킬 연출 데이터 캐싱 */
+	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
+	FActionFXSettings CachedCharacterActionFX;
 
 	/* * 현재 빙의 중인 육체 (약한 참조)
 	 * @details PlayerBase는 언제든 파괴될 수 있으므로 WeakPtr로 참조합니다.
