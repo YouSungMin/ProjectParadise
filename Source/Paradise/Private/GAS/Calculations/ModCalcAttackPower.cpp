@@ -29,7 +29,7 @@ float UModCalcAttackPower::CalculateBaseMagnitude_Implementation(const FGameplay
 	FAggregatorEvaluateParameters EvalParams;
 	EvalParams.SourceTags = Spec.CapturedSourceTags.GetAggregatedTags();
 	EvalParams.TargetTags = Spec.CapturedTargetTags.GetAggregatedTags();
-
+	
 	// 엑셀에서 넘어온 기본 퍼센트 (예: 0.1 = 10%)
 	float BaseMultiplier = Spec.GetSetByCallerMagnitude(
 		FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")), false, 0.1f);

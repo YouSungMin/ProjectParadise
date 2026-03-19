@@ -52,7 +52,7 @@ void USkillIndicatorComponent::BeginPlay()
 
 }
 
-void USkillIndicatorComponent::ShowIndicator(float AttackRange, float AttackRadius, float ForwardOffset)
+void USkillIndicatorComponent::ShowIndicator(float AttackRange, float AttackRadius, float ForwardOffset, ETargetFilter TargetFilter)
 {
 	if (RangeDecal)
 	{
@@ -88,6 +88,7 @@ void USkillIndicatorComponent::ShowIndicator(float AttackRange, float AttackRadi
 		CachedRange = AttackRange;
 		CachedRadius = AttackRadius;
 		CachedOffset = ForwardOffset;
+		CachedTargetFilter = TargetFilter;
 
 		// 0.1초마다 ScanTargets 함수를 반복 실행
 		GetWorld()->GetTimerManager().SetTimer(ScanTimerHandle, this, &USkillIndicatorComponent::ScanTargets, 0.1f, true);
@@ -104,9 +105,13 @@ void USkillIndicatorComponent::HideIndicator()
 		RangeDecal->SetVisibility(false);
 	}
 
-	GetWorld()->GetTimerManager().ClearTimer(ScanTimerHandle);
-	ClearTargetOutlines();
+	if (UWorld* world = GetWorld())
+	{
+		world->GetTimerManager().ClearTimer(ScanTimerHandle);
+		ClearTargetOutlines();
+	}
 }
+	
 
 void USkillIndicatorComponent::ScanTargets()
 {
@@ -126,71 +131,69 @@ void USkillIndicatorComponent::ScanTargets()
 
 	TArray<FHitResult> HitResults;
 
+	//찾을 오브젝트 타입
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn)); 
 
-
-	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+	//오브젝트 타입 기반으로 트레이스
+	bool bHit = UKismetSystemLibrary::SphereTraceMultiForObjects(
 		GetWorld(),
 		TraceStart, TraceEnd, CachedRadius,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn), // 캐릭터만 스캔
+		ObjectTypes,
 		false, ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		HitResults, true , FLinearColor::Black,FLinearColor::White
+		EDrawDebugTrace::None, 
+		HitResults, true
 	);
+
 
 	if (bHit)
 	{
-		// 1. 트레이스가 무언가를 맞췄을 때
-		UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("=== 🔵 [스캔 시작] %d 개의 물체 감지 ==="), HitResults.Num());
-
 		for (const FHitResult& Result : HitResults)
 		{
-			AActor* HitActor = Result.GetActor();
-			FString ActorName = HitActor ? HitActor->GetName() : TEXT("Null");
-
-			UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("  ▶ 감지된 액터: [%s]"), *ActorName);
-
-			ACharacterBase* HitEnemy = Cast<ACharacterBase>(HitActor);
+			ACharacterBase* HitEnemy = Cast<ACharacterBase>(Result.GetActor());
 			ACharacterBase* OwnerChar = Cast<ACharacterBase>(OwnerActor);
 
-			// 2. 캐릭터 캐스팅 실패 (벽이나 바닥, 또는 다른 클래스를 맞춤)
-			if (!HitEnemy)
+			if (HitEnemy && OwnerChar)
 			{
-				UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("    -> ❌ 실패: ACharacterBase가 아닙니다. (무시)"));
-				continue;
-			}
+				// 1. 먼저 적군인지 아군인지 판별합니다.
+				bool bIsHostile = OwnerChar->IsHostile(HitEnemy);
+				bool bShouldOutline = false;
 
-			if (!OwnerChar)
-			{
-				UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("    -> ❌ 실패: OwnerChar(스킬 시전자)가 유효하지 않습니다!"));
-				continue;
-			}
-
-			// 3. 가장 중요한 적군 판정 (IsHostile) 결과 확인
-			bool bIsHostile = OwnerChar->IsHostile(HitEnemy);
-			UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("    -> 🔍 IsHostile(적군 판별) 결과: %s"), bIsHostile ? TEXT("True (적군임!)") : TEXT("False (아군이거나 판정 불가)"));
-
-			// 4. 조건을 모두 통과한 경우
-			if (bIsHostile)
-			{
-				if (USkeletalMeshComponent* EnemyMesh = HitEnemy->GetMesh())
+				// 2. 캐싱된 TargetFilter에 따라 외곽선을 켤지 결정합니다.
+				switch (CachedTargetFilter)
 				{
-					// 외곽선 켜기!
-					EnemyMesh->SetRenderCustomDepth(true);
-					HighlightedEnemies.Add(HitEnemy);
+				case ETargetFilter::Enemy:
+					if (bIsHostile) bShouldOutline = true;
+					break;
 
-					UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("    -> 🟢 성공: [%s]에 외곽선(CustomDepth) 적용 완료!"), *ActorName);
+				case ETargetFilter::Friendly:
+					// 적군이 아니면 아군 (필요하다면 자기 자신 제외 로직 추가)
+					if (!bIsHostile) bShouldOutline = true;
+					break;
+
+					
+				case ETargetFilter::All: 
+					bShouldOutline = true; 
+					break;
 				}
-				else
+
+				// 3. 조건이 맞으면 외곽선을 켭니다.
+				if (bShouldOutline)
 				{
-					UE_LOG(LogParadiseSkillIndicator, Warning, TEXT("    -> ❌ 실패: 적군이지만 스켈레탈 메쉬(Mesh)를 찾을 수 없습니다."));
+					if (USkeletalMeshComponent* EnemyMesh = HitEnemy->GetMesh())
+					{
+						EnemyMesh->SetRenderCustomDepth(true);
+
+						// [옵션] 아군/적군 색상 다르게 하기
+						// 엔진 프로젝트 세팅에서 Custom Depth-Stencil Pass 설정이 되어있다면
+						// int32 StencilValue = (CachedTargetFilter == ETargetFilter::Ally) ? 2 : 1;
+						// EnemyMesh->SetCustomDepthStencilValue(StencilValue);
+
+						HighlightedEnemies.Add(HitEnemy);
+					}
 				}
 			}
 		}
-	}
-	else
-	{
-		// 트레이스에 아무것도 안 맞았을 때 (너무 많이 출력될 수 있으니 원치 않으시면 주석 처리하세요)
-		// UE_LOG(LogTemp, Warning, TEXT("🔴 [스캔] 사거리 내에 아무
 	}
 }
 
