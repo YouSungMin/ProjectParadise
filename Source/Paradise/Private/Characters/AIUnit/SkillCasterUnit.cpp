@@ -110,9 +110,9 @@ TArray<FFXPayload*> ASkillCasterUnit::GetSkillFXPayloads(int32 SkillIndex) const
 	{
 		FGameplayTag TargetTag = CachedSkillEffectTags[SkillIndex];
 
-		if (CachedActionFX.ActionFXData && TargetTag.IsValid())
+		if (CachedAIUnitFX.FXData && TargetTag.IsValid())
 		{
-			if (UFXDataAsset* LoadedAsset = CachedActionFX.ActionFXData.LoadSynchronous())
+			if (UFXDataAsset* LoadedAsset = CachedAIUnitFX.FXData.LoadSynchronous())
 			{
 				if (FFXPayload* Payload = LoadedAsset->FindEffect(TargetTag))
 				{

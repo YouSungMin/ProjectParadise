@@ -251,10 +251,10 @@ public:
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 공격 행동 전용, FX, Tags
+	 * @brief 무기 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|FX")
-	FActionFXSettings ActionFX;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FWeaponFXSettings WeaponFX;
 };
 
 /**

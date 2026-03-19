@@ -259,6 +259,12 @@ public:
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
 
 	/**
+	 * @brief 인게임 HUD용 얼굴 아이콘.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
+
+	/**
 	 * @brief 애니메이션 블루프린트
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|Common")
@@ -279,22 +285,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
-
-	// =========================================================
-	//  Audio & FX (Physical Reaction)
-	// =========================================================
-	/**
-	 * @brief 피격 및 생존 반응 전용 FX, Tag 구조체
-	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
-	FReactionFXSettings ReactionFX;
-
-	/**
-	 * @brief 공격 행동 전용, FX, Tags
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
-	FActionFXSettings ActionFX;
 };
 
 /**
@@ -333,12 +323,6 @@ public:
 	// =========================================================
 	//  UI (Player Only)
 	// =========================================================
-
-	/**
-	 * @brief 인게임 HUD용 얼굴 아이콘.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> FaceIcon;
 
 	/**
 	 * @brief 캐릭터 선택/가챠 화면용 전신 일러스트.
@@ -384,6 +368,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Weapon")
 	TMap<EWeaponType, FWeaponAnimSet> WeaponAnimMap;
 
+	/**
+	 * @brief 캐릭터 전용, FX, Tags
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FCharacterFXSettings CharacterFX;
+
 	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
 	FGameplayTag UltimateEffectTag;
@@ -400,12 +390,6 @@ struct FAIUnitAssets : public FUnitBaseAssets
 
 public:
 
-	/**
-	 * @brief UI 표현을 위한 아이콘
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> FaceIcon;
-
 	// =========================================================
 	//  Visual (AI Specific)
 	// =========================================================
@@ -416,6 +400,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual", meta = (ClampMin = "0.1"))
 	float Scale = 1.0f; // 초기화 필수
+
+	/**
+	 * @brief AI 유닛 전용, FX, Tags
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FAIUnitFXSettings AIUnitFX;
 
 	/**
 	 * @brief 기본 공격 몽타주
@@ -493,7 +483,7 @@ public:
 	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
 	 * * 인덱스 0: 스킬1, 인덱스 1: 스킬2 ... 순서대로 매핑
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Skill"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
 	TArray<FGameplayTag> SkillEffectTags;
 };
 
