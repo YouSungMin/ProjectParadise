@@ -94,7 +94,7 @@ void ACharacterBase::CheckHit(FName SocketName,ESocketTargetType TargetType)
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);

@@ -197,9 +197,9 @@ FCombatActionData APlayerBase::GetCombatActionData(ECombatActionType ActionType)
     return LinkedPlayerData->GetCombatActionData(ActionType);
 }
 
-FFXPayload* APlayerBase::GetFXPayload(EFXEventType EventType) const
+TArray<FFXPayload*> APlayerBase::GetFXPayloads(EFXEventType EventType) const
 {
-    return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetFXPayload(EventType) : nullptr;
+    return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetFXPayloads(EventType) : TArray<FFXPayload*>{};
 }
 
 void APlayerBase::SetCamera_Default()

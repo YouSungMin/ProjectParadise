@@ -289,6 +289,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
 	FReactionFXSettings ReactionFX;
+
+	/**
+	 * @brief 공격 행동 전용, FX, Tags
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FActionFXSettings ActionFX;
 };
 
 /**
@@ -462,14 +468,6 @@ public:
 	/** @brief 몬스터가 사용하는 다중 스킬 목록 (1번 스킬, 2번 스킬...) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Skill")
 	TArray<FCombatAbilitySetup> SkillSetups;
-
-	/**
-	 * @brief 공격 행동 전용, FX, Tags
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
-	FActionFXSettings ActionFX;
-
-
 };
 
 /**

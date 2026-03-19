@@ -62,7 +62,7 @@ public:
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
 	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override;
 
 	UFUNCTION(BlueprintCallable)
 	class APlayerData* GetPlayerData() const { return LinkedPlayerData.Get(); }
