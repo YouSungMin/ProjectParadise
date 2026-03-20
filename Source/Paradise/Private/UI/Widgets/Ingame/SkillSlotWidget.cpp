@@ -32,7 +32,10 @@ void USkillSlotWidget::NativeConstruct()
 	// 기본 아이콘이 할당되어 있으면 즉시 세팅
 	if (Tex_DefaultSkillIcon && Img_SkillIcon)
 	{
-		Img_SkillIcon->SetBrushFromTexture(Tex_DefaultSkillIcon, true);
+		if (UMaterialInstanceDynamic* DynamicMat = Img_SkillIcon->GetDynamicMaterial())
+		{
+			DynamicMat->SetTextureParameterValue(FName("SpriteTexture"), Tex_DefaultSkillIcon);
+		}
 	}
 
 	// 초기 상태 설정
@@ -61,7 +64,10 @@ void USkillSlotWidget::UpdateSlotInfo(UTexture2D* InIconTexture, float InMaxCool
 {
 	if (InIconTexture && Img_SkillIcon)
 	{
-		Img_SkillIcon->SetBrushFromTexture(InIconTexture);
+		if (UMaterialInstanceDynamic* DynamicMat = Img_SkillIcon->GetDynamicMaterial())
+		{
+			DynamicMat->SetTextureParameterValue(FName("SpriteTexture"), InIconTexture);
+		}
 	}
 
 	MaxCooldown = InMaxCooldownTime;

@@ -52,6 +52,12 @@ struct FWeaponFXSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag SkillTag;       // 스킬 태그
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags|Hit", meta = (Categories = "FX"))
+	FGameplayTag BasicAttackHitTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags|Hit", meta = (Categories = "FX"))
+	FGameplayTag SkillHitTag;
 };
 
 /**
@@ -75,6 +81,9 @@ struct FCharacterFXSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag UltimateTag;    // 궁극기 연출
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags|Hit", meta = (Categories = "FX"))
+	FGameplayTag UltimateHitTag; // 궁극기 타격 연출
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag HitTag;         // 피격 태그
 
@@ -96,6 +105,9 @@ struct FAIUnitFXSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag BasicAttackTag; // 평타
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
+	FGameplayTag BasicAttackHitTag; // 평타
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Tags", meta = (Categories = "FX"))
 	FGameplayTag HitTag;         // 피격

@@ -164,7 +164,19 @@ TArray<FFXPayload*> AUnitBase::GetFXPayloads(EFXEventType EventType) const
 		}
 		break;
 	}
+
+	case EFXEventType::BasicAttackHit:
+	{
+		if (UFXDataAsset* ActionAsset = CachedAIUnitFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ActionAsset->FindEffect(CachedAIUnitFX.BasicAttackHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
 	case EFXEventType::Skill:
+	case EFXEventType::SkillHit:
 	case EFXEventType::Ultimate:
 		// 스킬은 ASkillCasterUnit에서 처리하고, 몬스터는 궁극기가 없으므로 패스
 		break;
