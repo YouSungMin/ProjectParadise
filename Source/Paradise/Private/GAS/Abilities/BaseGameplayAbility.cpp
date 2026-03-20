@@ -42,6 +42,9 @@ FGameplayEffectSpecHandle UBaseGameplayAbility::MakeSpecHandle(TSubclassOf<UGame
 	FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
 	Context.AddSourceObject(this); // 이 어빌리티가 원인임을 명시
 
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	Context.AddInstigator(AvatarActor, AvatarActor);
+
 	// Spec 생성
 	return SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
 }

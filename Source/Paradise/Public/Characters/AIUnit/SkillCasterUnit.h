@@ -25,6 +25,9 @@ public:
 	/** @brief 인덱스를 기반으로 특정 스킬의 FX 연출 데이터(Payload)를 반환합니다. */
 	virtual TArray<struct FFXPayload*> GetSkillFXPayloads(int32 SkillIndex) const;
 
+	/** @brief추가: 인덱스를 기반으로 특정 스킬의 '타격' FX 연출을 반환합니다. */
+	virtual TArray<struct FFXPayload*> GetSkillHitFXPayloads(int32 SkillIndex) const;
+
 	/** @brief 인덱스를 기반으로 특정 스킬의 몽타주를 가져옵니다. */
 	UFUNCTION(BlueprintCallable, Category = "Combat|Skill")
 	UAnimMontage* GetSkillMontage(int32 SkillIndex) const;
@@ -35,7 +38,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat|Skill")
 	int32 GetCurrentCastingSkillIndex() const { return CurrentCastingSkillIndex; }
 
-	// 2. 부모(UnitBase)의 가상 함수 오버라이드!
+	// 부모(UnitBase)의 가상 함수 오버라이드!
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override;
 protected:
@@ -50,6 +53,10 @@ protected:
 	/** @brief 다중 스킬 연출 태그 캐싱 배열 (EnemyAssets의 SkillEffectTags 복사본) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	TArray<FGameplayTag> CachedSkillEffectTags;
+
+	/** @brief 다중 스킬 타격 연출 태그 캐싱 배열 (EnemyAssets의 SkillEffectTags 복사본) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TArray<FGameplayTag> CachedSkillHitEffectTags;
 
 	/** @brief 다중 스킬 몽타주 캐싱 배열 (메모리에 로드된 상태 유지) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")

@@ -485,6 +485,14 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
 	TArray<FGameplayTag> SkillEffectTags;
+
+	/**
+	 * @brief 스킬 타격 연출 태그 목록
+	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
+	 * * 인덱스 0: 스킬1, 인덱스 1: 스킬2 ... 순서대로 매핑
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "FX"))
+	TArray<FGameplayTag> SkillHitEffectTags;
 };
 
 /**
