@@ -90,6 +90,9 @@ protected:
 	/** @brief 무거운 연산을 막기 위해 한 번 찾은 적 기지를 기억해두는 캐싱 포인터 */
 	TWeakObjectPtr<class AHomeBase> CachedEnemyBase = nullptr;
 
+	/** @brief 한 번 타겟팅한 적을 기억하는 포인터 */
+	TWeakObjectPtr<class AActor> CurrentTarget = nullptr;
+
 private:
 	/** @brief 현재 자동 전투 활성화 여부를 나타내는 플래그 */
 	bool bIsAutoMode = false;

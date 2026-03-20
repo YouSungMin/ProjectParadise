@@ -159,6 +159,16 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 {
 	if (!MontageToPlay) return nullptr;
 
+	ACharacter* AvatarChar = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!AvatarChar) return nullptr;
+
+	USkeletalMeshComponent* Mesh = AvatarChar->GetMesh();
+	if (!Mesh || !Mesh->GetAnimInstance())
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 AnimBP(AnimInstance)가 없습니다! 몽타주 재생 취소."), *AvatarChar->GetName());
+		return nullptr;
+	}
+
 	float FinalPlayRate = 1.0f;
 
 	// 캐싱된 전투 데이터에서 애니메이션 재생속도 가져오기

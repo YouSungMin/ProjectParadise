@@ -98,9 +98,52 @@ void UAutoCombatComponent::UpdateAutoCombat()
 
     float AttackRange = GetDynamicAttackRange(PlayerPawn);
     float NearestDist = 999999.0f;
+    AActor* TargetEnemy = nullptr;
 
-    //가장 가까운 적 탐색
-    AActor* TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
+    if (CurrentTarget.IsValid())
+    {
+        AUnitBase* TargetUnit = Cast<AUnitBase>(CurrentTarget.Get());
+
+        // 죽지 않았다면 기존 타겟을 그대로 유지하고 거리만 갱신
+        if (TargetUnit && !TargetUnit->IsDead())
+        {
+            TargetEnemy = CurrentTarget.Get();
+            NearestDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
+        }
+        else
+        {
+            // 타겟이 죽었거나 삭제되었다면 기억을 지움
+            CurrentTarget.Reset();
+        }
+    }
+
+    if (!TargetEnemy)
+    {
+        //가장 가까운 적 탐색
+        TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
+        if (TargetEnemy)
+        {
+            // 새로 찾은 녀석을 다음 프레임을 위해 기억해둠
+            CurrentTarget = TargetEnemy;
+        }
+    }
+
+    //현재 타겟 디버그
+    if (TargetEnemy)
+    {
+        if (GEngine)
+        {
+            FString DebugMsg = FString::Printf(TEXT("🎯 [오토 타겟]: %s (거리: %.1f / 사거리: %.1f)"), *TargetEnemy->GetName(), NearestDist, AttackRange);
+            GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Green, DebugMsg);
+        }
+    }
+    else
+    {
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Yellow, TEXT("🔍 [오토 타겟]: 주변에 적 없음 (기지로 이동)"));
+        }
+    }
 
     //적이 사거리 안에 들어왔다면 공격
     if (TargetEnemy && NearestDist <= AttackRange)
@@ -202,6 +245,19 @@ AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDist
     TArray<FOverlapResult> OverlapResults;
     FCollisionQueryParams CollisionParams;
     CollisionParams.AddIgnoredActor(PlayerPawn);
+
+    FCollisionObjectQueryParams ObjectQueryParams;
+    ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+    //오버랩 검사
+    bool bHit = GetWorld()->OverlapMultiByObjectType(
+        OverlapResults,
+        PlayerLoc,
+        FQuat::Identity,
+        ObjectQueryParams,
+        FCollisionShape::MakeSphere(SearchRadius),
+        CollisionParams
+    );
 
     //처음 한 번만 태그를 검색
     static const FGameplayTag EnemyTag = FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"));
