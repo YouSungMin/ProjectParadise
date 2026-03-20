@@ -138,9 +138,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI|Fallback")
 	TObjectPtr<UTexture2D> DefaultMainIcon = nullptr;
 
-	/** @brief 장착된 장비 이미지가 없을 때 빈칸 대신 채워줄 기본 아이콘 (선택 사항) */
+	/**
+	 * @brief 부위별 빈 장비 슬롯 기본 배경 아이콘 맵
+	 * @details 디자이너가 에디터에서 장비 부위(Key)와 기본 이미지(Value)를 자유롭게 매핑합니다.
+	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|UI|Fallback")
-	TObjectPtr<UTexture2D> DefaultEquipIcon = nullptr;
+	TMap<EEquipmentSlot, TObjectPtr<UTexture2D>> DefaultEquipmentIcons;
 #pragma endregion 기본 에셋 (Fallback)
 
 #pragma region 델리게이트 이벤트

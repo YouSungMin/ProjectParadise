@@ -321,7 +321,7 @@ void UParadiseSquadDetailWidget::UpdateEquipmentIcon(EEquipmentSlot InSlot, UIma
 	UInventorySystem* InvSys = GI ? GI->GetSubsystem<UInventorySystem>() : nullptr;
 	if (!GI || !InvSys) return;
 
-	// 1. 캐릭터가 해당 부위(InSlot)에 장비를 끼고 있는지 확인 🚨 (Slot -> InSlot 변경)
+	// 1. 캐릭터가 해당 부위(InSlot)에 장비를 끼고 있는지 확인 (Slot -> InSlot 변경)
 	if (const FGuid* ItemUID = EquipmentMap.Find(InSlot))
 	{
 		// 2. 인벤토리에서 실제 아이템(UID) 데이터 조회
@@ -355,17 +355,19 @@ void UParadiseSquadDetailWidget::UpdateEquipmentIcon(EEquipmentSlot InSlot, UIma
 		}
 	}
 
-	// 5. 장비를 끼고 있지 않거나 데이터를 찾지 못했다면 폴백 이미지 처리 🚨
-	if (DefaultEquipIcon)
+	// 5. [최적화] TMap에서 부위(InSlot)를 키값으로 기본 아이콘을 찾습니다.
+	if (const TObjectPtr<UTexture2D>* FoundDefaultIcon = DefaultEquipmentIcons.Find(InSlot))
 	{
-		TargetImage->SetBrushFromTexture(DefaultEquipIcon);
-		TargetImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (*FoundDefaultIcon)
+		{
+			TargetImage->SetBrushFromTexture(*FoundDefaultIcon);
+			TargetImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			return; // 성공적으로 렌더링했으면 함수 종료
+		}
 	}
-	else
-	{
-		// 기본 아이콘도 없으면 그냥 숨김 (레이아웃 보존)
-		TargetImage->SetVisibility(ESlateVisibility::Hidden);
-	}
+
+	// 맵에 해당 부위가 등록되지 않았거나 이미지가 비어있으면 숨김 처리
+	TargetImage->SetVisibility(ESlateVisibility::Hidden);
 }
 
 #pragma region 핸들러
