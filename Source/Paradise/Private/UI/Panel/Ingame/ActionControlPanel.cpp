@@ -182,7 +182,10 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 	FDataTableRowHandle CurrentWeaponAttackHandle;
 	FDataTableRowHandle CurrentWeaponSkillHandle;
 	FDataTableRowHandle CurrentUltimateHandle;
+
 	UTexture2D* TargetAttackIcon = Tex_DefaultAttackIcon.Get(); // 기본 아이콘으로 초기화
+	UTexture2D* TargetSkillIcon = nullptr;
+	UTexture2D* TargetUltimateIcon = nullptr;
 
 	// 2. [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
 	if (APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex))
@@ -191,6 +194,14 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 		if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
 		{
 			CurrentUltimateHandle = CharStats->UltimateActionHandle;
+		}
+
+		if (const FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, Soul->CharacterID))
+		{
+			if (!CharAssets->UltimateIcon.IsNull())
+			{
+				TargetUltimateIcon = CharAssets->UltimateIcon.LoadSynchronous();
+			}
 		}
 
 		// B. 장비 컴포넌트로부터 무기 스킬(Weapon Skill) ID 획득
@@ -205,12 +216,51 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 					CurrentWeaponAttackHandle = WeaponStats->BasicAttackActionHandle;
 					CurrentWeaponSkillHandle = WeaponStats->SkillActionHandle;
 				}
+
+				if (const FWeaponAssets* WeaponAssets = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, EquippedWeaponID))
+				{
+					if (!WeaponAssets->WeaponBasicAttackIcon.IsNull())
+					{
+						TargetAttackIcon = WeaponAssets->WeaponBasicAttackIcon.LoadSynchronous();
+					}
+					if (!WeaponAssets->WeaponSkillIcon.IsNull())
+					{
+						TargetSkillIcon = WeaponAssets->WeaponSkillIcon.LoadSynchronous();
+					}
+				}
 			}
 		}
 	}
 
 	// 3. 추출된 데이터를 자신의 패널에 주입
 	InitActionPanel(CurrentWeaponAttackHandle,CurrentWeaponSkillHandle, CurrentUltimateHandle, TargetAttackIcon);
+
+	if (AttackBtn)
+	{
+		AttackBtn->SetButtonIcon(TargetAttackIcon);
+	}
+
+	// 동적으로 로드된 스킬 및 궁극기 아이콘을 슬롯에 적용 (쿨타임은 Handle에서 추출)
+	if (SkillSlot_Active)
+	{
+		float SkillCooldown = 0.0f;
+		if (FActionStats* ActionRow = CurrentWeaponSkillHandle.GetRow<FActionStats>(TEXT("UI_SkillCooldown_Lookup")))
+		{
+			SkillCooldown = ActionRow->Cooldown;
+		}
+		SkillSlot_Active->UpdateSlotInfo(TargetSkillIcon, SkillCooldown);
+	}
+
+	if (SkillSlot_Ultimate)
+	{
+		float UltCooldown = 0.0f;
+		if (FActionStats* ActionRow = CurrentUltimateHandle.GetRow<FActionStats>(TEXT("UI_UltCooldown_Lookup")))
+		{
+			UltCooldown = ActionRow->Cooldown;
+		}
+		SkillSlot_Ultimate->UpdateSlotInfo(TargetUltimateIcon, UltCooldown);
+	}
+
 	UpdateTagButtons(PlayerIndex);
 
 	UE_LOG(LogTemp, Log, TEXT("[ActionPanel] UI 자율 갱신 성공 (Index: %d)"), PlayerIndex);
@@ -294,13 +344,6 @@ void UActionControlPanel::InitTagButtons()
 
 				TagButtons[i]->SetButtonIcon(FaceIcon);
 				TagButtons[i]->SetVisibility(ESlateVisibility::Visible);
-
-				if (i == 0 && AttackBtn)
-				{
-					// TODO: FCharacterAssets에 WeaponIcon 필드 추가 후 Asset->WeaponIcon.LoadSynchronous()로 교체
-					UTexture2D* AttackIcon = Tex_DefaultAttackIcon.Get();
-					AttackBtn->SetButtonIcon(AttackIcon);
-				}
 			}
 		}
 		else
