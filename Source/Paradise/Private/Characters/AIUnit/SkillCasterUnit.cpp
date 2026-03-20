@@ -87,6 +87,7 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 		if (FEnemyAssets* EnemyAssets = static_cast<FEnemyAssets*>(InAssets))
 		{
 			CachedSkillEffectTags = EnemyAssets->SkillEffectTags;
+			CachedSkillHitEffectTags = EnemyAssets->SkillHitEffectTags;
 		}
 	}
 }
@@ -109,6 +110,29 @@ TArray<FFXPayload*> ASkillCasterUnit::GetSkillFXPayloads(int32 SkillIndex) const
 	if (CachedSkillEffectTags.IsValidIndex(SkillIndex))
 	{
 		FGameplayTag TargetTag = CachedSkillEffectTags[SkillIndex];
+
+		if (CachedAIUnitFX.FXData && TargetTag.IsValid())
+		{
+			if (UFXDataAsset* LoadedAsset = CachedAIUnitFX.FXData.LoadSynchronous())
+			{
+				if (FFXPayload* Payload = LoadedAsset->FindEffect(TargetTag))
+				{
+					ResultPayloads.Add(Payload);
+				}
+			}
+		}
+	}
+
+	return ResultPayloads;
+}
+
+TArray<struct FFXPayload*> ASkillCasterUnit::GetSkillHitFXPayloads(int32 SkillIndex) const
+{
+	TArray<FFXPayload*> ResultPayloads;
+
+	if (CachedSkillHitEffectTags.IsValidIndex(SkillIndex))
+	{
+		FGameplayTag TargetTag = CachedSkillHitEffectTags[SkillIndex]; // 타격 배열에서 꺼냄
 
 		if (CachedAIUnitFX.FXData && TargetTag.IsValid())
 		{
@@ -153,6 +177,11 @@ TArray<FFXPayload*> ASkillCasterUnit::GetFXPayloads(EFXEventType EventType) cons
 	if (EventType == EFXEventType::Skill && CurrentCastingSkillIndex != INDEX_NONE)
 	{
 		return GetSkillFXPayloads(CurrentCastingSkillIndex);
+	}
+
+	if (EventType == EFXEventType::SkillHit && CurrentCastingSkillIndex != INDEX_NONE)
+	{
+		return GetSkillHitFXPayloads(CurrentCastingSkillIndex);
 	}
 
 	return Super::GetFXPayloads(EventType);

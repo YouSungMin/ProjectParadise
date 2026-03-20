@@ -175,6 +175,10 @@ void UProjectileAttackBase::FireSinglePellet()
 			{
 				FGameplayEffectSpecHandle SpecHandle = MakeSpecHandle(CombatData.EffectClass, GetAbilityLevel());
 				SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage.Multiplier")), CombatData.Stats.DamageMultiplier);
+
+				FGameplayEffectContextHandle ContextHandle = SpecHandle.Data->GetContext();
+				ContextHandle.AddInstigator(AvatarChar, Proj);
+
 				Proj->SetDamageSpecHandle(SpecHandle);
 			}
 
