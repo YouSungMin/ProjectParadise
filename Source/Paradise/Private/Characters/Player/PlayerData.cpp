@@ -595,8 +595,35 @@ TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
 		}
 		break;
 	}
+	case EFXEventType::BasicAttackHit:
+	{
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.BasicAttackHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
 	}
 
+	case EFXEventType::SkillHit:
+	{
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.SkillHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	case EFXEventType::UltimateHit:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.UltimateHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	}
 	return ResultPayloads;
 }
 
