@@ -4,6 +4,7 @@
 #include "UI/Widgets/Squad/ParadiseSquadDetailWidget.h"
 #include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
+#include "Components/RichTextBlock.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/Widget.h"
@@ -40,84 +41,110 @@ void UParadiseSquadDetailWidget::NativeDestruct()
 #pragma region 공개 함수
 void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquadDetailContext InContext)
 {
+	// 1. 핵심 시스템 캐싱 및 유효성 검사 (최적화)
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [SquadDetail] GameInstance를 찾을 수 없습니다."));
+		SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+
 	SetVisibility(ESlateVisibility::Visible);
 
-	// 1. 공통 데이터 렌더링 (이름, 메인 아이콘)
+	// 2. 공통 데이터 렌더링 (이름)
 	if (Text_Name)
 	{
 		Text_Name->SetText(InData.Name.IsEmpty() ? FText::FromString(TEXT("-")) : InData.Name);
 	}
 
-	if (Img_Icon)
-	{
-		// 🚨 [최적화 & 폴백 적용] 데이터에 아이콘이 있으면 그걸 쓰고, 없으면 DefaultMainIcon을 씁니다.
-		UTexture2D* TargetIcon = InData.Icon ? InData.Icon : DefaultMainIcon;
-
-		if (TargetIcon)
-		{
-			Img_Icon->SetBrushFromTexture(TargetIcon);
-			Img_Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		}
-		else
-		{
-			// 폴백 이미지조차 안 넣어놨다면 어쩔 수 없이 숨깁니다.
-			Img_Icon->SetVisibility(ESlateVisibility::Collapsed);
-		}
-	}
-
-	// 2. 레이아웃 초기화 (모든 추가 컨테이너를 우선 숨김)
+	// 3. UI 레이아웃 및 텍스트 변수 초기화
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);
 
-	// 3. 컨텍스트(Context)에 따른 동적 레이아웃 활성화 및 스탯 문자열 조립 (Data-Driven)
+	TObjectPtr<UTexture2D> DeterminatedIcon = nullptr; // 최종 결정될 아이콘
 	FString FinalStatString = TEXT("");
-	FString SkillInfoString = TEXT("스킬 정보가 없습니다."); // 기본값
+	FString SkillInfoString = TEXT("스킬 정보가 없습니다.");
 	bool bShowActionButtons = false;
 
-	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
-	UInventorySystem* InvSys = GI ? GI->GetSubsystem<UInventorySystem>() : nullptr;
-
+	// 4. 컨텍스트(Context)에 따른 데이터 로드 및 UI 구성 (Data-Driven & MVC)
 	switch (InContext)
 	{
 	case ESquadDetailContext::FormationCharacter:
 	case ESquadDetailContext::InventoryCharacter:
 	{
+		// UI 컨테이너 가시성 설정
 		if (Container_EquippedItems) Container_EquippedItems->SetVisibility(InContext == ESquadDetailContext::FormationCharacter ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
 		bShowActionButtons = (InContext == ESquadDetailContext::FormationCharacter);
 
-		// [Data-Driven] 캐릭터 스탯 및 스킬 연동
+		// 캐릭터는 FaceIcon 로드
+		if (FCharacterAssets* CharAsset = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, InData.ID))
+		{
+			if (!CharAsset->FaceIcon.IsNull()) DeterminatedIcon = CharAsset->FaceIcon.LoadSynchronous();
+		}
+
+		// [스탯 연산] 기본 스탯 + 레벨업 성장치 + 장비 스탯 합산
 		if (FCharacterStats* CharStat = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InData.ID))
 		{
-			// 레벨에 따른 최종 스탯 계산 (기본 스탯 + 레벨업 성장치)
 			int32 Level = FMath::Max(1, InData.Level);
-			float CurHP = CharStat->BaseMaxHP + (CharStat->GrowthHPPerLevel * (Level - 1));
-			float CurAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
+			float TotalHP = CharStat->BaseMaxHP + (CharStat->GrowthHPPerLevel * (Level - 1));
+			float TotalAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
 
-			FinalStatString = FString::Printf(TEXT("Lv.%d\n체력: %d / 공격력: %d"), Level, FMath::RoundToInt(CurHP), FMath::RoundToInt(CurAtk));
+			if (InvSys)
+			{
+				if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(InData.ID))
+				{
+					// 장착 중인 장비 스탯 더하기 로직
+					for (const auto& EquipPair : CharData->EquipmentMap)
+					{
+						FGuid ItemUID = EquipPair.Value;
+						if (FOwnedItemData* ItemData = InvSys->GetItemByGUID(ItemUID))
+						{
+							if (EquipPair.Key == EEquipmentSlot::Weapon)
+							{
+								// 무기: 공격력만 바로 합산!
+								if (FWeaponStats* WpnStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, ItemData->ItemID))
+								{
+									TotalAtk += WpnStat->AttackPower;
+								}
+							}
+							else
+							{
+								// 방어구/장신구: 체력만 바로 합산!
+								if (FArmorStats* ArmStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, ItemData->ItemID))
+								{
+									TotalHP += ArmStat->MaxHP;
+								}
+							}
+						}
+					}
+
+					// 편성창일 경우 하단 장비 아이콘 업데이트
+					if (InContext == ESquadDetailContext::FormationCharacter)
+					{
+						UpdateEquipmentIcon(EEquipmentSlot::Weapon, Img_EquipWeapon, CharData->EquipmentMap);
+						UpdateEquipmentIcon(EEquipmentSlot::Hat, Img_EquipHelmet, CharData->EquipmentMap);
+						UpdateEquipmentIcon(EEquipmentSlot::Armor, Img_EquipChest, CharData->EquipmentMap);
+						UpdateEquipmentIcon(EEquipmentSlot::Necklace, Img_EquipAcc1, CharData->EquipmentMap);
+						UpdateEquipmentIcon(EEquipmentSlot::Ring, Img_EquipAcc2, CharData->EquipmentMap);
+					}
+				}
+			}
+
+			// [Rich Text 적용] 문자열을 HTML 태그 형식으로 조립
+			FinalStatString = FString::Printf(TEXT("<Green>Lv.%d</>\n<Red>체력: %d</> / <Blue>공격력: %d</>"),
+				Level, FMath::RoundToInt(TotalHP), FMath::RoundToInt(TotalAtk));
+
+			// [스킬 연동] FActionStats 구조체에서 ActionName 추출
 			SkillInfoString = TEXT("고유 스킬: 없음");
 			if (!CharStat->UltimateActionHandle.IsNull())
 			{
 				if (FActionStats* ActionRow = CharStat->UltimateActionHandle.GetRow<FActionStats>(TEXT("UI_SkillNameLookup")))
 				{
-					// 엑셀에 적힌 진짜 스킬 이름을 가져옵니다!
 					SkillInfoString = FString::Printf(TEXT("고유 스킬: %s"), *ActionRow->ActionName.ToString());
 				}
-			}
-		}
-
-		// 편성창일 경우 장비 아이콘 업데이트 (기존 로직)
-		if (InContext == ESquadDetailContext::FormationCharacter && InvSys)
-		{
-			if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(InData.ID))
-			{
-				//0227 김성현 - 슬롯 Enum 수정에따라 코드 수정
-				UpdateEquipmentIcon(EEquipmentSlot::Weapon, Img_EquipWeapon, CharData->EquipmentMap);
-				UpdateEquipmentIcon(EEquipmentSlot::Hat, Img_EquipHelmet, CharData->EquipmentMap);
-				UpdateEquipmentIcon(EEquipmentSlot::Armor, Img_EquipChest, CharData->EquipmentMap);
-				UpdateEquipmentIcon(EEquipmentSlot::Necklace, Img_EquipAcc1, CharData->EquipmentMap);
-				UpdateEquipmentIcon(EEquipmentSlot::Ring, Img_EquipAcc2, CharData->EquipmentMap);
 			}
 		}
 	}
@@ -127,12 +154,25 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	{
 		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
+		// [기획 반영] 무기는 일반 Icon 로드
+		if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, InData.ID))
+		{
+			if (!WeaponAsset->Icon.IsNull()) DeterminatedIcon = WeaponAsset->Icon.LoadSynchronous();
+		}
+
 		if (FWeaponStats* WpnStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, InData.ID))
 		{
-			// 강화 수치 반영 (10%씩 선형 증가 가정 - 기획에 따라 변경 가능)
+			// 1. 강화 수치 반영 (공격력만 10% 증가 적용 - 기획에 따라 변경 가능)
 			float AtkBonus = 1.0f + (InData.Level * 0.1f);
-			FinalStatString = FString::Printf(TEXT("강화 +%d\n공격력: %d / 치명타: %d%%"),
-				InData.Level, FMath::RoundToInt(WpnStat->AttackPower * AtkBonus), FMath::RoundToInt(WpnStat->CritRate * 100.0f));
+			int32 FinalAtk = FMath::RoundToInt(WpnStat->AttackPower * AtkBonus);
+
+			// 2. 소수점 데이터를 UI용 퍼센트로 변환 (예: 0.15 -> 15%, 1.5 -> 150%)
+			int32 CritChance = FMath::RoundToInt(WpnStat->CritRate * 100.0f);
+			int32 CritDmg = FMath::RoundToInt(WpnStat->CritDamage * 100.0f);
+
+			// 3. 무기의 모든 스탯을 깔끔하게 표기
+			FinalStatString = FString::Printf(TEXT("<Green>강화 +%d</>\n<Blue>공격력: %d</>\n공격 속도: %.2f\n치명타 확률: %d%%\n치명타 피해량: %d%%"),
+				InData.Level, FinalAtk, WpnStat->AttackSpeed, CritChance, CritDmg);
 
 			SkillInfoString = TEXT("무기 스킬: 없음");
 			if (!WpnStat->SkillActionHandle.IsNull())
@@ -148,31 +188,50 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	case ESquadDetailContext::InventoryArmor:
 	{
+		// [기획 반영] 방어구는 일반 Icon 로드
+		if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, InData.ID))
+		{
+			if (!ArmorAsset->Icon.IsNull()) DeterminatedIcon = ArmorAsset->Icon.LoadSynchronous();
+		}
+
 		if (FArmorStats* ArmStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, InData.ID))
 		{
+			// 1. 강화 수치 반영 (방어력과 체력, 마나 모두 레벨당 10% 증가 적용)
 			float DefBonus = 1.0f + (InData.Level * 0.1f);
-			FinalStatString = FString::Printf(TEXT("강화 +%d\n방어력: %d / 추가 HP: %d"),
-				InData.Level, FMath::RoundToInt(ArmStat->DefensePower * DefBonus), FMath::RoundToInt(ArmStat->MaxHP));
+			int32 FinalDef = FMath::RoundToInt(ArmStat->DefensePower * DefBonus);
+			int32 FinalHP = FMath::RoundToInt(ArmStat->MaxHP * DefBonus);
+			int32 FinalMana = FMath::RoundToInt(ArmStat->MaxMana * DefBonus);
+
+			// [Rich Text 적용] 방어구 스탯 표기
+			FinalStatString = FString::Printf(TEXT("<Green>강화 +%d</>\n방어력: %d\n<Red>최대 체력: %d</>\n최대 마나: %d"),
+				InData.Level, FinalDef, FinalHP, FinalMana);
+
 			SkillInfoString = TEXT("방어구는 고유 스킬이 없습니다.");
 		}
 	}
 	break;
 
 	case ESquadDetailContext::FormationUnit:
-		bShowActionButtons = true;
+		bShowActionButtons = true; // Fallthrough
 	case ESquadDetailContext::InventoryUnit:
 	{
+		// 퍼밀리어(유닛)는 FaceIcon 로드
+		if (FFamiliarAssets* UnitAsset = GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, InData.ID))
+		{
+			if (!UnitAsset->FaceIcon.IsNull()) DeterminatedIcon = UnitAsset->FaceIcon.LoadSynchronous();
+		}
+
 		if (FFamiliarStats* UnitStat = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, InData.ID))
 		{
-			FinalStatString = FString::Printf(TEXT("체력: %d / 공격력: %d\n소환 코스트: %d"),
-				FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower), UnitStat->SummonCost);
+			// [Rich Text 적용] 소환수 스탯 표기
+			FinalStatString = FString::Printf(TEXT("<Green>소환 코스트: %d</>\n<Red>체력: %d</> / <Blue>공격력: %d</>"),
+				UnitStat->SummonCost, FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower));
 
 			SkillInfoString = TEXT("주요 스킬: 없음");
 			if (UnitStat->PatternActionHandles.Num() > 0 && !UnitStat->PatternActionHandles[0].IsNull())
 			{
 				if (FActionStats* ActionRow = UnitStat->PatternActionHandles[0].GetRow<FActionStats>(TEXT("UI_FamiliarSkillNameLookup")))
 				{
-					// 첫 번째 스킬의 이름을 가져옵니다.
 					SkillInfoString = FString::Printf(TEXT("주요 스킬: %s"), *ActionRow->ActionName.ToString());
 				}
 			}
@@ -181,11 +240,25 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	break;
 	}
 
-	// 4. 최종 텍스트 적용 (Text_Desc와 Text_SkillInfo 분리 적용)
+	// 5. 메인 아이콘 최종 렌더링 (결정된 아이콘 또는 Fallback 적용)
+	if (Img_Icon)
+	{
+		UTexture2D* FinalIcon = DeterminatedIcon ? DeterminatedIcon : DefaultMainIcon;
+
+		if (FinalIcon)
+		{
+			Img_Icon->SetBrushFromTexture(FinalIcon);
+			Img_Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else
+		{
+			Img_Icon->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
+	// 6. 텍스트 및 버튼 가시성 최종 갱신
 	if (Text_Desc) Text_Desc->SetText(FText::FromString(FinalStatString));
 	if (Text_SkillInfo) Text_SkillInfo->SetText(FText::FromString(SkillInfoString));
-
-	// 5. 하단 버튼 노출 제어
 	if (HBox_ButtonRoot) HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
