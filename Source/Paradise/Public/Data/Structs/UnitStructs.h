@@ -404,7 +404,7 @@ public:
 	/**
 	 * @brief AI 유닛 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
 	FAIUnitFXSettings AIUnitFX;
 
 	/**
@@ -483,7 +483,7 @@ public:
 	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
 	 * * 인덱스 0: 스킬1, 인덱스 1: 스킬2 ... 순서대로 매핑
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "FX"))
 	TArray<FGameplayTag> SkillEffectTags;
 
 	/**
