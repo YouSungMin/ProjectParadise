@@ -30,9 +30,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
     FVector Scale = FVector(1.0f);
 
-    // 위치 오프셋 (필요하다면)
+    // 위치 오프셋
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
     FVector LocationOffset = FVector::ZeroVector;
+
+	// 회전 오프셋 (파티클 방향 조절용)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	FRotator RotationOffset = FRotator::ZeroRotator;
 };
 
 /**

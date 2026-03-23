@@ -56,8 +56,10 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 						if (UNiagaraSystem* LoadedNiagara = Payload->VisualEffect.LoadSynchronous())
 						{
 							FVector RotatedOffset = HitRotation.RotateVector(Payload->LocationOffset);
+							FRotator FinalRotation = HitRotation + Payload->RotationOffset;
+
 							UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-								MyTarget, LoadedNiagara, HitLocation + RotatedOffset, HitRotation, Payload->Scale
+								MyTarget, LoadedNiagara, HitLocation + RotatedOffset, FinalRotation, Payload->Scale
 							);
 							UE_LOG(LogTemp, Log, TEXT("      🎇 나이아가라 스폰 완료: %s"), *LoadedNiagara->GetName());
 						}
