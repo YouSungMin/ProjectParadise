@@ -3,6 +3,7 @@
 
 #include "UI/Widgets/Summon/ParadiseSummonPopup.h"
 #include "UI/Panel/Summon/ParadiseSummonPanel.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -34,6 +35,14 @@ void UParadiseSummonPopup::NativeConstruct()
 			CachedEconomySubsystem->OnCurrencyChanged.AddDynamic(this, &UParadiseSummonPopup::HandleCurrencyChanged);
 		}
 	}
+	if (Panel_Character)
+	{
+		Panel_Character->OnNotEnoughAether.AddDynamic(this, &UParadiseSummonPopup::HandleNotEnoughAether);
+	}
+	if (Panel_Equipment)
+	{
+		Panel_Equipment->OnNotEnoughAether.AddDynamic(this, &UParadiseSummonPopup::HandleNotEnoughAether);
+	}
 
 	// 3. 재화 UI 최초 갱신
 	RefreshCurrencyUI();
@@ -45,6 +54,9 @@ void UParadiseSummonPopup::NativeConstruct()
 void UParadiseSummonPopup::NativeDestruct()
 {
 	// 델리게이트 안전 해제
+	if (Panel_Character) Panel_Character->OnNotEnoughAether.RemoveAll(this);
+	if (Panel_Equipment) Panel_Equipment->OnNotEnoughAether.RemoveAll(this);
+
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.RemoveAll(this);
 	if (Btn_Tab_Equipment) Btn_Tab_Equipment->OnClicked.RemoveAll(this);
 	if (Btn_Back) Btn_Back->OnClicked.RemoveAll(this);
@@ -131,6 +143,14 @@ void UParadiseSummonPopup::HandleCurrencyChanged(ECurrencyType CurrencyType, int
 	if (CurrencyType == ECurrencyType::Aether)
 	{
 		RefreshCurrencyUI();
+	}
+}
+
+void UParadiseSummonPopup::HandleNotEnoughAether()
+{
+	if (Widget_ResourceWarning)
+	{
+		Widget_ResourceWarning->ShowWarning(FText::FromString(TEXT("에테르")), Icon_Aether.LoadSynchronous());
 	}
 }
 #pragma endregion 내부 로직

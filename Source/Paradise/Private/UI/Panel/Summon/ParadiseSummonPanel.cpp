@@ -2,9 +2,11 @@
 
 
 #include "UI/Panel/Summon/ParadiseSummonPanel.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/GachaSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Engine/DataTable.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -79,7 +81,30 @@ void UParadiseSummonPanel::OnMultiSummonClicked()
 
 void UParadiseSummonPanel::RequestSummonAction(int32 DrawCount)
 {
-	if (!CachedPlayerController.IsValid()) return;
+	if (!CachedGI.IsValid() || !CachedPlayerController.IsValid()) return;
+
+	// 배너 데이터에서 요구 비용(에테르) 읽어오기
+	FGachaBannerData* BannerData = BannerDataRow.GetRow<FGachaBannerData>(TEXT("SummonPanel"));
+	if (!BannerData) return;
+
+	const int32 TotalRequiredAether = BannerData->RequiredAether * DrawCount;
+
+	// 재화 검증
+	UEconomySubsystem* EconomySys = CachedGI->GetSubsystem<UEconomySubsystem>();
+	if (EconomySys)
+	{
+		int32 CurrentAether = EconomySys->GetCurrency(ECurrencyType::Aether);
+
+		if (CurrentAether < TotalRequiredAether)
+		{
+			// 자식은 부모에게 "에테르 부족해!" 라고 소리만 지르고 끝냅니다.
+			if (OnNotEnoughAether.IsBound())
+			{
+				OnNotEnoughAether.Broadcast();
+			}
+			return;
+		}
+	}
 
 	CachedPlayerController->StartGachaActionSequence(DrawCount);
 

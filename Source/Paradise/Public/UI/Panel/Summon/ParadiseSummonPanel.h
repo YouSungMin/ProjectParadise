@@ -13,7 +13,11 @@ class UTextBlock;
 class UDataTable;
 class ALobbyPlayerController;
 class UParadiseGameInstance;
+class UParadiseResourceWarningWidget;
 #pragma endregion 전방선언
+
+/** @brief 에테르가 부족할 때 부모(Popup)에게 경고창을 띄워달라고 요청하는 델리게이트 */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNotEnoughAether);
 
 /**
  * @brief 소환 시스템의 각 탭(캐릭터, 장비 등) 안에 들어갈 컨텐츠 위젯의 기저 클래스
@@ -37,11 +41,16 @@ public:
 	 * @details 상속받은 자식 클래스에서 구체적인 배너 이미지나 확률 정보를 세팅합니다.
 	 */
 	virtual void RefreshPanelData();
+
+	/** @brief 에테르 부족 이벤트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnNotEnoughAether OnNotEnoughAether;
 #pragma endregion 외부 인터페이스
 
 #pragma region 데이터 및 에셋 설정
 protected:
-	/** * @brief 기획자가 에디터에서 할당할 이 패널의 배너 행(Row) 데이터
+	/**
+	 * @brief 기획자가 에디터에서 할당할 이 패널의 배너 행(Row) 데이터
 	 * @details FDataTableRowHandle을 사용해 테이블과 특정 배너 행을 동시에 선택합니다.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Data", meta = (RowType = "/Script/Paradise.GachaBannerData"))
