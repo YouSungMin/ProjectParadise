@@ -14,6 +14,7 @@ class UTextBlock;
 class UParadiseGameInstance;
 class UEconomySubsystem;
 class ALobbyPlayerController;
+class UParadiseResourceWarningWidget;
 #pragma endregion 전방선언
 
 /**
@@ -76,7 +77,17 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSummonPanel> Panel_Equipment = nullptr;
 
+	/** @brief 에테르 부족 시 화면 전체를 덮을 경고 위젯 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseResourceWarningWidget> Widget_ResourceWarning = nullptr;
 #pragma endregion UI 컴포넌트
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 경고 팝업에 넘겨줄 에테르 아이콘 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Icons")
+	TSoftObjectPtr<UTexture2D> Icon_Aether = nullptr;
+#pragma endregion 데이터 드리븐 설정
 
 #pragma region 내부 상태 및 캐싱
 private:
@@ -116,6 +127,10 @@ private:
 	 * @param NewIndex 전환할 스위처 인덱스
 	 */
 	void SwitchTab(int32 NewIndex);
+
+	/** @brief 자식 패널에서 에테르 부족 이벤트가 오면 경고창을 띄우는 핸들러 */
+	UFUNCTION()
+	void HandleNotEnoughAether();
 #pragma endregion 내부 로직
 
 };

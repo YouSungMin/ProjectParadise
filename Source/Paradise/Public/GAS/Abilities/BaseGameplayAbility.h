@@ -123,4 +123,13 @@ private:
 
 	/** @brief 한 번 가져온 데이터를 저장해두는 변수 */
 	FCombatActionData CachedCombatData;
+
+	// [추가] 03/23 담당자: 최지원, 공격/스킬/궁극기 입력시 조이스틱 이동 토글 추가 
+
+	/**
+	 * @brief 어빌리티 시작/종료 시 조이스틱 이동을 잠그거나 해제합니다. (SRP: 이동 차단 책임)
+	 * @param ActorInfo 어빌리티 액터 정보 (PlayerController 접근용)
+	 * @param bLocked true면 이동 차단, false면 이동 재개
+	 */
+	void SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked);
 };

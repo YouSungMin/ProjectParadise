@@ -3,28 +3,16 @@
 
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
 #include "UI/Panel/Enhance/ParadiseEnhanceDetailWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "UI/Widgets/Squad/Inventory/ParadiseSquadInventoryWidget.h"
 #include "Components/Button.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/System/GrowthSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
-
-//#pragma region 헬퍼 함수
-///** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
-//static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
-//{
-//	switch (Rarity)
-//	{
-//	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
-//	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
-//	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
-//	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
-//	}
-//}
-//#pragma endregion 헬퍼 함수
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -359,6 +347,8 @@ void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData It
 		}
 	}
 
+	CurrentRequiredCost = RequiredCost;
+
 	// 2. 가공이 끝난 깔끔한 데이터를 디테일 뷰에 한 번에 렌더링 지시!
 	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStatStr, NextStatStr);
 }
@@ -367,6 +357,23 @@ void UParadiseEnhancePopupWidget::RequestEnhance()
 {
 	if (!CachedGI.IsValid() || !SelectedItem.InstanceUID.IsValid()) return;
 
+	// 재화 검증
+	UEconomySubsystem* EconomySys = CachedGI->GetSubsystem<UEconomySubsystem>();
+	if (EconomySys)
+	{
+		int32 CurrentGold = EconomySys->GetCurrency(ECurrencyType::Gold);
+		if (CurrentGold < CurrentRequiredCost)
+		{
+			// 재화 부족 시 View(경고 팝업) 호출 후 중단!
+			if (Widget_ResourceWarning)
+			{
+				Widget_ResourceWarning->ShowWarning(FText::FromString(TEXT("골드")), Icon_Gold.LoadSynchronous());
+			}
+			return;
+		}
+	}
+
+	// 기존 강화 실행
 	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
 	if (GrowthSys)
 	{
@@ -380,8 +387,33 @@ void UParadiseEnhancePopupWidget::RequestEnhance()
 
 void UParadiseEnhancePopupWidget::RequestBreakthrough()
 {
-	if (!CachedGI.IsValid() || SelectedItem.ID.IsNone()) return;
+	if(!CachedGI.IsValid() || SelectedItem.ID.IsNone() || !CachedInventorySys.IsValid()) return;
 
+	// 재화 검증
+	const FOwnedCharacterData* OwnedChar = CachedInventorySys->GetCharacterDataByID(SelectedItem.ID);
+	if (OwnedChar && OwnedChar->AwakeningPieces < CurrentRequiredCost)
+	{
+		if (Widget_ResourceWarning)
+		{
+			UTexture2D* DynamicPieceIcon = nullptr;
+			FString WarningText = TEXT("캐릭터 조각"); // 기본 텍스트
+
+			if (FCharacterAssets* AssetData = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, SelectedItem.ID))
+			{
+				// 해당 캐릭터 전용 조각 아이콘 로드!
+				DynamicPieceIcon = AssetData->AwakeningPieceIcon.LoadSynchronous();
+
+				// 텍스트도 디테일하게 "아누비스 조각" 이런 식으로 조합해 줍니다!
+				WarningText = FString::Printf(TEXT("%s 조각"), *SelectedItem.Name.ToString());
+			}
+
+			// 완성된 동적 데이터(이름, 아이콘)를 경고창에 쇽! 던져줍니다.
+			Widget_ResourceWarning->ShowWarning(FText::FromString(WarningText), DynamicPieceIcon);
+		}
+		return;
+	}
+
+	// 기존 돌파 실행
 	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
 	if (GrowthSys)
 	{

@@ -23,6 +23,7 @@ class UTexture2D;
 class UImage;
 class UWidgetAnimation;
 class UAutoCombatComponent;
+class USquadControlComponent;
 #pragma endregion 전방 선언
 
 /**
@@ -66,6 +67,12 @@ public:
 
 	/** @brief 파티 상태 패널 반환 */
 	FORCEINLINE UPartyStatusPanel* GetPartyStatusPanel() const { return PartyStatusPanel; }
+
+	/**
+	 * @brief 가상 조이스틱 위젯을 반환합니다.
+	 * @details BaseGameplayAbility에서 이동 잠금/해제 시 사용합니다.
+	 */
+	FORCEINLINE UVirtualJoystickWidget* GetVirtualJoystick()     const { return VirtualJoystick; }
 #pragma endregion 하위 패널 접근 (Getters)
 
 #pragma region 내부 로직
@@ -76,6 +83,14 @@ private:
 	 */
 	UFUNCTION()
 	void HandleGamePhaseChanged(EGamePhase NewPhase);
+
+	/**
+	 * @brief 캐릭터 교체 완료 시 조이스틱 이동 잠금을 해제합니다.
+	 * @details SquadControlComponent::OnPlayerSwitched 델리게이트 수신부입니다.
+	 * @param NewCharacterIndex 새로 교체된 캐릭터 인덱스
+	 */
+	UFUNCTION()
+	void HandlePlayerSwitched(int32 NewCharacterIndex);
 
 	/**
 	 * @brief 승리 팝업에 필요한 정산 영수증(최신 데이터)을 구성하여 전달합니다.

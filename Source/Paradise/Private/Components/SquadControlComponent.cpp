@@ -123,6 +123,11 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
             ActionPanel->RefreshActionPanel(PlayerIndex);
         }
     }
+
+    if (OnPlayerSwitched.IsBound())
+    {
+        OnPlayerSwitched.Broadcast(PlayerIndex);
+    }
 }
 
 void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)

@@ -10,6 +10,9 @@ class APlayerBase;
 class AInGameController;
 class AAIController;
 
+/** @brief 캐릭터 교체 완료 시 방송 (교체된 캐릭터 인덱스 전달) */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerSwitched, int32, NewCharacterIndex);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PARADISE_API USquadControlComponent : public UActorComponent
 {
@@ -66,6 +69,9 @@ public:
 
 	/** @brief 모든 영웅이 사망했는지 여부 */
 	bool bIsSquadWipedOut = false;
+
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnPlayerSwitched OnPlayerSwitched;
 
 protected:
 

@@ -10,6 +10,7 @@
 #pragma region 전방 선언
 class UParadiseSquadInventoryWidget;
 class UParadiseEnhanceDetailWidget;
+class UParadiseResourceWarningWidget;
 class UButton;
 class UInventorySystem;
 class UParadiseGameInstance;
@@ -102,12 +103,23 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSquadInventoryWidget> Panel_Inventory = nullptr;
 
+	/** @brief 통합 재화 부족 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseResourceWarningWidget> Widget_ResourceWarning = nullptr;
+
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Character = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Weapon = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Armor = nullptr;
 	//UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Unit = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Close = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 경고 팝업에 넘겨줄 골드 아이콘 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Enhance|Icons")
+	TSoftObjectPtr<UTexture2D> Icon_Gold = nullptr;
+#pragma endregion 데이터 드리븐 설정
 
 #pragma region 내부 상태 및 캐싱
 private:
@@ -116,6 +128,9 @@ private:
 
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
 	TWeakObjectPtr<UInventorySystem> CachedInventorySys = nullptr;
+
+	/** @brief 현재 선택된 아이템의 강화/돌파 요구 비용 캐싱 */
+	int32 CurrentRequiredCost = 0;
 #pragma endregion 내부 상태 및 캐싱
 
 private:
