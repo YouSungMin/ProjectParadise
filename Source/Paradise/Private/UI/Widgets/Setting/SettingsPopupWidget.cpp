@@ -52,6 +52,12 @@ void USettingsPopupWidget::NativeConstruct()
 		Btn_ReturnToLobby->SetButtonText(FText::GetEmpty());
 		Btn_ReturnToLobby->SetButtonIcon(Tex_ReturnToLobby);
 	}
+	if (Btn_Retry)
+	{
+		Btn_Retry->OnClicked().AddUObject(this, &USettingsPopupWidget::OnRetryClicked);
+		Btn_Retry->SetButtonText(FText::GetEmpty());
+		Btn_Retry->SetButtonIcon(Tex_Retry);
+	}
 
 	/** @section 4. 슬라이더 초기값 세팅 (서브시스템의 RAM 볼륨) */
 	InitializeVolumeSliders();
@@ -202,5 +208,15 @@ void USettingsPopupWidget::OnReturnToLobbyClicked()
 			UGameplayStatics::OpenLevel(this, LobbyLevelName);
 		}
 	}
+}
+
+void USettingsPopupWidget::OnRetryClicked()
+{
+	// 닫기 처리 (게임 시간 복구 + 입력 모드 반환)
+	CloseSettings();
+
+	// 현재 레벨 재시작
+	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+	UGameplayStatics::OpenLevel(this, FName(*CurrentLevelName));
 }
 #pragma endregion 내부 로직

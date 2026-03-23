@@ -92,6 +92,13 @@ private:
 	 */
 	UFUNCTION()
 	void OnReturnToLobbyClicked();
+
+	/**
+	 * @brief 현재 스테이지를 재시작합니다.
+	 * @details 현재 레벨 이름을 가져와 동일한 레벨을 다시 로드합니다.
+	 */
+	UFUNCTION()
+	void OnRetryClicked();
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
@@ -117,6 +124,10 @@ protected:
 	 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UParadiseCommonButton> Btn_ReturnToLobby = nullptr;
+
+	/** @brief 현재 스테이지 재시작 버튼 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UParadiseCommonButton> Btn_Retry = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 공통 UI 에셋 설정 (Config)
@@ -131,6 +142,10 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "로비 귀환 버튼 이미지"))
 	TObjectPtr<UTexture2D> Tex_ReturnToLobby = nullptr;
+
+	/** @brief 다시하기 버튼 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "다시하기 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_Retry = nullptr;
 #pragma endregion 공통 UI 에셋 설정 (Config)
 
 #pragma region 데이터 드리븐 설정
