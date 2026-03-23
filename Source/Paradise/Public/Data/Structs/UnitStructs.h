@@ -342,6 +342,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UAnimSequence> IdleAnim;
 
+	/** @brief 로비레벨에서 캐릭터 연출용 Run */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UAnimSequence> RunAnim = nullptr;
+
 	/**
 	 * @brief 인게임 궁극기 UI 아이콘
 	 */

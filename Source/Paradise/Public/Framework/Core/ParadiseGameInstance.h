@@ -204,6 +204,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterAwakenData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterAwakenData"))
 	TObjectPtr<class UDataTable> CharacterAwakenDataTable = nullptr;
 
+	//가챠시스템 데이터 테이블
+
+	/** @brief 기획자가 설정한 뽑기(가챠) 풀 데이터 테이블 */
+	UPROPERTY(EditDefaultsOnly, Category = "Squad|Gacha", meta = (RowType = "GachaPoolRow", RequiredAssetDataTags = "RowStructure=/Script/Paradise.GachaPoolRow"))
+	TObjectPtr<class UDataTable> GachaPoolDataTable = nullptr;
+
 public:
 
 #pragma region 인벤토리 
