@@ -9,6 +9,9 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/InGame/InGameController.h"
+#include "UI/HUD/Ingame/InGameHUDWidget.h"
+#include "UI/Widgets/InGame/VirtualJoystickWidget.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
 {
@@ -53,6 +56,9 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	// [추가] 03/23 담당자: 최지원, 어빌리티 시작 시 이동 차단
+	SetJoystickLocked(ActorInfo, true);
+
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
 	{
 		// 이 어빌리티를 실행한 주체가 ASkillCasterUnit(보스/캐스터)인지 확인
@@ -68,6 +74,9 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 
 void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	// [추가] 03/23 담당자: 최지원, 어빌리티 종료 시 이동 재개
+	SetJoystickLocked(ActorInfo, false);
+
 	// 스킬 시전이 끝났거나 캔슬되었을 때
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
 	{
@@ -278,4 +287,40 @@ FCombatActionData UBaseGameplayAbility::GetCombatDataFromActorInfo(const FGamepl
 	}
 
 	return Data;
+}
+
+void UBaseGameplayAbility::SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
+{
+	if (!ActorInfo) return;
+
+	// ✅ PlayerController 대신 AvatarActor → GetController()로 접근
+	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+	if (!AvatarActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 null입니다."));
+		return;
+	}
+
+	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
+	if (!AvatarPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 Pawn이 아닙니다."));
+		return;
+	}
+
+	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
+	if (!InGamePC)
+	{
+		// AI가 조종 중이면 정상적으로 null — 조용히 리턴
+		return;
+	}
+
+	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
+	if (!HUD) return;
+
+	UVirtualJoystickWidget* Joystick = HUD->GetVirtualJoystick();
+	if (!Joystick) return;
+
+	Joystick->SetMovementLocked(bLocked);
+	UE_LOG(LogTemp, Warning, TEXT("[JoystickLock] 조이스틱 %s 완료"), bLocked ? TEXT("잠금") : TEXT("해제"));
 }

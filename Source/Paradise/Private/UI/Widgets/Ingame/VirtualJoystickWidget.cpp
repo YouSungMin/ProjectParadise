@@ -37,7 +37,7 @@ void UVirtualJoystickWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
 	// 조작 중일 때만 지속적으로 입력 값을 브로드캐스트 (Pawn 이동 로직용)
-	if (bIsInputActive)
+	if (bIsInputActive && !bMovementLocked)
 	{
 		OnJoystickInput.Broadcast(CurrentInput);
 	}
@@ -112,6 +112,17 @@ void UVirtualJoystickWidget::NativeOnMouseCaptureLost(const FCaptureLostEvent& C
 	ResetJoystick();
 }
 #pragma endregion 입력 이벤트 오버라이드
+
+void UVirtualJoystickWidget::SetMovementLocked(bool bLocked)
+{
+	bMovementLocked = bLocked;
+
+	// 잠금 시 조이스틱 즉시 중앙 복귀 및 이동 정지 신호 전송
+	if (bLocked)
+	{
+		ResetJoystick();
+	}
+}
 
 #pragma region 내부 로직
 void UVirtualJoystickWidget::ProcessInput(const FVector2D& TouchPosition)

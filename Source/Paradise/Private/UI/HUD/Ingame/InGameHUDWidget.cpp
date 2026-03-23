@@ -27,6 +27,7 @@
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
 
+#include "Components/SquadControlComponent.h"
 #include "Components/AutoCombatComponent.h"
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
@@ -156,6 +157,12 @@ void UInGameHUDWidget::InitializeHUD()
 			// 초기 생성 시 현재 상태 즉시 동기화
 			HandleAutoBattleStateChanged(AutoComp->IsAutoMode());
 		}
+		// 캐릭터 교체 완료 시 조이스틱 잠금 해제 구독
+		if (USquadControlComponent* SquadComp = InGamePC->GetSquadControlComponent())
+		{
+			SquadComp->OnPlayerSwitched.RemoveDynamic(this, &UInGameHUDWidget::HandlePlayerSwitched);
+			SquadComp->OnPlayerSwitched.AddDynamic(this, &UInGameHUDWidget::HandlePlayerSwitched);
+		}
 	}
 }
 
@@ -257,6 +264,15 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 		if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
 		if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Collapsed);
 		break;
+	}
+}
+
+void UInGameHUDWidget::HandlePlayerSwitched(int32 NewCharacterIndex)
+{
+	// 새 캐릭터로 교체 시 이전 어빌리티의 이동 잠금 해제
+	if (VirtualJoystick)
+	{
+		VirtualJoystick->SetMovementLocked(false);
 	}
 }
 
