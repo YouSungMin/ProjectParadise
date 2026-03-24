@@ -21,6 +21,8 @@
 
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayTagContainer.h"
 #include "Paradise/Paradise.h"
 
 void UActionControlPanel::NativeConstruct()
@@ -188,7 +190,10 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 	UTexture2D* TargetUltimateIcon = nullptr;
 
 	// 2. [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
-	if (APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex))
+
+	APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex);
+
+	if (Soul)
 	{
 		// A. 캐릭터 스탯 테이블로부터 궁극기(Ultimate) ID 획득
 		if (const FCharacterStats* CharStats = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, Soul->CharacterID))
@@ -243,22 +248,56 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 	// 동적으로 로드된 스킬 및 궁극기 아이콘을 슬롯에 적용 (쿨타임은 Handle에서 추출)
 	if (SkillSlot_Active)
 	{
-		float SkillCooldown = 0.0f;
+		float MaxCD = 0.0f;
+		if (FActionStats* ActionRow = CurrentWeaponSkillHandle.GetRow<FActionStats>(TEXT("UI_SkillCooldown_Lookup")))
+		{
+			MaxCD = ActionRow->Cooldown; // 데이터 테이블의 Cooldown 값!
+		}
+
+		// 먼저 기본 정보 갱신 (초기화)
+		SkillSlot_Active->UpdateSlotInfo(TargetSkillIcon, MaxCD);
+
+		// 태그-인 했을 때, 아까 기록해둔 쿨타임 종료 시간이 남아있다면?
+		if (Soul && ActiveSkillEndTimes.Contains(Soul->CharacterID))
+		{
+			float Remaining = ActiveSkillEndTimes[Soul->CharacterID] - GetWorld()->GetTimeSeconds();
+			if (Remaining > 0.0f)
+			{
+				SkillSlot_Active->RefreshCooldown(Remaining, MaxCD);
+			}
+		}
+		/*float SkillCooldown = 0.0f;
 		if (FActionStats* ActionRow = CurrentWeaponSkillHandle.GetRow<FActionStats>(TEXT("UI_SkillCooldown_Lookup")))
 		{
 			SkillCooldown = ActionRow->Cooldown;
 		}
-		SkillSlot_Active->UpdateSlotInfo(TargetSkillIcon, SkillCooldown);
+		SkillSlot_Active->UpdateSlotInfo(TargetSkillIcon, SkillCooldown);*/
 	}
 
 	if (SkillSlot_Ultimate)
 	{
-		float UltCooldown = 0.0f;
+		float MaxCD = 0.0f;
+		if (FActionStats* ActionRow = CurrentUltimateHandle.GetRow<FActionStats>(TEXT("UI_UltCooldown_Lookup")))
+		{
+			MaxCD = ActionRow->Cooldown; // 데이터 테이블의 Cooldown 값!
+		}
+
+		SkillSlot_Ultimate->UpdateSlotInfo(TargetUltimateIcon, MaxCD);
+
+		if (Soul && UltimateEndTimes.Contains(Soul->CharacterID))
+		{
+			float Remaining = UltimateEndTimes[Soul->CharacterID] - GetWorld()->GetTimeSeconds();
+			if (Remaining > 0.0f)
+			{
+				SkillSlot_Ultimate->RefreshCooldown(Remaining, MaxCD);
+			}
+		}
+		/*float UltCooldown = 0.0f;
 		if (FActionStats* ActionRow = CurrentUltimateHandle.GetRow<FActionStats>(TEXT("UI_UltCooldown_Lookup")))
 		{
 			UltCooldown = ActionRow->Cooldown;
 		}
-		SkillSlot_Ultimate->UpdateSlotInfo(TargetUltimateIcon, UltCooldown);
+		SkillSlot_Ultimate->UpdateSlotInfo(TargetUltimateIcon, UltCooldown);*/
 	}
 
 	UpdateTagButtons(PlayerIndex);
@@ -541,24 +580,73 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 	if (CurrentActivePawn)
 	{
 		CurrentActivePawn->SendAbilityInputToASC(InputID, true);
-		// 2. 궁극기일때 컨트롤러에 화면연출을 틀어라 라고 호출
-		if (InputID == EInputID::Ultimate)
+
+		AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
+		APlayerData* Soul = PS ? PS->GetSquadMemberData(CurrentActiveTagIndex) : nullptr;
+		FName CharID = Soul ? Soul->CharacterID : NAME_None;
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+
+
+		// 1. 액티브 스킬 처리
+		if (InputID == EInputID::Skill && !CachedWeaponSkillActionHandle.IsNull())
 		{
+			if (FActionStats* ActionRow = CachedWeaponSkillActionHandle.GetRow<FActionStats>(TEXT("Skill")))
+			{
+				float CD = ActionRow->Cooldown;
+				if (CD > 0.0f)
+				{
+					UpdateSkillCooldown(0, CD, CD); // 개발자님이 만드신 함수로 UI 즉시 가동!
+					ActiveSkillEndTimes.Add(CharID, CurrentTime + CD); // 쿨타임 끝나는 시각 저장
+				}
+			}
+		}
+		// 2. 궁극기 처리
+		else if (InputID == EInputID::Ultimate)
+		{
+			if (!CachedUltimateActionHandle.IsNull())
+			{
+				if (FActionStats* ActionRow = CachedUltimateActionHandle.GetRow<FActionStats>(TEXT("Ult")))
+				{
+					float CD = ActionRow->Cooldown;
+					if (CD > 0.0f)
+					{
+						UpdateSkillCooldown(1, CD, CD); // UI 즉시 가동!
+						UltimateEndTimes.Add(CharID, CurrentTime + CD); // 쿨타임 끝나는 시각 저장
+					}
+				}
+			}
+
+			// (기존 연출 코드 유지)
 			if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 			{
 				if (UUltimateEffectComponent* UltEffectComp = InGamePC->GetUltimateEffectComponent())
 				{
-					// 연출 시간은 Data-Driven하게 스탯 테이블에서 가져올 수도 있지만, 일단 2.5초로 세팅
 					UltEffectComp->PlayUltimateEffect(2.5f);
 				}
 			}
 		}
+
 		UE_LOG(LogTemp, Warning, TEXT("[ActionPanel] 현재 빙의된 %s가 어빌리티를 발동합니다."), *CurrentActivePawn->GetName());
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 현재 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제)"));
-	}
+
+	//	// 2. 궁극기일때 컨트롤러에 화면연출을 틀어라 라고 호출
+	//	if (InputID == EInputID::Ultimate)
+	//	{
+	//		if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	//		{
+	//			if (UUltimateEffectComponent* UltEffectComp = InGamePC->GetUltimateEffectComponent())
+	//			{
+	//				// 연출 시간은 Data-Driven하게 스탯 테이블에서 가져올 수도 있지만, 일단 2.5초로 세팅
+	//				UltEffectComp->PlayUltimateEffect(2.5f);
+	//			}
+	//		}
+	//	}
+	//	UE_LOG(LogTemp, Warning, TEXT("[ActionPanel] 현재 빙의된 %s가 어빌리티를 발동합니다."), *CurrentActivePawn->GetName());
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("❌ [ActionPanel] 현재 플레이어 폰을 찾을 수 없습니다. (스폰/빙의 문제)"));
+	//}
 }
 
 void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
