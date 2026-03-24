@@ -5,6 +5,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ParadiseSaveGame.h"
 #include "Framework/System/GrowthSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Paradise/Paradise.h"
 
 // Sets default values for this component's properties
@@ -282,6 +283,87 @@ bool UInventorySystem::RemoveObjectByGUID(FGuid TargetGUID, int32 Count)
 
 	UE_LOG(LogParadiseInventory, Warning, TEXT("❌ [Remove] 해당 GUID를 가진 객체를 찾을 수 없습니다: %s"), *TargetGUID.ToString());
 	return false;
+}
+
+bool UInventorySystem::SellItem(FGuid ItemUID, int32 QuantityToSell, FString& OutErrorMsg)
+{
+	UParadiseGameInstance* GI = GetParadiseGI();
+	if (!GI || !ItemUID.IsValid() || QuantityToSell <= 0) return false;
+
+	//[방어 코드] 누군가 이 장비를 장착 중인지 검사
+	for (const FOwnedCharacterData& CharData : OwnedCharacters)
+	{
+		for (const auto& EquipPair : CharData.EquipmentMap)
+		{
+			if (EquipPair.Value == ItemUID) // 누군가의 장비칸에 장착 중이라면
+			{
+				OutErrorMsg = TEXT("장착 중인 장비는 판매할 수 없습니다. 먼저 해제해주세요.");
+				return false; // 판매 거부
+			}
+		}
+	}
+
+	//내 인벤토리에서 해당 아이템 찾기
+	int32 FoundIndex = OwnedItems.IndexOfByPredicate([&](const FOwnedItemData& Data) {
+		return Data.ItemUID == ItemUID;
+		});
+
+	if (FoundIndex == INDEX_NONE)
+	{
+		OutErrorMsg = TEXT("보유하지 않은 아이템입니다.");
+		return false;
+	}
+
+	FOwnedItemData& ItemData = OwnedItems[FoundIndex];
+	if (ItemData.Quantity < QuantityToSell)
+	{
+		OutErrorMsg = TEXT("판매할 수량이 부족합니다.");
+		return false;
+	}
+
+	//데이터 테이블에서 판매 가격(SellPrice) 조회
+	int32 UnitPrice = 50; // 기본값
+	
+	// 1차 검색: 무기 데이터 테이블 검색
+	if (FItemBaseStats* WeaponStats = GI->GetDataTableRow<FItemBaseStats>(GI->WeaponStatsDataTable, ItemData.ItemID))
+	{
+		UnitPrice = WeaponStats->SellPrice;
+	}
+	// 2차 검색: 무기가 아니라면 방어구 데이터 테이블 검색
+	else if (FItemBaseStats* ArmorStats = GI->GetDataTableRow<FItemBaseStats>(GI->ArmorStatsDataTable, ItemData.ItemID))
+	{
+		UnitPrice = ArmorStats->SellPrice;
+	}
+	else
+	{
+		//둘 다 없을 경우의 경고 로그
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] 아이템의 판매 가격을 데이터 테이블에서 찾을 수 없어 기본값(%d)으로 판매됩니다."), *ItemData.ItemID.ToString(), UnitPrice);
+	}
+
+	
+	int32 TotalGold = UnitPrice * QuantityToSell;
+
+	//인벤토리에서 아이템 차감 또는 삭제
+	ItemData.Quantity -= QuantityToSell;
+	if (ItemData.Quantity <= 0)
+	{
+		OwnedItems.RemoveAt(FoundIndex);
+	}
+
+	//골드 지급
+	if (UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>())
+	{
+		EconomySys->AddCurrency(ECurrencyType::Gold, TotalGold);
+		UE_LOG(LogTemp, Warning, TEXT("아이템 판매 완료! +%d G"), TotalGold);
+	}
+
+	//UI 동기화 및 저장 (델리게이트 방송)
+	if (OnInventoryUpdated.IsBound())
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+
+	return true;
 }
 
 int32 UInventorySystem::GetItemQuantity(FName ItemID) const

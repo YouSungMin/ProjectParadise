@@ -119,6 +119,18 @@ public:
 
 	#pragma endregion 인벤토리 관련 함수 선언
 
+#pragma region 인벤토리 장비 아이템 판매 함수
+
+	/** * @brief 장비/아이템을 판매합니다.
+	 * @param ItemUID 팔고자 하는 아이템의 고유 번호
+	 * @param QuantityToSell 팔 개수 (장비는 보통 1개씩 팔지만 겹치는 아이템을 위해 추가)
+	 * @return 판매 성공 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Sell")
+	bool SellItem(FGuid ItemUID, int32 QuantityToSell, FString& OutErrorMsg);
+
+	#pragma endregion 인벤토리 장비 아이템 판매 함수
+
 	#pragma region 헬퍼 함수 선언
 
 	/** @return 현재 보유 중인 모든 영웅 목록 (const 참조) */

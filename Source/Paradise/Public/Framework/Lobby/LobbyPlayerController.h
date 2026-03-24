@@ -60,6 +60,9 @@ public:
 	void CheatAddAether(int32 Amount);
 
 	UFUNCTION(Exec)
+	void CheatSellItem(FName ItemID, int32 QuantityToSell = 1);
+
+	UFUNCTION(Exec)
 	void CheatAwakenCharacter(FName CharacterID);
 
 	UFUNCTION(Exec)
