@@ -15,7 +15,7 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
 	if (!InvSys) return;
 
-	//인벤토리에서 현재 상태 받아옴
+	// 인벤토리에서 현재 상태 받아옴
 	const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharacterID);
 	if (!CharData) return;
 
@@ -24,18 +24,41 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 
 	UE_LOG(LogParadiseGrowth, Log, TEXT("✨ [%s] 경험치 획득: +%d (총 누적: %d)"), *CharacterID.ToString(), ExpAmount, CurrentExp);
 
-	//레벨업 계산 루프 (데이터 테이블 기반)
+
+	// 🌟 현재 각성(Awakening) 단계에 따른 최대 레벨 상한(MaxLevelCap) 가져오기
+	int32 CurrentMaxLevelCap = 99; // 기본 방어값
+	FName AwakenRowName = FName(*FString::FromInt(CharData->AwakeningLevel));
+
+	if (FCharacterAwakenData* AwakenInfo = GI->GetDataTableRow<FCharacterAwakenData>(GI->CharacterAwakenDataTable, AwakenRowName))
+	{
+		CurrentMaxLevelCap = AwakenInfo->MaxLevelCap;
+	}
+	else
+	{
+		UE_LOG(LogParadiseGrowth, Warning, TEXT("⚠️ [%s] 각성 단계(%d)에 해당하는 데이터가 없습니다! 상한 검사를 건너뜁니다."), *CharacterID.ToString(), CharData->AwakeningLevel);
+	}
+
+
+	// 🌟 2. 레벨업 계산 루프 (상한선 체크 추가)
 	while (true)
 	{
+		// 🛑 [상한 검사] 현재 레벨이 이미 돌파 상한선에 도달했거나 넘어섰다면 중지!
+		if (CurrentLevel >= CurrentMaxLevelCap)
+		{
+			UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 현재 각성 단계의 최대 레벨(%d)에 도달했습니다! 추가 성장을 위해 돌파가 필요합니다."), *CharacterID.ToString(), CurrentMaxLevelCap);
+			CurrentExp = 0; // 최대 상한 도달 시 초과 경험치 증발 (기획에 따라 보존하려면 이 줄을 삭제하세요)
+			break;
+		}
+
 		int32 NextLevel = CurrentLevel + 1;
 		FName RowName = FName(*FString::FromInt(NextLevel));
 
 		FCharacterLevelUpData* LevelData = GI->GetDataTableRow<FCharacterLevelUpData>(GI->CharacterLevelUpDataTable, RowName);
 
-		// 만렙 도달 시
+		// 시스템상 만렙 도달 시
 		if (!LevelData)
 		{
-			UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), CurrentLevel);
+			UE_LOG(LogParadiseGrowth, Warning, TEXT("👑 [%s] 게임 시스템 최대 레벨 도달! (Lv.%d)"), *CharacterID.ToString(), CurrentLevel);
 			CurrentExp = 0; // 초과 경험치 증발
 			break;
 		}
@@ -52,7 +75,7 @@ void UGrowthSubsystem::AddCharacterExp(FName CharacterID, int32 ExpAmount)
 		}
 	}
 
-	//계산된 최종 수치를 인벤토리에 Set 요청 
+	// 계산된 최종 수치를 인벤토리에 Set 요청 
 	InvSys->SetCharacterLevelAndExp(CharacterID, CurrentLevel, CurrentExp);
 }
 
