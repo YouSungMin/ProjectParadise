@@ -12,6 +12,7 @@ class UTextBlock;
 class UImage;
 class UTexture2D;
 class UResultCharacterPanelWidget;
+class UFamiliarRewardPopupWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -41,6 +42,7 @@ public:
 	 * @param InEarnedAether 이번 판에 획득한 에테르(최초 클리어 보상)
 	 * @param InCharacterResults 캐릭터별 경험치 정산 데이터 배열
 	 * @param InNextStageID 다음으로 이동할 스테이지의 고유 ID (테이블 조회용)
+	 * @param InAcquiredFamiliar 이번 판에 획득한 퍼밀리어(3별 클리어 보상)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Result")
 	void SetVictoryData(
@@ -49,7 +51,8 @@ public:
 		int32 InEarnedGold,
 		int32 InEarnedAether,
 		const TArray<FResultCharacterData>& InCharacterResults,
-		FName InNextStageID);
+		FName InNextStageID,
+		FName InAcquiredFamiliar);
 #pragma endregion 외부 인터페이스
 
 #pragma region 승리 전용 UI
@@ -85,6 +88,17 @@ protected:
 	/** @brief 세 번째 별 이미지. */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> Img_Star3 = nullptr;
+
+	/** @brief 승리 팝업 등장 애니메이션 */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_PopupAppear = nullptr; // ⭐ 이 줄을 추가하세요!
+
+	/**
+	 * @brief 초회 3별 클리어 시 표시되는 퍼밀리어 보상 위젯
+	 * @details AcquiredFamiliar가 None이면 숨김, 있으면 등장 애니메이션 재생
+	 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UFamiliarRewardPopupWidget> WBP_FamiliarRewardPopup = nullptr;
 #pragma endregion 승리 전용 UI
 
 #pragma region 리소스 설정 (Data-Driven)

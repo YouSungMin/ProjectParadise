@@ -76,6 +76,11 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	if (Anim_TouchBlink)
+	{
+		PlayAnimation(Anim_TouchBlink, 0.0f, 0);
+	}
+
 	// 로비에서 이미 편성해 둔 캐릭터/유닛 아이콘이 진입 즉시 보이도록 합니다.
 	InitFormationFromSubsystem();
 
@@ -510,6 +515,10 @@ void UParadiseSquadMainWidget::ReturnToOverviewScreen()
 	{
 		WBP_DetailPanel->ClearInfo();
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (Anim_TouchBlink)
+	{
+		PlayAnimation(Anim_TouchBlink, 0.0f, 0);
 	}
 
 	UpdateUIState();

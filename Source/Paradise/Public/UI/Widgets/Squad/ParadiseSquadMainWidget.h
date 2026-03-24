@@ -12,6 +12,7 @@ class UParadiseSquadInventoryWidget;
 class UParadiseSquadFormationWidget;
 class UParadiseSquadDetailWidget;
 class UButton;
+class UWidgetAnimation;
 class UWidgetSwitcher;
 class UInventorySystem;
 class UParadiseGameInstance;
@@ -81,6 +82,13 @@ protected:
 	/** @brief 뒤로가기 버튼 (로비로 복귀 + 편성 자동 저장) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Back = nullptr;
+
+	/**
+	 * @brief 터치 유도 텍스트(Touch)들이 깜빡거리는 애니메이션
+	 * @details 에디터에서 UMG 애니메이션을 만들고 이름을 반드시 'Anim_TouchBlink'로 맞춰야 합니다.
+	 */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_TouchBlink = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
 
 #pragma region 로직 - 탭 및 상태 제어

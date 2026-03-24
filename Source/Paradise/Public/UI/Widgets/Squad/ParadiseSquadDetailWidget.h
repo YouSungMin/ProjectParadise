@@ -76,10 +76,10 @@ private:
 	void HandleSwapEquip();
 	UFUNCTION() 
 	void HandleCancel();
-
-	// 확인 버튼 핸들러
 	UFUNCTION()
 	void HandleConfirm();
+	UFUNCTION()
+	void HandleSell();
 #pragma endregion 핸들러
 
 #pragma region UI 바인딩 (공통)
@@ -127,6 +127,7 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_SwapEquipment = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_CancelEquipMode = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Confirm = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Btn_Sell = nullptr;
 #pragma endregion UI 바인딩 (버튼)
 
 #pragma region 기본 에셋 (Fallback)
@@ -152,5 +153,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnSwapEquipmentClicked;
 	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnCancelClicked;
 	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnConfirmClicked;
+	UPROPERTY(BlueprintAssignable, Category = "Events") FOnDetailAction OnSellClicked;
 #pragma endregion 델리게이트 이벤트
+
+#pragma region 내부 상태
+private:
+	/** @brief 현재 상세창이 어떤 문맥(캐릭터/장비 등)으로 열려있는지 기억합니다. */
+	ESquadDetailContext CachedContext = ESquadDetailContext::FormationCharacter; // ⭐ 추가 (버튼 가시성 제어용)
+#pragma endregion 내부 상태
+
 };

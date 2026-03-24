@@ -290,6 +290,7 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 	int32 Exp = CachedGameState->AcquiredExp;
 	FName NextStage = CachedGameState->NextStageID;
 	int32 StarCount = CachedGameState->EarnedStars;
+	FName AcquiredFamiliar = CachedGameState->AcquiredFamiliar;
 
 	// 2. 참여한 캐릭터 데이터 수집 (최신 인벤토리 동기화)
 	TArray<FResultCharacterData> CharResults;
@@ -331,7 +332,7 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 	}
 
 	// 3. 조립된 데이터를 뷰(Popup)에 전달
-	Widget_VictoryPopup->SetVictoryData(StageName, StarCount, Gold, Aether, CharResults, NextStage);
+	Widget_VictoryPopup->SetVictoryData(StageName, StarCount, Gold, Aether, CharResults, NextStage, AcquiredFamiliar);
 }
 
 void UInGameHUDWidget::OnSettingButtonClicked()

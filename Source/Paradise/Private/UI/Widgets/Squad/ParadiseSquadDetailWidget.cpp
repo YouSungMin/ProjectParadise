@@ -23,6 +23,8 @@ void UParadiseSquadDetailWidget::NativeConstruct()
 	if (Btn_SwapEquipment)   Btn_SwapEquipment->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleSwapEquip);
 	if (Btn_CancelEquipMode) Btn_CancelEquipMode->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleCancel);
 	if (Btn_Confirm)         Btn_Confirm->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleConfirm);
+	// 03/24 판매 버튼 바인드만 해놓은 상태입니다.
+	if (Btn_Sell)            Btn_Sell->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleSell);
 
 	SetVisibility(ESlateVisibility::Collapsed);
 }
@@ -33,6 +35,7 @@ void UParadiseSquadDetailWidget::NativeDestruct()
 	if (Btn_SwapEquipment)   Btn_SwapEquipment->OnClicked.RemoveAll(this);
 	if (Btn_CancelEquipMode) Btn_CancelEquipMode->OnClicked.RemoveAll(this);
 	if (Btn_Confirm)         Btn_Confirm->OnClicked.RemoveAll(this);
+	if (Btn_Sell) Btn_Sell->OnClicked.RemoveAll(this);
 
 	Super::NativeDestruct();
 }
@@ -53,22 +56,22 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	SetVisibility(ESlateVisibility::Visible);
 
-	// 2. 공통 데이터 렌더링 (이름)
-	if (Text_Name)
-	{
-		Text_Name->SetText(InData.Name.IsEmpty() ? FText::FromString(TEXT("-")) : InData.Name);
-	}
+	// 현재 컨텍스트 캐싱
+	CachedContext = InContext;
 
-	// 3. UI 레이아웃 및 텍스트 변수 초기화
+	// 2. UI 레이아웃 및 텍스트 변수 초기화
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);
 
 	TObjectPtr<UTexture2D> DeterminatedIcon = nullptr; // 최종 결정될 아이콘
 	FString FinalStatString = TEXT("");
 	FString SkillInfoString = TEXT("스킬 정보가 없습니다.");
+
+	// DT에서 DisplayName을 찾지 못할 경우를 대비한 기본값
+	FText FinalDisplayName = InData.Name.IsEmpty() ? FText::FromString(TEXT("-")) : InData.Name;
 	bool bShowActionButtons = false;
 
-	// 4. 컨텍스트(Context)에 따른 데이터 로드 및 UI 구성 (Data-Driven & MVC)
+	// 3. 컨텍스트(Context)에 따른 데이터 로드 및 UI 구성
 	switch (InContext)
 	{
 	case ESquadDetailContext::FormationCharacter:
@@ -88,6 +91,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 		// [스탯 연산] 기본 스탯 + 레벨업 성장치 + 장비 스탯 합산
 		if (FCharacterStats* CharStat = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = CharStat->DisplayName;
+
 			int32 Level = FMath::Max(1, InData.Level);
 			float TotalHP = CharStat->BaseMaxHP + (CharStat->GrowthHPPerLevel * (Level - 1));
 			float TotalAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
@@ -152,9 +157,11 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	case ESquadDetailContext::InventoryWeapon:
 	{
+		// 무기 탭일 때 버튼 영역 활성화
+		bShowActionButtons = true;
 		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-		// [기획 반영] 무기는 일반 Icon 로드
+		// 무기는 일반 Icon 로드
 		if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, InData.ID))
 		{
 			if (!WeaponAsset->Icon.IsNull()) DeterminatedIcon = WeaponAsset->Icon.LoadSynchronous();
@@ -162,6 +169,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FWeaponStats* WpnStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = WpnStat->DisplayName;
+
 			// 1. 강화 수치 반영 (공격력만 10% 증가 적용 - 기획에 따라 변경 가능)
 			float AtkBonus = 1.0f + (InData.Level * 0.1f);
 			int32 FinalAtk = FMath::RoundToInt(WpnStat->AttackPower * AtkBonus);
@@ -188,7 +197,9 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	case ESquadDetailContext::InventoryArmor:
 	{
-		// [기획 반영] 방어구는 일반 Icon 로드
+		// 장비 탭일 때 버튼 영역 활성화
+		bShowActionButtons = true;
+		// 방어구는 일반 Icon 로드
 		if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, InData.ID))
 		{
 			if (!ArmorAsset->Icon.IsNull()) DeterminatedIcon = ArmorAsset->Icon.LoadSynchronous();
@@ -196,6 +207,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FArmorStats* ArmStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = ArmStat->DisplayName;
+
 			// 1. 강화 수치 반영 (방어력과 체력, 마나 모두 레벨당 10% 증가 적용)
 			float DefBonus = 1.0f + (InData.Level * 0.1f);
 			int32 FinalDef = FMath::RoundToInt(ArmStat->DefensePower * DefBonus);
@@ -223,6 +236,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FFamiliarStats* UnitStat = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = UnitStat->DisplayName;
+
 			// [Rich Text 적용] 소환수 스탯 표기
 			FinalStatString = FString::Printf(TEXT("<Green>소환 코스트: %d</>\n<Red>체력: %d</> / <Blue>공격력: %d</>"),
 				UnitStat->SummonCost, FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower));
@@ -240,7 +255,7 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	break;
 	}
 
-	// 5. 메인 아이콘 최종 렌더링 (결정된 아이콘 또는 Fallback 적용)
+	// 4. 메인 아이콘 최종 렌더링
 	if (Img_Icon)
 	{
 		UTexture2D* FinalIcon = DeterminatedIcon ? DeterminatedIcon : DefaultMainIcon;
@@ -256,15 +271,23 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 		}
 	}
 
-	// 6. 텍스트 및 버튼 가시성 최종 갱신
+	// 5. 텍스트 및 버튼 가시성 최종 갱신
+	if (Text_Name) Text_Name->SetText(FinalDisplayName);
 	if (Text_Desc) Text_Desc->SetText(FText::FromString(FinalStatString));
 	if (Text_SkillInfo) Text_SkillInfo->SetText(FText::FromString(SkillInfoString));
 	if (HBox_ButtonRoot) HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	bool bIsEquipment = (InContext == ESquadDetailContext::InventoryWeapon || InContext == ESquadDetailContext::InventoryArmor);
+	if (Btn_Sell)
+	{
+		Btn_Sell->SetVisibility(bIsEquipment ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, bool bIsUnitTab, bool bHasPendingSelection)
 {
 	bool bIsNormal = (CurrentState == ESquadUIState::Normal);
+	bool bIsEquipmentContext = (CachedContext == ESquadDetailContext::InventoryWeapon || CachedContext == ESquadDetailContext::InventoryArmor);
 
 	// 교체 모드 진입 시(인벤토리 클릭 등), 숨겨져 있던 하단 버튼 박스를 강제로 노출
 	if (HBox_ButtonRoot && !bIsNormal)
@@ -281,12 +304,16 @@ void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, b
 		// 캐릭터/유닛 여부에 따라 장비 교체 버튼 가시성 제어
 		if (Btn_SwapCharacter) Btn_SwapCharacter->SetVisibility(ESlateVisibility::Visible);
 		if (Btn_SwapEquipment) Btn_SwapEquipment->SetVisibility(bIsUnitTab ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+
+		// [판매 버튼 제어] 무기/장비 컨텍스트일 때만 판매 버튼 활성화
+		if (Btn_Sell) Btn_Sell->SetVisibility(bIsEquipmentContext ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		// [교체 모드] 일반 교체 버튼 숨김
 		if (Btn_SwapCharacter) Btn_SwapCharacter->SetVisibility(ESlateVisibility::Collapsed);
 		if (Btn_SwapEquipment) Btn_SwapEquipment->SetVisibility(ESlateVisibility::Collapsed);
+		if (Btn_Sell) Btn_Sell->SetVisibility(bIsEquipmentContext ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		// 취소/확인 버튼 노출 및 확정 가능 여부에 따른 활성화
 		if (Btn_CancelEquipMode) Btn_CancelEquipMode->SetVisibility(ESlateVisibility::Visible);
@@ -309,6 +336,8 @@ void UParadiseSquadDetailWidget::ClearInfo()
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);
 	if (HBox_ButtonRoot)         HBox_ButtonRoot->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (Btn_Sell) Btn_Sell->SetVisibility(ESlateVisibility::Collapsed);
 }
 #pragma endregion 공개 함수
 
@@ -389,5 +418,10 @@ void UParadiseSquadDetailWidget::HandleCancel()
 void UParadiseSquadDetailWidget::HandleConfirm()
 {
 	if (OnConfirmClicked.IsBound()) OnConfirmClicked.Broadcast();
+}
+void UParadiseSquadDetailWidget::HandleSell()
+{
+	// 03/24 판매 버튼 눌렸다고 방송만 해놓은 상태입니다.
+	if (OnSellClicked.IsBound()) OnSellClicked.Broadcast();
 }
 #pragma endregion 핸들러

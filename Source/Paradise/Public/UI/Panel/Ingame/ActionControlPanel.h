@@ -175,6 +175,14 @@ private:
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|ActionPanel")
 	TObjectPtr<UTexture2D> Tex_DefaultAttackIcon = nullptr;
+
+	/** @brief 캐릭터별 무기 스킬 쿨타임 종료 시각을 기록 (교체 복구용) */
+	UPROPERTY()
+	TMap<FName, float> ActiveSkillEndTimes;
+
+	/** @brief 캐릭터별 궁극기 쿨타임 종료 시각을 기록 (교체 복구용) */
+	UPROPERTY()
+	TMap<FName, float> UltimateEndTimes;
 #pragma endregion 내부 데이터
 
 #pragma region 데이터 드리븐 설정
