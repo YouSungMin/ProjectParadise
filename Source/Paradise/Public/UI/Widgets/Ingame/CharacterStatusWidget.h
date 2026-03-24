@@ -11,6 +11,7 @@
 class UImage;
 class UProgressBar;
 class UTexture2D;
+class UTextBlock;
 class UAbilitySystemComponent;
 struct FOnAttributeChangeData;
 #pragma endregion 전방 선언
@@ -69,9 +70,17 @@ private:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> PB_HealthBar = nullptr;
 
+    /** @brief 에디터 WBP와 연결될 체력 수치 텍스트 */
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> Text_Health = nullptr;
+
     /** @brief 에디터 WBP와 연결될 마나 바 */
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> PB_ManaBar = nullptr;
+
+    /** @brief 에디터 WBP와 연결될 마나 수치 텍스트 */
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> Text_Mana = nullptr;
 #pragma endregion 데이터 바인딩
 
 #pragma region 내부 데이터 관리
