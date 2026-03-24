@@ -23,6 +23,8 @@ void UParadiseSquadDetailWidget::NativeConstruct()
 	if (Btn_SwapEquipment)   Btn_SwapEquipment->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleSwapEquip);
 	if (Btn_CancelEquipMode) Btn_CancelEquipMode->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleCancel);
 	if (Btn_Confirm)         Btn_Confirm->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleConfirm);
+	// 03/24 판매 버튼 바인드만 해놓은 상태입니다.
+	if (Btn_Sell)            Btn_Sell->OnClicked.AddDynamic(this, &UParadiseSquadDetailWidget::HandleSell);
 
 	SetVisibility(ESlateVisibility::Collapsed);
 }
@@ -33,6 +35,7 @@ void UParadiseSquadDetailWidget::NativeDestruct()
 	if (Btn_SwapEquipment)   Btn_SwapEquipment->OnClicked.RemoveAll(this);
 	if (Btn_CancelEquipMode) Btn_CancelEquipMode->OnClicked.RemoveAll(this);
 	if (Btn_Confirm)         Btn_Confirm->OnClicked.RemoveAll(this);
+	if (Btn_Sell) Btn_Sell->OnClicked.RemoveAll(this);
 
 	Super::NativeDestruct();
 }
@@ -52,6 +55,9 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
 
 	SetVisibility(ESlateVisibility::Visible);
+
+	// 현재 컨텍스트 캐싱
+	CachedContext = InContext;
 
 	// 2. 공통 데이터 렌더링 (이름)
 	if (Text_Name)
@@ -152,9 +158,11 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	case ESquadDetailContext::InventoryWeapon:
 	{
+		// 무기 탭일 때 버튼 영역 활성화
+		bShowActionButtons = true;
 		if (Container_Skill) Container_Skill->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-		// [기획 반영] 무기는 일반 Icon 로드
+		// 무기는 일반 Icon 로드
 		if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, InData.ID))
 		{
 			if (!WeaponAsset->Icon.IsNull()) DeterminatedIcon = WeaponAsset->Icon.LoadSynchronous();
@@ -188,7 +196,9 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 	case ESquadDetailContext::InventoryArmor:
 	{
-		// [기획 반영] 방어구는 일반 Icon 로드
+		// 장비 탭일 때 버튼 영역 활성화
+		bShowActionButtons = true;
+		// 방어구는 일반 Icon 로드
 		if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, InData.ID))
 		{
 			if (!ArmorAsset->Icon.IsNull()) DeterminatedIcon = ArmorAsset->Icon.LoadSynchronous();
@@ -260,11 +270,18 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	if (Text_Desc) Text_Desc->SetText(FText::FromString(FinalStatString));
 	if (Text_SkillInfo) Text_SkillInfo->SetText(FText::FromString(SkillInfoString));
 	if (HBox_ButtonRoot) HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	bool bIsEquipment = (InContext == ESquadDetailContext::InventoryWeapon || InContext == ESquadDetailContext::InventoryArmor);
+	if (Btn_Sell)
+	{
+		Btn_Sell->SetVisibility(bIsEquipment ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, bool bIsUnitTab, bool bHasPendingSelection)
 {
 	bool bIsNormal = (CurrentState == ESquadUIState::Normal);
+	bool bIsEquipmentContext = (CachedContext == ESquadDetailContext::InventoryWeapon || CachedContext == ESquadDetailContext::InventoryArmor);
 
 	// 교체 모드 진입 시(인벤토리 클릭 등), 숨겨져 있던 하단 버튼 박스를 강제로 노출
 	if (HBox_ButtonRoot && !bIsNormal)
@@ -281,12 +298,16 @@ void UParadiseSquadDetailWidget::UpdateButtonState(ESquadUIState CurrentState, b
 		// 캐릭터/유닛 여부에 따라 장비 교체 버튼 가시성 제어
 		if (Btn_SwapCharacter) Btn_SwapCharacter->SetVisibility(ESlateVisibility::Visible);
 		if (Btn_SwapEquipment) Btn_SwapEquipment->SetVisibility(bIsUnitTab ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+
+		// [판매 버튼 제어] 무기/장비 컨텍스트일 때만 판매 버튼 활성화
+		if (Btn_Sell) Btn_Sell->SetVisibility(bIsEquipmentContext ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		// [교체 모드] 일반 교체 버튼 숨김
 		if (Btn_SwapCharacter) Btn_SwapCharacter->SetVisibility(ESlateVisibility::Collapsed);
 		if (Btn_SwapEquipment) Btn_SwapEquipment->SetVisibility(ESlateVisibility::Collapsed);
+		if (Btn_Sell) Btn_Sell->SetVisibility(bIsEquipmentContext ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		// 취소/확인 버튼 노출 및 확정 가능 여부에 따른 활성화
 		if (Btn_CancelEquipMode) Btn_CancelEquipMode->SetVisibility(ESlateVisibility::Visible);
@@ -309,6 +330,8 @@ void UParadiseSquadDetailWidget::ClearInfo()
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);
 	if (HBox_ButtonRoot)         HBox_ButtonRoot->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (Btn_Sell) Btn_Sell->SetVisibility(ESlateVisibility::Collapsed);
 }
 #pragma endregion 공개 함수
 
@@ -389,5 +412,10 @@ void UParadiseSquadDetailWidget::HandleCancel()
 void UParadiseSquadDetailWidget::HandleConfirm()
 {
 	if (OnConfirmClicked.IsBound()) OnConfirmClicked.Broadcast();
+}
+void UParadiseSquadDetailWidget::HandleSell()
+{
+	// 03/24 판매 버튼 눌렸다고 방송만 해놓은 상태입니다.
+	if (OnSellClicked.IsBound()) OnSellClicked.Broadcast();
 }
 #pragma endregion 핸들러
