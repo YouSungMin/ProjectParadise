@@ -3,6 +3,7 @@
 
 #include "UI/Widgets/Ingame/Popup/VictoryPopupWidget.h"
 #include "UI/Panel/Ingame/Result/ResultCharacterPanelWidget.h"
+#include "UI/Panel/Ingame/Result/FamiliarRewardPopupWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
@@ -10,6 +11,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
 #include "Data/Structs/StageStructs.h"
+#include "Data/Structs/UnitStructs.h"
 
 #pragma region 생명주기
 void UVictoryPopupWidget::NativeConstruct()
@@ -39,7 +41,8 @@ void UVictoryPopupWidget::SetVictoryData(
 	int32 InEarnedGold,
 	int32 InEarnedAether,
 	const TArray<FResultCharacterData>& InCharacterResults,
-	FName InNextStageID)
+	FName InNextStageID,
+	FName InAcquiredFamiliar)
 {
 	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
 		InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
@@ -71,6 +74,25 @@ void UVictoryPopupWidget::SetVictoryData(
 	if (Btn_NextStage)
 	{
 		Btn_NextStage->SetVisibility(CachedNextStageID.IsNone() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	}
+
+	// 퍼밀리어 보상 이미지 처리 (초회 3별 클리어 시에만 표시)
+	if (WBP_FamiliarRewardPopup)
+	{
+		if (InAcquiredFamiliar.IsNone())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar가 None — 퍼밀리어 위젯 숨김"));
+			WBP_FamiliarRewardPopup->HideReward();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar: %s — ShowFamiliarReward 호출"), *InAcquiredFamiliar.ToString());
+			WBP_FamiliarRewardPopup->ShowFamiliarReward(InAcquiredFamiliar);
+		}
+	}
+	if (Anim_PopupAppear)
+	{
+		PlayAnimation(Anim_PopupAppear);
 	}
 }
 #pragma endregion 데이터 설정 로직 (View Rendering)
