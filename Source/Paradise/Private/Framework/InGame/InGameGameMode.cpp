@@ -371,6 +371,7 @@ void AInGameGameMode::DistributeStageRewards()
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
 
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
 	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
 	UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>();
 	UEconomySubsystem* EconomySys = GI->GetSubsystem<UEconomySubsystem>();
@@ -424,18 +425,27 @@ void AInGameGameMode::DistributeStageRewards()
 			// 최초 3별일 때만 에테르 지급
 			EconomySys->AddCurrency(ECurrencyType::Aether, CurrentStageData.ClearAether);
 			CachedGameState->AcquiredAether = CurrentStageData.ClearAether;
-			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 3별 달성! 에테르 보상이 지급되었습니다."));
+
+			if (InvSys)
+			{
+				//퍼밀리어 획득 
+				InvSys->AddFamiliar(CurrentStageData.ClearFamiliar);
+				CachedGameState->AcquiredFamiliar = CurrentStageData.ClearFamiliar;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 3별 달성! 에테르 보상과 퍼밀리어가 지급되었습니다."));
 		}
 		else
 		{
 			//최초 3별이 아니면 (이미 받았거나 1~2별이면) UI 표기를 위해 0으로 처리
 			CachedGameState->AcquiredAether = 0;
+			CachedGameState->AcquiredFamiliar = NAME_None;
 		}
 
 		FStageClearRewardData StageRewardData;
 		StageRewardData.AcquiredAether = CachedGameState->AcquiredAether;
 		StageRewardData.AcquiredExp = CurrentStageData.ClearExp;
 		StageRewardData.AcquiredGold = CurrentStageData.ClearGold;
+		StageRewardData.AcquiredFamiliar = CachedGameState->AcquiredFamiliar;
 		StageRewardData.EarnedStars = EarnedStars;
 
 		//스테이지 보상 구조체 UI에 Broadcast

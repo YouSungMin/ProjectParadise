@@ -21,4 +21,7 @@ struct FStageClearRewardData
 
 	UPROPERTY(BlueprintReadOnly, Category = "Reward")
 	int32 AcquiredAether = 0;	// 획득 에테르
+
+	UPROPERTY(BlueprintReadOnly, Category = "Reward")
+	FName AcquiredFamiliar;	// 획득 퍼밀리어
 };
