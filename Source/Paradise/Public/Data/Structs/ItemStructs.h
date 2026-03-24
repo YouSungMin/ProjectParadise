@@ -158,6 +158,20 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival Stats")
 	float MaxMana;
+
+	/**
+	 * @brief HP 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 HP 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float HealthRegen;
+
+	/**
+	 * @brief 마나 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 마나 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float ManaRegen;
 };
 
 /**

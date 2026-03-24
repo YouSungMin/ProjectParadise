@@ -74,6 +74,8 @@ void APlayerData::InitCombatAttributes()
 	float CharDefense = (Stats->BaseDefense + BonusLevelDefense) * AwakenMultiplier;
 	float CharCritRate = Stats->BaseCritRate;
 	float CharMoveSpeed = Stats->BaseMoveSpeed;
+	float CharHPRegen = Stats->BaseHealthRegen;
+	float CharManaRegen = Stats->BaseManaRegen;
 
 
 	// 장비 스탯 합산 (강화 수치 연동)
@@ -82,6 +84,8 @@ void APlayerData::InitCombatAttributes()
 	float EquipAttack = 0.0f;
 	float EquipDefense = 0.0f;
 	float EquipCritRate = 0.0f;
+	float EquipHPRegen = 0.0f;
+	float EquipManaRegen = 0.0f;
 
 	// 추가 스탯들
 	float EquipCritDamage = 0.0f;
@@ -156,6 +160,8 @@ void APlayerData::InitCombatAttributes()
 					EquipMaxHP += (ArmorStats->MaxHP * EnhanceMult);
 					EquipMaxMP += (ArmorStats->MaxMana * EnhanceMult);
 					EquipDefense += (ArmorStats->DefensePower * EnhanceMult);
+					EquipHPRegen += (ArmorStats->HealthRegen * EnhanceMult);
+					EquipManaRegen += (ArmorStats->ManaRegen * EnhanceMult);
 				}
 			}
 		}
@@ -167,15 +173,19 @@ void APlayerData::InitCombatAttributes()
 	float FinalAttack = CharAttack + EquipAttack;
 	float FinalDefense = CharDefense + EquipDefense;
 	float FinalCritRate = CharCritRate + EquipCritRate;
+	float FinalHPRegen = CharHPRegen + EquipHPRegen;
+	float FinalManaRegen = CharManaRegen + EquipManaRegen;
 
 	CombatAttributeSet2->InitMaxHealth(FinalMaxHP);
 	CombatAttributeSet2->InitHealth(FinalMaxHP); // 현재 체력도 최대로 갱신
 	CombatAttributeSet2->InitMaxMana(FinalMaxMP);
-	CombatAttributeSet2->InitMana(FinalMaxMP);   // 현재 마나도 최대로 갱신
+	CombatAttributeSet2->InitMana(0.0f);   // 현재 마나도 최대로 갱신
 	CombatAttributeSet2->InitAttackPower(FinalAttack);
 	CombatAttributeSet2->InitDefense(FinalDefense);
 	CombatAttributeSet2->InitCritRate(FinalCritRate);
 	CombatAttributeSet2->InitMoveSpeed(CharMoveSpeed);
+	CombatAttributeSet2->InitHealthRegen(FinalHPRegen);
+	CombatAttributeSet2->InitManaRegen(FinalManaRegen);
 
 	CombatAttributeSet2->InitCritDamage(EquipCritDamage); // 캐릭터 기본 크뎀이 있다면 CharCritDamage + EquipCritDamage로 합산 필요
 	CombatAttributeSet2->InitAttackSpeed(EquipAttackSpeed);
@@ -187,6 +197,34 @@ void APlayerData::InitCombatAttributes()
 
 	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
 
+	if (AbilitySystemComponent)
+	{
+		// 이펙트 발생자(Instigator)를 영혼(this)으로 세팅
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddInstigator(this, this);
+
+		// 마나 리젠 가동
+		if (ManaRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle ManaSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(ManaRegenEffectClass, 1.0f, Context);
+			if (ManaSpecHandle.IsValid())
+			{
+				ManaRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*ManaSpecHandle.Data.Get());
+				UE_LOG(LogTemp, Log, TEXT("💧 [PlayerData] 마나 리젠 가동 시작!"));
+			}
+		}
+
+		// 체력 리젠 가동
+		if (HealthRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle HealthSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(HealthRegenEffectClass, 1.0f, Context);
+			if (HealthSpecHandle.IsValid())
+			{
+				HealthRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*HealthSpecHandle.Data.Get());
+				UE_LOG(LogTemp, Log, TEXT("💖 [PlayerData] 체력 리젠 가동 시작!"));
+			}
+		}
+	}
 }
 
 void APlayerData::InitPlayerAssets()
@@ -485,6 +523,12 @@ void APlayerData::OnDeath()
 	if (bIsDead) return;
 	bIsDead = true;
 
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffect(HealthRegenHandle);
+		AbilitySystemComponent->RemoveActiveGameplayEffect(ManaRegenHandle);
+	}
+
 	// 부활 타이머 시작 (예: 5초 뒤 부활)
     UE_LOG(LogTemp, Error, TEXT("👻 [PlayerData] 영혼 사망 확인. 5초 뒤 리스폰 가능합니다"));
 	GetWorld()->GetTimerManager().SetTimer(
@@ -516,10 +560,6 @@ void APlayerData::ResetStateForRespawn()
 		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
 		AbilitySystemComponent->ApplyModToAttribute(UBaseAttributeSet::GetHealthAttribute(), EGameplayModOp::Override, MaxHP);
 
-		//마나 완전 회복
-		float MaxMP = AbilitySystemComponent->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
-		AbilitySystemComponent->ApplyModToAttribute(UBaseAttributeSet::GetManaAttribute(), EGameplayModOp::Override, MaxMP);
-
 		//쿨타임(Cooldown) 및 디버프(Debuff) 타이머 싹 지우기
 		FGameplayTagContainer TagsToRemove;
 		TagsToRemove.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Cooldown")));
@@ -528,6 +568,24 @@ void APlayerData::ResetStateForRespawn()
 		AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TagsToRemove);
 
 		UE_LOG(LogTemp, Log, TEXT("✨ [PlayerData] %s의 영혼 상태(체력/마나/디버프)가 완벽히 정화되었습니다!"), *GetName());
+	}
+
+	if (AbilitySystemComponent)
+	{
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddInstigator(this, this);
+
+		if (ManaRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle ManaSpec = AbilitySystemComponent->MakeOutgoingSpec(ManaRegenEffectClass, 1.0f, Context);
+			ManaRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*ManaSpec.Data.Get());
+		}
+
+		if (HealthRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle HealthSpec = AbilitySystemComponent->MakeOutgoingSpec(HealthRegenEffectClass, 1.0f, Context);
+			HealthRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*HealthSpec.Data.Get());
+		}
 	}
 }
 

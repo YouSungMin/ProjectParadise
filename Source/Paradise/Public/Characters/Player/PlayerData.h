@@ -217,6 +217,21 @@ protected:
 	UPROPERTY(Transient)
 	TArray<FGameplayAbilitySpecHandle> AppliedSetAbilityHandles;
 
+	/** @brief 패시브 Health 리젠 이펙트 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Regen")
+	TSubclassOf<class UGameplayEffect> HealthRegenEffectClass;
+
+	/** @brief Health 리젠 이펙트의 핸들  */
+	FActiveGameplayEffectHandle HealthRegenHandle;
+
+	/** @brief 패시브 Mana 리젠 이펙트 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Regen")
+	TSubclassOf<class UGameplayEffect> ManaRegenEffectClass;
+
+	/** @brief Mana 리젠 이펙트의 핸들  */
+	FActiveGameplayEffectHandle ManaRegenHandle;
+
+
 	/*
 	 * @brief 리스폰 대기시간
 	 */
