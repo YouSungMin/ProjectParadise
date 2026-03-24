@@ -353,6 +353,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UAnimSequence> RunAnim = nullptr;
 
+	/** * @brief 캐릭터 최초 획득 시 지급될 기본 무기의 ItemID
+	 * @details WeaponAssets 테이블에 존재하는 ID여야 합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	FName DefaultWeaponID;
+
 	/**
 	 * @brief 인게임 궁극기 UI 아이콘
 	 */

@@ -154,6 +154,32 @@ void UInventorySystem::AddCharacter(FName CharacterID)
 
 	OwnedCharacters.Add(NewCharacter);
 
+	if (FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID))
+	{
+		FName DefaultWeaponID = CharAssets->DefaultWeaponID;
+
+		//이름이 비어있을때 방어 코드
+		if (DefaultWeaponID.IsNone()) DefaultWeaponID = FName("Blunt_DefaultBlunt");
+
+		// 유효한 무기인지 확인
+		if (!DefaultWeaponID.IsNone() && GI->IsValidItemID(DefaultWeaponID))
+		{
+			//무기 아이템을 인벤토리에 생성 (AddItem을 쓰지 않고 직접 생성하여 GUID를 확보)
+			FOwnedItemData NewWeapon;
+			NewWeapon.ItemUID = FGuid::NewGuid();
+			NewWeapon.ItemID = DefaultWeaponID;
+			NewWeapon.EnhancementLevel = 0;
+			NewWeapon.Quantity = 1;
+
+			OwnedItems.Add(NewWeapon);
+
+			//방금 생성한 무기의 GUID를 이용해 캐릭터에게 장착
+			EquipItemToCharacter(NewCharacter.CharacterUID, NewWeapon.ItemUID);
+
+			UE_LOG(LogParadiseInventory, Log, TEXT("⚔️ [%s] 영입! 기본 무기(%s)가 자동 장착되었습니다."), *CharacterID.ToString(), *DefaultWeaponID.ToString());
+		}
+	}
+
 	if (OnInventoryUpdated.IsBound())
 	{
 		OnInventoryUpdated.Broadcast();
@@ -368,6 +394,25 @@ void UInventorySystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 	OwnedCharacters = SaveGameObj->SavedOwnedCharacters;
 	OwnedFamiliars = SaveGameObj->SavedOwnedFamiliars;
 	OwnedItems = SaveGameObj->SavedOwnedInventoryItems;
+
+
+	if (SaveGameObj->bIsFirstPlay == true)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("🎉 최초 실행 감지! 기본 에셋을 지급합니다."));
+
+		
+		//기본 영웅 ,퍼밀리어 지급
+		AddCharacter(TEXT("Char_Army"));
+
+		AddFamiliar(TEXT("Anemone"));
+		AddFamiliar(TEXT("BardFollower"));
+		AddFamiliar(TEXT("Bat"));
+		AddFamiliar(TEXT("Cannon"));
+		AddFamiliar(TEXT("CherryBee"));
+
+		//최초 접속 플래그 false
+		SaveGameObj->bIsFirstPlay = false;
+	}
 
 }
 

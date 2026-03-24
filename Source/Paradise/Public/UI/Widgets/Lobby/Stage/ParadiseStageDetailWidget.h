@@ -14,7 +14,9 @@ class UParadiseSquadFormationWidget;
 class UParadiseGameInstance;
 class UParadiseEnemyIconWidget;
 class ALobbyPlayerController;
+class UParadiseResourceWarningWidget;
 #pragma endregion 전방 선언
+
 
 /** @brief 상세 팝업이 닫힐 때(Close 또는 Formation 이동 등) 부모에게 알림 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageDetailClosed);
@@ -67,6 +69,11 @@ private:
 
 #pragma region UI 컴포넌트
 protected:
+	//0324 김성현 스테이지 진입 불가 경고 팝업 추가
+ 	/** @brief 진입 불가 시 띄워줄 통합 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseResourceWarningWidget> Widget_ResourceWarning = nullptr;
+
 	/** @brief 기존 편성창 위젯 재활용 (장비 탭 숨김 처리용 플래그 필요) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSquadFormationWidget> UI_SquadPreview = nullptr;
