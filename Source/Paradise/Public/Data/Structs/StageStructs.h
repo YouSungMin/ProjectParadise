@@ -80,6 +80,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward", meta = (ClampMin = "0"))
 	int32 ClearExp;
 
+	/** @brief 클리어 퍼밀리어 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	FName ClearFamiliar;
+
 	// =========================================================
 	//  텍스트 정보 (Text)
 	// =========================================================

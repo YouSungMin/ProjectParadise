@@ -55,6 +55,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
 	int32 AcquiredAether = 0;
 
+	/** @brief [보상] 이번 스테이지에서 획득한 퍼밀리어 (최초 클리어 보상 UI용) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
+	FName AcquiredFamiliar;
+
 	/** @brief [보상] 이번 스테이지에서 획득한 별 개수 (결과 UI 표시용) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Reward")
 	int32 EarnedStars = 0;
