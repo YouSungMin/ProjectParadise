@@ -28,6 +28,13 @@ USTRUCT(BlueprintType)
 struct FUnitBaseStats : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	/**
+	 * @brief 인게임 UI에 표시될 아이템의 이름
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info")
+	FText DisplayName;
+
 	/** @brief 소환 코스트 (재화) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
 	int32 SummonCost;
