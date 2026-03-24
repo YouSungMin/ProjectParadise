@@ -36,12 +36,13 @@ protected:
 #pragma region 외부 인터페이스
 public:
 	/**
-	 * @brief 부족한 재화 정보를 받아 경고 팝업을 세팅하고 화면에 띄웁니다. (Data-Driven)
-	 * @param ResourceName 부족한 재화의 이름 (예: "골드", "에테르", "아누비스 조각")
+	 * @brief 부족한 재화 정보를 받아 경고 팝업을 세팅하고 화면에 띄웁니다.
+	 * @param ResourceName 부족한 재화의 이름 또는 출력할 전체 메시지
 	 * @param ResourceIcon 부족한 재화의 아이콘 이미지
+	 * @param bIsExactMessage true일 경우 '{0}이(가) 부족합니다' 포맷을 무시하고 ResourceName을 그대로 출력합니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Warning")
-	void ShowWarning(const FText& ResourceName, UTexture2D* ResourceIcon);
+	void ShowWarning(const FText& ResourceName, UTexture2D* ResourceIcon, bool bIsExactMessage = false);
 
 	/** @brief 팝업 닫기 이벤트 브로드캐스트 */
 	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")

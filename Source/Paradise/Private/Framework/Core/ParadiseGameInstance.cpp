@@ -53,6 +53,7 @@ void UParadiseGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
+#if WITH_EDITOR
 void UParadiseGameInstance::CheckMeshScale(FString FolderPath)
 {
 	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
@@ -116,6 +117,7 @@ void UParadiseGameInstance::CheckMeshScale(FString FolderPath)
 	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
 
 }
+#endif
 
 void UParadiseGameInstance::SaveGameData()
 {

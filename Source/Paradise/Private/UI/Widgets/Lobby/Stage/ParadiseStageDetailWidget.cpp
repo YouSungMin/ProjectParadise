@@ -234,7 +234,7 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 			if (Widget_ResourceWarning)
 			{
 				// 편성 오류는 특정 재화 아이콘이 필요 없으므로 Icon 자리에는 nullptr을 넘깁니다.
-				Widget_ResourceWarning->ShowWarning(FText::FromString(ErrorMsg), nullptr);
+				Widget_ResourceWarning->ShowWarning(FText::FromString(ErrorMsg), nullptr, true);
 
 				return;
 			}

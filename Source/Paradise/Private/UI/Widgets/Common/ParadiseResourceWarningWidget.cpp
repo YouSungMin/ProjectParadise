@@ -36,13 +36,23 @@ void UParadiseResourceWarningWidget::NativeDestruct()
 #pragma endregion 생명주기
 
 #pragma region 외부 인터페이스
-void UParadiseResourceWarningWidget::ShowWarning(const FText& ResourceName, UTexture2D* ResourceIcon)
+void UParadiseResourceWarningWidget::ShowWarning(const FText& ResourceName, UTexture2D* ResourceIcon, bool bIsExactMessage)
 {
 	// 1. 데이터 드라이븐 텍스트 포맷팅 (예: "골드" -> "골드이(가) 부족합니다!")
+	//포맷팅 우회 여부 체크
 	if (Text_WarningMessage)
 	{
-		FText FormattedMessage = FText::Format(WarningMessageFormat, ResourceName);
-		Text_WarningMessage->SetText(FormattedMessage);
+		if (bIsExactMessage)
+		{
+			// 🌟 true일 경우: "무기를 장착하지 않은 캐릭터가 있습니다." 문자열 그대로 출력
+			Text_WarningMessage->SetText(ResourceName);
+		}
+		else
+		{
+			// false일 경우: 기존 데이터 드라이븐 텍스트 포맷팅 ("골드" -> "골드이(가) 부족합니다!")
+			FText FormattedMessage = FText::Format(WarningMessageFormat, ResourceName);
+			Text_WarningMessage->SetText(FormattedMessage);
+		}
 	}
 
 	// 2. 아이템/재화 아이콘 렌더링
