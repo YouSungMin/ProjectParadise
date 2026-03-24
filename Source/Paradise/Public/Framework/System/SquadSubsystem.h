@@ -101,6 +101,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Squad")
 	bool IsPlayerAlreadyAssigned(FName PlayerID) const;
 
+	/** @brief 현재 편성된 스쿼드가 스테이지 진입 조건을 만족하는지 검사합니다. */
+	UFUNCTION(BlueprintPure, Category = "Squad|Validation")
+	bool IsSquadValidForBattle(FString& OutErrorMessage) const;
+
 private:
 	// 3명의 플레이어 ID를 담을 스쿼드 배열
 	UPROPERTY()

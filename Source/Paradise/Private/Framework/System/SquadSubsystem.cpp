@@ -188,6 +188,50 @@ bool USquadSubsystem::IsPlayerAlreadyAssigned(FName PlayerID) const
 	return SelectedPlayerSquadIDs.Contains(PlayerID);
 }
 
+bool USquadSubsystem::IsSquadValidForBattle(FString& OutErrorMessage) const
+{
+	UE_LOG(LogTemp, Warning, TEXT("================ [스쿼드 진입 검증 시작] ================"));
+
+	// 1. 캐릭터 편성 검사
+	bool bHasPlayer = false;
+	for (int32 i = 0; i < SelectedPlayerSquadIDs.Num(); i++)
+	{
+		UE_LOG(LogTemp, Log, TEXT("  -> Player Slot %d: [%s]"), i, *SelectedPlayerSquadIDs[i].ToString());
+		if (!SelectedPlayerSquadIDs[i].IsNone())
+		{
+			bHasPlayer = true;
+		}
+	}
+
+	if (!bHasPlayer)
+	{
+		OutErrorMessage = TEXT("편성된 캐릭터가 없습니다.");
+		UE_LOG(LogTemp, Error, TEXT("❌ 검증 실패: 편성된 캐릭터가 0명입니다."));
+		return false;
+	}
+
+	// 2. 퍼밀리어 편성 검사 (5마리 필수 기준)
+	int32 ValidFamiliarCount = 0;
+	for (int32 i = 0; i < SelectedFamiliarSquadIDs.Num(); i++)
+	{
+		UE_LOG(LogTemp, Log, TEXT("  -> Familiar Slot %d: [%s]"), i, *SelectedFamiliarSquadIDs[i].ToString());
+		if (!SelectedFamiliarSquadIDs[i].IsNone())
+		{
+			ValidFamiliarCount++;
+		}
+	}
+
+	if (ValidFamiliarCount < 5)
+	{
+		OutErrorMessage = FString::Printf(TEXT("퍼밀리어 스쿼드를 전부 편성해주세요. (%d/5)"), ValidFamiliarCount);
+		UE_LOG(LogTemp, Error, TEXT("❌ 검증 실패: 퍼밀리어 부족 (%d / 5)"), ValidFamiliarCount);
+		return false;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("✅ 검증 통과: 모든 스쿼드 조건 만족!"));
+	return true;
+}
+
 void USquadSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 {
 	if (!SaveGameObj) return;

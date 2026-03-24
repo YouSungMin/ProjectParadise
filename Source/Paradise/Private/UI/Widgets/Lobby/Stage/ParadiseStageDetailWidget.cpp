@@ -4,6 +4,7 @@
 #include "UI/Widgets/Lobby/Stage/ParadiseStageDetailWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadFormationWidget.h" 
 #include "UI/Widgets/Lobby/Stage/ParadiseEnemyIconWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -221,7 +222,24 @@ void UParadiseStageDetailWidget::OnClickFormation()
 
 void UParadiseStageDetailWidget::OnClickEnterBattle()
 {
+	//방어코드
 	if (CachedStageID.IsNone() || !CachedGI.IsValid()) return;
+
+	//0324 김성현 - 스쿼드 편성 상태 검증 
+	if (USquadSubsystem* SquadSys = CachedGI->GetSubsystem<USquadSubsystem>())
+	{
+		FString ErrorMsg;
+		if (!SquadSys->IsSquadValidForBattle(ErrorMsg))
+		{
+			if (Widget_ResourceWarning)
+			{
+				// 편성 오류는 특정 재화 아이콘이 필요 없으므로 Icon 자리에는 nullptr을 넘깁니다.
+				Widget_ResourceWarning->ShowWarning(FText::FromString(ErrorMsg), nullptr);
+
+				return;
+			}
+		}
+	}
 
 	// 1. 스테이지 데이터 조회 (Stats & Assets)
 	FStageStats* Stats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID);
