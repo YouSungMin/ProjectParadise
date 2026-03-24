@@ -63,6 +63,10 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Upgrade")
 	FName LevelUpCostId;
+
+	/** @brief 장비/아이템 판매 시 획득할 골드량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 SellPrice = 50;
 };
 
 /**

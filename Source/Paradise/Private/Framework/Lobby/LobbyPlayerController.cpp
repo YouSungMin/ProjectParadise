@@ -239,6 +239,55 @@ void ALobbyPlayerController::CheatAddAether(int32 Amount)
 	}
 }
 
+void ALobbyPlayerController::CheatSellItem(FName ItemID, int32 QuantityToSell)
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UInventorySystem* InvenSys = GI->GetSubsystem<UInventorySystem>())
+		{
+			FGuid TargetUID;
+			bool bFound = false;
+
+			// 1. 인벤토리를 뒤져서 입력한 ItemID와 일치하는 아이템의 고유 UID를 찾습니다.
+			// (주의: 인벤토리 데이터 구조체 접근 방식이 GetOwnedItems()가 아니라면 본인의 프로젝트에 맞게 배열 이름을 수정해주세요)
+			for (const FOwnedItemData& ItemData : InvenSys->GetOwnedItems())
+			{
+				if (ItemData.ItemID == ItemID)
+				{
+					TargetUID = ItemData.ItemUID;
+					bFound = true;
+					break; // 가장 먼저 발견된 아이템을 판매 타겟으로 지정
+				}
+			}
+
+			// 2. 보유하지 않은 아이템일 경우 거부
+			if (!bFound)
+			{
+				FString Msg = FString::Printf(TEXT("[Cheat] 실패: 인벤토리에 [%s] 아이템이 없습니다!"), *ItemID.ToString());
+				UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, Msg);
+				return;
+			}
+
+			// 3. 실제 판매 로직 호출 및 결과 출력
+			FString ErrorMsg;
+			if (InvenSys->SellItem(TargetUID, QuantityToSell, ErrorMsg))
+			{
+				FString Msg = FString::Printf(TEXT("[Cheat] 성공: [%s] 아이템을 %d개 판매했습니다!"), *ItemID.ToString(), QuantityToSell);
+				UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg);
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, Msg);
+			}
+			else
+			{
+				// 실패 시 (누군가 장착 중이거나 갯수 부족 등) ErrorMsg를 화면에 띄워줍니다.
+				FString Msg = FString::Printf(TEXT("[Cheat] 판매 거부: %s"), *ErrorMsg);
+				UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, Msg);
+			}
+		}
+	}
+}
+
 void ALobbyPlayerController::CheatAwakenCharacter(FName CharacterID)
 {
 	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
