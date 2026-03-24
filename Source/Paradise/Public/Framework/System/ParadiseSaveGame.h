@@ -38,6 +38,10 @@ public:
 	//유저 인덱스 (기본: 0)
 	UPROPERTY(VisibleAnywhere, Category = "Basic")
 	uint32 UserIndex;
+
+	//최초 접속 여부 플래그 
+	UPROPERTY(VisibleAnywhere, Category = "Basic")
+	bool bIsFirstPlay = true;
 #pragma endregion 저장 데이터 Default
 
 #pragma region 보유한 캐릭터 , 퍼밀리어 , 장비 데이터

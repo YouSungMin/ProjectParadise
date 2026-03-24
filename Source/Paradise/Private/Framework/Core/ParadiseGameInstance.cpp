@@ -159,6 +159,12 @@ void UParadiseGameInstance::LoadGameData()
 
 	UParadiseSaveGame* LoadObj = Cast<UParadiseSaveGame>(UParadiseSaveManager::LoadGameEncrypted(SaveGameSlotName));
 
+	if (!LoadObj)
+	{
+		UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 초기 세이브 데이터를 생성합니다."));
+		LoadObj = Cast<UParadiseSaveGame>(UGameplayStatics::CreateSaveGameObject(UParadiseSaveGame::StaticClass()));
+	}
+
 	if (LoadObj)
 	{
 
@@ -170,6 +176,8 @@ void UParadiseGameInstance::LoadGameData()
 			LoadObj->SavedOwnedFamiliars,
 			LoadObj->SavedOwnedInventoryItems
 		);
+
+		MainInventory->LoadFromSaveGame(LoadObj);
 
 		//스쿼드 편성 정보 로드
 		if (USquadSubsystem* SquadSys = GetSubsystem<USquadSubsystem>())
@@ -196,18 +204,7 @@ void UParadiseGameInstance::LoadGameData()
 
 		UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 	}
-	else
-	{
-		//세이브 파일이 없다면 (처음 게임을 켰거나 데이터가 날아간 경우)
-		UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 빈 인벤토리로 시작합니다."));
 
-		if (!UGameplayStatics::DoesSaveGameExist(SaveGameSlotName, 0))
-		{
-			bIsGameDataLoaded = true;
-			//만약 튜토리얼 기본 지급 영웅/무기가 필요하다면 여기서 AddCharacter() 등을 호출하시면 됩니다.
-
-		}
-	}
 }
 
 bool UParadiseGameInstance::IsValidPlayerID(FName PlayerID) const
