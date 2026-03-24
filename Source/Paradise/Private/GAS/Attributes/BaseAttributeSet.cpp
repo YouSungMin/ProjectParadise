@@ -10,8 +10,10 @@ UBaseAttributeSet::UBaseAttributeSet()
 	// 생성자: 안전을 위해 기본값 초기화 (데이터 테이블 로딩 전 임시값)
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
+	InitHealthRegen(2.0f);
 	InitMana(0.0f);
 	InitMaxMana(20.0f);
+	InitManaRegen(2.0f);
 
 	InitAttackPower(10.0f);
 	InitDefense(0.0f);
@@ -38,10 +40,10 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	{
 		float CurrentMana = GetMana();
 
-		// 2. 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한합니다.
+		// 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한
 		float ClampedNewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
 
-		// 3. 💡 마나가 깎였을 때만(ClampedNewValue가 CurrentMana보다 작을 때만) 로그를 출력합니다.
+		// 마나가 깎였을 때만 로그를 출력
 		if (ClampedNewValue < CurrentMana)
 		{
 			// 사용한(깎인) 마나 계산
