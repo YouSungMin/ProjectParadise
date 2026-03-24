@@ -59,22 +59,19 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	// 현재 컨텍스트 캐싱
 	CachedContext = InContext;
 
-	// 2. 공통 데이터 렌더링 (이름)
-	if (Text_Name)
-	{
-		Text_Name->SetText(InData.Name.IsEmpty() ? FText::FromString(TEXT("-")) : InData.Name);
-	}
-
-	// 3. UI 레이아웃 및 텍스트 변수 초기화
+	// 2. UI 레이아웃 및 텍스트 변수 초기화
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);
 
 	TObjectPtr<UTexture2D> DeterminatedIcon = nullptr; // 최종 결정될 아이콘
 	FString FinalStatString = TEXT("");
 	FString SkillInfoString = TEXT("스킬 정보가 없습니다.");
+
+	// DT에서 DisplayName을 찾지 못할 경우를 대비한 기본값
+	FText FinalDisplayName = InData.Name.IsEmpty() ? FText::FromString(TEXT("-")) : InData.Name;
 	bool bShowActionButtons = false;
 
-	// 4. 컨텍스트(Context)에 따른 데이터 로드 및 UI 구성 (Data-Driven & MVC)
+	// 3. 컨텍스트(Context)에 따른 데이터 로드 및 UI 구성
 	switch (InContext)
 	{
 	case ESquadDetailContext::FormationCharacter:
@@ -94,6 +91,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 		// [스탯 연산] 기본 스탯 + 레벨업 성장치 + 장비 스탯 합산
 		if (FCharacterStats* CharStat = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = CharStat->DisplayName;
+
 			int32 Level = FMath::Max(1, InData.Level);
 			float TotalHP = CharStat->BaseMaxHP + (CharStat->GrowthHPPerLevel * (Level - 1));
 			float TotalAtk = CharStat->BaseAttackPower + (CharStat->GrowthAttackPerLevel * (Level - 1));
@@ -170,6 +169,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FWeaponStats* WpnStat = GI->GetDataTableRow<FWeaponStats>(GI->WeaponStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = WpnStat->DisplayName;
+
 			// 1. 강화 수치 반영 (공격력만 10% 증가 적용 - 기획에 따라 변경 가능)
 			float AtkBonus = 1.0f + (InData.Level * 0.1f);
 			int32 FinalAtk = FMath::RoundToInt(WpnStat->AttackPower * AtkBonus);
@@ -206,6 +207,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FArmorStats* ArmStat = GI->GetDataTableRow<FArmorStats>(GI->ArmorStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = ArmStat->DisplayName;
+
 			// 1. 강화 수치 반영 (방어력과 체력, 마나 모두 레벨당 10% 증가 적용)
 			float DefBonus = 1.0f + (InData.Level * 0.1f);
 			int32 FinalDef = FMath::RoundToInt(ArmStat->DefensePower * DefBonus);
@@ -233,6 +236,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 
 		if (FFamiliarStats* UnitStat = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, InData.ID))
 		{
+			FinalDisplayName = UnitStat->DisplayName;
+
 			// [Rich Text 적용] 소환수 스탯 표기
 			FinalStatString = FString::Printf(TEXT("<Green>소환 코스트: %d</>\n<Red>체력: %d</> / <Blue>공격력: %d</>"),
 				UnitStat->SummonCost, FMath::RoundToInt(UnitStat->BaseMaxHP), FMath::RoundToInt(UnitStat->BaseAttackPower));
@@ -250,7 +255,7 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	break;
 	}
 
-	// 5. 메인 아이콘 최종 렌더링 (결정된 아이콘 또는 Fallback 적용)
+	// 4. 메인 아이콘 최종 렌더링
 	if (Img_Icon)
 	{
 		UTexture2D* FinalIcon = DeterminatedIcon ? DeterminatedIcon : DefaultMainIcon;
@@ -266,7 +271,8 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 		}
 	}
 
-	// 6. 텍스트 및 버튼 가시성 최종 갱신
+	// 5. 텍스트 및 버튼 가시성 최종 갱신
+	if (Text_Name) Text_Name->SetText(FinalDisplayName);
 	if (Text_Desc) Text_Desc->SetText(FText::FromString(FinalStatString));
 	if (Text_SkillInfo) Text_SkillInfo->SetText(FText::FromString(SkillInfoString));
 	if (HBox_ButtonRoot) HBox_ButtonRoot->SetVisibility(bShowActionButtons ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
