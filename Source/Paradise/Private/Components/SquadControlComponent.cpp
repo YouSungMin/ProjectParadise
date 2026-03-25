@@ -88,7 +88,7 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
     PC->Possess(NewPlayer);
     CurrentControlledIndex = PlayerIndex;
 
-    if (OldPlayer)
+    if (OldPlayer && !OldPlayer->IsDead())
     {
         PossessAI(OldPlayer);
     }
