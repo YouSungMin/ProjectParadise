@@ -244,6 +244,11 @@ void APlayerData::InitPlayerAssets()
 	this->CachedCharacterFX = Assets->CharacterFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
 
+	if (!CachedCharacterFX.FXData.IsNull())
+	{
+		CachedCharacterFX.FXData.LoadSynchronous();
+	}
+
 	//ASC 세팅
 	if (AbilitySystemComponent)
 	{
@@ -453,6 +458,10 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	{
 		CachedWeaponFX = WeaponData->WeaponFX;
 		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
+		if (!CachedWeaponFX.FXData.IsNull())
+		{
+			CachedWeaponFX.FXData.LoadSynchronous();
+		}
 	}
 	else
 	{
