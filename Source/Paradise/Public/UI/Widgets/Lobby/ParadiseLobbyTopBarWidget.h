@@ -12,6 +12,7 @@ class UTextBlock;
 class UButton;
 class USettingsPopupWidget;
 class UEconomySubsystem;
+class UParadiseFXAudioData;
 #pragma endregion 전방 선언
 
 /**

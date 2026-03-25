@@ -4,14 +4,16 @@
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 #include "Components/WidgetSwitcher.h"
 
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
-#include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
 #include "UI/Widgets/Codex/ParadiseCodexMainWidget.h"
+
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyHUDWidget::NativeConstruct()
 {
@@ -28,6 +30,20 @@ void UParadiseLobbyHUDWidget::NativeConstruct()
 	// 게임 인스턴스 캐싱 (최적화)
 	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
 
+	/** @section 로비 BGM 재생 요청 */
+	if (CachedGI.IsValid())
+	{
+		if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// GameInstance가 미리 들고 있는 전역 오디오 데이터셋에서 로비 BGM을 꺼냅니다 (Data-Driven)
+			if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->BGM_Lobby)
+			{
+				// 이전 음악(타이틀 등)은 자동으로 페이드아웃되고 로비 음악이 재생됩니다.
+				AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
+			}
+		}
+	}
+
 	// 초기화 시 None(메인 로비) 상태로 시작
 	UpdateMenuStats(EParadiseLobbyMenu::None);
 }
@@ -41,6 +57,26 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 	// 1. UI 상태 결정 (State Determination)
 	// -------------------------------------------------------------------------
 	const bool bIsMainLobby = (InCurrentMenu == EParadiseLobbyMenu::None);
+
+	if (CachedGI.IsValid())
+	{
+		if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// 메인 로비로 복귀 시 로비 BGM 재생
+			if (bIsMainLobby)
+			{
+				if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->BGM_Lobby)
+				{
+					AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
+				}
+			}
+			// 다른 씬으로 완전히 빠져나갈 때 정지
+			else if (InCurrentMenu == EParadiseLobbyMenu::StageMap)
+			{
+				AudioMag->StopBGM(1.0f);
+			}
+		}
+	}
 
 	// StageSelect 위젯은 카메라 이동 후 LobbyPlayerController가 뷰포트에 직접 띄웁니다.
 	if (InCurrentMenu == EParadiseLobbyMenu::StageMap)

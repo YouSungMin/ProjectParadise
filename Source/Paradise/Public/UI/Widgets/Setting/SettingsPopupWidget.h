@@ -13,6 +13,7 @@ class USoundMix;
 class USoundClass;
 class ULevelLoadingSubsystem;
 class UAudioSettingsSubsystem;
+class UParadiseFXAudioData;
 #pragma endregion 전방 선언
 
 /**

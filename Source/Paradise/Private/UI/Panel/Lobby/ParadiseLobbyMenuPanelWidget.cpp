@@ -4,7 +4,10 @@
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "Components/Button.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
+#include "Framework/System/AudioManagementSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 {
@@ -41,10 +44,19 @@ void UParadiseLobbyMenuPanelWidget::NativeDestruct()
 
 void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)
 {
-	// 버튼 누르는 순간 효과음
-	if (Sound_MenuClick)
+	// 메뉴로 진입하면 로비 BGM을 1초 정도 있다가 끈다.
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 	{
-		UGameplayStatics::PlaySound2D(this, Sound_MenuClick);
+		/** @section 1. 사운드 제어 (전역 데이터 참조) */
+		if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			AudioMag->StopBGM(1.0f);
+		}
+
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_LobbyMenuClick)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_LobbyMenuClick);
+		}
 	}
 	if (CachedController)
 	{
