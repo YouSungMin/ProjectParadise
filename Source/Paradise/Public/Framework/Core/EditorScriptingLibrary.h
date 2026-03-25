@@ -14,4 +14,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "PythonBypass")
 	static void AddSocketToSkeleton(class USkeleton* TargetSkeleton, FName SocketName, FName BoneName, FVector RelativeLocation, FRotator RelativeRotation, FVector RelativeScale);
+
+	UFUNCTION(BlueprintCallable, Category = "EditorScripting|Audio")
+	static void BatchApplySoundConcurrency(const TArray<USoundBase*>& TargetSounds, USoundConcurrency* ConcurrencySetting);
 };
