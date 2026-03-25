@@ -175,6 +175,8 @@ void UActionControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
 #pragma region 외부 인터페이스 구현
 void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 {
+	LockOtherActionButtons(false, ECombatActionType::BasicAttack);
+
 	// 1. 시스템 캐싱 (위젯 내부에서 스스로 가져옵니다)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
@@ -432,6 +434,34 @@ void UActionControlPanel::SetOwningPlayerBase(APlayerBase* InPlayer)
 {
 	CachedPlayer = InPlayer;
 	UE_LOG(LogTemp, Log, TEXT("✅ [ActionPanel] 플레이어 폰 주입 완료!"));
+}
+
+void UActionControlPanel::LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType)
+{
+	// 1. 잠금 해제(false)일 때: 내 타입이 뭐든 상관없이 그냥 모든 버튼을 다시 터치 가능하게 살립니다!
+	if (!bLocked)
+	{
+		if (AttackBtn) AttackBtn->SetVisibility(ESlateVisibility::Visible);
+		if (SkillSlot_Active) SkillSlot_Active->SetVisibility(ESlateVisibility::Visible);
+		if (SkillSlot_Ultimate) SkillSlot_Ultimate->SetVisibility(ESlateVisibility::Visible);
+		return; // 다 풀었으니 함수 즉시 종료 (최적화)
+	}
+
+	// 2. 잠금(true)일 때: 내가 누른 스킬(ExecutingActionType)이 아닌 녀석들만 투명하게(HitTestInvisible) 만듭니다.
+	if (ExecutingActionType != ECombatActionType::BasicAttack && AttackBtn)
+	{
+		AttackBtn->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (ExecutingActionType != ECombatActionType::WeaponSkill && SkillSlot_Active)
+	{
+		SkillSlot_Active->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (ExecutingActionType != ECombatActionType::UltimateSkill && SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
 }
 
 void UActionControlPanel::OnAttackButtonPressed()

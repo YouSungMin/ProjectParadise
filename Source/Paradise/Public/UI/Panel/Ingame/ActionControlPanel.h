@@ -76,6 +76,13 @@ public:
 	/** @brief 외부(컨트롤러나 HUD)에서 플레이어를 직접 꽂아주는 함수 */ 
 	void SetOwningPlayerBase(APlayerBase* InPlayer);
 
+	/**
+	 * @brief 특정 어빌리티 실행 시, 다른 액션 버튼들의 터치를 차단하거나 해제합니다.
+	 * @param bLocked 잠금 여부 (true면 차단)
+	 * @param ExecutingActionType 현재 실행 중인 어빌리티 타입 (이 버튼은 차단 제외)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType);
 
 #pragma endregion 외부 인터페이스
 private:
