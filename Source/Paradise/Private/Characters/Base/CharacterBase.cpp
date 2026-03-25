@@ -77,7 +77,10 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		ActorsToIgnore,
 		EDrawDebugTrace::ForDuration, // 디버그 선을 보고 싶다면 ForDuration으로 변경하세요
 		HitResults,
-		true
+		true,
+		FLinearColor::Red,   // 🔴 TraceColor: 기본 스피어 색상
+		FLinearColor::Green, // 🟢 TraceHitColor: 뭔가에 적중했을 때의 색상
+		0.2f                 // ⏱️ DrawTime: 화면에 유지되는 시간 (예: 2.0초)
 	);
 
 	// 3. 결과 처리 (다수 타격 및 아군/적군 필터링)
