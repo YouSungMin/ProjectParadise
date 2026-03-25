@@ -9,6 +9,7 @@
 
 #pragma region 전방 선언
 class UButton;
+class USoundBase;
 class ALobbyPlayerController;
 #pragma endregion 전방 선언
 
@@ -47,6 +48,10 @@ protected:
 	/** @brief 도감 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Codex = nullptr;
+
+	/** @brief 메뉴 버튼을 눌렀을 때 재생될 공통 클릭 사운드 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Audio")
+	TObjectPtr<USoundBase> Sound_MenuClick = nullptr;
 #pragma endregion UI 컴포넌트
 
 #pragma region 내부 로직

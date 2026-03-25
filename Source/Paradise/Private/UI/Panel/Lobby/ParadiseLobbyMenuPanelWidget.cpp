@@ -4,6 +4,7 @@
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "Components/Button.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 {
@@ -40,6 +41,11 @@ void UParadiseLobbyMenuPanelWidget::NativeDestruct()
 
 void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)
 {
+	// 버튼 누르는 순간 효과음
+	if (Sound_MenuClick)
+	{
+		UGameplayStatics::PlaySound2D(this, Sound_MenuClick);
+	}
 	if (CachedController)
 	{
 		// [변경] 바로 SetLobbyMenu 하지 않고, 카메라 이동 요청!

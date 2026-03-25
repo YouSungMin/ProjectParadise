@@ -16,6 +16,7 @@ class UTexture2D;
 class AInGamePlayerState;
 class APlayerData;
 class UAutoCombatComponent;
+struct FOnAttributeChangeData;
 #pragma endregion 전방 선언
 
 /**
@@ -76,6 +77,13 @@ public:
 	/** @brief 외부(컨트롤러나 HUD)에서 플레이어를 직접 꽂아주는 함수 */ 
 	void SetOwningPlayerBase(APlayerBase* InPlayer);
 
+	/**
+	 * @brief 특정 어빌리티 실행 시, 다른 액션 버튼들의 터치를 차단하거나 해제합니다.
+	 * @param bLocked 잠금 여부 (true면 차단)
+	 * @param ExecutingActionType 현재 실행 중인 어빌리티 타입 (이 버튼은 차단 제외)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType);
 
 #pragma endregion 외부 인터페이스
 private:
@@ -196,6 +204,26 @@ protected:
 	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 #pragma endregion 데이터 드리븐 설정
 
+#pragma region 코스트 연동 로직
+private:
+	/** @brief 스킬 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedActiveManaCost = 0.0f;
+
+	/** @brief 궁극기 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedUltimateManaCost = 0.0f;
+
+	/** @brief 현재 조작 중인 캐릭터의 ASC (델리게이트 안전 해제용) */
+	TWeakObjectPtr<class UAbilitySystemComponent> CachedASC = nullptr;
+
+	/** @brief 마나 속성이 변경될 때 호출되는 콜백 함수 */
+	void OnManaChanged(const FOnAttributeChangeData& Data);
+
+	/**
+	 * @brief 현재 마나량과 스킬의 요구 마나량을 비교하여 UI를 갱신합니다.
+	 * @param CurrentMana 현재 마나
+	 */
+	void UpdateSkillUsabilityByMana(float CurrentMana);
+#pragma endregion 코스트 연동 로직
 
 #pragma region 사거리 표시용 데이터
 

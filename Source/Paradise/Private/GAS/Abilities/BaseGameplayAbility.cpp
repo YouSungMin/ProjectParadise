@@ -12,6 +12,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Widgets/InGame/VirtualJoystickWidget.h"
+#include "UI/Panel/Ingame/ActionControlPanel.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
 {
@@ -58,6 +59,8 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 
 	// [추가] 03/23 담당자: 최지원, 어빌리티 시작 시 이동 차단
 	SetJoystickLocked(ActorInfo, true);
+	// 어빌리티 시작 시 다른 액션 버튼 잠금
+	SetActionButtonsLocked(ActorInfo, true);
 
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
 	{
@@ -76,6 +79,8 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 {
 	// [추가] 03/23 담당자: 최지원, 어빌리티 종료 시 이동 재개
 	SetJoystickLocked(ActorInfo, false);
+	// 어빌리티 종료 시 다른 액션 버튼 잠금 해제
+	SetActionButtonsLocked(ActorInfo, false);
 
 	// 스킬 시전이 끝났거나 캔슬되었을 때
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
@@ -323,4 +328,28 @@ void UBaseGameplayAbility::SetJoystickLocked(const FGameplayAbilityActorInfo* Ac
 
 	Joystick->SetMovementLocked(bLocked);
 	UE_LOG(LogTemp, Warning, TEXT("[JoystickLock] 조이스틱 %s 완료"), bLocked ? TEXT("잠금") : TEXT("해제"));
+}
+
+void UBaseGameplayAbility::SetActionButtonsLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
+{
+	if (!ActorInfo) return;
+
+	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+	if (!AvatarActor) return;
+
+	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
+	if (!AvatarPawn) return;
+
+	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
+	if (!InGamePC) return;
+
+	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
+	if (!HUD) return;
+
+	// ⭐ HUD에서 ActionControlPanel을 가져온다고 가정합니다. (GetVirtualJoystick 처럼 뚫려있어야 합니다!)
+	UActionControlPanel* ActionPanel = HUD->GetActionControlPanel();
+	if (!ActionPanel) return;
+
+	// 내 어빌리티 타입(AbilityActionType)을 같이 넘겨서, '내 버튼'은 잠금에서 제외하도록 지시합니다.
+	ActionPanel->LockOtherActionButtons(bLocked, AbilityActionType);
 }

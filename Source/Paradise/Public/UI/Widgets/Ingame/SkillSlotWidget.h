@@ -38,7 +38,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 public:
-#pragma region 데이터 업데이트
+#pragma region 외부 인터페이스
 	/**
 	 * @brief 스킬 슬롯의 정보를 갱신합니다.
 	 * @param InIconTexture 교체할 스킬 아이콘 텍스처입니다.
@@ -54,7 +54,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void RefreshCooldown(float CurrentTime, float MaxTime);
-#pragma endregion 데이터 업데이트
+
+	/**
+	 * @brief 마나 상태에 따라 스킬 사용 가능 여부와 시각적 효과를 갱신합니다.
+	 * @param bAffordable 마나가 충분한지 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetManaAffordable(bool bAffordable);
+#pragma endregion 외부 인터페이스
 
 #pragma region Getter
 	/**
@@ -124,18 +131,21 @@ private:
 	TObjectPtr<UTextBlock> Text_CooldownTime = nullptr;
 #pragma endregion 위젯 바인딩
 
-#pragma region 캡슐화 데이터
+#pragma region 내부 상태
 	/** @brief 현재 스킬의 최대 쿨타임 (비율 계산용) */
 	float MaxCooldown = 0.f;
 
 	/** @brief 현재 남은 쿨타임 시간 */
 	float CurrentCooldown = 0.f;
 
+	/** @brief 마나 등 코스트 지불 가능 여부 */
+	bool bIsManaAffordable = true;
+
 	/** @brief 쿨타임 갱신용 타이머 핸들 */
 	FTimerHandle CooldownTimerHandle;
 #pragma endregion 캡슐화 데이터
 
-#pragma region 데이터 드리븐 설정
+#pragma region 내부 상태
 protected:
 	/**
 	 * @brief 스킬 버튼 기본 아이콘 (폴백 이미지)

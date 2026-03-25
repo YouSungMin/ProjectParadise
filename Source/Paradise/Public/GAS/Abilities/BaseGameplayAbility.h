@@ -132,4 +132,11 @@ private:
 	 * @param bLocked true면 이동 차단, false면 이동 재개
 	 */
 	void SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked);
+
+	/**
+	 * @brief 어빌리티 시작/종료 시 다른 액션 버튼들의 조작을 차단/해제합니다. (SRP: 입력 차단 책임)
+	 * @param ActorInfo 어빌리티 액터 정보
+	 * @param bLocked true면 타 버튼 잠금, false면 잠금 해제
+	 */
+	void SetActionButtonsLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked);
 };

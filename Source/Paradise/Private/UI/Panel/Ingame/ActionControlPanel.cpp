@@ -19,6 +19,7 @@
 #include "Components/EquipmentComponent.h"
 #include "Components/UltimateEffectComponent.h"
 
+#include "GAS/Attributes/BaseAttributeSet.h"
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
 #include "AbilitySystemComponent.h"
@@ -175,6 +176,8 @@ void UActionControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
 #pragma region 외부 인터페이스 구현
 void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 {
+	LockOtherActionButtons(false, ECombatActionType::BasicAttack);
+
 	// 1. 시스템 캐싱 (위젯 내부에서 스스로 가져옵니다)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
@@ -192,6 +195,10 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 	// 2. [데이터 드리븐] 영혼 데이터(Soul)로부터 장착 및 스탯 정보 추출
 
 	APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex);
+
+	// 마나 요구량 캐싱 초기화
+	CachedActiveManaCost = 0.0f;
+	CachedUltimateManaCost = 0.0f;
 
 	if (Soul)
 	{
@@ -234,6 +241,32 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 					}
 				}
 			}
+		}
+		// C. 엑셀(데이터 테이블)에서 마나 코스트 추출
+		if (const FActionStats* ActionRow = CurrentWeaponSkillHandle.GetRow<FActionStats>(TEXT("SkillCost")))
+		{
+			CachedActiveManaCost = ActionRow->ManaCost;
+		}
+
+		if (const FActionStats* ActionRow = CurrentUltimateHandle.GetRow<FActionStats>(TEXT("UltCost")))
+		{
+			CachedUltimateManaCost = ActionRow->ManaCost;
+		}
+
+		// D. 마나 실시간 감시 바인딩 (이전 델리게이트 안전 해제)
+		if (CachedASC.IsValid())
+		{
+			CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute()).RemoveAll(this);
+		}
+
+		CachedASC = Soul->GetAbilitySystemComponent();
+		if (CachedASC.IsValid())
+		{
+			CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute()).AddUObject(this, &UActionControlPanel::OnManaChanged);
+
+			// 패널이 켜지는 즉시 현재 마나량으로 스킬 사용 가능 여부 1회 갱신
+			float CurrentMana = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+			UpdateSkillUsabilityByMana(CurrentMana);
 		}
 	}
 
@@ -434,6 +467,34 @@ void UActionControlPanel::SetOwningPlayerBase(APlayerBase* InPlayer)
 	UE_LOG(LogTemp, Log, TEXT("✅ [ActionPanel] 플레이어 폰 주입 완료!"));
 }
 
+void UActionControlPanel::LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType)
+{
+	// 1. 잠금 해제(false)일 때: 내 타입이 뭐든 상관없이 그냥 모든 버튼을 다시 터치 가능하게 살립니다!
+	if (!bLocked)
+	{
+		if (AttackBtn) AttackBtn->SetVisibility(ESlateVisibility::Visible);
+		if (SkillSlot_Active) SkillSlot_Active->SetVisibility(ESlateVisibility::Visible);
+		if (SkillSlot_Ultimate) SkillSlot_Ultimate->SetVisibility(ESlateVisibility::Visible);
+		return; // 다 풀었으니 함수 즉시 종료 (최적화)
+	}
+
+	// 2. 잠금(true)일 때: 내가 누른 스킬(ExecutingActionType)이 아닌 녀석들만 투명하게(HitTestInvisible) 만듭니다.
+	if (ExecutingActionType != ECombatActionType::BasicAttack && AttackBtn)
+	{
+		AttackBtn->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (ExecutingActionType != ECombatActionType::WeaponSkill && SkillSlot_Active)
+	{
+		SkillSlot_Active->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (ExecutingActionType != ECombatActionType::UltimateSkill && SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
 void UActionControlPanel::OnAttackButtonPressed()
 {
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
@@ -579,6 +640,15 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 
 	if (CurrentActivePawn)
 	{
+		float CurrentMana = 0.0f;
+		if (CachedASC.IsValid())
+		{
+			CurrentMana = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+		}
+
+		if (InputID == EInputID::Skill && CurrentMana < CachedActiveManaCost) return;
+		if (InputID == EInputID::Ultimate && CurrentMana < CachedUltimateManaCost) return;
+
 		CurrentActivePawn->SendAbilityInputToASC(InputID, true);
 
 		AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
@@ -664,3 +734,24 @@ void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
 	}
 }
 #pragma endregion 외부 인터페이스 구현
+
+#pragma region 코스트 연동 로직 구현
+void UActionControlPanel::OnManaChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateSkillUsabilityByMana(Data.NewValue);
+}
+
+void UActionControlPanel::UpdateSkillUsabilityByMana(float CurrentMana)
+{
+	// 마나 상태에 따른 UI 제어는 SkillSlot 위젯 스스로 처리하도록 위임합니다.
+	if (SkillSlot_Active)
+	{
+		SkillSlot_Active->SetManaAffordable(CurrentMana >= CachedActiveManaCost);
+	}
+
+	if (SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->SetManaAffordable(CurrentMana >= CachedUltimateManaCost);
+	}
+}
+#pragma endregion 코스트 연동 로직 구현
