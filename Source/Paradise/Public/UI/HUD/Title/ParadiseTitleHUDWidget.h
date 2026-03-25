@@ -10,6 +10,7 @@
 class UButton;
 class UWidgetAnimation;
 class USettingsPopupWidget;
+class UParadiseFXAudioData;
 #pragma endregion 전방 선언
 
 /**

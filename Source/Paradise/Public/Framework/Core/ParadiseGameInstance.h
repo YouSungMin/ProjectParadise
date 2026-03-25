@@ -211,6 +211,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Gacha", meta = (RowType = "GachaPoolRow", RequiredAssetDataTags = "RowStructure=/Script/Paradise.GachaPoolRow"))
 	TObjectPtr<class UDataTable> GachaPoolDataTable = nullptr;
 
+	/** @brief 전체적인 UI 효과음들 데이터 에셋 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Audio")
+	TObjectPtr<class UParadiseFXAudioData> GlobalAudioData;
 public:
 
 #pragma region 인벤토리 

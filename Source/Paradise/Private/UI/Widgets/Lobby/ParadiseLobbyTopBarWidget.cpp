@@ -3,10 +3,13 @@
 
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Kismet/KismetSystemLibrary.h" // 종료 기능을 위해 필요
+#include "Kismet/GameplayStatics.h"
 #include "Framework/System/EconomySubsystem.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyTopBarWidget::NativeConstruct()
 {
@@ -102,6 +105,13 @@ void UParadiseLobbyTopBarWidget::HandleCurrencyChanged(ECurrencyType CurrencyTyp
 
 void UParadiseLobbyTopBarWidget::OnSettingsClicked()
 {
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
 	/** @section 팝업 열기 */
 	if (SettingsPopupInstance)
 	{

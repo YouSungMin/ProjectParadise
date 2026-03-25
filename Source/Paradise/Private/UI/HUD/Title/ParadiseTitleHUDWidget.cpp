@@ -10,6 +10,8 @@
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 
 void UParadiseTitleHUDWidget::NativeConstruct()
 {
@@ -48,6 +50,17 @@ void UParadiseTitleHUDWidget::NativeConstruct()
 			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
 		}
 	}
+	/** @section BGM 재생 요청 */
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->BGM_Title)
+		{
+			if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+			{
+				AudioMag->PlayBGM(GI->GlobalAudioData->BGM_Title);
+			}
+		}
+	}
 }
 
 void UParadiseTitleHUDWidget::OnScreenTouched()
@@ -58,6 +71,26 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 
 	// 터치 시 애니메이션 멈춤 or 속도 증가 등의 피드백 연출 가능
 	// StopAnimation(Anim_BlinkText);
+
+	// 스크린 터치 진입 효과음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_TouchToStart)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_TouchToStart);
+		}
+
+		if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			AudioMag->StopBGM(1.0f);
+		}
+	}
+
+	// BGM 정지 요청
+	if (UAudioManagementSubsystem* AudioMag = GetGameInstance()->GetSubsystem<UAudioManagementSubsystem>())
+	{
+		AudioMag->StopBGM(1.0f);
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
 
@@ -85,6 +118,15 @@ void UParadiseTitleHUDWidget::OnQuitButtonClicked()
 void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
+
+	// 공통 설정 팝업 버튼 클릭음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
 
 	if (SettingsPopupInstance)
 	{

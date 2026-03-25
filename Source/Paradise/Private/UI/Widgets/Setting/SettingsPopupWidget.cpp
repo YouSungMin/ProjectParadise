@@ -9,6 +9,8 @@
 #include "Sound/SoundMix.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/AudioSettingsSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 #pragma region 생명주기
 void USettingsPopupWidget::NativeConstruct()
@@ -189,11 +191,29 @@ void USettingsPopupWidget::OnSFXVolumeChanged(float Value)
 
 void USettingsPopupWidget::OnResumeGameClicked()
 {
+	// 공통 뒤로가기 버튼 효과음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
+		}
+	}
+
 	CloseSettings();
 }
 
 void USettingsPopupWidget::OnReturnToLobbyClicked()
 {
+	// 여기도 뒤로가기/복귀 뉘앙스이므로 동일하게 처리 가능
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
+		}
+	}
+
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (ULevelLoadingSubsystem* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())

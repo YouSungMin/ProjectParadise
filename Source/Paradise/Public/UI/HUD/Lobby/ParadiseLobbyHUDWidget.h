@@ -13,6 +13,8 @@ class UParadiseLobbyTopBarWidget;
 class UParadiseLobbyMenuPanelWidget;
 class ALobbyPlayerController;
 class UParadiseGameInstance;
+class UAudioManagementSubsystem;
+class UParadiseFXAudioData;
 #pragma endregion 전방 선언
 
 /**
