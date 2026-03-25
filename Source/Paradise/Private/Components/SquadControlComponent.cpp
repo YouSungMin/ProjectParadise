@@ -192,14 +192,11 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
             UE_LOG(LogParadiseSquad, Warning, TEXT("✨ [Respawn] 전멸 위기에서 %s 부활! 제어권을 획득합니다."), *NewBody->GetName());
 
             bIsSquadWipedOut = false;
-            PC->Possess(NewBody);
-            CurrentControlledIndex = PlayerIndex;
-            
+            RequestSwitchPlayer(PlayerIndex);
 
-            if (AParadiseCameraManager* CamManager = GetParadiseCameraManager())
-            {
-                CamManager->UpdateCameraSystem();
-            }
+           
+            FInputModeGameOnly GameInputMode;
+            PC->SetInputMode(GameInputMode);
         }
         else
         {
@@ -322,7 +319,7 @@ bool USquadControlComponent::SwitchToNextSurvivor()
         int32 CheckIndex = (CurrentControlledIndex + i) % SquadSize;
         APlayerBase* Candidate = ActiveSquadPawns[CheckIndex];
 
-        if (Candidate && !Candidate->IsDead())
+        if (IsValid(Candidate) && !Candidate->IsDead())
         {
             NextAliveIndex = CheckIndex;
             break;

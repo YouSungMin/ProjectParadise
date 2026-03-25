@@ -148,6 +148,8 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
 
         Mymesh->SetSkeletalMeshAsset(LinkedPlayerData->CachedMesh);
         Mymesh->SetAnimInstanceClass(LinkedPlayerData->CachedAnimBP);
+        Mymesh->InitAnim(true);
+
     }
 
      // 데이터 동기화(장비 동기화)
