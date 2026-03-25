@@ -16,6 +16,7 @@ class UTexture2D;
 class AInGamePlayerState;
 class APlayerData;
 class UAutoCombatComponent;
+struct FOnAttributeChangeData;
 #pragma endregion 전방 선언
 
 /**
@@ -203,6 +204,26 @@ protected:
 	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 #pragma endregion 데이터 드리븐 설정
 
+#pragma region 코스트 연동 로직
+private:
+	/** @brief 스킬 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedActiveManaCost = 0.0f;
+
+	/** @brief 궁극기 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedUltimateManaCost = 0.0f;
+
+	/** @brief 현재 조작 중인 캐릭터의 ASC (델리게이트 안전 해제용) */
+	TWeakObjectPtr<class UAbilitySystemComponent> CachedASC = nullptr;
+
+	/** @brief 마나 속성이 변경될 때 호출되는 콜백 함수 */
+	void OnManaChanged(const FOnAttributeChangeData& Data);
+
+	/**
+	 * @brief 현재 마나량과 스킬의 요구 마나량을 비교하여 UI를 갱신합니다.
+	 * @param CurrentMana 현재 마나
+	 */
+	void UpdateSkillUsabilityByMana(float CurrentMana);
+#pragma endregion 코스트 연동 로직
 
 #pragma region 사거리 표시용 데이터
 

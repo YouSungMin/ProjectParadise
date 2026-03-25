@@ -115,6 +115,22 @@ void USkillSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
 		ClearCooldownVisual();
 	}
 }
+void USkillSlotWidget::SetManaAffordable(bool bAffordable)
+{
+	bIsManaAffordable = bAffordable;
+
+	// 1. 쿨타임이 돌고 있지 않을 때만 버튼 활성화 여부 결정 (쿨타임 중이면 어차피 꺼져있어야 함)
+	if (CurrentCooldown <= 0.0f && Btn_SkillAction)
+	{
+		Btn_SkillAction->SetIsEnabled(bIsManaAffordable);
+	}
+
+	// 2. 마나가 부족하면 아이콘을 어둡게 처리하여 직관적인 UX 제공
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(bIsManaAffordable ? NormalTintColor : FLinearColor(0.2f, 0.2f, 0.2f, 1.0f));
+	}
+}
 #pragma endregion 외부 인터페이스 구현
 
 #pragma region 내부 로직 구현
@@ -212,7 +228,7 @@ void USkillSlotWidget::ClearCooldownVisual()
 	// 쿨타임 종료 시 버튼 재활성화
 	if (Btn_SkillAction)
 	{
-		Btn_SkillAction->SetIsEnabled(true);
+		Btn_SkillAction->SetIsEnabled(bIsManaAffordable);
 	}
 }
 #pragma endregion 내부 로직 구현

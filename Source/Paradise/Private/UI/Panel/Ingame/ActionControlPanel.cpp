@@ -19,6 +19,7 @@
 #include "Components/EquipmentComponent.h"
 #include "Components/UltimateEffectComponent.h"
 
+#include "GAS/Attributes/BaseAttributeSet.h"
 #include "Engine/Texture2D.h"
 #include "Data/Structs/UnitStructs.h"
 #include "AbilitySystemComponent.h"
@@ -195,6 +196,10 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 
 	APlayerData* Soul = PS->GetSquadMemberData(PlayerIndex);
 
+	// 마나 요구량 캐싱 초기화
+	CachedActiveManaCost = 0.0f;
+	CachedUltimateManaCost = 0.0f;
+
 	if (Soul)
 	{
 		// A. 캐릭터 스탯 테이블로부터 궁극기(Ultimate) ID 획득
@@ -236,6 +241,32 @@ void UActionControlPanel::RefreshActionPanel(int32 PlayerIndex)
 					}
 				}
 			}
+		}
+		// C. 엑셀(데이터 테이블)에서 마나 코스트 추출
+		if (const FActionStats* ActionRow = CurrentWeaponSkillHandle.GetRow<FActionStats>(TEXT("SkillCost")))
+		{
+			CachedActiveManaCost = ActionRow->ManaCost;
+		}
+
+		if (const FActionStats* ActionRow = CurrentUltimateHandle.GetRow<FActionStats>(TEXT("UltCost")))
+		{
+			CachedUltimateManaCost = ActionRow->ManaCost;
+		}
+
+		// D. 마나 실시간 감시 바인딩 (이전 델리게이트 안전 해제)
+		if (CachedASC.IsValid())
+		{
+			CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute()).RemoveAll(this);
+		}
+
+		CachedASC = Soul->GetAbilitySystemComponent();
+		if (CachedASC.IsValid())
+		{
+			CachedASC->GetGameplayAttributeValueChangeDelegate(UBaseAttributeSet::GetManaAttribute()).AddUObject(this, &UActionControlPanel::OnManaChanged);
+
+			// 패널이 켜지는 즉시 현재 마나량으로 스킬 사용 가능 여부 1회 갱신
+			float CurrentMana = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+			UpdateSkillUsabilityByMana(CurrentMana);
 		}
 	}
 
@@ -609,6 +640,15 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 
 	if (CurrentActivePawn)
 	{
+		float CurrentMana = 0.0f;
+		if (CachedASC.IsValid())
+		{
+			CurrentMana = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
+		}
+
+		if (InputID == EInputID::Skill && CurrentMana < CachedActiveManaCost) return;
+		if (InputID == EInputID::Ultimate && CurrentMana < CachedUltimateManaCost) return;
+
 		CurrentActivePawn->SendAbilityInputToASC(InputID, true);
 
 		AInGamePlayerState* PS = Cast<AInGamePlayerState>(GetOwningPlayerState());
@@ -694,3 +734,24 @@ void UActionControlPanel::OnTagButtonClicked(int32 CharacterIndex)
 	}
 }
 #pragma endregion 외부 인터페이스 구현
+
+#pragma region 코스트 연동 로직 구현
+void UActionControlPanel::OnManaChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateSkillUsabilityByMana(Data.NewValue);
+}
+
+void UActionControlPanel::UpdateSkillUsabilityByMana(float CurrentMana)
+{
+	// 마나 상태에 따른 UI 제어는 SkillSlot 위젯 스스로 처리하도록 위임합니다.
+	if (SkillSlot_Active)
+	{
+		SkillSlot_Active->SetManaAffordable(CurrentMana >= CachedActiveManaCost);
+	}
+
+	if (SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->SetManaAffordable(CurrentMana >= CachedUltimateManaCost);
+	}
+}
+#pragma endregion 코스트 연동 로직 구현
