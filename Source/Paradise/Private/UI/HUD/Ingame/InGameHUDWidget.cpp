@@ -379,10 +379,10 @@ void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)
 		if (!OwnedCharacter->CanMove())
 		{
 			// 이동할 수 없는 상태
-			UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 불가"));
+			//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 불가"));
 			return;
 		}
-		UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 가능"));
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 가능"));
 
 		//캐릭터에 붙어있는 카메라 컴포넌트를 직접 찾습니다.
 		if (UCameraComponent* CameraComp = OwnedCharacter->FindComponentByClass<UCameraComponent>())
