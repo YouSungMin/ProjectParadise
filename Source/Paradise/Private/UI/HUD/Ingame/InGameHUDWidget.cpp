@@ -23,6 +23,8 @@
 
 #include "Camera/CameraComponent.h"
 
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Characters/Base/CharacterBase.h"
 
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
@@ -253,7 +255,19 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 			else
 			{
 				// 패배 시 정산 없이 패배창만 띄움
-				if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+				if (Widget_DefeatPopup)
+				{
+					Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+
+					// 패배창이 실제로 열릴 때 패배 음악 재생
+					if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+					{
+						if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_ResultDefeat)
+						{
+							UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_ResultDefeat);
+						}
+					}
+				}
 				if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
@@ -337,6 +351,13 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 
 void UInGameHUDWidget::OnSettingButtonClicked()
 {
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
 	/** @section 팝업 열기 (인게임은 열릴 때 시간이 멈춥니다!) */
 	if (SettingsPopupInstance)
 	{
@@ -371,11 +392,20 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 
 void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)
 {
-	// 현재 조종 중인 캐릭터를 가져옵니다.
-	if (APawn* OwnedPawn = GetOwningPlayerPawn())
+	//현재 조종 중인 캐릭터를 가져옴
+	if (ACharacterBase* OwnedCharacter = Cast<ACharacterBase>(GetOwningPlayerPawn()))
 	{
-		// 캐릭터에 붙어있는 카메라 컴포넌트를 직접 찾습니다. (유저님 방식 적용! 가장 안전함)
-		if (UCameraComponent* CameraComp = OwnedPawn->FindComponentByClass<UCameraComponent>())
+		//캐릭터가 이동 불가 상태인지 태그로 검사
+		if (!OwnedCharacter->CanMove())
+		{
+			// 이동할 수 없는 상태
+			//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 불가"));
+			return;
+		}
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 이동 가능"));
+
+		//캐릭터에 붙어있는 카메라 컴포넌트를 직접 찾습니다.
+		if (UCameraComponent* CameraComp = OwnedCharacter->FindComponentByClass<UCameraComponent>())
 		{
 			// 카메라 매니저의 '블렌딩되는 회전'이 아닌, 카메라 컴포넌트의 '고정된 절대 회전값' 사용
 			const FRotator CameraRot = CameraComp->GetComponentRotation();
@@ -384,9 +414,9 @@ void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)
 			const FVector CameraForward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 			const FVector CameraRight = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
-			//UMG 조이스틱 보정 (위로 올릴 때 Y가 음수이므로 -1 곱하기)
-			OwnedPawn->AddMovementInput(CameraForward, InputVector.Y * -1.0f);
-			OwnedPawn->AddMovementInput(CameraRight, InputVector.X);
+			// UMG 조이스틱 보정 (위로 올릴 때 Y가 음수이므로 -1 곱하기)
+			OwnedCharacter->AddMovementInput(CameraForward, InputVector.Y * -1.0f);
+			OwnedCharacter->AddMovementInput(CameraRight, InputVector.X);
 		}
 	}
 }

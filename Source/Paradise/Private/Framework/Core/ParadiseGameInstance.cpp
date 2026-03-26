@@ -11,6 +11,7 @@
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Framework/System/AudioSettingsSubsystem.h"
 #include "Components/EquipmentComponent.h"
 #include "Characters/Player/PlayerData.h"
 #include "Data/Structs/ItemStructs.h"
@@ -19,6 +20,7 @@
 //0317 김성현 - CheckMeshScale 디버그 함수때문에 추가 추후 삭제
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/SkeletalMesh.h"
+#include "Data/Assets/ParadiseAudioConfigData.h"
 
 
 UParadiseGameInstance::UParadiseGameInstance()
@@ -40,8 +42,16 @@ void UParadiseGameInstance::Init()
 	{
 		LoadingSystem->SetLoadingWidgetClass(LoadingWidgetClass);
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[ParadiseGameInstance] 초기화 및 로딩 서브시스템 설정 완료."));
+	// 오디오 세팅서브시스템에 데이터 에셋 전달
+	if (UAudioSettingsSubsystem* AudioSys = GetSubsystem<UAudioSettingsSubsystem>())
+	{
+		if (AudioConfigData)
+		{
+			AudioSys->MasterSoundMix = AudioConfigData->MasterSoundMix;
+			AudioSys->BGMSoundClass = AudioConfigData->BGMSoundClass;
+			AudioSys->SFXSoundClass = AudioConfigData->SFXSoundClass;
+		}
+	}
 }
 
 void UParadiseGameInstance::Shutdown()

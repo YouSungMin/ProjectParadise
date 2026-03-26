@@ -8,6 +8,8 @@
 
 #pragma region 전방 선언
 class USettingsSaveGame;
+class USoundMix;
+class USoundClass;
 #pragma endregion 전방 선언
 
 /**
@@ -28,6 +30,11 @@ public:
 	 * @details GameInstance::Init() 이후 자동으로 호출됩니다.
 	 */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+
+private:
+	/** @brief 맵 로드 완료 시 볼륨 자동 적용 */
+	void OnMapLoaded(UWorld* LoadedWorld);
 #pragma endregion 생명주기
 
 #pragma region 외부 인터페이스 - Getter/Setter (RAM)
@@ -61,6 +68,25 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Audio")
 	void SetSFXVolume(float NewVolume);
+
+	/**
+	 * @brief 현재 RAM의 볼륨 값을 사운드 시스템에 즉시 적용합니다.
+	 * @details 게임 시작 시 저장된 볼륨을 복원할 때 사용합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Audio")
+	void ApplyVolumeSettings();
+
+	/** @brief SoundMix 참조 (GameInstance에서 주입됨) */
+	UPROPERTY()
+	TObjectPtr<USoundMix> MasterSoundMix = nullptr;
+
+	/** @brief BGM 사운드 클래스 참조 (GameInstance에서 주입됨) */
+	UPROPERTY()
+	TObjectPtr<USoundClass> BGMSoundClass = nullptr;
+
+	/** @brief SFX 사운드 클래스 참조 (GameInstance에서 주입됨) */
+	UPROPERTY()
+	TObjectPtr<USoundClass> SFXSoundClass = nullptr;
 #pragma endregion 외부 인터페이스 - Getter/Setter (RAM)
 
 #pragma region 외부 인터페이스 - 디스크 I/O (1회)

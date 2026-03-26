@@ -12,6 +12,9 @@
 #include "Data/Structs/StageStructs.h"
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/AudioManagementSubsystem.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void UParadiseStageSelectWidget::NativeConstruct()
@@ -63,6 +66,22 @@ void UParadiseStageSelectWidget::InitStageMap(int32 InChapterID)
 
 void UParadiseStageSelectWidget::OnClickBack()
 {
+	/** @section 1. 사운드 연출 */
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData)
+	{
+		// 1. 뒤로가기 버튼 클릭 효과음 재생
+		if (CachedGI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+		}
+
+		// 2. 카메라가 다시 로비 쪽으로 슉! 빠지는 무빙 효과음 재생
+		if (CachedGI->GlobalAudioData->SFX_CameraMoveSwoosh)
+		{
+			UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CameraMoveSwoosh);
+		}
+	}
+
 	// 내 컨트롤러 찾아서 로비(None)로 돌아가달라고 요청
 	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
 	{

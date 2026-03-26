@@ -4,6 +4,7 @@
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Squad/Inventory/ParadiseSquadInventoryWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadFormationWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadDetailWidget.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/InGame/InGamePlayerState.h"
@@ -12,10 +13,14 @@
 #include "Actors/Squad/ParadiseSquadSceneManager.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/AudioComponent.h"
 #include "Engine/DataTable.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Data/Assets/FXDataAsset.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/InventoryStruct.h"
+#include "GameplayTagContainer.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -72,6 +77,7 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		WBP_DetailPanel->OnCancelClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleCancelEquipMode);
 		WBP_DetailPanel->OnSwapCharacterClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleSwapCharacterMode);
 		WBP_DetailPanel->OnConfirmClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleConfirmAction);
+		WBP_DetailPanel->OnSellClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleSellAction);
 
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -283,6 +289,12 @@ void UParadiseSquadMainWidget::SwitchTab(int32 NewTab)
 {
 	// 같은 탭 재클릭 시 무시
 	if (CurrentTabIndex == NewTab) return;
+
+	// 탭 변경 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+	}
 
 	CurrentTabIndex = NewTab;
 	bool bIsUnitTab = (NewTab == SquadTabs::Unit);
@@ -683,13 +695,67 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 	USquadSubsystem* SquadSys = GetSquadSubsystem();
 	if (SquadSys)
 	{
-		// 1. 실제 교체 및 장착 데이터 적용
+		/** @section 실제 교체 및 사운드 연출 */
 		if (CurrentState == ESquadUIState::CharacterSwap)
 		{
-			if (SelectedFormationSlotIndex < 3) SquadSys->SetPlayerToSlot(SelectedFormationSlotIndex, PendingSelection.ID);
-			else SquadSys->SetFamiliarToSlot(SelectedFormationSlotIndex - 3, PendingSelection.ID);
+			bool bIsUnitSlot = (SelectedFormationSlotIndex >= 3);
+
+			if (!bIsUnitSlot) // 1. [플레이어 캐릭터] 교체!
+			{
+				SquadSys->SetPlayerToSlot(SelectedFormationSlotIndex, PendingSelection.ID);
+
+				// 캐릭터 고유 음성(Voice) 재생 로직
+				if (CachedGI.IsValid())
+				{
+					if (FCharacterAssets* CharAsset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, PendingSelection.ID))
+					{
+						// 1. CharacterFX 구조체를 한 번 거쳐서 데이터 에셋을 로드합니다.
+						if (UFXDataAsset* LoadedFXData = CharAsset->CharacterFX.FXData.LoadSynchronous())
+						{
+							// 2. 보이스 태그를 받음
+							FGameplayTag VoiceTag = CharAsset->CharacterFX.UltimateTag;
+
+							if (VoiceTag.IsValid())
+							{
+								// 3. 받은 보이스 태그로 사운드 인펙트를 찾음
+								if (FFXPayload* FoundFX = LoadedFXData->FindEffect(VoiceTag))
+								{
+									// 4. 사운드 재생 
+									if (USoundBase* LoadedVoice = FoundFX->SoundEffect.LoadSynchronous())
+									{
+										// 5. 사운드 겹침(Overlap) 방지: 기존 소리가 재생 중이면 끕니다.
+										if (CurrentVoiceComponent && CurrentVoiceComponent->IsPlaying())
+										{
+											CurrentVoiceComponent->Stop();
+										}
+										// 6. 새로운 캐릭터의 목소리를 스폰하고, 제어권을 컴포넌트 포인터에 저장합니다.
+										CurrentVoiceComponent = UGameplayStatics::SpawnSound2D(this, LoadedVoice);
+									}
+								}
+								else
+								{
+									UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] %s의 FXDataAsset 안에 %s 태그와 매칭되는 이펙트(Payload)가 없습니다!"), *PendingSelection.ID.ToString(), *VoiceTag.ToString());
+								}
+							}
+							else
+							{
+								UE_LOG(LogTemp, Error, TEXT("❌ [SquadMain] %s 캐릭터의 데이터 테이블(CharacterFX.UltimateTag)이 비어있습니다! 에디터에서 세팅해주세요."), *PendingSelection.ID.ToString());
+							}
+						}
+					}
+				}
+			}
+			else // 2. [퍼밀리어 유닛] 교체!
+			{
+				SquadSys->SetFamiliarToSlot(SelectedFormationSlotIndex - 3, PendingSelection.ID);
+
+				if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_FamiliarEquip)
+				{
+					UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_FamiliarEquip);
+				}
+			}
 		}
-		else if (CurrentState == ESquadUIState::EquipmentSwap)
+		else if (CurrentState == ESquadUIState::EquipmentSwap) // 3. [무기/방어구] 교체!
 		{
 			if (UInventorySystem* InvSys = GetInventorySystem())
 			{
@@ -704,6 +770,12 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 						InvSys->EquipItemToCharacter(CharData->CharacterUID, PendingSelection.InstanceUID);
 					}
 				}
+			}
+
+			// 무기/장비 장착 공통 효과음 재생
+			if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_FamiliarEquip)
+			{
+				UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_FamiliarEquip);
 			}
 		}
 	}
@@ -720,6 +792,56 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 
 	RefreshInventoryUI();
 
+}
+
+void UParadiseSquadMainWidget::HandleSellAction()
+{
+	//인벤토리에서 선택해둔 아이템(고유 식별자)이 있는지 확인
+	if (!PendingSelection.InstanceUID.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] 판매할 아이템이 선택되지 않았습니다."));
+		return;
+	}
+
+	//인벤토리 시스템 가져오기
+	UInventorySystem* InvSys = GetInventorySystem();
+	if (!InvSys) return;
+
+	//판매 로직 호출 (장비/무기는 보통 1개씩이므로 수량을 1로 고정)
+	FString ErrorMsg;
+	FString SuccessMsg =TEXT("아이템이 성공적으로 판매되었습니다.");
+	bool bSellSuccess = InvSys->SellItem(PendingSelection.InstanceUID, 1, ErrorMsg);
+
+	if (bSellSuccess)
+	{
+		if (Widget_Warning)
+		{
+			Widget_Warning->ShowWarning(FText::FromString(SuccessMsg), nullptr, true);
+		}
+		//UE_LOG(LogTemp, Log, TEXT("✅ [SquadMain] 아이템이 성공적으로 판매되었습니다."));
+
+		//[판매 성공 시 후처리]
+		//아이템이 사라졌으므로 현재 선택 상태를 초기화
+		PendingSelection = FSquadItemUIData();
+
+		// 우측의 디테일 정보 패널을 초기화
+		if (WBP_DetailPanel)
+		{
+			WBP_DetailPanel->ClearInfo();
+		}
+
+		//최신상태 갱신
+		UpdateDetailPanelState();
+
+	}
+	else
+	{
+		if (Widget_Warning)
+		{
+			Widget_Warning->ShowWarning(FText::FromString(ErrorMsg),nullptr ,true);
+		}
+		//UE_LOG(LogTemp, Warning, TEXT("🚫 [SquadMain] 판매 실패: %s"), *ErrorMsg);
+	}
 }
 
 void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)
@@ -754,6 +876,16 @@ void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemD
 
 void UParadiseSquadMainWidget::HandleBackClicked()
 {
+	// 재생 중인 캐릭터 음성 끄기
+	if (CurrentVoiceComponent && CurrentVoiceComponent->IsPlaying())
+	{
+		CurrentVoiceComponent->Stop();
+	}
+	// 뒤로가기 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
 	// 스위처 상태에 따른 네비게이션 분기 처리
 	if (Switcher_MainScreen && Switcher_MainScreen->GetActiveWidgetIndex() == 1)
 	{

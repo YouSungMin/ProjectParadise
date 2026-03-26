@@ -17,6 +17,7 @@ class UWidgetSwitcher;
 class UInventorySystem;
 class UParadiseGameInstance;
 class USquadSubsystem;
+class UAudioComponent;
 class AParadiseSquadSceneManager;
 #pragma endregion 전방 선언
 
@@ -82,6 +83,11 @@ protected:
 	/** @brief 뒤로가기 버튼 (로비로 복귀 + 편성 자동 저장) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Back = nullptr;
+
+	//0324 김성현 경고 팝업 추가
+	/** @brief 진입 불가 시 띄워줄 통합 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UParadiseResourceWarningWidget> Widget_Warning = nullptr;
 
 	/**
 	 * @brief 터치 유도 텍스트(Touch)들이 깜빡거리는 애니메이션
@@ -209,6 +215,10 @@ private:
 	UFUNCTION()
 	void HandleConfirmAction();
 
+	/** @brief [판매] 버튼 클릭 시 -> 실제 교체 수행 */
+	UFUNCTION()
+	void HandleSellAction();
+
 	/** @brief [뒤로가기] 버튼 클릭 시 -> 상위 위젯(LobbyHUD)에 신호 전달 */
 	UFUNCTION()
 	void HandleBackClicked();
@@ -285,6 +295,10 @@ private:
 
 	UPROPERTY()
 	bool bAutoSaveOnBack = true;
+
+	/** @brief 현재 재생 중인 캐릭터 교체 보이스 컴포넌트 (보이스 겹침 방지용) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CurrentVoiceComponent = nullptr;
 #pragma endregion 내부 상태
 
 #pragma region 델리게이트

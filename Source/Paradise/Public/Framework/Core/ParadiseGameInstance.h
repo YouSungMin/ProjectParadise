@@ -214,6 +214,10 @@ public:
 	/** @brief 전체적인 UI 효과음들 데이터 에셋 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Audio")
 	TObjectPtr<class UParadiseFXAudioData> GlobalAudioData;
+
+	/** @brief 오디오 볼륨 제어 설정 데이터 에셋 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Audio")
+	TObjectPtr<class UParadiseAudioConfigData> AudioConfigData = nullptr;
 public:
 
 #pragma region 인벤토리 

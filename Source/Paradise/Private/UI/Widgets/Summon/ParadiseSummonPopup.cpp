@@ -7,6 +7,8 @@
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
@@ -15,6 +17,12 @@
 void UParadiseSummonPopup::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// 소환 창이 켜지면 카메라 바람 소리 끝
+	if (ALobbyPlayerController* PC = GetOwningPlayer<ALobbyPlayerController>())
+	{
+		PC->StopCameraSwoosh();
+	}
 
 	// 1. 이벤트 바인딩
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSummonPopup::OnCharacterTabClicked);
@@ -101,6 +109,11 @@ void UParadiseSummonPopup::OnEquipmentTabClicked()
 
 void UParadiseSummonPopup::OnBackButtonClicked()
 {
+	// 뒤로가기 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
 	// 1. 상태 저장 (Model 갱신)
 	if (CachedGI.IsValid())
 	{
@@ -117,6 +130,15 @@ void UParadiseSummonPopup::OnBackButtonClicked()
 void UParadiseSummonPopup::SwitchTab(int32 NewIndex)
 {
 	if (!Switcher_Content) return;
+
+	// 이미 같은 탭을 보고 있다면 무시 (사운드 중복 재생 방지)
+	if (Switcher_Content->GetActiveWidgetIndex() == NewIndex) return;
+
+	// 탭 변경 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+	}
 
 	// 1. 위젯 스위처 인덱스 변경
 	Switcher_Content->SetActiveWidgetIndex(NewIndex);

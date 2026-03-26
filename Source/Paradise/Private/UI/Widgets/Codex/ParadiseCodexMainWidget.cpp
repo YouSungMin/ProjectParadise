@@ -11,6 +11,9 @@
 #include "Data/Structs/InventoryStruct.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+
+#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UParadiseCodexMainWidget::NativeConstruct()
@@ -54,6 +57,12 @@ UInventorySystem* UParadiseCodexMainWidget::GetInventorySystem() const
 void UParadiseCodexMainWidget::SwitchTab(int32 NewTab)
 {
 	if (CurrentTabIndex == NewTab) return; // 동일 탭 클릭 방지
+
+	// 탭키 사운드
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+	}
 
 	CurrentTabIndex = NewTab;
 	RefreshCodexList();
@@ -237,6 +246,12 @@ void UParadiseCodexMainWidget::OnClickTabMisc() { SwitchTab(SquadTabs::Misc); }
 
 void UParadiseCodexMainWidget::OnClickBack()
 {
+	// 뒤로가기 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
+
 	// 1. 패널 상태 강제 초기화 (다음에 도감을 다시 열 때 무조건 '캐릭터 탭'부터 보이도록 세팅)
 	CurrentTabIndex = -1; // 강제 업데이트를 위해 인덱스 초기화
 	SwitchTab(SquadTabs::Character);

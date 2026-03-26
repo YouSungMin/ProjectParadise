@@ -3,11 +3,14 @@
 
 #include "UI/Widgets/Chapter/ParadiseChapterSelectWidget.h"
 #include "UI/Widgets/Chapter/ParadiseChapterSlotWidget.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Data/Structs/StageStructs.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
 #include "Engine/DataTable.h"
@@ -47,6 +50,11 @@ void UParadiseChapterSelectWidget::NativeDestruct()
 #pragma region 내부 로직 구현
 void UParadiseChapterSelectWidget::OnBackClicked()
 {
+	// 메인 로비로 돌아가는 뒤로가기 공통 효과음을 재생합니다.
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
 	// RemoveFromParent()를 쓰지 않고, 컨트롤러에게 상태 변경을 요청합니다! (MVC 패턴 완벽 준수)
 	if (CachedController.IsValid())
 	{
@@ -60,8 +68,19 @@ void UParadiseChapterSelectWidget::OnChapterSlotClicked(int32 ChapterID, UTextur
 {
 	if (!CachedController.IsValid()) return;
 
-	UE_LOG(LogTemp, Log,
-		TEXT("[ChapterSelect] 챕터 %d 선택 → 컨트롤러에 입장 요청."), ChapterID);
+	/** @section 1. 사운드 및 BGM 제어 */
+	// 챕터 진입 시 사운드 처리 및 로비 BGM 페이드 아웃
+	if (CachedGI.IsValid())
+	{
+		if (CachedGI->GlobalAudioData)
+		{
+			// 1. 챕터 터치 효과음 재생
+			if (CachedGI->GlobalAudioData->SFX_ChapterClick)
+			{
+				UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_ChapterClick);
+			}
+		}
+	}
 
 	// ★ StageSelectWidgetClass 를 함께 전달합니다.
 	//   컨트롤러가 카메라 이동 완료 후 이 클래스로 StageSelect 위젯을 엽니다.

@@ -95,15 +95,4 @@ protected:
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> Anim_SuccessFX = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
-
-#pragma region 데이터 드리븐 설정
-protected:
-	/** @brief 강화/돌파 성공 시 재생할 사운드 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Enhancement|FX")
-	TObjectPtr<USoundBase> Sound_EnhanceSuccess = nullptr;
-
-	/** @brief 강화/돌파 실패 시 재생할 사운드 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Enhancement|FX")
-	TObjectPtr<USoundBase> Sound_EnhanceFail = nullptr;
-#pragma endregion 데이터 드리븐 설정
 };
