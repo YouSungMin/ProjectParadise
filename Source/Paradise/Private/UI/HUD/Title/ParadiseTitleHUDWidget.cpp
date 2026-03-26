@@ -7,6 +7,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 
+#include "TimerManager.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -94,18 +95,15 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 
 	UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
 
-	// 1. 서브시스템을 찾는다
-	if (ULevelLoadingSubsystem* LoadingSystem = GetGameInstance()->GetSubsystem<ULevelLoadingSubsystem>())
-	{
-		// 2. 서브시스템에게 요청한다 (중간 로딩맵 이름 "L_Loading" 명시)
-		LoadingSystem->StartLevelTransition(NextLevelName, FName("L_Loading"), PreloadAssets);
-	}
-	else
-	{
-		// Fallback: GI 캐스팅 실패 시 일반 로딩
-		UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
-		UGameplayStatics::OpenLevel(this, NextLevelName);
-	}
+	// 2. 타이머를 설정하여 1초(페이드 아웃 및 효과음 재생 시간) 뒤에 로딩 맵으로 넘깁니다.
+	FTimerHandle TransitionTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		TransitionTimerHandle,
+		this,
+		&UParadiseTitleHUDWidget::ExecuteLevelTransition,
+		0.5f, // 1.0초 대기 (기획에 따라 0.5f 등으로 조절 가능)
+		false
+	);
 }
 
 void UParadiseTitleHUDWidget::OnQuitButtonClicked()
@@ -131,5 +129,21 @@ void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
 	if (SettingsPopupInstance)
 	{
 		SettingsPopupInstance->OpenSettings();
+	}
+}
+
+void UParadiseTitleHUDWidget::ExecuteLevelTransition()
+{
+	// 1. 서브시스템을 찾는다
+	if (ULevelLoadingSubsystem* LoadingSystem = GetGameInstance()->GetSubsystem<ULevelLoadingSubsystem>())
+	{
+		// 2. 서브시스템에게 요청한다 (중간 로딩맵 이름 "L_Loading" 명시)
+		LoadingSystem->StartLevelTransition(NextLevelName, FName("L_Loading"), PreloadAssets);
+	}
+	else
+	{
+		// Fallback: GI 캐스팅 실패 시 일반 로딩
+		UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
+		UGameplayStatics::OpenLevel(this, NextLevelName);
 	}
 }

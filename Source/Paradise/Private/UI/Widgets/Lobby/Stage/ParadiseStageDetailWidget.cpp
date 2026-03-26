@@ -16,6 +16,7 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 
 #include "Data/Structs/InventoryStruct.h"
 #include "Data/Structs/StageStructs.h" 
@@ -258,6 +259,11 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 	if (UStageSubsystem* StageSys = CachedGI->GetSubsystem<UStageSubsystem>())
 	{
 		StageSys->SetSelectedStageID(CachedStageID);
+	}
+
+	if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+	{
+		AudioMag->StopBGM(1.0f);
 	}
 
 	// 3. 로딩 서브시스템을 통한 전이 시작

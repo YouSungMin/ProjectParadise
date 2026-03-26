@@ -18,6 +18,7 @@
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "UI/Widgets/Lobby/Stage/ParadiseStageSelectWidget.h"
 #include "UI/Widgets/Gacha/ParadiseGachaResultWidget.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
 
@@ -655,6 +656,14 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture)
 {
 	CurrentSelectedChapter = ChapterID;
+
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CameraMoveSwoosh)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CameraMoveSwoosh);
+		}
+	}
 
 	// 환경 액터 찾기 및 텍스처 교체
 	if (!CachedMapEnvActor)

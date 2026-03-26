@@ -13,6 +13,8 @@
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -80,6 +82,14 @@ void UParadiseEnhancePopupWidget::NativeDestruct()
 #pragma region 중재 로직
 void UParadiseEnhancePopupWidget::SwitchTab(int32 NewTab)
 {
+	if (CurrentTabIndex == NewTab) return; // 동일 탭 클릭 방지 (방어코드)
+
+	// 탭 변경 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+	}
+
 	CurrentTabIndex = NewTab;
 	SelectedItem = FSquadItemUIData(); // 탭 이동 시 선택 초기화
 
@@ -431,16 +441,22 @@ void UParadiseEnhancePopupWidget::OnClickArmTab() { SwitchTab(SquadTabs::Armor);
 //void UParadiseEnhancePopupWidget::OnClickUnitTab() { SwitchTab(SquadTabs::Unit); }
 void UParadiseEnhancePopupWidget::HandleClose()
 {
-	// 1. 내부 상태 초기화 (다음에 열릴 때를 대비해 빈 화면으로 만들어둠)
+	// 1. 뒤로가기 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
+
+	// 2. 내부 상태 초기화 (다음에 열릴 때를 대비해 빈 화면으로 만들어둠)
 	if (Panel_Detail)
 	{
 		Panel_Detail->ClearDetail();
 	}
 
-	// 뒤로가기 하면 저장
+	// 3. 뒤로가기 하면 저장
 	CachedGI->SaveGameData();
 
-	// 2. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
+	// 4. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
 	if (OnBackRequested.IsBound())
 	{
 		OnBackRequested.Broadcast();

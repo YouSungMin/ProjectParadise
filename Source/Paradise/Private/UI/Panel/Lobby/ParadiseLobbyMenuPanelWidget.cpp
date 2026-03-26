@@ -47,10 +47,13 @@ void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)
 	// 메뉴로 진입하면 로비 BGM을 1초 정도 있다가 끈다.
 	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 	{
-		/** @section 1. 사운드 제어 (전역 데이터 참조) */
-		if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+		// 소환(Summon) 메뉴 진입 시에만 로비 BGM을 끕니다.
+		if (InMenu == EParadiseLobbyMenu::Summon)
 		{
-			AudioMag->StopBGM(1.0f);
+			if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+			{
+				AudioMag->StopBGM(1.0f);
+			}
 		}
 
 		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_LobbyMenuClick)
