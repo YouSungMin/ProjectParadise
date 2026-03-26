@@ -5,6 +5,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/Core/ParadiseCameraManager.h"
+#include "GameFramework/PlayerStart.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "AI/Squad/SquadAIController.h"
@@ -213,7 +214,7 @@ void USquadControlComponent::InitializeSquadPawns()
     AInGameController* PC = GetOwnerPC();
     if (!PC) return;
 
-    // [수정] PS 가져오기
+    //PS 가져오기
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS) return;
 
@@ -223,19 +224,38 @@ void USquadControlComponent::InitializeSquadPawns()
     ActiveSquadPawns.Init(nullptr, SquadSize);
     int32 FirstValidIndex = -1;
 
+    FVector BaseSpawnLoc = FVector(0.0f, 0.0f, 100.0f); // 실패 시 기본 좌표
+    FRotator BaseSpawnRot = FRotator::ZeroRotator;
+
+    //플레이어 스타트 위치 찾기
+    if (AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()))
+    {
+        BaseSpawnLoc = PlayerStart->GetActorLocation();
+        BaseSpawnRot = PlayerStart->GetActorRotation();
+        //UE_LOG(LogParadiseSquad, Log, TEXT("✅ [Controller] 맵에서 PlayerStart 지점을 찾았습니다. 위치: %s"), *BaseSpawnLoc.ToString());
+    }
+    else
+    {
+        //UE_LOG(LogParadiseSquad, Warning, TEXT("⚠️ [Controller] 맵에 PlayerStart가 없습니다! 기본 위치(0,0,100)에서 스폰합니다."));
+    }
+
+    //스쿼드 스폰
     for (int32 i = 0; i < SquadSize; i++)
     {
         APlayerData* Soul = PS->GetSquadMemberData(i);
         if (Soul)
         {
-            FVector SpawnLoc = FVector(0, i * 200.0f, 100.0f);
-            FRotator SpawnRot = FRotator::ZeroRotator;
+            // PlayerStart의 회전(바라보는 방향)을 기준으로 좌우로 간격을 벌려줍니다.
+            // i가 0, 1, 2일 때 각각 Y축으로 -150, 0, 150 만큼 떨어지게 설계
+            FVector Offset = FVector(0.0f, (i * 150.0f) - 150.0f, 0.0f);
+            FVector SpawnLoc = BaseSpawnLoc + BaseSpawnRot.RotateVector(Offset);
+            FRotator SpawnRot = BaseSpawnRot;
 
-            UClass* SpawnClass = APlayerBase::StaticClass(); 
-            if (PlayerBaseClass) {
-                SpawnClass=PlayerBaseClass;
+            UClass* SpawnClass = APlayerBase::StaticClass();
+            if (PlayerBaseClass)
+            {
+                SpawnClass = PlayerBaseClass;
             }
-            
 
             APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot);
 
@@ -248,7 +268,7 @@ void USquadControlComponent::InitializeSquadPawns()
 
                 DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
 
-                // [수정] UI 바인딩 지시
+                // UI 바인딩 지시
                 PC->BindPlayerToUI(i, Soul);
             }
         }

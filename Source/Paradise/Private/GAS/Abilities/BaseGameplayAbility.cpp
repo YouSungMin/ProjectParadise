@@ -10,6 +10,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/Core/ParadiseCameraManager.h"
 #include "Framework/InGame/InGameController.h"
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Widgets/InGame/VirtualJoystickWidget.h"
@@ -70,6 +71,25 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	// 어빌리티 시작 시 다른 액션 버튼 잠금
 	SetActionButtonsLocked(ActorInfo, true);
 
+	//0326 김성현 궁극기 카메라 연출 추가
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출1"));
+
+		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
+
+		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출2"));
+			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출3"));
+				CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
+			}
+		}
+	}
+
+
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
 	{
 		// 이 어빌리티를 실행한 주체가 ASkillCasterUnit(보스/캐스터)인지 확인
@@ -89,6 +109,21 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 	//SetJoystickLocked(ActorInfo, false);
 	// 어빌리티 종료 시 다른 액션 버튼 잠금 해제
 	SetActionButtonsLocked(ActorInfo, false);
+
+	//0326 김성현 - 궁극기 카메라 연출 해제 코드
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
+
+		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
+		{
+			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+			{
+				CamMgr->StopUltimateCamera();
+			}
+		}
+	}
+
 
 	// 스킬 시전이 끝났거나 캔슬되었을 때
 	if (AbilityActionType == ECombatActionType::AIUnitSkill)
@@ -187,7 +222,7 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 	USkeletalMeshComponent* Mesh = AvatarChar->GetMesh();
 	if (!Mesh || !Mesh->GetAnimInstance())
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 AnimBP(AnimInstance)가 없습니다! 몽타주 재생 취소."), *AvatarChar->GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 AnimBP(AnimInstance)가 없습니다! 몽타주 재생 취소."), *AvatarChar->GetName());
 		return nullptr;
 	}
 

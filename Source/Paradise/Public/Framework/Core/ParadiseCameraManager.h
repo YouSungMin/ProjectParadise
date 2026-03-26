@@ -27,9 +27,27 @@ public:
 	 * @details SetViewTargetWithBlend를 사용하여 부드러운 시점 전환을 처리합니다.
 	 */
 	void UpdateCameraSystem();
+
+	/** @brief 궁극기 전용 카메라 연출 시작 */
+	void StartUltimateCamera(AActor* TargetActor);
+
+	/** @brief 궁극기 전용 카메라 연출 종료 및 복귀 */
+	void StopUltimateCamera();
 protected:
 
 	virtual void BeginPlay() override;
+
+
+
+public:
+	/** @brief 현재 궁극기 연출 중인지 여부 (카메라 뺏김 방지) */
+	bool bIsUltimatePlaying = false;
+
+	/** @brief  전멸 직전 마지막 시점 위치 기억용 */
+	FVector LastDeathLocation = FVector::ZeroVector;
+
+	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
+	FRotator LastDeathRotation = FRotator::ZeroRotator;
 
 protected:
 
@@ -45,11 +63,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
 	float CameraBlendTime = 1.5f;
 
-public:
+	/** @brief 카메라의 위치 (X: 앞뒤, Y: 좌우, Z: 위아래) / 기본값: 앞 250, 위 50 */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	FVector UltimateCameraOffset = FVector(500.0f, 0.0f, 100.0f);
 
-	/** @brief  전멸 직전 마지막 시점 위치 기억용 */
-	FVector LastDeathLocation = FVector::ZeroVector;
+	/** @brief 카메라가 바라볼 목표점의 오프셋 (기본값: 캐릭터의 상체(Z: 50)를 바라봄) */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	FVector UltimateLookAtOffset = FVector(0.0f, 0.0f, 50.0f);
 
-	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
-	FRotator LastDeathRotation = FRotator::ZeroRotator;
+	/** @brief 궁극기 컷신의 카메라 시야각(FOV) (기본값: 70 - 줌인 효과) */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	float UltimateCameraFOV = 70.0f;
+
+	/** @brief 세상이 느려지는 배율 (기본값: 0.3배속) */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	float UltimateTimeDilation = 0.3f;
+
+private:
+
+	/** @brief 궁극기 연출을 위해 임시로 생성할 컷신 카메라 */
+	UPROPERTY()
+	TObjectPtr<class ACameraActor> UltimateCamera = nullptr;
+
+	/** @brief 슬로우 모션을 해제할 때 원래 속도로 돌려주기 위해 타겟을 기억해둡니다. */
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentUltimateTarget = nullptr;
 };
