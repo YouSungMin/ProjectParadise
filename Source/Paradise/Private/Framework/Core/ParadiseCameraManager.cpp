@@ -112,6 +112,17 @@ void AParadiseCameraManager::StartUltimateCamera(AActor* TargetActor)
     {
         TargetActor->CustomTimeDilation = 1.0f / UltimateTimeDilation;
     }
+
+    if (TargetActor)
+    {
+        TArray<UMeshComponent*> Meshes;
+        TargetActor->GetComponents<UMeshComponent>(Meshes);
+        for (UMeshComponent* Mesh : Meshes)
+        {
+            Mesh->SetRenderCustomDepth(true);
+        }
+
+    }
 }
 
 void AParadiseCameraManager::StopUltimateCamera()
@@ -124,9 +135,17 @@ void AParadiseCameraManager::StopUltimateCamera()
     //빠르게 감아뒀던 타겟 캐릭터의 시간도 원래대로(1.0) 복구합니다.
     if (CurrentUltimateTarget)
     {
+        TArray<UMeshComponent*> Meshes;
+        CurrentUltimateTarget->GetComponents<UMeshComponent>(Meshes);
+        for (UMeshComponent* Mesh : Meshes)
+        {
+            Mesh->SetRenderCustomDepth(false);
+        }
+
         CurrentUltimateTarget->CustomTimeDilation = 1.0f;
         CurrentUltimateTarget = nullptr;
     }
+
 
     //카메라 시점 복구
     UpdateCameraSystem();
