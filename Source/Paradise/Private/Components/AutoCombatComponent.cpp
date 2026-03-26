@@ -94,7 +94,7 @@ void UAutoCombatComponent::UpdateAutoCombat()
     if (!OwnerPC) return;
 
     APlayerBase* PlayerPawn = Cast<APlayerBase>(OwnerPC->GetPawn());
-    if (!PlayerPawn || PlayerPawn->IsDead()) return;
+    if (!PlayerPawn || PlayerPawn->IsDead() || !PlayerPawn->CanMove()) return;
 
     float AttackRange = GetDynamicAttackRange(PlayerPawn);
     float NearestDist = 999999.0f;

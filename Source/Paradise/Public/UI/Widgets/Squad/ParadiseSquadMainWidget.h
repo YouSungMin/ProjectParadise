@@ -84,6 +84,11 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Back = nullptr;
 
+	//0324 김성현 경고 팝업 추가
+	/** @brief 진입 불가 시 띄워줄 통합 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UParadiseResourceWarningWidget> Widget_Warning = nullptr;
+
 	/**
 	 * @brief 터치 유도 텍스트(Touch)들이 깜빡거리는 애니메이션
 	 * @details 에디터에서 UMG 애니메이션을 만들고 이름을 반드시 'Anim_TouchBlink'로 맞춰야 합니다.
@@ -209,6 +214,10 @@ private:
 	/** @brief [확인] 버튼 클릭 시 -> 실제 교체 수행 */
 	UFUNCTION()
 	void HandleConfirmAction();
+
+	/** @brief [판매] 버튼 클릭 시 -> 실제 교체 수행 */
+	UFUNCTION()
+	void HandleSellAction();
 
 	/** @brief [뒤로가기] 버튼 클릭 시 -> 상위 위젯(LobbyHUD)에 신호 전달 */
 	UFUNCTION()

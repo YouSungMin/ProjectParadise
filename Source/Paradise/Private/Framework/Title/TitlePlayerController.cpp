@@ -2,6 +2,7 @@
 
 
 #include "Framework/Title/TitlePlayerController.h"
+#include "Framework/System/GraphicsSettingsSubsystem.h"
 #include "Blueprint/UserWidget.h"
 
 void ATitlePlayerController::BeginPlay()
@@ -20,6 +21,15 @@ void ATitlePlayerController::BeginPlay()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[TitlePC] TitleHUDClass is NOT set! Please check BP_TitlePlayerController."));
+	}
+
+	//0326 김성현 그래픽 설정 초기 체크 함수 추가
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UGraphicsSettingsSubsystem* GraphicsSys = GI->GetSubsystem<UGraphicsSettingsSubsystem>())
+		{
+			GraphicsSys->CheckDevicePerformanceAndApply();
+		}
 	}
 
 	// 2. 입력 모드 설정 (UI Only)

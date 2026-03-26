@@ -23,5 +23,5 @@ protected:
 
 	/** 리더와의 최대 거리 (넘어가면 돌아옴) */
 	UPROPERTY(EditAnywhere, Category = "AI")
-	float MaxChaseDistance = 500.0f;
+	float MaxChaseDistance = 1200.0f;
 };
