@@ -3,6 +3,8 @@
 
 #include "GAS/System/ParadiseGameplayTags.h"
 
+
 void FParadiseGameplayTags::InitializeNativeGameplayTags()
 {
+	
 }

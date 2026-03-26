@@ -421,7 +421,6 @@ void UParadiseSquadDetailWidget::HandleConfirm()
 }
 void UParadiseSquadDetailWidget::HandleSell()
 {
-	// 03/24 판매 버튼 눌렸다고 방송만 해놓은 상태입니다.
 	if (OnSellClicked.IsBound()) OnSellClicked.Broadcast();
 }
 #pragma endregion 핸들러

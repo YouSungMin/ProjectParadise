@@ -4,6 +4,7 @@
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Squad/Inventory/ParadiseSquadInventoryWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadFormationWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadDetailWidget.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/InGame/InGamePlayerState.h"
@@ -72,6 +73,7 @@ void UParadiseSquadMainWidget::NativeConstruct()
 		WBP_DetailPanel->OnCancelClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleCancelEquipMode);
 		WBP_DetailPanel->OnSwapCharacterClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleSwapCharacterMode);
 		WBP_DetailPanel->OnConfirmClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleConfirmAction);
+		WBP_DetailPanel->OnSellClicked.AddDynamic(this, &UParadiseSquadMainWidget::HandleSellAction);
 
 		WBP_DetailPanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -720,6 +722,56 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 
 	RefreshInventoryUI();
 
+}
+
+void UParadiseSquadMainWidget::HandleSellAction()
+{
+	//인벤토리에서 선택해둔 아이템(고유 식별자)이 있는지 확인
+	if (!PendingSelection.InstanceUID.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] 판매할 아이템이 선택되지 않았습니다."));
+		return;
+	}
+
+	//인벤토리 시스템 가져오기
+	UInventorySystem* InvSys = GetInventorySystem();
+	if (!InvSys) return;
+
+	//판매 로직 호출 (장비/무기는 보통 1개씩이므로 수량을 1로 고정)
+	FString ErrorMsg;
+	FString SuccessMsg =TEXT("아이템이 성공적으로 판매되었습니다.");
+	bool bSellSuccess = InvSys->SellItem(PendingSelection.InstanceUID, 1, ErrorMsg);
+
+	if (bSellSuccess)
+	{
+		if (Widget_Warning)
+		{
+			Widget_Warning->ShowWarning(FText::FromString(SuccessMsg), nullptr, true);
+		}
+		//UE_LOG(LogTemp, Log, TEXT("✅ [SquadMain] 아이템이 성공적으로 판매되었습니다."));
+
+		//[판매 성공 시 후처리]
+		//아이템이 사라졌으므로 현재 선택 상태를 초기화
+		PendingSelection = FSquadItemUIData();
+
+		// 우측의 디테일 정보 패널을 초기화
+		if (WBP_DetailPanel)
+		{
+			WBP_DetailPanel->ClearInfo();
+		}
+
+		//최신상태 갱신
+		UpdateDetailPanelState();
+
+	}
+	else
+	{
+		if (Widget_Warning)
+		{
+			Widget_Warning->ShowWarning(FText::FromString(ErrorMsg),nullptr ,true);
+		}
+		//UE_LOG(LogTemp, Warning, TEXT("🚫 [SquadMain] 판매 실패: %s"), *ErrorMsg);
+	}
 }
 
 void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemData)

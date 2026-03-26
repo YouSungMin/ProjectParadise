@@ -323,6 +323,7 @@ void APlayerBase::OnMoveInput(const FInputActionValue& InValue)
     FVector2D MovementVector = InValue.Get<FVector2D>();
 
     if (!FollowCamera) return;
+    if (!CanMove()) return;
 
     FRotator CameraRotation = FollowCamera->GetComponentRotation();
     FRotator YawRotation(0, CameraRotation.Yaw, 0);
