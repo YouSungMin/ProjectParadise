@@ -150,5 +150,20 @@ void UParadiseEnhanceDetailWidget::HandleBreakthroughBtn()
 	}
 	OnBreakthroughClicked.Broadcast();
 }
-void UParadiseEnhanceDetailWidget::HandleAnimationFinished() { OnEnhanceAnimFinished.Broadcast(); }
+void UParadiseEnhanceDetailWidget::HandleAnimationFinished()
+{
+	// 연출 끝난 후 버튼 노멀 상태로 복귀
+	if (Btn_Enhance)
+	{
+		Btn_Enhance->SetIsEnabled(false);
+		Btn_Enhance->SetIsEnabled(true);
+	}
+	if (Btn_Breakthrough)
+	{
+		Btn_Breakthrough->SetIsEnabled(false);
+		Btn_Breakthrough->SetIsEnabled(true);
+	}
+
+	OnEnhanceAnimFinished.Broadcast();
+}
 #pragma endregion 이벤트 브로드캐스트
