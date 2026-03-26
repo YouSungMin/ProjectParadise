@@ -85,6 +85,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType);
 
+	/**
+	 * @brief 궁극기 연출 중 태그 버튼 조작을 막거나 풉니다.
+	 * @param bIsEnabled true면 교체 가능, false면 터치 무시
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetTagButtonsEnabled(bool bShouldEnable);
 #pragma endregion 외부 인터페이스
 private:
 #pragma region 내부 로직
@@ -169,6 +175,9 @@ private:
 	/** @brief 버튼 일괄 처리를 위한 내부 캐싱 배열 */
 	UPROPERTY()
 	TArray<TObjectPtr<UParadiseCommonButton>> TagButtons;
+
+	/** @brief 궁극기 연출 후 태그 잠금을 풀기 위한 타이머 핸들 */
+	FTimerHandle TimerHandle_TagLock;
 
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
 	TWeakObjectPtr<APlayerBase> CachedPlayer = nullptr;

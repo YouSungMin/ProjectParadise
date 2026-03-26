@@ -103,6 +103,9 @@ private:
 
 	/** @brief 게임 저장(SaveData) 호출용 게임 인스턴스 약참조 */
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+
+	/** @brief 초기화 완료 여부 (최초 탭 세팅 시 효과음 스킵용) */
+	bool bIsInitialized = false;
 #pragma endregion 내부 상태 및 캐싱
 
 #pragma region 내부 로직

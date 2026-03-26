@@ -34,13 +34,11 @@ void UAudioSettingsSubsystem::OnMapLoaded(UWorld* LoadedWorld)
 void UAudioSettingsSubsystem::SetBGMVolume(float NewVolume)
 {
 	CurrentBGMVolume = FMath::Clamp(NewVolume, 0.0f, 1.0f);
-	//UE_LOG(LogTemp, Verbose, TEXT("[AudioSettings] BGM 볼륨 RAM 변경: %.2f"), CurrentBGMVolume);
 }
 
 void UAudioSettingsSubsystem::SetSFXVolume(float NewVolume)
 {
 	CurrentSFXVolume = FMath::Clamp(NewVolume, 0.0f, 1.0f);
-	//UE_LOG(LogTemp, Verbose, TEXT("[AudioSettings] SFX 볼륨 RAM 변경: %.2f"), CurrentSFXVolume);
 }
 
 void UAudioSettingsSubsystem::ApplyVolumeSettings()

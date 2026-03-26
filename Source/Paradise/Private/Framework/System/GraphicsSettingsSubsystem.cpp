@@ -45,7 +45,7 @@ void UGraphicsSettingsSubsystem::SetGraphicsQuality(int32 NewQuality)
 		UserSettings->ApplySettings(false);
 		UserSettings->SaveSettings();
 
-		UE_LOG(LogTemp, Log, TEXT("🔧 [GraphicsSettings] 그래픽 퀄리티가 %d 단계로 변경 및 저장되었습니다."), ClampedQuality);
+		//UE_LOG(LogTemp, Log, TEXT("🔧 [GraphicsSettings] 그래픽 퀄리티가 %d 단계로 변경 및 저장되었습니다."), ClampedQuality);
 	}
 }
 

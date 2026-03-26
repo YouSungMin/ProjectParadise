@@ -2,12 +2,18 @@
 
 
 #include "Framework/System/AudioManagementSubsystem.h"
+#include "Framework/System/AudioSettingsSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void UAudioManagementSubsystem::PlayBGM(USoundBase* NewBGM, bool bLoop, float FadeTime)
 {
 	if (!NewBGM) return;
+
+	if (UAudioSettingsSubsystem* AudioSettings = GetGameInstance()->GetSubsystem<UAudioSettingsSubsystem>())
+	{
+		AudioSettings->ApplyVolumeSettings();
+	}
 
 	// 이미 같은 음악이 재생 중이라면 중복 재생 방지
 	if (ActiveBGMComponent && ActiveBGMComponent->GetSound() == NewBGM && ActiveBGMComponent->IsPlaying()) return;

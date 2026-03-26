@@ -495,6 +495,18 @@ void UActionControlPanel::LockOtherActionButtons(bool bLocked, ECombatActionType
 	}
 }
 
+void UActionControlPanel::SetTagButtonsEnabled(bool bShouldEnable)
+{
+	// 배열에 캐싱해둔 태그 버튼(A, B, C)을 돌면서 한 번에 잠금/해제
+	for (UParadiseCommonButton* TagBtn : TagButtons)
+	{
+		if (TagBtn)
+		{
+			TagBtn->SetIsEnabled(bShouldEnable);
+		}
+	}
+}
+
 void UActionControlPanel::OnAttackButtonPressed()
 {
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
@@ -686,6 +698,9 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 				}
 			}
 
+			// 기존 궁극기 연출 시간 캐싱 (2.5초)
+			float UltimateDuration = 2.5f;
+
 			// (기존 연출 코드 유지)
 			if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 			{
@@ -694,6 +709,17 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 					UltEffectComp->PlayUltimateEffect(2.5f);
 				}
 			}
+			// 1. 궁극기 발동 즉시 태그 버튼 클릭 차단
+			SetTagButtonsEnabled(false);
+			UE_LOG(LogTemp, Log, TEXT("🔒 [ActionPanel] 궁극기 발동! 교체 버튼을 %.1f초간 잠급니다."), UltimateDuration);
+
+			// 2. 궁극기 연출 시간에 맞춰 UI 스스로 자물쇠 해제!
+			GetWorld()->GetTimerManager().SetTimer(
+				TimerHandle_TagLock,
+				FTimerDelegate::CreateUObject(this, &UActionControlPanel::SetTagButtonsEnabled, true),
+				UltimateDuration,
+				false
+			);
 		}
 
 		UE_LOG(LogTemp, Warning, TEXT("[ActionPanel] 현재 빙의된 %s가 어빌리티를 발동합니다."), *CurrentActivePawn->GetName());
