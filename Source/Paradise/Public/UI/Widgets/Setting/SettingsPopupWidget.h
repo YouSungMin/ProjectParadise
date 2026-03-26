@@ -112,11 +112,11 @@ private:
 #pragma region 위젯 바인딩
 protected:
 	/** @brief BGM 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_BGM = nullptr;
 
 	/** @brief SFX 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_SFX = nullptr;
 
 	/**
