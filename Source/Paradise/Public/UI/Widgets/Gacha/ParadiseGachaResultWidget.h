@@ -14,6 +14,7 @@ class UUniformGridPanel;
 class UImage;
 class UTextBlock;
 class UTexture2D;
+class UParadiseGameInstance;
 class ALobbyPlayerController;
 class UParadiseGachaResultSlotWidget;
 #pragma endregion 전방 선언
