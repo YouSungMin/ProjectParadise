@@ -2,6 +2,8 @@
 
 
 #include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
@@ -44,7 +46,7 @@ void UParadiseResourceWarningWidget::ShowWarning(const FText& ResourceName, UTex
 	{
 		if (bIsExactMessage)
 		{
-			// 🌟 true일 경우: "무기를 장착하지 않은 캐릭터가 있습니다." 문자열 그대로 출력
+			//true일 경우: "무기를 장착하지 않은 캐릭터가 있습니다." 문자열 그대로 출력
 			Text_WarningMessage->SetText(ResourceName);
 		}
 		else
@@ -74,9 +76,12 @@ void UParadiseResourceWarningWidget::ShowWarning(const FText& ResourceName, UTex
 	SetVisibility(ESlateVisibility::Visible);
 
 	// 4. 경고 사운드 재생
-	if (Sound_Warning)
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
 	{
-		UGameplayStatics::PlaySound2D(this, Sound_Warning);
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_ErrorOrNotEnough)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_ErrorOrNotEnough);
+		}
 	}
 
 	// 5. 등장 애니메이션 재생 (UMG에서 만들어둔 팝업 애니메이션)
@@ -90,6 +95,15 @@ void UParadiseResourceWarningWidget::ShowWarning(const FText& ResourceName, UTex
 #pragma region 내부 로직
 void UParadiseResourceWarningWidget::HandleCloseButtonClicked()
 {
+	// 닫기(확인) 버튼 클릭 공통 효과음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
+		}
+	}
+
 	// 팝업 숨김 처리
 	SetVisibility(ESlateVisibility::Collapsed);
 

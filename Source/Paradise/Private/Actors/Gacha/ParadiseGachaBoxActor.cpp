@@ -10,7 +10,11 @@
 #include "LevelSequencePlayer.h"
 #include "LevelSequenceActor.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Components/AudioComponent.h"
 
 #pragma region 초기화 및 생명주기
 AParadiseGachaBoxActor::AParadiseGachaBoxActor()
@@ -85,6 +89,30 @@ void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InRes
 	TotalItemCount = InResults.Num();
 	SpawnedItems.Empty();
 
+	// 새로운 뽑기를 시작할 때 사운드 상태 초기화
+	bHasPlayedOrbDropSound = false;
+	if (CurrentRevealSoundComp && CurrentRevealSoundComp->IsPlaying())
+	{
+		CurrentRevealSoundComp->Stop();
+	}
+
+	// 시퀀스 재생과 동시에 타이머가 돌아가며, BoxDropSoundDelay 초 뒤에 정확히 쿵! 소리를 냅니다.
+	if (BoxDropSoundDelay > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(
+			BoxDropSoundTimerHandle,
+			this,
+			&AParadiseGachaBoxActor::PlayBoxDropSound,
+			BoxDropSoundDelay,
+			false
+		);
+	}
+	else
+	{
+		// 딜레이가 0이면 즉시 재생
+		PlayBoxDropSound();
+	}
+
 	// 시퀀스 시작 전 라이트 및 발광 색상을 미리 초기화 
 	if (FLinearColor* RarityColor = GlowColorsByRarity.Find(CachedHighestRarity))
 	{
@@ -111,6 +139,17 @@ void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InRes
 	PlaySequenceInternal(IntroSequence, EGachaSequenceStep::Intro, false);
 }
 
+void AParadiseGachaBoxActor::PlayBoxDropSound()
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_GachaBoxDrop)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_GachaBoxDrop);
+		}
+	}
+}
+
 void AParadiseGachaBoxActor::SkipGachaSequence()
 {
 	for (FTimerHandle& Handle : SpawnTimerHandles)
@@ -135,6 +174,8 @@ void AParadiseGachaBoxActor::ResetState()
 	}
 	SpawnTimerHandles.Empty();
 	GetWorldTimerManager().ClearTimer(ResultDelayTimerHandle);
+
+	GetWorldTimerManager().ClearTimer(BoxDropSoundTimerHandle);
 
 	// 2. 시퀀스 정지
 	StopCurrentSequence();
@@ -283,6 +324,25 @@ void AParadiseGachaBoxActor::EruptGachaItems()
 {
 	ApplyClimaxVisual();
 
+	// 이미 이 함수 자체가 뚜껑 열릴 때 호출되도록 세팅되어 있으므로 타이밍이 완벽합니다!
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData)
+		{
+			// 1. 상자 뚜껑 덜컥! 열리는 소리
+			if (GI->GlobalAudioData->SFX_GachaBoxTouchOpen)
+			{
+				UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_GachaBoxTouchOpen);
+			}
+
+			// 2. 구슬이 하늘로 슝~ 하고 솟구치는 소리 (10연차든 1연차든 여기서 딱 1번만 재생됨!)
+			if (GI->GlobalAudioData->SFX_GachaOrbDrop)
+			{
+				UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_GachaOrbDrop);
+			}
+		}
+	}
+
 	if (!ItemActorClass || CachedResults.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] ItemActorClass 또는 CachedResults 없음!"));
@@ -390,6 +450,21 @@ void AParadiseGachaBoxActor::OnItemLandedCallback()
 void AParadiseGachaBoxActor::OnItemRevealedCallback(const FGachaResult& ItemData)
 {
 	++RevealedItemCount;
+
+	/** @section ⭐ 사운드: 구슬 리빌음 (오버랩 방지) */
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_GachaOrbReveal)
+		{
+			// 기존에 재생 중인 리빌 소리가 있다면 강제 종료 (따다닥! 눌렀을 때 소리 안 겹치게)
+			if (CurrentRevealSoundComp && CurrentRevealSoundComp->IsPlaying())
+			{
+				CurrentRevealSoundComp->Stop();
+			}
+			// 새로운 리빌 사운드 시작 및 컴포넌트 갱신
+			CurrentRevealSoundComp = UGameplayStatics::SpawnSound2D(this, GI->GlobalAudioData->SFX_GachaOrbReveal);
+		}
+	}
 
 	if (OnSingleCharacterRevealed.IsBound())
 	{

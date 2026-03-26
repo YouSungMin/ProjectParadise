@@ -44,5 +44,20 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRetryClicked();
+
+	/** @brief 딜레이 후 로비 전환 실행 */
+	virtual void ExecuteLobby();
+
+	/** @brief 딜레이 후 레벨 재시작 실행 */
+	virtual void ExecuteRetry();
 #pragma endregion 내부 로직
+
+#pragma region 내부 데이터
+private:
+	/** @brief 로비 전환 딜레이 타이머 핸들 */
+	FTimerHandle TimerHandle_Lobby;
+
+	/** @brief 레벨 재시작 딜레이 타이머 핸들 */
+	FTimerHandle TimerHandle_Retry;
+#pragma endregion 내부 데이터
 };

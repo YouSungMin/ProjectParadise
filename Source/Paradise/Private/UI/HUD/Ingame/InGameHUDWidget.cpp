@@ -23,7 +23,7 @@
 
 #include "Camera/CameraComponent.h"
 
-
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
 
@@ -253,7 +253,19 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 			else
 			{
 				// 패배 시 정산 없이 패배창만 띄움
-				if (Widget_DefeatPopup)  Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+				if (Widget_DefeatPopup)
+				{
+					Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+
+					// 패배창이 실제로 열릴 때 패배 음악 재생
+					if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+					{
+						if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_ResultDefeat)
+						{
+							UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_ResultDefeat);
+						}
+					}
+				}
 				if (Widget_VictoryPopup) Widget_VictoryPopup->SetVisibility(ESlateVisibility::Collapsed);
 			}
 		}
@@ -337,6 +349,13 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 
 void UInGameHUDWidget::OnSettingButtonClicked()
 {
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
 	/** @section 팝업 열기 (인게임은 열릴 때 시간이 멈춥니다!) */
 	if (SettingsPopupInstance)
 	{

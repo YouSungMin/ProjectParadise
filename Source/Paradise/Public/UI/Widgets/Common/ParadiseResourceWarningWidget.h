@@ -82,9 +82,5 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Warning|Config")
 	FText WarningMessageFormat = FText::FromString(TEXT("{0}이(가) 부족합니다!"));
-
-	/** @brief 팝업이 뜰 때 재생할 에러/경고 사운드 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Warning|Config")
-	TObjectPtr<USoundBase> Sound_Warning = nullptr;
 #pragma endregion 데이터 드리븐 설정
 };

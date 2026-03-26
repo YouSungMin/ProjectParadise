@@ -126,7 +126,13 @@ private:
 	 */
 	void SetStarImage(UImage* StarImage, int32 StarIndex, int32 InStarCount);
 
+	/** @brief 딜레이 후 다음 스테이지 전환 실행 */
+	void ExecuteNextStage();
+
 	/** @brief GameMode로부터 전달받은 다음 스테이지의 식별자(ID) */
 	FName CachedNextStageID = NAME_None;
+
+	/** @brief 다음 스테이지 전환 딜레이 타이머 핸들 */
+	FTimerHandle TimerHandle_NextStage;
 #pragma endregion 내부 로직
 };

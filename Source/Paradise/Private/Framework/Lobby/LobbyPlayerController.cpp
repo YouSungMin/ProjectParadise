@@ -12,6 +12,7 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
+#include "Components/AudioComponent.h"
 #include "Actors/Environment/ParadiseMapEnvironmentActor.h"
 #include "Actors/Gacha/ParadiseGachaBoxActor.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
@@ -448,6 +449,22 @@ void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 
 	if (!TargetCamera) return;
 
+	// 카메라 효과음
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CameraMoveSwoosh)
+		{
+			// 기존에 재생 중인 카메라 이동 소리가 있다면 즉시 정지 (오버랩 방지)
+			if (CameraSwooshAudioComp && CameraSwooshAudioComp->IsPlaying())
+			{
+				CameraSwooshAudioComp->Stop();
+			}
+
+			// 새롭게 소리를 틀고 제어권 확보
+			CameraSwooshAudioComp = UGameplayStatics::SpawnSound2D(this, GI->GlobalAudioData->SFX_CameraMoveSwoosh);
+		}
+	}
+
 	// 1. UI 먼저 숨기기 (연출을 위해)
 	if (CachedLobbyHUD)
 	{
@@ -472,6 +489,14 @@ void ALobbyPlayerController::MoveCameraToMenu(EParadiseLobbyMenu TargetMenu)
 	);
 }
 
+void ALobbyPlayerController::StopCameraSwoosh()
+{
+	if (CameraSwooshAudioComp && CameraSwooshAudioComp->IsPlaying())
+	{
+		CameraSwooshAudioComp->Stop();
+	}
+}
+
 void ALobbyPlayerController::SetLobbyHUD(UParadiseLobbyHUDWidget* InHUD)
 {
     CachedLobbyHUD = InHUD;
@@ -479,7 +504,11 @@ void ALobbyPlayerController::SetLobbyHUD(UParadiseLobbyHUDWidget* InHUD)
 
 void ALobbyPlayerController::OnCameraMoveFinished(EParadiseLobbyMenu TargetMenu)
 {
-	// 4. 이동 완료! 이제 해당 메뉴 UI 띄우기
+	if (CameraSwooshAudioComp && CameraSwooshAudioComp->IsPlaying())
+	{
+		CameraSwooshAudioComp->Stop();
+	}
+	// 이동 완료! 이제 해당 메뉴 UI 띄우기
 	SetLobbyMenu(TargetMenu);
 }
 
@@ -656,14 +685,6 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 void ALobbyPlayerController::EnterChapterMap(int32 ChapterID, UTexture2D* MapTexture)
 {
 	CurrentSelectedChapter = ChapterID;
-
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CameraMoveSwoosh)
-		{
-			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CameraMoveSwoosh);
-		}
-	}
 
 	// 환경 액터 찾기 및 텍스처 교체
 	if (!CachedMapEnvActor)

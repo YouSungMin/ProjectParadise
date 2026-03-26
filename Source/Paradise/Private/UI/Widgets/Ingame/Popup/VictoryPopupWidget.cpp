@@ -10,8 +10,10 @@
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Structs/StageStructs.h"
 #include "Data/Structs/UnitStructs.h"
+#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UVictoryPopupWidget::NativeConstruct()
@@ -90,6 +92,13 @@ void UVictoryPopupWidget::SetVictoryData(
 			WBP_FamiliarRewardPopup->ShowFamiliarReward(InAcquiredFamiliar);
 		}
 	}
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_ResultVictory)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_ResultVictory);
+		}
+	}
 	if (Anim_PopupAppear)
 	{
 		PlayAnimation(Anim_PopupAppear);
@@ -123,6 +132,34 @@ void UVictoryPopupWidget::OnNextStageClicked()
 {
 	// 방어 코드: 다음 스테이지가 비어있으면 무시 (버튼이 숨겨지겠지만 혹시 모를 클릭 방지)
 	if (CachedNextStageID.IsNone()) return;
+
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->SetPause(false);
+	}
+
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_IngameNext)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_IngameNext);
+		}
+	}
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_NextStage,
+			this,
+			&UVictoryPopupWidget::ExecuteNextStage,
+			0.3f,
+			false
+		);
+	}
+}
+
+void UVictoryPopupWidget::ExecuteNextStage()
+{
 
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;

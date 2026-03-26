@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Data/Structs/StageStructs.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/StageSubsystem.h"
 
@@ -62,6 +63,14 @@ void UParadiseStageNodeWidget::SetupNode(const FStageStats& InStats, const FStag
 void UParadiseStageNodeWidget::OnClickEnter()
 {
 	if (StageID.IsNone()) return;
+
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_NodeClick)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_NodeClick);
+		}
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("[StageNode] 노드 클릭됨. 팝업 호출 요청. ID: %s"), *StageID.ToString());
 

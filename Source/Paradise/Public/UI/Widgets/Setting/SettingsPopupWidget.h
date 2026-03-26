@@ -100,6 +100,15 @@ private:
 	 */
 	UFUNCTION()
 	void OnRetryClicked();
+
+	/** @brief 화면 변화 없이 게임 일시정지만 해제합니다. (타이머 활성화용) */
+	void ResumeTimeOnly();
+
+	/** @brief 딜레이 후 로비로 전환 실행 */
+	void ExecuteReturnToLobby();
+
+	/** @brief 딜레이 후 레벨 재시작 실행 */
+	void ExecuteRetry();
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
@@ -201,5 +210,11 @@ private:
 	 * @details NativeConstruct에서 캐싱하여 매번 GetSubsystem 비용을 절약합니다.
 	 */
 	TWeakObjectPtr<UAudioSettingsSubsystem> CachedAudioSettings = nullptr;
+
+	/** @brief 효과음 재생 후 레벨 전환 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_ReturnToLobby;
+
+	/** @brief 효과음 재생 후 레벨 재시작 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_Retry;
 #pragma endregion 런타임 상태
 };

@@ -12,6 +12,7 @@
 #include "Actors/Squad/ParadiseSquadSceneManager.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/AudioComponent.h"
 #include "Engine/DataTable.h"
 #include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Assets/FXDataAsset.h"
@@ -709,18 +710,24 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 						// 1. CharacterFX 구조체를 한 번 거쳐서 데이터 에셋을 로드합니다.
 						if (UFXDataAsset* LoadedFXData = CharAsset->CharacterFX.FXData.LoadSynchronous())
 						{
-							// 2. 동적 태그 문자열 조립 (예: "FX.Character.Anubis.Ultimate")
+							// 2. 보이스 태그를 받음
 							FGameplayTag VoiceTag = CharAsset->CharacterFX.UltimateTag;
 
 							if (VoiceTag.IsValid())
 							{
+								// 3. 받은 보이스 태그로 사운드 인펙트를 찾음
 								if (FFXPayload* FoundFX = LoadedFXData->FindEffect(VoiceTag))
 								{
 									// 4. 사운드 재생 
 									if (USoundBase* LoadedVoice = FoundFX->SoundEffect.LoadSynchronous())
 									{
-										UGameplayStatics::PlaySound2D(this, LoadedVoice);
-										UE_LOG(LogTemp, Log, TEXT("🔊 [SquadMain] 보이스 재생 성공! (사용된 태그: %s)"), *VoiceTag.ToString());
+										// 5. 사운드 겹침(Overlap) 방지: 기존 소리가 재생 중이면 끕니다.
+										if (CurrentVoiceComponent && CurrentVoiceComponent->IsPlaying())
+										{
+											CurrentVoiceComponent->Stop();
+										}
+										// 6. 새로운 캐릭터의 목소리를 스폰하고, 제어권을 컴포넌트 포인터에 저장합니다.
+										CurrentVoiceComponent = UGameplayStatics::SpawnSound2D(this, LoadedVoice);
 									}
 								}
 								else
@@ -817,6 +824,11 @@ void UParadiseSquadMainWidget::HandleInventoryItemClicked(FSquadItemUIData ItemD
 
 void UParadiseSquadMainWidget::HandleBackClicked()
 {
+	// 재생 중인 캐릭터 음성 끄기
+	if (CurrentVoiceComponent && CurrentVoiceComponent->IsPlaying())
+	{
+		CurrentVoiceComponent->Stop();
+	}
 	// 뒤로가기 공통 효과음 재생
 	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
 	{

@@ -214,6 +214,58 @@ void USettingsPopupWidget::OnReturnToLobbyClicked()
 		}
 	}
 
+	ResumeTimeOnly();
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_ReturnToLobby,
+			this,
+			&USettingsPopupWidget::ExecuteReturnToLobby,
+			0.3f,
+			false
+		);
+	}
+
+}
+
+void USettingsPopupWidget::OnRetryClicked()
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_IngameRetry)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_IngameRetry);
+		}
+	}
+
+	ResumeTimeOnly();
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_Retry,
+			this,
+			&USettingsPopupWidget::ExecuteRetry,
+			0.3f,
+			false
+		);
+	}
+}
+
+void USettingsPopupWidget::ResumeTimeOnly()
+{
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		if (bPauseGameOnOpen)
+		{
+			PC->SetPause(false);
+		}
+	}
+}
+
+void USettingsPopupWidget::ExecuteReturnToLobby()
+{
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (ULevelLoadingSubsystem* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
@@ -223,19 +275,13 @@ void USettingsPopupWidget::OnReturnToLobbyClicked()
 		}
 		else
 		{
-			// Fallback: 서브시스템이 없으면 직접 이동
-			UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] LevelLoadingSubsystem이 없어 직접 이동합니다."));
 			UGameplayStatics::OpenLevel(this, LobbyLevelName);
 		}
 	}
 }
 
-void USettingsPopupWidget::OnRetryClicked()
+void USettingsPopupWidget::ExecuteRetry()
 {
-	// 닫기 처리 (게임 시간 복구 + 입력 모드 반환)
-	CloseSettings();
-
-	// 현재 레벨 재시작
 	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 	UGameplayStatics::OpenLevel(this, FName(*CurrentLevelName));
 }

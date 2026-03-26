@@ -15,6 +15,7 @@ class AParadiseGachaBoxActor;
 class UParadiseGachaResultWidget;
 class UParadiseStageSelectWidget;
 class UParadiseChapterSelectWidget;
+class UAudioComponent;
 #pragma endregion 전방 선언
 
 /**
@@ -227,4 +228,17 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class UParadiseStageSelectWidget> CachedStageSelectWidget = nullptr;
 #pragma endregion 챕터 및 스테이지 제어
+
+#pragma region 오디오 제어
+private:
+	/** @brief 카메라 이동 사운드 제어용 컴포넌트 (위젯이 열릴 때 강제 종료하기 위함) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CameraSwooshAudioComp = nullptr;
+
+public:
+	/** @brief 현재 재생 중인 카메라 무빙 사운드가 있다면 즉시 종료합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Audio")
+	void StopCameraSwoosh();
+#pragma endregion 오디오 제어
+
 };

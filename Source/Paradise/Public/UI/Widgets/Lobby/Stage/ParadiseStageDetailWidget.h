@@ -65,6 +65,9 @@ private:
 
 	/** @brief 현재 편성된 스쿼드 데이터를 서브시스템에서 가져와 프리뷰 UI에 세팅합니다. */
 	void SetupSquadPreview();
+
+	/** @brief 효과음 재생 후 실제 레벨 전환을 실행합니다. */
+	void ExecuteBattleTransition();
 #pragma endregion 내부 로직
 
 #pragma region UI 컴포넌트
@@ -102,6 +105,7 @@ protected:
 	TSubclassOf<UParadiseEnemyIconWidget> EnemyIconClass = nullptr;
 #pragma endregion UI 컴포넌트
 
+#pragma region 내부 데이터
 private:
 	/** @brief 현재 선택된 스테이지 ID 캐싱 */
 	FName CachedStageID = NAME_None;
@@ -111,4 +115,8 @@ private:
 
 	/** @brief 메뉴 전환을 위한 로비 컨트롤러 캐싱 (O(1) 속도 보장) */
 	TWeakObjectPtr<ALobbyPlayerController> CachedLobbyPC = nullptr;
+
+	/** @brief 효과음 재생 후 레벨 전환 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_BattleTransition;
+#pragma endregion 내부 데이터
 };
