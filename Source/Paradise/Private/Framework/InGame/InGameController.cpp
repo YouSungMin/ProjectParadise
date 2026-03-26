@@ -198,8 +198,7 @@ void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerD
     // 4. 통과 완료! 
     UE_LOG(LogTemp, Warning, TEXT("✅ 추적 통과: 모든 패널이 정상! PartyPanel에게 바인딩을 명령합니다."));
 
-    PartyPanel->BindMemberASC(PlayerIndex, InPlayerData->GetAbilitySystemComponent());
-    PartyPanel->InitializeMember(PlayerIndex, InPlayerData->CharacterID);
+    PartyPanel->AddPartyMemberUI(InPlayerData->CharacterID, InPlayerData->GetAbilitySystemComponent());
 
     UE_LOG(LogTemp, Error, TEXT("=================================================================="));
 }
