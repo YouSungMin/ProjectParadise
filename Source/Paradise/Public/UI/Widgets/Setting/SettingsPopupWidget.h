@@ -12,6 +12,8 @@ class UParadiseCommonButton;
 class ULevelLoadingSubsystem;
 class UAudioSettingsSubsystem;
 class UParadiseFXAudioData;
+class UGraphicsSettingsSubsystem;
+class UTextBlock;
 #pragma endregion 전방 선언
 
 /**
@@ -107,6 +109,16 @@ private:
 
 	/** @brief 딜레이 후 레벨 재시작 실행 */
 	void ExecuteRetry();
+
+	/**
+	 * @brief 그래픽 슬라이더 값 변경 시 호출됩니다.
+	 * @param Value 0.0 ~ 1.0 범위 → 내부에서 0~3으로 변환
+	 */
+	UFUNCTION()
+	void OnGraphicsQualityChanged(float Value);
+
+	/** @brief 퀄리티 단계(0~3)를 텍스트로 변환합니다. */
+	FText GetQualityText(int32 Quality) const;
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
@@ -136,6 +148,14 @@ protected:
 	/** @brief 현재 스테이지 재시작 버튼 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UParadiseCommonButton> Btn_Retry = nullptr;
+
+	/** @brief 그래픽 퀄리티 슬라이더 (0~3 스냅) */
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<USlider> Slider_Graphics = nullptr;
+
+	/** @brief 현재 그래픽 단계 텍스트 (낮음/보통/높음/최상) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_GraphicsQuality = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 공통 UI 에셋 설정 (Config)
@@ -193,5 +213,7 @@ private:
 
 	/** @brief 효과음 재생 후 레벨 재시작 딜레이용 타이머 핸들 */
 	FTimerHandle TimerHandle_Retry;
+
+	TWeakObjectPtr<UGraphicsSettingsSubsystem> CachedGraphicsSettings = nullptr;
 #pragma endregion 런타임 상태
 };

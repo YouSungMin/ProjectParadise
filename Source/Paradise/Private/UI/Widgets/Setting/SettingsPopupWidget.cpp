@@ -8,6 +8,8 @@
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/GraphicsSettingsSubsystem.h"
+#include "Components/TextBlock.h"
 #include "Data/Assets/ParadiseFXAudioData.h"
 
 #pragma region 생명주기
@@ -17,14 +19,33 @@ void USettingsPopupWidget::NativeConstruct()
 
 	SetIsFocusable(true); // 키보드/마우스 입력을 온전히 받을 수 있도록 설정
 
-	/** @section 1. AudioSettingsSubsystem 캐싱 */
+	/** 1. AudioSettingsSubsystem과 GraphicsSettingsSubsystem 캐싱 */
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		CachedAudioSettings = GI->GetSubsystem<UAudioSettingsSubsystem>();
-		if (!CachedAudioSettings.IsValid())
+		CachedGraphicsSettings = GI->GetSubsystem<UGraphicsSettingsSubsystem>();
+	}
+
+	// 그래픽 슬라이더 바인딩 및 초기값 세팅
+	if (Slider_Graphics)
+	{
+		Slider_Graphics->SetMinValue(0.0f);
+		Slider_Graphics->SetMaxValue(1.0f);
+		Slider_Graphics->SetStepSize(0.333f); // 4단계 스냅
+
+		// 현재 저장된 퀄리티로 초기화
+		if (CachedGraphicsSettings.IsValid())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] AudioSettingsSubsystem을 찾을 수 없습니다."));
+			int32 CurrentQuality = CachedGraphicsSettings->GetGraphicsQuality();
+			Slider_Graphics->SetValue(CurrentQuality / 3.0f);
+
+			if (Text_GraphicsQuality)
+			{
+				Text_GraphicsQuality->SetText(GetQualityText(CurrentQuality));
+			}
 		}
+
+		Slider_Graphics->OnValueChanged.AddDynamic(this, &USettingsPopupWidget::OnGraphicsQualityChanged);
 	}
 
 	/** @section 2. 슬라이더 델리게이트 바인딩 */
@@ -259,5 +280,33 @@ void USettingsPopupWidget::ExecuteRetry()
 {
 	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 	UGameplayStatics::OpenLevel(this, FName(*CurrentLevelName));
+}
+
+void USettingsPopupWidget::OnGraphicsQualityChanged(float Value)
+{
+	// 0.0~1.0 → 0~3 변환 (스냅)
+	const int32 Quality = FMath::Clamp(FMath::RoundToInt(Value * 3.0f), 0, 3);
+
+	if (CachedGraphicsSettings.IsValid())
+	{
+		CachedGraphicsSettings->SetGraphicsQuality(Quality);
+	}
+
+	if (Text_GraphicsQuality)
+	{
+		Text_GraphicsQuality->SetText(GetQualityText(Quality));
+	}
+}
+
+FText USettingsPopupWidget::GetQualityText(int32 Quality) const
+{
+	switch (Quality)
+	{
+	case 0:  return FText::FromString(TEXT("낮음"));
+	case 1:  return FText::FromString(TEXT("보통"));
+	case 2:  return FText::FromString(TEXT("높음"));
+	case 3:  return FText::FromString(TEXT("최상"));
+	default: return FText::FromString(TEXT("보통"));
+	}
 }
 #pragma endregion 내부 로직
