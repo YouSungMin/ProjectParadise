@@ -205,11 +205,6 @@ void AParadiseGachaItemActor::RevealItem()
 		}
 	}
 
-	if (RevealSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, RevealSound, GetActorLocation());
-	}
-
 	// 5. 아우라 끄기
 	if (RarityAuraEffect)
 	{

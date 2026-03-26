@@ -9,11 +9,11 @@
 #pragma region 전방 선언
 class USlider;
 class UParadiseCommonButton;
-class USoundMix;
-class USoundClass;
 class ULevelLoadingSubsystem;
 class UAudioSettingsSubsystem;
 class UParadiseFXAudioData;
+class UGraphicsSettingsSubsystem;
+class UTextBlock;
 #pragma endregion 전방 선언
 
 /**
@@ -100,16 +100,35 @@ private:
 	 */
 	UFUNCTION()
 	void OnRetryClicked();
+
+	/** @brief 화면 변화 없이 게임 일시정지만 해제합니다. (타이머 활성화용) */
+	void ResumeTimeOnly();
+
+	/** @brief 딜레이 후 로비로 전환 실행 */
+	void ExecuteReturnToLobby();
+
+	/** @brief 딜레이 후 레벨 재시작 실행 */
+	void ExecuteRetry();
+
+	/**
+	 * @brief 그래픽 슬라이더 값 변경 시 호출됩니다.
+	 * @param Value 0.0 ~ 1.0 범위 → 내부에서 0~3으로 변환
+	 */
+	UFUNCTION()
+	void OnGraphicsQualityChanged(float Value);
+
+	/** @brief 퀄리티 단계(0~3)를 텍스트로 변환합니다. */
+	FText GetQualityText(int32 Quality) const;
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
 protected:
 	/** @brief BGM 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_BGM = nullptr;
 
 	/** @brief SFX 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_SFX = nullptr;
 
 	/**
@@ -129,6 +148,14 @@ protected:
 	/** @brief 현재 스테이지 재시작 버튼 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UParadiseCommonButton> Btn_Retry = nullptr;
+
+	/** @brief 그래픽 퀄리티 슬라이더 (0~3 스냅) */
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<USlider> Slider_Graphics = nullptr;
+
+	/** @brief 현재 그래픽 단계 텍스트 (낮음/보통/높음/최상) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_GraphicsQuality = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 공통 UI 에셋 설정 (Config)
@@ -151,27 +178,6 @@ protected:
 
 #pragma region 데이터 드리븐 설정
 protected:
-	/**
-	 * @brief 오디오 마스터 믹스.
-	 * @details 기획자가 BP 디테일 패널에서 할당해야 볼륨 제어가 작동합니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "마스터 사운드 믹스"))
-	TObjectPtr<USoundMix> MasterSoundMix = nullptr;
-
-	/**
-	 * @brief 배경음악(BGM) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "BGM 사운드 클래스"))
-	TObjectPtr<USoundClass> BGMSoundClass = nullptr;
-
-	/**
-	 * @brief 효과음(SFX) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "SFX 사운드 클래스"))
-	TObjectPtr<USoundClass> SFXSoundClass = nullptr;
-
 	/**
 	 * @brief 로비 레벨 이름.
 	 * @details 로비로 돌아가기 버튼 클릭 시 이동할 레벨을 기획자가 설정합니다.
@@ -201,5 +207,13 @@ private:
 	 * @details NativeConstruct에서 캐싱하여 매번 GetSubsystem 비용을 절약합니다.
 	 */
 	TWeakObjectPtr<UAudioSettingsSubsystem> CachedAudioSettings = nullptr;
+
+	/** @brief 효과음 재생 후 레벨 전환 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_ReturnToLobby;
+
+	/** @brief 효과음 재생 후 레벨 재시작 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_Retry;
+
+	TWeakObjectPtr<UGraphicsSettingsSubsystem> CachedGraphicsSettings = nullptr;
 #pragma endregion 런타임 상태
 };

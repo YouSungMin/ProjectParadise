@@ -5,11 +5,11 @@
 #include "Components/Slider.h"
 #include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundClass.h"
-#include "Sound/SoundMix.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/GraphicsSettingsSubsystem.h"
+#include "Components/TextBlock.h"
 #include "Data/Assets/ParadiseFXAudioData.h"
 
 #pragma region 생명주기
@@ -19,14 +19,33 @@ void USettingsPopupWidget::NativeConstruct()
 
 	SetIsFocusable(true); // 키보드/마우스 입력을 온전히 받을 수 있도록 설정
 
-	/** @section 1. AudioSettingsSubsystem 캐싱 */
+	/** 1. AudioSettingsSubsystem과 GraphicsSettingsSubsystem 캐싱 */
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		CachedAudioSettings = GI->GetSubsystem<UAudioSettingsSubsystem>();
-		if (!CachedAudioSettings.IsValid())
+		CachedGraphicsSettings = GI->GetSubsystem<UGraphicsSettingsSubsystem>();
+	}
+
+	// 그래픽 슬라이더 바인딩 및 초기값 세팅
+	if (Slider_Graphics)
+	{
+		Slider_Graphics->SetMinValue(0.0f);
+		Slider_Graphics->SetMaxValue(1.0f);
+		Slider_Graphics->SetStepSize(0.333f); // 4단계 스냅
+
+		// 현재 저장된 퀄리티로 초기화
+		if (CachedGraphicsSettings.IsValid())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] AudioSettingsSubsystem을 찾을 수 없습니다."));
+			int32 CurrentQuality = CachedGraphicsSettings->GetGraphicsQuality();
+			Slider_Graphics->SetValue(CurrentQuality / 3.0f);
+
+			if (Text_GraphicsQuality)
+			{
+				Text_GraphicsQuality->SetText(GetQualityText(CurrentQuality));
+			}
 		}
+
+		Slider_Graphics->OnValueChanged.AddDynamic(this, &USettingsPopupWidget::OnGraphicsQualityChanged);
 	}
 
 	/** @section 2. 슬라이더 델리게이트 바인딩 */
@@ -98,6 +117,7 @@ void USettingsPopupWidget::CloseSettings()
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SaveToSlot();
+		CachedAudioSettings->ApplyVolumeSettings();
 		UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 팝업 닫힘 → 볼륨 디스크 저장 완료"));
 	}
 
@@ -145,21 +165,6 @@ void USettingsPopupWidget::InitializeVolumeSliders()
 
 void USettingsPopupWidget::OnBGMVolumeChanged(float Value)
 {
-	/** @section 1. SetSoundMixClassOverride로 즉시 적용 */
-	if (MasterSoundMix && BGMSoundClass)
-	{
-		UGameplayStatics::SetSoundMixClassOverride(
-			this,
-			MasterSoundMix,
-			BGMSoundClass,
-			Value,
-			1.0f,  // Pitch (피치 변경 안 함)
-			0.0f,  // FadeInTime (즉시 적용)
-			true   // bApplyToChildren (자식 사운드 클래스에도 적용)
-		);
-	}
-
-	/** @section 2. 서브시스템의 RAM만 변경 (디스크 저장 안 함!) */
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SetBGMVolume(Value);
@@ -168,21 +173,6 @@ void USettingsPopupWidget::OnBGMVolumeChanged(float Value)
 
 void USettingsPopupWidget::OnSFXVolumeChanged(float Value)
 {
-	/** @section 1. SetSoundMixClassOverride로 즉시 적용 */
-	if (MasterSoundMix && SFXSoundClass)
-	{
-		UGameplayStatics::SetSoundMixClassOverride(
-			this,
-			MasterSoundMix,
-			SFXSoundClass,
-			Value,
-			1.0f,
-			0.0f,
-			true
-		);
-	}
-
-	/** @section 2. 서브시스템의 RAM만 변경 (디스크 저장 안 함!) */
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SetSFXVolume(Value);
@@ -214,6 +204,64 @@ void USettingsPopupWidget::OnReturnToLobbyClicked()
 		}
 	}
 
+	ResumeTimeOnly();
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_ReturnToLobby,
+			this,
+			&USettingsPopupWidget::ExecuteReturnToLobby,
+			0.3f,
+			false
+		);
+	}
+
+}
+
+void USettingsPopupWidget::OnRetryClicked()
+{
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_IngameRetry)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_IngameRetry);
+		}
+	}
+
+	ResumeTimeOnly();
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_Retry,
+			this,
+			&USettingsPopupWidget::ExecuteRetry,
+			0.3f,
+			false
+		);
+	}
+}
+
+void USettingsPopupWidget::ResumeTimeOnly()
+{
+	// 볼륨 디스크 저장
+	if (CachedAudioSettings.IsValid())
+	{
+		CachedAudioSettings->SaveToSlot();
+	}
+
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		if (bPauseGameOnOpen)
+		{
+			PC->SetPause(false);
+		}
+	}
+}
+
+void USettingsPopupWidget::ExecuteReturnToLobby()
+{
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (ULevelLoadingSubsystem* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
@@ -223,20 +271,42 @@ void USettingsPopupWidget::OnReturnToLobbyClicked()
 		}
 		else
 		{
-			// Fallback: 서브시스템이 없으면 직접 이동
-			UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] LevelLoadingSubsystem이 없어 직접 이동합니다."));
 			UGameplayStatics::OpenLevel(this, LobbyLevelName);
 		}
 	}
 }
 
-void USettingsPopupWidget::OnRetryClicked()
+void USettingsPopupWidget::ExecuteRetry()
 {
-	// 닫기 처리 (게임 시간 복구 + 입력 모드 반환)
-	CloseSettings();
-
-	// 현재 레벨 재시작
 	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 	UGameplayStatics::OpenLevel(this, FName(*CurrentLevelName));
+}
+
+void USettingsPopupWidget::OnGraphicsQualityChanged(float Value)
+{
+	// 0.0~1.0 → 0~3 변환 (스냅)
+	const int32 Quality = FMath::Clamp(FMath::RoundToInt(Value * 3.0f), 0, 3);
+
+	if (CachedGraphicsSettings.IsValid())
+	{
+		CachedGraphicsSettings->SetGraphicsQuality(Quality);
+	}
+
+	if (Text_GraphicsQuality)
+	{
+		Text_GraphicsQuality->SetText(GetQualityText(Quality));
+	}
+}
+
+FText USettingsPopupWidget::GetQualityText(int32 Quality) const
+{
+	switch (Quality)
+	{
+	case 0:  return FText::FromString(TEXT("낮음"));
+	case 1:  return FText::FromString(TEXT("보통"));
+	case 2:  return FText::FromString(TEXT("높음"));
+	case 3:  return FText::FromString(TEXT("최상"));
+	default: return FText::FromString(TEXT("보통"));
+	}
 }
 #pragma endregion 내부 로직

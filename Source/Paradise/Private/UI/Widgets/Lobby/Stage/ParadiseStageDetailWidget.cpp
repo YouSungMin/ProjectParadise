@@ -16,7 +16,9 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Structs/InventoryStruct.h"
 #include "Data/Structs/StageStructs.h" 
 #include "Data/Structs/UnitStructs.h"
@@ -46,6 +48,12 @@ void UParadiseStageDetailWidget::NativeConstruct()
 
 void UParadiseStageDetailWidget::NativeDestruct()
 {
+	// 타이머 해제
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_BattleTransition);
+	}
+
 	// 메모리 누수 방지를 위해 해제는 필수!
 	if (auto* SquadSys = GetGameInstance()->GetSubsystem<USquadSubsystem>())
 	{
@@ -191,6 +199,14 @@ void UParadiseStageDetailWidget::SetupSquadPreview()
 
 void UParadiseStageDetailWidget::OnClickClose()
 {
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
+		}
+	}
+
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	if (OnDetailClosed.IsBound()) OnDetailClosed.Broadcast();
@@ -244,7 +260,29 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 		}
 	}
 
-	// 1. 스테이지 데이터 조회 (Stats & Assets)
+	if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_StageActionClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_StageActionClick);
+	}
+
+	// 효과음이 살짝 들린 후 레벨 전환 (0.3초 딜레이)
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_BattleTransition,
+			this,
+			&UParadiseStageDetailWidget::ExecuteBattleTransition,
+			0.3f,
+			false
+		);
+	}
+}
+
+void UParadiseStageDetailWidget::ExecuteBattleTransition()
+{
+	if (CachedStageID.IsNone() || !CachedGI.IsValid()) return;
+
+	// 1. 스테이지 데이터 조회
 	FStageStats* Stats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID);
 	FStageAssets* Assets = CachedGI->GetDataTableRow<FStageAssets>(CachedGI->StageAssetsDataTable, CachedStageID);
 
@@ -260,13 +298,17 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 		StageSys->SetSelectedStageID(CachedStageID);
 	}
 
-	// 3. 로딩 서브시스템을 통한 전이 시작
+	if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+	{
+		AudioMag->StopBGM(1.0f);
+	}
+
+	// 3. 레벨 전환
 	if (ULevelLoadingSubsystem* LoadingSys = CachedGI->GetSubsystem<ULevelLoadingSubsystem>())
 	{
 		FName LevelToOpen = FName(*Assets->MapAsset.GetAssetName());
 		TArray<TSoftObjectPtr<UObject>> PreloadAssets = Assets->ExtraPreloadAssets;
 
-		// 테이지 이름(Stats->StageName)과 설명(Stats->Description)을 로딩 시스템으로 전파
 		LoadingSys->StartLevelTransition(
 			LevelToOpen,
 			FName("L_Loading"),

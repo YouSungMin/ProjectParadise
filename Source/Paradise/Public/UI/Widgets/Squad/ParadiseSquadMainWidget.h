@@ -17,6 +17,7 @@ class UWidgetSwitcher;
 class UInventorySystem;
 class UParadiseGameInstance;
 class USquadSubsystem;
+class UAudioComponent;
 class AParadiseSquadSceneManager;
 #pragma endregion 전방 선언
 
@@ -294,6 +295,10 @@ private:
 
 	UPROPERTY()
 	bool bAutoSaveOnBack = true;
+
+	/** @brief 현재 재생 중인 캐릭터 교체 보이스 컴포넌트 (보이스 겹침 방지용) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CurrentVoiceComponent = nullptr;
 #pragma endregion 내부 상태
 
 #pragma region 델리게이트

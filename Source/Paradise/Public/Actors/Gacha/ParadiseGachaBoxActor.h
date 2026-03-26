@@ -20,6 +20,7 @@ class UNiagaraSystem;
 class AParadiseGachaItemActor;
 class APlayerController;
 class ACineCameraActor;
+class UAudioComponent;
 #pragma endregion 전방 선언
 
 /** @brief 1회 소환용: 한 명의 캐릭터 리빌(실루엣 해제) 시점 알림 */
@@ -70,6 +71,13 @@ public:
 	/** @brief 현재 재생 속도 배율 설정 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
 	void SetGachaPlaySpeed(float SpeedMultiplier);
+
+	/**
+	 * @brief [추가] 상자가 바닥에 쿵! 떨어지는 순간 시퀀서(Event Track)에서 호출할 함수
+	 * @details LS_Gacha_Intro 시퀀스에서 상자가 바닥에 닿는 정확한 프레임에 이 함수를 호출해주세요!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Summon")
+	void PlayBoxDropSound();
 
 	/** @brief 단일 캐릭터 리빌 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
@@ -356,6 +364,16 @@ private:
 	 */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AParadiseGachaItemActor>> SpawnedItems;
+
+	/** @brief 구슬 낙하음이 이번 가챠에서 한 번이라도 재생되었는지 체크하는 플래그 */
+	bool bHasPlayedOrbDropSound = false;
+
+	/** @brief 현재 재생 중인 구슬 리빌(터치) 사운드 컴포넌트 (겹침 방지용) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CurrentRevealSoundComp = nullptr;
+
+	// 박스 낙하 사운드 재생용 타이머 핸들
+	FTimerHandle BoxDropSoundTimerHandle;
 #pragma endregion 내부 상태
 
 protected:
@@ -365,5 +383,12 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Spawning", meta = (ClampMin = "0.0"))
 	float OrbLandingZOffset = 50.0f;
+
+	/**
+	 * @brief [추가] 가챠 시작 후 박스가 바닥에 닿기까지의 시간(초)
+	 * @details (LS_Gacha_Intro)를 보고 박스가 땅에 쿵! 닿는 타이밍(예: 0.5초, 1.2초)을 에디터에서 입력하면 됩니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Audio", meta = (ClampMin = "0.0"))
+	float BoxDropSoundDelay = 0.5f;
 
 };

@@ -7,6 +7,8 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/GachaSubsystem.h"
 #include "Framework/System/EconomySubsystem.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -82,6 +84,12 @@ void UParadiseSummonPanel::OnMultiSummonClicked()
 void UParadiseSummonPanel::RequestSummonAction(int32 DrawCount)
 {
 	if (!CachedGI.IsValid() || !CachedPlayerController.IsValid()) return;
+
+	// 가챠 실행(1회/10회) 버튼 클릭 효과음 재생
+	if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_GachaPullExecute)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_GachaPullExecute);
+	}
 
 	// 배너 데이터에서 요구 비용(에테르) 읽어오기
 	FGachaBannerData* BannerData = BannerDataRow.GetRow<FGachaBannerData>(TEXT("SummonPanel"));

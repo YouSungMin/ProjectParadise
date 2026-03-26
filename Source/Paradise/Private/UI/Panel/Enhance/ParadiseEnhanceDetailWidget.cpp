@@ -2,6 +2,8 @@
 
 
 #include "UI/Panel/Enhance/ParadiseEnhanceDetailWidget.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
@@ -101,9 +103,14 @@ void UParadiseEnhanceDetailWidget::ClearDetail()
 }
 void UParadiseEnhanceDetailWidget::PlayEnhancementFX(bool bSuccess)
 {
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+
 	if (bSuccess)
 	{
-		if (Sound_EnhanceSuccess) UGameplayStatics::PlaySound2D(this, Sound_EnhanceSuccess);
+		if (GI && GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceSuccess)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceSuccess);
+		}
 
 		// 버튼 연타 방지 잠금
 		if (Btn_Enhance) Btn_Enhance->SetIsEnabled(false);
@@ -119,15 +126,44 @@ void UParadiseEnhanceDetailWidget::PlayEnhancementFX(bool bSuccess)
 			HandleAnimationFinished(); // 애니메이션이 없으면 즉시 종료 처리
 		}
 	}
-	else
-	{
-		if (Sound_EnhanceFail) UGameplayStatics::PlaySound2D(this, Sound_EnhanceFail);
-	}
 }
 #pragma endregion 렌더링 로직
 
 #pragma region 이벤트 브로드캐스트
-void UParadiseEnhanceDetailWidget::HandleEnhanceBtn() { OnEnhanceClicked.Broadcast(); }
-void UParadiseEnhanceDetailWidget::HandleBreakthroughBtn() { OnBreakthroughClicked.Broadcast(); }
-void UParadiseEnhanceDetailWidget::HandleAnimationFinished() { OnEnhanceAnimFinished.Broadcast(); }
+void UParadiseEnhanceDetailWidget::HandleEnhanceBtn()
+{
+	// [추가] 강화 버튼 클릭 효과음
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceActionExecute)
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceActionExecute);
+	}
+	OnEnhanceClicked.Broadcast();
+}
+void UParadiseEnhanceDetailWidget::HandleBreakthroughBtn()
+{
+	// [추가] 돌파 버튼 클릭 효과음 (강화와 동일한 액션음 사용)
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceActionExecute)
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceActionExecute);
+	}
+	OnBreakthroughClicked.Broadcast();
+}
+void UParadiseEnhanceDetailWidget::HandleAnimationFinished()
+{
+	// 연출 끝난 후 버튼 노멀 상태로 복귀
+	if (Btn_Enhance)
+	{
+		Btn_Enhance->SetIsEnabled(false);
+		Btn_Enhance->SetIsEnabled(true);
+	}
+	if (Btn_Breakthrough)
+	{
+		Btn_Breakthrough->SetIsEnabled(false);
+		Btn_Breakthrough->SetIsEnabled(true);
+	}
+
+	OnEnhanceAnimFinished.Broadcast();
+}
 #pragma endregion 이벤트 브로드캐스트

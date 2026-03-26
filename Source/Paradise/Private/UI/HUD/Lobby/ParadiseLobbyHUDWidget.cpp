@@ -70,11 +70,6 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 					AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
 				}
 			}
-			// 다른 씬으로 완전히 빠져나갈 때 정지
-			else if (InCurrentMenu == EParadiseLobbyMenu::StageMap)
-			{
-				AudioMag->StopBGM(1.0f);
-			}
 		}
 	}
 

@@ -77,6 +77,12 @@ private:
 	UFUNCTION()
 	void OnSettingsButtonClicked();
 
+	/**
+	 * @brief 터치 연출(효과음, 페이드아웃)이 끝난 후 실제 로딩을 지시하는 헬퍼 함수
+	 * @details OnScreenTouched에서 타이머를 통해 지연 호출됩니다.
+	 */
+	void ExecuteLevelTransition();
+
 	/** @brief 중복 로딩 방지용 플래그 */
 	bool bIsLoadingStarted = false;
 #pragma endregion 내부 로직

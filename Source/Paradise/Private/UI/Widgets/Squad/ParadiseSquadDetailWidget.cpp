@@ -152,6 +152,26 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 				}
 			}
 		}
+		if (Img_SkillIcon)
+		{
+			if (FCharacterAssets* CharAsset = GI->GetDataTableRow<FCharacterAssets>(
+				GI->CharacterAssetsDataTable, InData.ID))
+			{
+				if (!CharAsset->UltimateIcon.IsNull())
+				{
+					UTexture2D* UltIcon = CharAsset->UltimateIcon.LoadSynchronous();
+					if (UltIcon)
+					{
+						Img_SkillIcon->SetBrushFromTexture(UltIcon);
+						Img_SkillIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					}
+				}
+				else
+				{
+					Img_SkillIcon->SetVisibility(ESlateVisibility::Collapsed);
+				}
+			}
+		}
 	}
 	break;
 
@@ -189,6 +209,26 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 				if (FActionStats* ActionRow = WpnStat->SkillActionHandle.GetRow<FActionStats>(TEXT("UI_WeaponSkillNameLookup")))
 				{
 					SkillInfoString = FString::Printf(TEXT("무기 스킬: %s"), *ActionRow->ActionName.ToString());
+				}
+			}
+		}
+		if (Img_SkillIcon)
+		{
+			if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(
+				GI->WeaponAssetsDataTable, InData.ID))
+			{
+				if (!WeaponAsset->WeaponSkillIcon.IsNull())
+				{
+					UTexture2D* SkillIcon = WeaponAsset->WeaponSkillIcon.LoadSynchronous();
+					if (SkillIcon)
+					{
+						Img_SkillIcon->SetBrushFromTexture(SkillIcon);
+						Img_SkillIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					}
+				}
+				else
+				{
+					Img_SkillIcon->SetVisibility(ESlateVisibility::Collapsed);
 				}
 			}
 		}
@@ -332,6 +372,7 @@ void UParadiseSquadDetailWidget::ClearInfo()
 	if (Text_Name) Text_Name->SetText(FText::GetEmpty());
 	if (Text_Desc) Text_Desc->SetText(FText::GetEmpty());
 	if (Img_Icon)  Img_Icon->SetVisibility(ESlateVisibility::Collapsed);
+	if (Img_SkillIcon) Img_SkillIcon->SetVisibility(ESlateVisibility::Collapsed);
 
 	if (Container_EquippedItems) Container_EquippedItems->SetVisibility(ESlateVisibility::Collapsed);
 	if (Container_Skill)         Container_Skill->SetVisibility(ESlateVisibility::Collapsed);

@@ -18,4 +18,7 @@ class PARADISE_API UDefeatPopupWidget : public UGameResultWidgetBase
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void NativeConstruct() override;
+
 };
