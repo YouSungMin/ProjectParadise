@@ -5,8 +5,6 @@
 #include "Components/Slider.h"
 #include "UI/Widgets/Ingame/ParadiseCommonButton.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundClass.h"
-#include "Sound/SoundMix.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -98,6 +96,7 @@ void USettingsPopupWidget::CloseSettings()
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SaveToSlot();
+		CachedAudioSettings->ApplyVolumeSettings();
 		UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 팝업 닫힘 → 볼륨 디스크 저장 완료"));
 	}
 
@@ -145,21 +144,6 @@ void USettingsPopupWidget::InitializeVolumeSliders()
 
 void USettingsPopupWidget::OnBGMVolumeChanged(float Value)
 {
-	/** @section 1. SetSoundMixClassOverride로 즉시 적용 */
-	if (MasterSoundMix && BGMSoundClass)
-	{
-		UGameplayStatics::SetSoundMixClassOverride(
-			this,
-			MasterSoundMix,
-			BGMSoundClass,
-			Value,
-			1.0f,  // Pitch (피치 변경 안 함)
-			0.0f,  // FadeInTime (즉시 적용)
-			true   // bApplyToChildren (자식 사운드 클래스에도 적용)
-		);
-	}
-
-	/** @section 2. 서브시스템의 RAM만 변경 (디스크 저장 안 함!) */
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SetBGMVolume(Value);
@@ -168,21 +152,6 @@ void USettingsPopupWidget::OnBGMVolumeChanged(float Value)
 
 void USettingsPopupWidget::OnSFXVolumeChanged(float Value)
 {
-	/** @section 1. SetSoundMixClassOverride로 즉시 적용 */
-	if (MasterSoundMix && SFXSoundClass)
-	{
-		UGameplayStatics::SetSoundMixClassOverride(
-			this,
-			MasterSoundMix,
-			SFXSoundClass,
-			Value,
-			1.0f,
-			0.0f,
-			true
-		);
-	}
-
-	/** @section 2. 서브시스템의 RAM만 변경 (디스크 저장 안 함!) */
 	if (CachedAudioSettings.IsValid())
 	{
 		CachedAudioSettings->SetSFXVolume(Value);
@@ -255,6 +224,12 @@ void USettingsPopupWidget::OnRetryClicked()
 
 void USettingsPopupWidget::ResumeTimeOnly()
 {
+	// 볼륨 디스크 저장
+	if (CachedAudioSettings.IsValid())
+	{
+		CachedAudioSettings->SaveToSlot();
+	}
+
 	if (APlayerController* PC = GetOwningPlayer())
 	{
 		if (bPauseGameOnOpen)

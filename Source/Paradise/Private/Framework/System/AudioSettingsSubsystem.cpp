@@ -4,6 +4,8 @@
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/System/SettingsSaveGame.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundMix.h"
+#include "Sound/SoundClass.h"
 
 #pragma region 생명주기
 void UAudioSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -13,7 +15,18 @@ void UAudioSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	/** @section 디스크에서 저장된 볼륨 로드 */
 	LoadFromSlot();
 
-	//UE_LOG(LogTemp, Log, TEXT("[AudioSettingsSubsystem] 초기화 완료. BGM=%.2f, SFX=%.2f"), CurrentBGMVolume, CurrentSFXVolume);
+	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
+		this, &UAudioSettingsSubsystem::OnMapLoaded);
+}
+void UAudioSettingsSubsystem::Deinitialize()
+{
+	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+	Super::Deinitialize();
+}
+
+void UAudioSettingsSubsystem::OnMapLoaded(UWorld* LoadedWorld)
+{
+	ApplyVolumeSettings();
 }
 #pragma endregion 생명주기
 
@@ -28,6 +41,32 @@ void UAudioSettingsSubsystem::SetSFXVolume(float NewVolume)
 {
 	CurrentSFXVolume = FMath::Clamp(NewVolume, 0.0f, 1.0f);
 	//UE_LOG(LogTemp, Verbose, TEXT("[AudioSettings] SFX 볼륨 RAM 변경: %.2f"), CurrentSFXVolume);
+}
+
+void UAudioSettingsSubsystem::ApplyVolumeSettings()
+{
+	if (!MasterSoundMix) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// SM_Master 활성화
+	UGameplayStatics::PushSoundMixModifier(World, MasterSoundMix);
+
+	// 저장된 볼륨 즉시 적용
+	if (BGMSoundClass)
+	{
+		UGameplayStatics::SetSoundMixClassOverride(
+			World, MasterSoundMix, BGMSoundClass,
+			CurrentBGMVolume, 1.0f, 0.0f, true);
+	}
+
+	if (SFXSoundClass)
+	{
+		UGameplayStatics::SetSoundMixClassOverride(
+			World, MasterSoundMix, SFXSoundClass,
+			CurrentSFXVolume, 1.0f, 0.0f, true);
+	}
 }
 #pragma endregion 외부 인터페이스 - Getter/Setter (RAM)
 

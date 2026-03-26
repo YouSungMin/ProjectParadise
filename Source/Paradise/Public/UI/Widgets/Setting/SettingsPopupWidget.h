@@ -9,8 +9,6 @@
 #pragma region 전방 선언
 class USlider;
 class UParadiseCommonButton;
-class USoundMix;
-class USoundClass;
 class ULevelLoadingSubsystem;
 class UAudioSettingsSubsystem;
 class UParadiseFXAudioData;
@@ -160,27 +158,6 @@ protected:
 
 #pragma region 데이터 드리븐 설정
 protected:
-	/**
-	 * @brief 오디오 마스터 믹스.
-	 * @details 기획자가 BP 디테일 패널에서 할당해야 볼륨 제어가 작동합니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "마스터 사운드 믹스"))
-	TObjectPtr<USoundMix> MasterSoundMix = nullptr;
-
-	/**
-	 * @brief 배경음악(BGM) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "BGM 사운드 클래스"))
-	TObjectPtr<USoundClass> BGMSoundClass = nullptr;
-
-	/**
-	 * @brief 효과음(SFX) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "SFX 사운드 클래스"))
-	TObjectPtr<USoundClass> SFXSoundClass = nullptr;
-
 	/**
 	 * @brief 로비 레벨 이름.
 	 * @details 로비로 돌아가기 버튼 클릭 시 이동할 레벨을 기획자가 설정합니다.
