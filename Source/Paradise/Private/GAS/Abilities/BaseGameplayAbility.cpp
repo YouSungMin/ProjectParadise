@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Characters/AIUnit/SkillCasterUnit.h"
@@ -57,8 +58,15 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	//0326 김성현 플레이어 차원에서 이동 방지
+	if (ACharacter* Char = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+	{
+		// 스킬 시작 시 걷고 있던 물리적 관성을 즉시 정지
+		Char->GetCharacterMovement()->StopMovementImmediately();
+	}
+
 	// [추가] 03/23 담당자: 최지원, 어빌리티 시작 시 이동 차단
-	SetJoystickLocked(ActorInfo, true);
+	//SetJoystickLocked(ActorInfo, true);
 	// 어빌리티 시작 시 다른 액션 버튼 잠금
 	SetActionButtonsLocked(ActorInfo, true);
 
@@ -78,7 +86,7 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	// [추가] 03/23 담당자: 최지원, 어빌리티 종료 시 이동 재개
-	SetJoystickLocked(ActorInfo, false);
+	//SetJoystickLocked(ActorInfo, false);
 	// 어빌리티 종료 시 다른 액션 버튼 잠금 해제
 	SetActionButtonsLocked(ActorInfo, false);
 
@@ -294,41 +302,41 @@ FCombatActionData UBaseGameplayAbility::GetCombatDataFromActorInfo(const FGamepl
 	return Data;
 }
 
-void UBaseGameplayAbility::SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
-{
-	if (!ActorInfo) return;
-
-	// ✅ PlayerController 대신 AvatarActor → GetController()로 접근
-	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
-	if (!AvatarActor)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 null입니다."));
-		return;
-	}
-
-	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
-	if (!AvatarPawn)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 Pawn이 아닙니다."));
-		return;
-	}
-
-	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
-	if (!InGamePC)
-	{
-		// AI가 조종 중이면 정상적으로 null — 조용히 리턴
-		return;
-	}
-
-	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
-	if (!HUD) return;
-
-	UVirtualJoystickWidget* Joystick = HUD->GetVirtualJoystick();
-	if (!Joystick) return;
-
-	Joystick->SetMovementLocked(bLocked);
-	UE_LOG(LogTemp, Warning, TEXT("[JoystickLock] 조이스틱 %s 완료"), bLocked ? TEXT("잠금") : TEXT("해제"));
-}
+//void UBaseGameplayAbility::SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
+//{
+//	if (!ActorInfo) return;
+//
+//	// ✅ PlayerController 대신 AvatarActor → GetController()로 접근
+//	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+//	if (!AvatarActor)
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 null입니다."));
+//		return;
+//	}
+//
+//	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
+//	if (!AvatarPawn)
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 Pawn이 아닙니다."));
+//		return;
+//	}
+//
+//	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
+//	if (!InGamePC)
+//	{
+//		// AI가 조종 중이면 정상적으로 null — 조용히 리턴
+//		return;
+//	}
+//
+//	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
+//	if (!HUD) return;
+//
+//	UVirtualJoystickWidget* Joystick = HUD->GetVirtualJoystick();
+//	if (!Joystick) return;
+//
+//	Joystick->SetMovementLocked(bLocked);
+//	UE_LOG(LogTemp, Warning, TEXT("[JoystickLock] 조이스틱 %s 완료"), bLocked ? TEXT("잠금") : TEXT("해제"));
+//}
 
 void UBaseGameplayAbility::SetActionButtonsLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
 {

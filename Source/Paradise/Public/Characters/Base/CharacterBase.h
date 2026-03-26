@@ -50,6 +50,10 @@ public:
 	 */
 	virtual void Die();
 
+	/** @brief 현재 캐릭터가 이동 가능한 상태인지 (태그 기반) 검사합니다. */
+	UFUNCTION(BlueprintPure, Category = "Status")
+	virtual bool CanMove() const;
+
 	/* @brief 현재 캐릭터의 사망여부 체크 함수 */
 	bool IsDead() const { return bIsDead; } // Getter 추가
 

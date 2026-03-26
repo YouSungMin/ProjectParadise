@@ -6,6 +6,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GAS/System/ParadiseGameplayTags.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interfaces/ObjectPoolInterface.h"
@@ -40,8 +41,8 @@ void ACharacterBase::TestKillSelf()
 
 void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 {
-	// 1. 트레이스 좌표 설정 (인디케이터와 100% 동일한 공식 적용!)
-	// 애니메이션의 무기 소켓 위치를 쓰지 않고, 오직 데이터 테이블의 수치만 따릅니다.
+	// 트레이스 좌표 설정 ,인디케이터와 100% 동일한 공식 적용
+	// 애니메이션의 무기 소켓 위치를 쓰지 않고, 오직 데이터 테이블의 수치
 
 	float BaseOffset = 100.0f; // 인디케이터에서 썼던 기본 오프셋
 	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
@@ -58,7 +59,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
 
-	// 2. 🟢 다중 광역 타격을 위한 ForObjects 스캔 적용
+	//다중 광역 타격을 위한 ForObjects 스캔 적용
 
 	// 찾고자 하는 대상 타입 설정 (Pawn)
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -83,7 +84,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		0.2f                 // ⏱️ DrawTime: 화면에 유지되는 시간 (예: 2.0초)
 	);
 
-	// 3. 결과 처리 (다수 타격 및 아군/적군 필터링)
+	// 결과 처리 (다수 타격 및 아군/적군 필터링)
 	if (bHit)
 	{
 		for (const FHitResult& Result : HitResults)
@@ -108,7 +109,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 			// 필터가 Ally(아군)인데, 적군이라면 무시 
 			if (Filter == ETargetFilter::Friendly && bIsHostile) continue;
 
-			// 4. GAS 이벤트 전송 (최종 데미지/버프 적용)
+			// GAS 이벤트 전송 (최종 데미지/버프 적용)
 			FGameplayEventData Payload;
 			Payload.Instigator = this;
 			Payload.Target = HitActor;
@@ -456,6 +457,20 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+bool ACharacterBase::CanMove() const
+{
+	// 죽었으면 이동 불가
+	if (IsDead()) return false;
+
+	if (AbilitySystemComponent)
+	{
+		FGameplayTag NoMoveTag = FGameplayTag::RequestGameplayTag(FName("State.Action.NoMove"));
+		if (AbilitySystemComponent->HasMatchingGameplayTag(NoMoveTag)) return false;
+	}
+
+	return true;
 }
 
 void ACharacterBase::Die()
