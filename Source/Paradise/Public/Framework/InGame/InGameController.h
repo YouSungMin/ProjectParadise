@@ -97,6 +97,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	UInGameHUDWidget* GetOrCreateInGameHUD();
 
+	/** @brief 액션 패널의 활성화 여부를 설정합니다. */
+	void SetActionPanelEnabled(bool bEnabled);
+
 protected:
 	/** 
 	 * @brief 생성할 HUD 위젯 클래스 (BP_InGameHUD 할당용)

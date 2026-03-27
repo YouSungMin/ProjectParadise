@@ -93,6 +93,10 @@ void AParadiseCameraManager::StartUltimateCamera(AActor* TargetActor)
     bIsUltimatePlaying = true;
     CurrentUltimateTarget = TargetActor; // 복구를 위해 현재 스킬 시전자를 기억해둠
 
+    if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayerController()))
+    {
+        InGamePC->SetActionPanelEnabled(false);
+    }
     HiddenActors.Empty();
 
     // 검사 설정
@@ -307,5 +311,9 @@ void AParadiseCameraManager::BeginPlay()
 void AParadiseCameraManager::UnlockUltimateState()
 {
     bIsUltimatePlaying = false; // 이제 진짜로 궁극기 잠금 해제!
+    if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayerController()))
+    {
+        InGamePC->SetActionPanelEnabled(true);
+    }
     UE_LOG(LogTemp, Log, TEXT("✅ [Camera] 카메라 복귀 완료. 이제 다음 궁극기 사용이 가능합니다."));
 }
