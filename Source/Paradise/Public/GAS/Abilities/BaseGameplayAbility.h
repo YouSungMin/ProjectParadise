@@ -63,6 +63,9 @@ public:
 	/** @brief 어빌리티 종료 시 캐릭터의 스킬 시전 상태를 초기화(-1)합니다. */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+	/** @brief 어빌리티 발동 조건을 검사합니다. (마나, 쿨타임 및 궁극기 중복 사용 방지) */
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const override;
+
 	/**
 	 * @brief 생성된 스펙 핸들을 타겟 액터에게 적용합니다.
 	 * * @param TargetActor 이펙트를 맞을 대상 액터.

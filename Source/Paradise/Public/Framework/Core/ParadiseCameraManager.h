@@ -32,12 +32,13 @@ public:
 	void StartUltimateCamera(AActor* TargetActor);
 
 	/** @brief 궁극기 전용 카메라 연출 종료 및 복귀 */
-	void StopUltimateCamera();
+	void StopUltimateCamera(AActor* RequestingActor);
 protected:
 
 	virtual void BeginPlay() override;
 
-
+	// 실제로 잠금을 해제할 함수
+	void UnlockUltimateState();
 
 public:
 	/** @brief 현재 궁극기 연출 중인지 여부 (카메라 뺏김 방지) */
@@ -49,7 +50,13 @@ public:
 	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
 	FRotator LastDeathRotation = FRotator::ZeroRotator;
 
+	/** @brief 슬로우 모션을 해제할 때 원래 속도로 돌려주기 위해 타겟을 기억해둡니다. */
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentUltimateTarget = nullptr;
+
 protected:
+	// 궁극기 카메라 복귀 딜레이를 위한 타이머
+	FTimerHandle UltimateCooldownTimerHandle;
 
 	/** @brief 전장을 조망하는 전체 뷰 전용 카메라 액터 (에디터에서 할당) */
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera")
@@ -61,7 +68,7 @@ protected:
 
 	/** @brief 카메라 전환 시 걸리는 블렌딩 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
-	float CameraBlendTime = 1.5f;
+	float CameraBlendTime = 3.0f;
 
 	//궁극기 연출 관련
 
@@ -103,7 +110,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<class APointLight> UltimateLightActor = nullptr;
 
-	/** @brief 슬로우 모션을 해제할 때 원래 속도로 돌려주기 위해 타겟을 기억해둡니다. */
+	/** @brief 궁극기 연출 중 숨겨놓을 액터 */
 	UPROPERTY()
-	TObjectPtr<AActor> CurrentUltimateTarget = nullptr;
+	TArray<TWeakObjectPtr<AActor>> HiddenActors;
+
+	
 };

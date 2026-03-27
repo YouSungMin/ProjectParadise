@@ -22,26 +22,26 @@ void UTestNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 
 		AActor* OwnerActor = MeshComp->GetOwner();
 		//0327 김성현 - 궁극기 연출 해제 타이밍
-		if (bStopUltimateEffect)
-		{
-			// 현재 액터를 소유한 로컬 플레이어 컨트롤러를 가져옴
-			if (APlayerController* MainPC = UGameplayStatics::GetPlayerController(OwnerActor, 0))
-			{
-				if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
-				{
-					// 1. 카메라 매니저 줌인/슬로우모션 등 연출 끄기
-					if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
-					{
-						CamMgr->StopUltimateCamera();
-					}
+		//궁극기 연출 종료 옵션이 꺼져있다면 여기서 더 이상 진행할 필요 없음
+		if (!bStopUltimateEffect) return;
 
-					// 2. 포스트 프로세스 볼륨 (배경 어두워짐 등) 연출 끄기
-					if (UUltimateEffectComponent* EffectComp = InGamePC->GetUltimateEffectComponent())
-					{
-						EffectComp->StopUltimateEffect();
-					}
-				}
-			}
+		//컨트롤러 및 카메라 매니저 캐싱 (실패 시 즉시 종료)
+		AInGameController* InGamePC = Cast<AInGameController>(UGameplayStatics::GetPlayerController(OwnerActor, 0));
+		if (!InGamePC) return;
+
+		AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager);
+		if (!CamMgr) return;
+
+		//[핵심 방어] 이 노티파이를 밟은 캐릭터가 '진짜 시전자'가 아니면 즉시 종료
+		if (CamMgr->CurrentUltimateTarget != OwnerActor) return;
+
+		// 6. 모든 관문을 통과했으므로 실제 연출 끄기 실행
+		UE_LOG(LogTemp, Warning, TEXT("[TestNotify] 궁극기 연출 종료 : %s"), *OwnerActor->GetName());
+		CamMgr->StopUltimateCamera(OwnerActor);
+
+		if (UUltimateEffectComponent* EffectComp = InGamePC->GetUltimateEffectComponent())
+		{
+			EffectComp->StopUltimateEffect();
 		}
     }
 
