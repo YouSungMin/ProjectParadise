@@ -257,7 +257,11 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 				// 패배 시 정산 없이 패배창만 띄움
 				if (Widget_DefeatPopup)
 				{
+					// 1. 위젯을 화면에 보이게 켭니다.
 					Widget_DefeatPopup->SetVisibility(ESlateVisibility::Visible);
+
+					// 2. 애니메이션 큐 사인 발사! (방금 만든 함수 호출)
+					Widget_DefeatPopup->PlayIntroAnimation();
 
 					// 패배창이 실제로 열릴 때 패배 음악 재생
 					if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
