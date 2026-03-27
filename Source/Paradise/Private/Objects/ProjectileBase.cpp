@@ -153,35 +153,53 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	// 타격 명단 등록 및 데미지 적용
 	HitActors.Add(OtherActor);
-	ApplyDamageToTarget(OtherActor);
 
 	// ==========================================================
 	// 폭발 기믹 검사 (스플래시 데미지)
 	// ==========================================================
 	if (CachedProjStats.ExplosionRadius > 0.0f)
 	{
-		TArray<AActor*> IgnoredActors = HitActors.Array();
+		// 폭발 범위에 있는 대상들을 모을 배열
+		TArray<AActor*> OverlappedActors;
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+		// 나와 내 주인만 무시 (주 타겟 OtherActor는 무시하지 않음!)
+		TArray<AActor*> IgnoredActors;
 		IgnoredActors.Add(this);
 		IgnoredActors.Add(GetInstigator());
 
-		TArray<FHitResult> HitResults;
-		UKismetSystemLibrary::SphereTraceMulti(
-			this, GetActorLocation(), GetActorLocation(), CachedProjStats.ExplosionRadius,
-			UEngineTypes::ConvertToTraceType(ECC_Pawn), false, IgnoredActors,
-			EDrawDebugTrace::None, HitResults, true // 디버그를 끄려면 EDrawDebugTrace::None 유지
+		// 🌟 제자리 폭발은 OverlapActors 사용!
+		UKismetSystemLibrary::SphereOverlapActors(
+			this,
+			GetActorLocation(),
+			CachedProjStats.ExplosionRadius,
+			ObjectTypes,
+			nullptr,
+			IgnoredActors,
+			OverlappedActors
 		);
 
-		for (const FHitResult& Hit : HitResults)
+		// 범위 안의 모든 적에게 데미지 적용
+		for (AActor* HitActor : OverlappedActors)
 		{
-			if (IsValidTarget(Hit.GetActor()))
+			if (IsValidTarget(HitActor))
 			{
-				ApplyDamageToTarget(Hit.GetActor());
+				ApplyDamageToTarget(HitActor);
 			}
 		}
 
-		// 폭발했으면 관통 여부 상관없이 소멸!
+		// (디버그) 폭발 범위 시각화 - 확인 후 주석 처리하세요
+		// DrawDebugSphere(GetWorld(), GetActorLocation(), CachedProjStats.ExplosionRadius, 32, FColor::Orange, false, 1.0f);
+
+		// 폭발했으면 무조건 소멸
 		ReturnSelfToPool();
 		return;
+	}
+	else
+	{
+		// 폭발 기믹이 없을 때만 방금 닿은 OtherActor에게 단일 데미지 적용
+		ApplyDamageToTarget(OtherActor);
 	}
 
 	// ==========================================================

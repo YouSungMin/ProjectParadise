@@ -84,7 +84,7 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출3"));
-				CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
+				//CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
 			}
 		}
 	}
@@ -119,7 +119,7 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 		{
 			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
 			{
-				CamMgr->StopUltimateCamera();
+				//CamMgr->StopUltimateCamera();
 			}
 		}
 	}
