@@ -33,5 +33,5 @@ protected:
 	 * @brief 공격 판정 기준 소켓 이름 (예: hand_r, Muzzle_01, Jaw 등)
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	FName SocketName = FName("hand_r");
+	FName SocketName = FName("None");
 };
