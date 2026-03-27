@@ -6,6 +6,11 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Components/RetainerBox.h"
+#include "Animation/WidgetAnimation.h"
+#include "Framework/System/LevelLoadingSubsystem.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "Materials/MaterialParameterCollection.h"
 
 ULoadingWidget::ULoadingWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -18,6 +23,81 @@ void ULoadingWidget::NativeConstruct()
 
 	// 초기화 시 0%로 설정
 	SetLoadingPercent(0.0f);
+	bIsDisappearing = false;
+
+	// 2. 리테이너 박스 가시성 보장
+	if (Retainer_TransitionEffect)
+	{
+		Retainer_TransitionEffect->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (ULevelLoadingSubsystem* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
+		{
+			if (LoadingSys->IsAppearingPhase())
+			{
+				// ✅ 한 프레임 뒤에 재생 → InitLoadingImage 세팅 후 재생 보장
+				if (GetWorld())
+				{
+					GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+						{
+							if (Anim_Appear)
+							{
+								PlayAnimation(Anim_Appear);
+							}
+						});
+				}
+			}
+		}
+	}
+}
+void ULoadingWidget::InitAsCovered()
+{
+	// MPC Progress를 1로 즉시 세팅하여 화면 완전히 가림
+	if (MPC_Loading) // 에디터에서 할당
+	{
+		UKismetMaterialLibrary::SetScalarParameterValue(
+			GetWorld(), MPC_Loading, FName("Progress"), 1.3f);
+	}
+}
+void ULoadingWidget::PlayDisappearAnim()
+{
+	if (Anim_Disappear && !bIsDisappearing)
+	{
+		bIsDisappearing = true;
+		PlayAnimation(Anim_Disappear);
+	}
+}
+void ULoadingWidget::ShowContent()
+{
+	if (MPC_Loading)
+	{
+		UKismetMaterialLibrary::SetScalarParameterValue(
+			GetWorld(), MPC_Loading, FName("Progress"), 0.0f);
+	}
+}
+void ULoadingWidget::OnAnimationFinished_Implementation(const UWidgetAnimation* Animation)
+{
+	Super::OnAnimationFinished_Implementation(Animation);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (ULevelLoadingSubsystem* LoadingSys = GI->GetSubsystem<ULevelLoadingSubsystem>())
+		{
+			if (Animation == Anim_Appear)
+			{
+				// ✅ Anim_Appear 완료 → 서브시스템에 알림 → OpenLevel(L_Loading)
+				LoadingSys->NotifyAppearFinished();
+			}
+			else if (Animation == Anim_Disappear)
+			{
+				// ✅ Anim_Disappear 완료 → 서브시스템에 알림 → 위젯 제거
+				LoadingSys->NotifyDisappearFinished();
+				OnLoadingComplete();
+			}
+		}
+	}
 }
 
 void ULoadingWidget::InitLoadingImage(FName CurrentLevel, FName TargetLevel, TSoftObjectPtr<UTexture2D> InDefaultStageImage)
@@ -29,13 +109,13 @@ void ULoadingWidget::InitLoadingImage(FName CurrentLevel, FName TargetLevel, TSo
 	FString TargetMapName = TargetLevel.ToString().ToLower();
 
 	// 2. 상황 판단 우선순위 (Data-Driven Priority)
-	// 🚨 [해결 포인트] Title 키워드가 포함되어 있고, 목적지가 Lobby(로비)인 경우
+	// Title 키워드가 포함되어 있고, 목적지가 Lobby(로비)인 경우
 	if (CurrentMapName.Contains(TEXT("title")) && TargetMapName.Contains(TEXT("lobby")))
 	{
 		FinalImage = SpecialImages.TitleToLobby;
 		UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Title -> Lobby"));
 	}
-	// 🚨 목적지가 로비인데, 출발지가 타이틀이 아니었다면 (스테이지 -> 로비)
+	// 목적지가 로비인데, 출발지가 타이틀이 아니었다면 (스테이지 -> 로비)
 	else if (TargetMapName.Contains(TEXT("lobby")))
 	{
 		FinalImage = SpecialImages.StageToLobby;
@@ -70,11 +150,6 @@ void ULoadingWidget::SetLoadingPercent(float Percent)
 	if (PB_LoadingBar)
 	{
 		PB_LoadingBar->SetPercent(ClampedPercent);
-	}
-	// 3. 완료 이벤트 트리거
-	if (ClampedPercent >= 1.0f)
-	{
-		OnLoadingComplete();
 	}
 }
 

@@ -19,6 +19,8 @@
 #include "Components/AutoCombatComponent.h"
 #include "Components/EquipmentComponent.h"
 #include "Components/UltimateEffectComponent.h"
+#include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Engine/Texture2D.h"
@@ -50,6 +52,18 @@ void UActionControlPanel::NativeConstruct()
 	}
 #pragma endregion 태그 버튼 배열화 및 캐싱
 
+	// 태그 쿨타임 바 배열화
+	TagCooldownBars.Empty();
+	if (PB_TagCooldown_A) TagCooldownBars.Add(PB_TagCooldown_A);
+	if (PB_TagCooldown_B) TagCooldownBars.Add(PB_TagCooldown_B);
+	if (PB_TagCooldown_C) TagCooldownBars.Add(PB_TagCooldown_C);
+	// 태그 쿨타임 텍스트
+	TagCooldownTexts.Empty();
+	if (Text_TagCooldown_A) TagCooldownTexts.Add(Text_TagCooldown_A);
+	if (Text_TagCooldown_B) TagCooldownTexts.Add(Text_TagCooldown_B);
+	if (Text_TagCooldown_C) TagCooldownTexts.Add(Text_TagCooldown_C);
+
+	ClearTagCooldownVisual();
 
 	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
 	// 2. 기본 공격 버튼 바인딩 (Common UI의 기본 OnPressed/OnReleased 사용)
@@ -82,30 +96,6 @@ void UActionControlPanel::NativeConstruct()
 		SkillSlot_Ultimate->OnSkillReleased.AddDynamic(this, &UActionControlPanel::OnUltimateSkillReleased);
 	}
 
-
-	//// 2. 기본 공격 버튼 바인딩
-	//if (AttackBtn)
-	//{
-	//	// Common UI의 OnSelected 혹은 OnClicked를 사용합니다.
-	//	AttackBtn->OnClicked().RemoveAll(this);
-	//	AttackBtn->OnClicked().AddUObject(this, &UActionControlPanel::OnAttackButtonClicked);
-	//	UE_LOG(LogTemp, Warning, TEXT(" 공격 키 바인드 됨 "));
-	//}
-
-	//// 3. 액티브 스킬 슬롯 바인딩
-	//if (SkillSlot_Active)
-	//{
-	//	SkillSlot_Active->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
-	//	SkillSlot_Active->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnActiveSkillRequested);
-	//}
-
-	////  4. 궁극기 스킬 슬롯 바인딩
-	//if (SkillSlot_Ultimate)
-	//{
-	//	SkillSlot_Ultimate->OnSkillActionRequested.RemoveDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
-	//	SkillSlot_Ultimate->OnSkillActionRequested.AddDynamic(this, &UActionControlPanel::OnUltimateSkillRequested);
-	//}
-
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 	{
 		if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
@@ -118,8 +108,6 @@ void UActionControlPanel::NativeConstruct()
 		}
 	}
 
-	// 5. 로비 데이터 연동 초기화
-	//InitTagButtons();
 }
 
 void UActionControlPanel::NativeDestruct()
@@ -141,11 +129,6 @@ void UActionControlPanel::NativeDestruct()
 		SkillSlot_Ultimate->OnSkillReleased.RemoveAll(this);
 	}
 
-	// 위젯 파괴 시 남아있는 포인터들을 깔끔하게 정리 (메모리 릭 원천 차단)
-	/*if (AttackBtn) AttackBtn->OnClicked().RemoveAll(this);
-	if (SkillSlot_Active) SkillSlot_Active->OnSkillActionRequested.RemoveAll(this);
-	if (SkillSlot_Ultimate) SkillSlot_Ultimate->OnSkillActionRequested.RemoveAll(this);*/
-
 	for (TObjectPtr<UCommonButtonBase> Btn : TagButtons)
 	{
 		if (Btn) Btn->OnClicked().RemoveAll(this);
@@ -153,7 +136,9 @@ void UActionControlPanel::NativeDestruct()
 
 	TagButtons.Empty();
 	CachedPlayer = nullptr;
-
+	TagCooldownBars.Empty();
+	TagCooldownTexts.Empty();
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(TimerHandle_TagVisual);
 	Super::NativeDestruct();
 }
 
@@ -172,6 +157,58 @@ void UActionControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[ActionPanel] 오토 모드 상태 변경 수신! 액션 UI %s"), bEnableCombatUI ? TEXT("잠금 해제") : TEXT("잠금 처리"));
+}
+
+void UActionControlPanel::UpdateTagCooldownVisual()
+{
+	// 0.05초 간격으로 깎음
+	CurrentTagCooldown -= 0.05f;
+
+	if (CurrentTagCooldown <= 0.0f)
+	{
+		ClearTagCooldownVisual();
+		return;
+	}
+
+	// 퍼센트 계산
+	const float Percent = FMath::Clamp(CurrentTagCooldown / MaxTagCooldown, 0.0f, 1.0f);
+	const int32 RemainSeconds = FMath::CeilToInt(CurrentTagCooldown);
+
+	// 3개의 프로그레스 바를 동시에 깎아줍니다.
+	for (UProgressBar* PB : TagCooldownBars)
+	{
+		if (PB) PB->SetPercent(Percent);
+	}
+	// 3개의 쿨타임 텍스트 숫자 갱신
+	for (UTextBlock* Text : TagCooldownTexts)
+	{
+		if (Text) Text->SetText(FText::AsNumber(RemainSeconds));
+	}
+}
+
+void UActionControlPanel::ClearTagCooldownVisual()
+{
+	CurrentTagCooldown = 0.0f;
+
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(TimerHandle_TagVisual);
+
+	// 3개의 프로그레스 바 초기화 및 숨김
+	for (UProgressBar* PB : TagCooldownBars)
+	{
+		if (PB)
+		{
+			PB->SetPercent(0.0f);
+			PB->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+	// 3개의 텍스트 초기화 및 숨김
+	for (UTextBlock* Text : TagCooldownTexts)
+	{
+		if (Text)
+		{
+			Text->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 }
 
 #pragma region 외부 인터페이스 구현
@@ -637,23 +674,6 @@ void UActionControlPanel::OnUltimateSkillReleased()
 	ProcessAbilityInput(EInputID::Ultimate); // 진짜 발동
 }
 
-//void UActionControlPanel::OnAttackButtonClicked()
-//{
-//	ProcessAbilityInput(EInputID::Attack);
-//}
-//
-//void UActionControlPanel::OnActiveSkillRequested()
-//{
-//	UE_LOG(LogTemp, Log, TEXT("스킬키 입력 들어옴"));
-//	ProcessAbilityInput(EInputID::Skill);
-//}
-//
-//void UActionControlPanel::OnUltimateSkillRequested()
-//{
-//	UE_LOG(LogTemp, Log, TEXT("궁극키 입력 들어옴"));
-//	ProcessAbilityInput(EInputID::Ultimate);
-//}
-
 void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 {
 	//0303 김성현 - Fix 스위치 한 영웅이 어빌리티를 발동하지 않는 문제 수정
@@ -734,12 +754,40 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 			SetTagButtonsEnabled(false);
 			UE_LOG(LogTemp, Log, TEXT("🔒 [ActionPanel] 궁극기 발동! 교체 버튼을 %.1f초간 잠급니다."), UltimateDuration);
 
+			// 태그 쿨타임 세팅
+			MaxTagCooldown = UltimateDuration;
+			CurrentTagCooldown = UltimateDuration;
+
+			// 3개의 쿨타임 바를 화면에 띄움
+			for (UProgressBar* PB : TagCooldownBars)
+			{
+				if (PB) PB->SetVisibility(ESlateVisibility::HitTestInvisible);
+			}
+			// 3개의 텍스트도 화면에 띄우고 초기 숫자 셋팅
+			for (UTextBlock* Text : TagCooldownTexts)
+			{
+				if (Text)
+				{
+					Text->SetVisibility(ESlateVisibility::HitTestInvisible);
+					Text->SetText(FText::AsNumber(FMath::CeilToInt(UltimateDuration)));
+				}
+			}
+
 			// 2. 궁극기 연출 시간에 맞춰 UI 스스로 자물쇠 해제!
 			GetWorld()->GetTimerManager().SetTimer(
 				TimerHandle_TagLock,
 				FTimerDelegate::CreateUObject(this, &UActionControlPanel::SetTagButtonsEnabled, true),
 				UltimateDuration,
 				false
+			);
+
+			// 3. 프로그레스 바 깎는 타이머 가동
+			GetWorld()->GetTimerManager().SetTimer(
+				TimerHandle_TagVisual,
+				this,
+				&UActionControlPanel::UpdateTagCooldownVisual,
+				0.05f,
+				true
 			);
 		}
 

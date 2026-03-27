@@ -10,6 +10,8 @@
 #pragma region 전방 선언
 class UParadiseCommonButton;
 class USkillSlotWidget;
+class UTextBlock;
+class UProgressBar;
 class APlayerBase;
 class AInGameController;
 class UTexture2D;
@@ -111,18 +113,6 @@ private:
 	UFUNCTION()
 	void OnUltimateSkillReleased();
 
-	///** @brief 공격 버튼 클릭 시 발생할 이벤트 핸들러 */
-	//UFUNCTION()
-	//void OnAttackButtonClicked();
-
-	///** 액티브 스킬 델리게이트 수신용 래퍼 함수 */
-	//UFUNCTION() 
-	//void OnActiveSkillRequested();
-
-	///** 궁극기 델리게이트 수신용 래퍼 함수 */
-	//UFUNCTION() 
-	//void OnUltimateSkillRequested();
-
 	/**
 	 * @brief UI 버튼 입력을 통합하여 플레이어의 ASC로 전달하는 중앙 제어 함수입니다.
 	 * @details 하드코딩된 개별 콜백 함수들을 대체하며, 입력 ID에 따라 적절한 어빌리티 신호를 송신합니다.
@@ -144,6 +134,12 @@ private:
 	 */
 	UFUNCTION()
 	void HandleAutoBattleStateChanged(bool bIsAuto);
+
+	/** @brief 태그 버튼 쿨타임 애니메이션 갱신 콜백 */
+	void UpdateTagCooldownVisual();
+
+	/** @brief 태그 버튼 쿨타임 리셋 및 숨김 처리 */
+	void ClearTagCooldownVisual();
 #pragma endregion 내부 로직
 
 private:
@@ -169,6 +165,26 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseCommonButton> TagBtn_C = nullptr;
+
+	/** @brief 궁극기 버튼 누를시에 나올 태그 쿨타임 PB */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_A = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_B = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_C = nullptr;
+
+	/** @brief 쿨타임 숫자를 표시할 텍스트 3개 추가 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_A = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_B = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_C = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 내부 데이터
@@ -178,6 +194,12 @@ private:
 
 	/** @brief 궁극기 연출 후 태그 잠금을 풀기 위한 타이머 핸들 */
 	FTimerHandle TimerHandle_TagLock;
+
+	/**
+	 * @brief 게이지 갱신 타이머 핸들
+	 * @details 지역 변수 대신 멤버 변수로 선언해야 ClearTimer로 멈출 수 있습니다!
+	 */
+	FTimerHandle TimerHandle_TagVisual;
 
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
 	TWeakObjectPtr<APlayerBase> CachedPlayer = nullptr;
@@ -200,6 +222,19 @@ private:
 	/** @brief 캐릭터별 궁극기 쿨타임 종료 시각을 기록 (교체 복구용) */
 	UPROPERTY()
 	TMap<FName, float> UltimateEndTimes;
+
+	/** @brief 프로그레스 바 일괄 처리를 위한 캐싱 배열 */
+	UPROPERTY()
+	TArray<TObjectPtr<UProgressBar>> TagCooldownBars;
+
+	/** @brief 텍스트 일괄 제어를 위한 캐싱 배열 */
+	UPROPERTY()
+	TArray<TObjectPtr<UTextBlock>> TagCooldownTexts;
+
+	/** @brief 현재 태그 쿨타임 */
+	float CurrentTagCooldown = 0.0f;
+	/** @brief 최대 태그 쿨타임 */
+	float MaxTagCooldown = 0.0f;
 #pragma endregion 내부 데이터
 
 #pragma region 데이터 드리븐 설정

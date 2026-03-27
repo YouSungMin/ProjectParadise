@@ -12,6 +12,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Framework/InGame/Actors/DamageTextActor.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 #include "Components/SquadControlComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -82,6 +83,15 @@ void AInGameGameMode::BeginPlay()
 		{
 			if (FStageAssets* Assets = GI->GetDataTableRow<FStageAssets>(GI->StageAssetsDataTable, TargetStageToPlay))
 			{
+				// 배경음악 재생
+				if (UAudioManagementSubsystem* AudioSys = GI->GetSubsystem<UAudioManagementSubsystem>())
+				{
+					if (USoundBase* StageBGM = Assets->BackgroundMusic.LoadSynchronous())
+					{
+						AudioSys->PlayBGM(StageBGM, true, 1.0f);
+						UE_LOG(LogTemp, Log, TEXT("스테이지 환경 BGM 재생 성공!"));
+					}
+				}
 				for (const TSoftObjectPtr<UObject>& SoftObj : Assets->ExtraPreloadAssets)
 				{
 					// 로딩 화면에서 이미 RAM에 올렸으므로 Get()을 써도 디스크 I/O 렉이 없습니다!
@@ -113,6 +123,24 @@ void AInGameGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	SetupPlayerSquad(NewPlayer);
+}
+
+void AInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	/**
+	 * @section 강제 이탈 시 BGM 초기화 방어선
+	 * @details 승리/패배를 보지 않고 설정창을 통해 로비로 바로 런(Run)하는 경우,
+	 * 레벨이 파괴될 때 무조건 브금을 꺼서 로비 BGM과 겹치는 것을 막습니다.
+	 */
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UAudioManagementSubsystem* AudioSys = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			AudioSys->StopBGM(1.0f);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AInGameGameMode::OnStageTimerElapsed()
@@ -304,6 +332,15 @@ void AInGameGameMode::OnPhaseVictory()
 	// 이전 타이머가 있다면 확실히 제거 (상태 중첩 방지)
 	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
 
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UAudioManagementSubsystem* AudioSys = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// 0.5초에 걸쳐서 브금을 부드럽게 끕니다.
+			AudioSys->StopBGM(0.5f);
+		}
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("Phase: Victory! 보상 지급 준비"));
 	if (CachedGameState)
 	{
@@ -333,6 +370,15 @@ void AInGameGameMode::OnPhaseDefeat()
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
 
 	GetWorldTimerManager().ClearTimer(ResultTimerHandle);
+
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (UAudioManagementSubsystem* AudioSys = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// 패배도 0.5초 페이즈 아웃
+			AudioSys->StopBGM(0.5f);
+		}
+	}
 
 	if(CachedGameState) CachedGameState->bIsTimerActive = false;
 	UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
