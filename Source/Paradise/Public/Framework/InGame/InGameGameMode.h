@@ -36,6 +36,12 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	/**
+	 * @brief 게임모드 액터가 파괴되거나 레벨이 전환될 때 호출됩니다.
+	 * @details 설정창을 통한 로비 강제 이탈 시 BGM을 끄기 위한 안전장치입니다.
+	 */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	/** 
 	* @brief 스테이지 타이머가 1초 경과할 때마다 호출되는 함수
 	*/
