@@ -13,6 +13,15 @@ class UUserWidget;
 class UTexture2D;
 #pragma endregion 전방 선언
 
+UENUM()
+enum class ELoadingPhase : uint8
+{
+	None,
+	Appearing,    // 현재 레벨에서 Anim_Appear 재생 중
+	Loading,      // L_Loading에서 프로그레스바 진행 중
+	Disappearing  // 목적지 레벨에서 Anim_Disappear 재생 중
+};
+
 /**
  * @class ULevelLoadingSubsystem
  * @brief 레벨 이동 간의 비동기 로딩 및 전이 맵(Transition Map) 흐름을 관리하는 서브시스템.
@@ -56,6 +65,13 @@ public:
 
 	/** @brief 로딩 위젯 클래스 설정 (GameInstance 호출용) */
 	void SetLoadingWidgetClass(TSubclassOf<UUserWidget> NewLoadingWidgetClass);
+
+	/**
+	 * @brief Anim_Disappear 종료 후 LoadingWidget에서 호출합니다.
+	 * @details 최종 레벨로 이동합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|System|Loading")
+	void ExecuteFinalTransition();
 #pragma endregion 외부 인터페이스
 
 #pragma region 내부 로직
@@ -113,7 +129,7 @@ private:
 	/** @brief 최소 로딩 보장 시간 (초). */
 	const float MinLoadingTime = 2.0f;
 
-	/** @brief 가짜 로딩(시간 기반)이 도달할 수 있는 최대 퍼센트 (70%) */
+	/** @brief 가짜 로딩(시간 기반)이 도달할 수 있는 최대 퍼센트 (30%) */
 	const float MaxFakePercent = 0.7f;
 
 	/** @brief 현재 로딩 시퀀스가 진행 중인지 여부. */
@@ -127,4 +143,18 @@ private:
 	FText PendingStageName;
 	FText PendingStageDesc;
 #pragma endregion 데이터 및 상태
+
+#pragma region 내부 상태 추가
+private:
+	ELoadingPhase CurrentPhase = ELoadingPhase::None;
+#pragma endregion 내부 상태 추가
+	public:
+		/** @brief 위젯의 Anim_Appear 완료 시 호출 */
+		void NotifyAppearFinished();
+
+		/** @brief 위젯의 Anim_Disappear 완료 시 호출 */
+		void NotifyDisappearFinished();
+
+		/** @brief 현재 Appearing 단계인지 확인 */
+		bool IsAppearingPhase() const { return CurrentPhase == ELoadingPhase::Appearing; }
 };

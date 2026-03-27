@@ -11,6 +11,9 @@ class UProgressBar;
 class UTexture2D;
 class UImage;
 class UTextBlock;
+class UWidgetAnimation;
+class URetainerBox;
+class UMaterialParameterCollection;
 #pragma endregion 전방 선언
 
 /**
@@ -51,6 +54,8 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+	/** @brief 애니메이션 종료 시점 감지 (Disappear 종료 시 로직 처리용) */
+	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
 #pragma region 외부 인터페이스
 public:
 	/**
@@ -82,6 +87,22 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
 	void SetBackgroundImage(UTexture2D* InTexture);
+
+	/**
+	* @brief Progress=1로 즉시 화면을 덮습니다. (L_Loading/목적지 레벨 플래시 방지)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void InitAsCovered();
+
+	/**
+	 * @brief Anim_Disappear를 재생합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void PlayDisappearAnim();
+
+	/** @brief MPC Progress를 0으로 리셋하여 내용물을 표시합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Loading")
+	void ShowContent();
 #pragma endregion 외부 인터페이스
 
 #pragma region 이벤트 (블루프린트 확장)
@@ -115,5 +136,30 @@ private:
 	/** @brief 커스텀 로딩 배경 이미지 (선택 바인딩) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> Img_Background = nullptr;
+
+	/** @brief 렌더링된 전체 UI에 머티리얼을 씌우는 최상위 리테이너 박스 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URetainerBox> Retainer_TransitionEffect = nullptr;
+
+	/** @brief 화면을 덮는 연출 (MPC 제어 트랙 포함) */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_Appear = nullptr;
+
+	/** @brief 화면을 여는 연출 (MPC 제어 트랙 포함) */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_Disappear = nullptr;
 #pragma endregion 위젯 바인딩
+
+#pragma region 내부 상태 제어
+private:
+	/** @brief 사라지는 연출 중복 실행 방지 플래그 */
+	bool bIsDisappearing = false;
+#pragma endregion 내부 상태 제어
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief Progress 파라미터를 즉시 제어하기 위한 MPC 레퍼런스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Loading")
+	TObjectPtr<UMaterialParameterCollection> MPC_Loading = nullptr;
+#pragma endregion 데이터 드리븐 설정
 };

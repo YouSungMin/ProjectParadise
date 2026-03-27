@@ -75,6 +75,25 @@ void ULevelLoadingSubsystem::StartLevelTransition(
 	bIsLoadingInProgress = true;
 	// 이미지는 위젯 내부의 InitLoadingImage에서 스스로 판단합니다.
 
+	CurrentPhase = ELoadingPhase::Appearing;
+
+	if (UWorld* World = GetWorld())
+	{
+		CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
+		if (CurrentLoadingWidget)
+		{
+			CurrentLoadingWidget->AddToViewport(99999);
+
+			// ✅ Anim_Appear 재생(다음 프레임) 전에 배경 먼저 세팅
+			CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+			CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
+		}
+	}
+}
+void ULevelLoadingSubsystem::NotifyAppearFinished()
+{
+	// Anim_Appear 완료 → L_Loading으로 이동
+	CurrentLoadingWidget = nullptr;
 	UGameplayStatics::OpenLevel(this, LoadingMapName);
 }
 
@@ -96,13 +115,41 @@ void ULevelLoadingSubsystem::OnMapLoadComplete(UWorld* World)
 	// PIE(에디터) 환경에서는 UEDPIE_0_ 같은 접두사가 붙을 수 있으므로 Contains로 확인하거나 RemovePrefix 처리
 	CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
 
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 맵 로드 감지: %s"), *CurrentMapName);
-
 	// 로딩 맵에 도착했는지 확인
 	if (CurrentMapName.Contains(LoadingMapName.ToString()))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 로딩 맵 진입 성공. 비동기 로딩을 시작합니다."));
+		CurrentPhase = ELoadingPhase::Loading;
 		BeginAsyncLoading();
+	}
+	else if (CurrentMapName.Contains(TargetLevelName.ToString()))
+	{
+		CurrentPhase = ELoadingPhase::Disappearing;
+
+		if (LoadingWidgetClass)
+		{
+			CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
+			if (CurrentLoadingWidget)
+			{
+				CurrentLoadingWidget->AddToViewport(9999);
+				CurrentLoadingWidget->InitAsCovered();
+
+				// ✅ 배경 이미지/텍스트 세팅 추가
+				CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+				CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
+
+				CurrentLoadingWidget->SetLoadingPercent(1.0f);
+
+				World->GetTimerManager().SetTimerForNextTick(
+					FTimerDelegate::CreateWeakLambda(CurrentLoadingWidget.Get(), [this]()
+						{
+							if (CurrentLoadingWidget)
+							{
+								CurrentLoadingWidget->PlayDisappearAnim();
+							}
+						})
+				);
+			}
+		}
 	}
 }
 
@@ -111,7 +158,11 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	UWorld* World = GetWorld();
 	if (!World || !LoadingWidgetClass) return;
 
+	// ✅ 이전 타이머 명시적 정리 후 초기화
+	World->GetTimerManager().ClearTimer(ProgressTimerHandle);
 	TotalElapsedTime = 0.0f;
+
+	UE_LOG(LogTemp, Warning, TEXT("[Loading] BeginAsyncLoading 시작 - TotalElapsedTime 초기화: %.2f"), TotalElapsedTime);
 
 	// 1. 위젯 생성 및 부착
 	CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
@@ -119,8 +170,11 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	{
 		CurrentLoadingWidget->AddToViewport(9999);
 
-		CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+		// ✅ Progress=1 유지 → 로딩 컨텐츠 완전히 표시
+		CurrentLoadingWidget->InitAsCovered();
 
+		// ✅ 배경/텍스트 세팅
+		CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
 		CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
 	}
 
@@ -135,44 +189,60 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 		if (AssetPaths.Num() > 0) CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
 	}
 
-	World->GetTimerManager().SetTimer(ProgressTimerHandle, this, &ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
+	World->GetTimerManager().SetTimerForNextTick([this, World]()
+		{
+			World->GetTimerManager().SetTimer(
+				ProgressTimerHandle, this,
+				&ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
+		});
 }
 
 void ULevelLoadingSubsystem::UpdateLoadingProgress()
 {
 	TotalElapsedTime += 0.05f;
 
+	UE_LOG(LogTemp, Log, TEXT("[Loading] TotalElapsedTime=%.2f, TimeRatio=%.2f"),
+		TotalElapsedTime, TotalElapsedTime / MinLoadingTime);
+
 	// 1. 시간 비율 (2초 기준)
 	const float TimeRatio = FMath::Clamp(TotalElapsedTime / MinLoadingTime, 0.0f, 1.0f);
 	// 2. 가짜 진행률 (0~70%)
 	const float FakeProgress = TimeRatio * MaxFakePercent;
 
-	// 3. 실제 로딩 비율
-	float RealProgress = 1.0f;
-	if (CurrentLoadHandle.IsValid()) RealProgress = CurrentLoadHandle->GetProgress();
+	float FinalDisplayPercent = FakeProgress;
 
-	// 4. 최종 퍼센트: Fake(0~0.7) + (Real(0~1) * 0.3)
-	float FinalDisplayPercent = FakeProgress + (RealProgress * (1.0f - MaxFakePercent));
-
-	const bool bIsRealLoadingFinished = (!CurrentLoadHandle.IsValid() || CurrentLoadHandle->HasLoadCompleted());
 	const bool bIsTimeFinished = (TimeRatio >= 1.0f);
 
-	if (bIsRealLoadingFinished && bIsTimeFinished)
+	if (bIsTimeFinished)
 	{
-		FinalDisplayPercent = 1.0f;
-		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
-		FinishLoading();
+		// 2. 2초 경과 후
+		if (CurrentLoadHandle.IsValid())
+		{
+			// 에셋 있으면 70%~100% 사이를 실제 로딩 비율로 채움
+			float RealProgress = CurrentLoadHandle->GetProgress();
+			FinalDisplayPercent = MaxFakePercent + (RealProgress * (1.0f - MaxFakePercent));
+
+			if (CurrentLoadHandle->HasLoadCompleted())
+			{
+				// 에셋 로딩 완료 → 100%
+				if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
+				FinishLoading();
+				return;
+			}
+		}
+		else
+		{
+			// 에셋 없으면 즉시 100%
+			if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
+			FinishLoading();
+			return;
+		}
 	}
-	else
-	{
-		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
-	}
+	if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
 }
 
 void ULevelLoadingSubsystem::FinishLoading()
 {
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 로딩 및 최소 대기 시간 종료. 최종 레벨로 이동합니다."));
-
 	// 타이머 정지
 	if (UWorld* World = GetWorld())
 	{
@@ -186,15 +256,26 @@ void ULevelLoadingSubsystem::FinishLoading()
 	}
 
 	// 상태 플래그 해제
-	bIsLoadingInProgress = false;
-
-	// [중요] 위젯을 수동으로 지우지 않음!
-	// OpenLevel이 호출되는 찰나에 배경이 비치는 것을 방지하기 위함.
-	// 레벨이 바뀌면 위젯은 자동으로 파괴(GC)됩니다.
 	CurrentLoadingWidget = nullptr;
 
-	// 최종 레벨로 이동
 	UGameplayStatics::OpenLevel(this, TargetLevelName);
+}
 
+void ULevelLoadingSubsystem::NotifyDisappearFinished()
+{
+	// Anim_Disappear 완료 → 위젯 제거, 끝
+	if (CurrentLoadingWidget)
+	{
+		CurrentLoadingWidget->RemoveFromParent();
+		CurrentLoadingWidget = nullptr;
+	}
+	bIsLoadingInProgress = false;
+	CurrentPhase = ELoadingPhase::None;
 }
 #pragma endregion 내부 로직
+
+void ULevelLoadingSubsystem::ExecuteFinalTransition()
+{
+	CurrentLoadingWidget = nullptr;
+	UGameplayStatics::OpenLevel(this, TargetLevelName);
+}
