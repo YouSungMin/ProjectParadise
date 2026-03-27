@@ -60,6 +60,9 @@ public:
 
 	UFUNCTION(Exec)
 	void CheatKillCharacter(int32 PlayerIndex);
+
+	UFUNCTION(Exec)
+	void CheatRespawn(int32 PlayerIndex);
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
 
@@ -93,6 +96,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	UInGameHUDWidget* GetOrCreateInGameHUD();
+
+	/** @brief 액션 패널의 활성화 여부를 설정합니다. */
+	void SetActionPanelEnabled(bool bEnabled);
 
 protected:
 	/** 

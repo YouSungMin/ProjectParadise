@@ -5,6 +5,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/Core/ParadiseCameraManager.h"
+#include "NavigationSystem.h"
 #include "GameFramework/PlayerStart.h"
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
@@ -140,7 +141,7 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS || !ActiveSquadPawns.IsValidIndex(PlayerIndex))
     {
-        UE_LOG(LogParadiseSquad, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
+        UE_LOG(LogTemp, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
         return;
     }
 
@@ -149,31 +150,21 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
 
     if (ActiveSquadPawns[PlayerIndex] && !ActiveSquadPawns[PlayerIndex]->IsDead())
     {
-        UE_LOG(LogParadiseSquad, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
         return;
     }
 
-    UE_LOG(LogParadiseSquad, Warning, TEXT("✨ [Respawn] 멤버 %d (%s) 부활 시퀀스 시작!"), PlayerIndex, *Soul->GetName());
+   // UE_LOG(LogTemp, Warning, TEXT("✨ [Respawn] 멤버 %d (%s) 부활 시퀀스 시작!"), PlayerIndex, *Soul->GetName());
 
-    FVector PlayerSpawnLocation = FVector::ZeroVector;
-    FRotator PlayerSpawnRotation = FRotator::ZeroRotator;
-
-    //기준 폰 가져오기
-    if (APawn* LeaderPawn = PC->GetPawn())
-    {
-        PlayerSpawnLocation = LeaderPawn->GetActorLocation() - (LeaderPawn->GetActorForwardVector() * 150.0f) + FVector(0, 0, 50.0f);
-        PlayerSpawnRotation = LeaderPawn->GetActorRotation();
-    }
-    else
-    {
-        PlayerSpawnLocation = FVector(0, 0, 200.0f); // 컴포넌트 멤버 변수 사용
-    }
+    //위치 및 회전 계산을 헬퍼 함수
+    FVector PlayerSpawnLocation;
+    FRotator PlayerSpawnRotation;
+    GetSafeRespawnLocationAndRotation(PC, PlayerSpawnLocation, PlayerSpawnRotation);
 
     UClass* SpawnClass = APlayerBase::StaticClass();
     if (PlayerBaseClass) {
         SpawnClass = PlayerBaseClass;
     }
-   
 
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
@@ -190,12 +181,11 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
         //전멸 판정 시 PC->GetPawn 사용
         if (bIsSquadWipedOut || PC->GetPawn() == nullptr)
         {
-            UE_LOG(LogParadiseSquad, Warning, TEXT("✨ [Respawn] 전멸 위기에서 %s 부활! 제어권을 획득합니다."), *NewBody->GetName());
+            //UE_LOG(LogTemp, Warning, TEXT("✨ [Respawn] 전멸 위기에서 %s 부활! 제어권을 획득합니다."), *NewBody->GetName());
 
             bIsSquadWipedOut = false;
             RequestSwitchPlayer(PlayerIndex);
 
-           
             FInputModeGameOnly GameInputMode;
             PC->SetInputMode(GameInputMode);
         }
@@ -206,6 +196,69 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
                 PossessAI(NewBody);
             }
         }
+    }
+}
+
+void USquadControlComponent::GetSafeRespawnLocationAndRotation(AInGameController* PC, FVector& OutLocation, FRotator& OutRotation)
+{
+    FVector DesiredLocation = FVector::ZeroVector;
+    OutLocation = FVector::ZeroVector;
+    OutRotation = FRotator::ZeroRotator;
+
+    if (!PC) return;
+
+    //기준 위치(DesiredLocation) 설정
+    if (APawn* LeaderPawn = PC->GetPawn())
+    {
+        // 1순위: 현재 리더의 뒤쪽 150 위치
+        DesiredLocation = LeaderPawn->GetActorLocation() - (LeaderPawn->GetActorForwardVector() * 150.0f);
+        OutRotation = LeaderPawn->GetActorRotation();
+    }
+    else
+    {
+        // 2순위 (전멸): PlayerStart 지점을 찾아 그 위치를 목표로 함
+        if (AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()))
+        {
+            DesiredLocation = PlayerStart->GetActorLocation();
+            OutRotation = PlayerStart->GetActorRotation();
+        }
+        else
+        {
+            DesiredLocation = FVector(0, 0, 200.0f);
+        }
+    }
+
+    //네비메쉬 기반 안전 위치 보정 (NavMesh Projection)
+    UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+    if (NavSystem)
+    {
+        FNavLocation ProjectedNavLoc;
+        // 목표 위치 반경 (수평 200, 수직 500) 이내에서 가장 가까운 네비메쉬 바닥을 찾음
+        if (NavSystem->ProjectPointToNavigation(DesiredLocation, ProjectedNavLoc, FVector(200.0f, 200.0f, 500.0f)))
+        {
+            OutLocation = ProjectedNavLoc.Location + FVector(0.0f, 0.0f, 50.0f);
+        }
+        else
+        {
+            // 목표 위치에 네비메쉬가 없다면 (벽 속 등) -> 리더 주변 랜덤 네비메쉬 포인트를 찾음
+            if (APawn* LeaderPawn = PC->GetPawn())
+            {
+                if (NavSystem->GetRandomPointInNavigableRadius(LeaderPawn->GetActorLocation(), 300.0f, ProjectedNavLoc))
+                {
+                    OutLocation = ProjectedNavLoc.Location + FVector(0.0f, 0.0f, 50.0f);
+                    UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 뒤쪽이 벽입니다. 리더 근처 안전 지대로 우회 스폰합니다."));
+                }
+            }
+            else
+            {
+                OutLocation = DesiredLocation + FVector(0, 0, 50.0f);
+            }
+        }
+    }
+    else
+    {
+        // 맵에 NavMesh 자체가 없을 경우 예외 처리
+        OutLocation = DesiredLocation + FVector(0, 0, 50.0f);
     }
 }
 
