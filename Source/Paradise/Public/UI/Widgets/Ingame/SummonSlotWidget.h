@@ -122,15 +122,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> Img_SummonIcon = nullptr;
 
-	///** @brief 쿨타임 진행바 */
-	///  * @note 26/02/12, 지금은 안쓰는 코드
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UProgressBar> PB_Cooldown = nullptr;
-
-	///** @brief 남은 시간을 표시할 텍스트 */
-	///  * @note 26/02/12, 지금은 안쓰는 코드
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UTextBlock> Text_CooldownTime = nullptr;
+	/** @brief 소환수 테두리 이미지 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> Img_Outline = nullptr;
 
 	/** @brief 유닛의 코스트를 표시할 텍스트 */
 	UPROPERTY(meta = (BindWidget))
@@ -169,17 +163,5 @@ private:
 
 	/** @brief 지연 등장을 제어하는 엔진 타이머 핸들 */
 	FTimerHandle RevealTimerHandle;
-
-	///** @brief 최대 쿨타임 변수 */
-	//UPROPERTY()
-	//float MaxCooldownTime = 0.0f;
-
-	///** @brief 현재 쿨타임 변수 */
-	//UPROPERTY()
-	//float CurrentCooldownTime = 0.0f;
-
-	///** @brief 쿨타임  */
-	//UPROPERTY()
-	//FTimerHandle CooldownTimerHandle;
 #pragma endregion 데이터
 };

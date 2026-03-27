@@ -89,6 +89,7 @@ void USummonSlotWidget::ScheduleReveal(UTexture2D* IconTexture, int32 InCost, fl
 	// 2. 당겨질 때 '빈 칸'으로 보이도록 UI 강제 숨김 처리
 	if (Img_SummonIcon) Img_SummonIcon->SetVisibility(ESlateVisibility::Hidden);
 	if (Text_CostValue) Text_CostValue->SetVisibility(ESlateVisibility::Hidden);
+	if (Img_Outline) Img_Outline->SetVisibility(ESlateVisibility::Hidden);
 
 	// 아직 비어있는 칸이므로 클릭을 막아 연타 버그를 예방합니다.
 	if (Btn_SummonAction) Btn_SummonAction->SetIsEnabled(false);
@@ -151,5 +152,6 @@ void USummonSlotWidget::OnRevealTimerFinished()
 
 	// 피드백 복구: 다시 선명하게 만듦
 	if (Img_SummonIcon) Img_SummonIcon->SetOpacity(1.0f);
+	if (Img_Outline) Img_Outline->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 #pragma endregion 내부 로직
