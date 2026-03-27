@@ -5,6 +5,7 @@
 #include "UI/Widgets/Gacha/ParadiseGachaResultSlotWidget.h"
 
 #include "Framework/Lobby/LobbyPlayerController.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
@@ -13,6 +14,8 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
 
 #pragma region 생명주기
@@ -138,6 +141,15 @@ void UParadiseGachaResultWidget::SetupMultiResult(const TArray<FGachaResult>& Re
 
 void UParadiseGachaResultWidget::OnConfirmClicked()
 {
+	// 효과음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_GachaResultConfirm)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_GachaResultConfirm);
+		}
+	}
+
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	if (CachedPlayerController.IsValid())

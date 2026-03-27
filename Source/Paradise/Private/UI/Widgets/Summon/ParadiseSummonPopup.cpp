@@ -56,7 +56,14 @@ void UParadiseSummonPopup::NativeConstruct()
 	RefreshCurrencyUI();
 
 	// 4. 초기 상태 설정 (캐릭터 탭 기본)
+	if (Switcher_Content)
+	{
+		Switcher_Content->SetActiveWidgetIndex(INDEX_EQUIPMENT);
+	}
 	SwitchTab(INDEX_CHARACTER);
+
+	// 초기화 완료 플래그 세팅
+	bIsInitialized = true;
 }
 
 void UParadiseSummonPopup::NativeDestruct()
@@ -134,10 +141,13 @@ void UParadiseSummonPopup::SwitchTab(int32 NewIndex)
 	// 이미 같은 탭을 보고 있다면 무시 (사운드 중복 재생 방지)
 	if (Switcher_Content->GetActiveWidgetIndex() == NewIndex) return;
 
-	// 탭 변경 공통 효과음 재생
-	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	// 초기화 완료 후에만 효과음 재생
+	if (bIsInitialized)
 	{
-		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+		if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+		{
+			UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+		}
 	}
 
 	// 1. 위젯 스위처 인덱스 변경

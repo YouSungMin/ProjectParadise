@@ -10,6 +10,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AutoCombatComponent.h"
 #include "Framework/Core/ParadiseCameraManager.h"
 #include "Framework/InGame/InGameController.h"
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
@@ -74,17 +75,23 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	//0326 김성현 궁극기 카메라 연출 추가
 	if (AbilityActionType == ECombatActionType::UltimateSkill)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출1"));
-
 		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
 
 		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출2"));
-			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+			bool bIsAutoBattle = false;
+			if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
 			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출3"));
-				//CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
+				bIsAutoBattle = AutoComp->IsAutoMode();
+			}
+
+			// 수동 조작 상태(!bIsAutoBattle)일 때만 카메라 연출 실행
+			if (!bIsAutoBattle)
+			{
+				if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+				{
+					CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
+				}
 			}
 		}
 	}
@@ -119,7 +126,7 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 		{
 			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
 			{
-				//CamMgr->StopUltimateCamera();
+				CamMgr->StopUltimateCamera(ActorInfo->AvatarActor.Get());
 			}
 		}
 	}
@@ -135,6 +142,34 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+bool UBaseGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	//사용하려는 스킬이 '궁극기'면 검사 
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		if (APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0))
+		{
+			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(MainPC->PlayerCameraManager))
+			{
+				//이미 궁극기 연출을 진행 중이면
+				if (CamMgr->bIsUltimatePlaying)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("⚠️ [GAS] 다른 캐릭터가 이미 궁극기를 사용 중입니다! 발동 취소."));
+
+					return false; // 발동 불가 처리
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 void UBaseGameplayAbility::ApplySpecHandleToTarget(AActor* TargetActor, const FGameplayEffectSpecHandle& SpecHandle)
