@@ -74,16 +74,12 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	//0326 김성현 궁극기 카메라 연출 추가
 	if (AbilityActionType == ECombatActionType::UltimateSkill)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출1"));
-
 		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
 
 		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출2"));
 			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
 			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] 카메라 연출3"));
 				CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
 			}
 		}

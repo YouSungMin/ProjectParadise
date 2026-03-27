@@ -63,9 +63,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
 	float CameraBlendTime = 1.5f;
 
+	//궁극기 연출 관련
+
 	/** @brief 카메라의 위치 (X: 앞뒤, Y: 좌우, Z: 위아래) / 기본값: 앞 250, 위 50 */
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
-	FVector UltimateCameraOffset = FVector(500.0f, 0.0f, 100.0f);
+	FVector UltimateCameraOffset = FVector(700.0f, 0.0f, 150.0f);
 
 	/** @brief 카메라가 바라볼 목표점의 오프셋 (기본값: 캐릭터의 상체(Z: 50)를 바라봄) */
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
@@ -79,11 +81,27 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
 	float UltimateTimeDilation = 0.3f;
 
+	/** @brief 궁극기 연출용 핀 조명의 밝기 */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	float UltimateLightIntensity = 10000.0f;
+
+	/** @brief 궁극기 조명의 위치  */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	FVector UltimateLightOffset = FVector(500.0f, 0.0f, 100.0f);
+
+	/** @brief 궁극기 조명의 빛이 닿는 최대 거리(반경) */
+	UPROPERTY(EditAnywhere, Category = "Squad|Camera|Ultimate")
+	float UltimateLightRadius = 2000.0f;
+
 private:
 
 	/** @brief 궁극기 연출을 위해 임시로 생성할 컷신 카메라 */
 	UPROPERTY()
 	TObjectPtr<class ACameraActor> UltimateCamera = nullptr;
+
+	/** @brief 연출 도중 임시로 생성해둘 조명 액터 */
+	UPROPERTY()
+	TObjectPtr<class APointLight> UltimateLightActor = nullptr;
 
 	/** @brief 슬로우 모션을 해제할 때 원래 속도로 돌려주기 위해 타겟을 기억해둡니다. */
 	UPROPERTY()
