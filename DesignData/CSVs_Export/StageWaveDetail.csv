@@ -1,8 +1,8 @@
 ---,TargetStageID,WaveOrder,PreWaveDelay,MonsterID,SpawnCount,SpawnInterval,SpawnPointTag
 1,Stage1_1,1,5,Cell,3,0.7,Spawn.C
-2,Stage1_1,2,7,Cell,5,0.6,Spawn.B
-3,Stage1_1,3,7,Pufferfish,2,1.1,Spawn.A
-4,Stage1_1,4,8,Pufferfish,2,0.7,Spawn.C
+2,Stage1_1,2,9,Cell,5,0.6,Spawn.B
+3,Stage1_1,3,15,Pufferfish,2,1.1,Spawn.A
+4,Stage1_1,4,15,Pufferfish,2,0.7,Spawn.C
 5,Stage1_1,5,1,Cell,5,0.7,Spawn.A
 6,Stage1_2,1,5,HoneyMos,2,0.7,Spawn.D
 7,Stage1_2,2,7,Cell,5,0.7,Spawn.B
