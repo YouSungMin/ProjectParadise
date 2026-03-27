@@ -322,7 +322,10 @@ void UInGameHUDWidget::UpdateVictoryPopupData()
 			if (HeroID.IsNone()) continue;
 
 			FResultCharacterData Result;
-			Result.CharacterName = FText::FromName(HeroID);
+			if (auto* StatData = GI->GetDataTableRow<FCharacterStats>(GI->CharacterStatsDataTable, HeroID))
+			{
+				Result.CharacterName = StatData->DisplayName;
+			}
 			Result.GainedExp = Exp;
 
 			// 초상화 데이터 로드

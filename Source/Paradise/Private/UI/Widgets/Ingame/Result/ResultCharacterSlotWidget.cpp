@@ -5,6 +5,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
+#include "Data/Structs/UnitStructs.h"
 
 void UResultCharacterSlotWidget::NativeConstruct()
 {
@@ -17,12 +18,14 @@ void UResultCharacterSlotWidget::SetSlotData(const FResultCharacterData& InData)
 	if (Img_Portrait && InData.PortraitImage)
 	{
 		Img_Portrait->SetBrushFromTexture(InData.PortraitImage);
+		Img_Portrait->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
 	// 2. 이름 설정
 	if (Text_Name)
 	{
 		Text_Name->SetText(InData.CharacterName);
+		Text_Name->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
 	// 3. 경험치 텍스트 (+150 Exp)
@@ -30,11 +33,13 @@ void UResultCharacterSlotWidget::SetSlotData(const FResultCharacterData& InData)
 	{
 		FString ExpString = FString::Printf(TEXT("+%d EXP"), InData.GainedExp);
 		Text_GainedExp->SetText(FText::FromString(ExpString));
+		Text_GainedExp->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
 	// 4. 경험치 바 (비율)
 	if (ProgressBar_Exp)
 	{
+		const float ClampedPercent = FMath::Clamp(InData.ExpPercent, 0.0f, 1.0f);
 		ProgressBar_Exp->SetPercent(InData.ExpPercent);
 	}
 }
