@@ -60,6 +60,9 @@ public:
 
 	UFUNCTION(Exec)
 	void CheatKillCharacter(int32 PlayerIndex);
+
+	UFUNCTION(Exec)
+	void CheatRespawn(int32 PlayerIndex);
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
 

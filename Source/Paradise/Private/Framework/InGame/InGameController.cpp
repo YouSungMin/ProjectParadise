@@ -318,3 +318,11 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
 
     
 }
+
+void AInGameController::CheatRespawn(int32 PlayerIndex)
+{
+    if (SquadControlComponent)
+    {
+        SquadControlComponent->RespawnSquadPlayer(PlayerIndex);
+    }
+}

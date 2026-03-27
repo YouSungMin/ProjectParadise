@@ -65,6 +65,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Squad|Command")
 	void RespawnSquadPlayer(int32 MemberIndex);
 
+protected:
+
+	/**
+	 * @brief 네비메쉬를 기반으로 안전한 스폰 위치와 회전값을 찾아 반환하는 헬퍼 함수입니다.
+	 * @param PC 현재 플레이어 컨트롤러
+	 * @param OutLocation 계산된 안전한 스폰 위치 (Output)
+	 * @param OutRotation 계산된 스폰 회전값 (Output)
+	 */
+	void GetSafeRespawnLocationAndRotation(AInGameController* PC, FVector& OutLocation, FRotator& OutRotation);
+
+
 public:
 
 	/** @brief 모든 영웅이 사망했는지 여부 */
