@@ -41,23 +41,52 @@ void ACharacterBase::TestKillSelf()
 
 void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 {
-	// 트레이스 좌표 설정 ,인디케이터와 100% 동일한 공식 적용
-	// 애니메이션의 무기 소켓 위치를 쓰지 않고, 오직 데이터 테이블의 수치
+	FVector TraceStart = FVector::ZeroVector;
+	FVector TraceDirection = GetActorForwardVector(); // 기본 뻗어나갈 방향
 
-	float BaseOffset = 100.0f; // 인디케이터에서 썼던 기본 오프셋
+	float BaseOffset = 100.0f; // 인디케이터 기준 오프셋
 	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
 
-	// 시작점: 캐릭터 몸통 + 기본오프셋 + 데이터테이블 오프셋
-	FVector TraceStart = GetActorLocation() + (GetActorForwardVector() * (BaseOffset + ForwardOffset));
+	// 🌟 1. 시작점(TraceStart) 및 방향(TraceDirection) 결정 분기
+	if (SocketName.IsNone())
+	{
+		// [플레이어 모드] 소켓 이름이 없으면: 액터 몸통 기준 + 데이터테이블 오프셋
+		// 인디케이터와 100% 동일한 공식 적용
+		TraceStart = GetActorLocation() + (TraceDirection * (BaseOffset + ForwardOffset));
+	}
+	else
+	{
+		// [몬스터 모드] 소켓 이름이 주어지면: 해당 소켓 위치 및 회전 기준
+		USceneComponent* TargetMesh = GetMesh();
 
-	// 끝점: 시작점 + 데이터테이블 사거리
-	FVector TraceEnd = TraceStart + (GetActorForwardVector() * AttackRange);
+		// 해당 메쉬에 소켓이 존재하는지 확인
+		if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+		{
+			TraceStart = TargetMesh->GetSocketLocation(SocketName);
+			TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
 
-	// 본인은 스캔에서 무조건 제외
+			// 몬스터도 소켓 위치에서 앞으로 살짝 밀어서 판정하고 싶다면 적용
+			TraceStart += TraceDirection * ForwardOffset;
+		}
+		else
+		{
+			// 소켓 오타 등의 이유로 못 찾았을 때의 안전망 (플레이어 방식 임시 차용)
+			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] %s 소켓을 찾을 수 없어 몸통 기준으로 공격합니다."), *GetName(), *SocketName.ToString());
+			TraceStart = GetActorLocation() + (TraceDirection * (BaseOffset + ForwardOffset));
+		}
+	}
+
+	// 🌟 2. 끝점(TraceEnd) 계산 (사거리 적용)
+	FVector TraceEnd = TraceStart + (TraceDirection * AttackRange);
 	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
+
+	// 적군(Enemy) 대상인 공격 스킬일 때만 본인을 스캔에서 제외
+	if (CurrentActiveActionData.Stats.TargetFilter == ETargetFilter::Enemy)
+	{
+		ActorsToIgnore.Add(this);
+	}
 
 	//다중 광역 타격을 위한 ForObjects 스캔 적용
 

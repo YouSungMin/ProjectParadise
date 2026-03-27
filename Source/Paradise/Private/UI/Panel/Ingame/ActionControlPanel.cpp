@@ -9,6 +9,7 @@
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
 #include "Framework/System/SquadSubsystem.h"
+#include "Framework/Core/ParadiseCameraManager.h"
 
 #include "Characters/Player/PlayerData.h"
 #include "Characters/Base/PlayerBase.h"
@@ -657,6 +658,14 @@ void UActionControlPanel::OnActiveSkillReleased()
 
 void UActionControlPanel::OnUltimateSkillReleased()
 {
+	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
+	{
+		if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+		{
+			if (CamMgr->bIsUltimatePlaying) return; // 입력을 취소하고 즉시 함수 종료!
+		}
+	}
+
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
 	if (CurrentActivePawn && CurrentActivePawn->GetSkillIndicatorComponent())
 	{
@@ -724,10 +733,22 @@ void UActionControlPanel::ProcessAbilityInput(EInputID InputID)
 			// (기존 연출 코드 유지)
 			if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
 			{
+				//0327 김성현 - 자동모드시 궁극기 관련 연출 실행 X
+				bool bIsAutoBattle = false;
+				if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
+				{
+					bIsAutoBattle = AutoComp->IsAutoMode();
+				}
+
+				if (bIsAutoBattle) return;
+				
 				if (UUltimateEffectComponent* UltEffectComp = InGamePC->GetUltimateEffectComponent())
 				{
-					UltEffectComp->PlayUltimateEffect(2.5f);
+					UltEffectComp->PlayUltimateEffect(UltimateDuration);
 				}
+				
+
+				
 			}
 			// 1. 궁극기 발동 즉시 태그 버튼 클릭 차단
 			SetTagButtonsEnabled(false);

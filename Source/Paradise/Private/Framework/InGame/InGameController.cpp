@@ -227,6 +227,21 @@ UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
     return InGameHUDInstance;
 }
 
+void AInGameController::SetActionPanelEnabled(bool bEnabled)
+{
+    // 1. HUD 인스턴스를 가져옵니다.
+    UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
+    if (!HUD) return;
+
+    // 2. HUD가 소유한 액션 컨트롤 패널을 가져와 활성화/비활성화합니다.
+    if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+    {
+        ActionPanel->SetIsEnabled(bEnabled);
+
+        UE_LOG(LogTemp, Log, TEXT("📱 [UI] 액션 패널 활성화 상태 변경: %s"), bEnabled ? TEXT("True") : TEXT("False"));
+    }
+}
+
 void AInGameController::OnInputSwitchHero1(const FInputActionValue& Value)
 {
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
@@ -317,4 +332,13 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
     }
 
     
+}
+
+void AInGameController::CheatRespawn(int32 PlayerIndex)
+{
+    if (SquadControlComponent)
+    {
+        SquadControlComponent->RespawnSquadPlayer(PlayerIndex);
+    }
+   
 }

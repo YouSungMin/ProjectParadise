@@ -209,6 +209,15 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
         //자동으로 궁극기를 써도 컨트롤러에게 화면 연출을 틀어라 라고 호출
         if (AInGameController* OwnerPC = GetOwnerController())
         {
+            //0327 김성현 - 자동모드시 궁극기 관련 연출 실행 X
+            bool bIsAutoBattle = false;
+            if (UAutoCombatComponent* AutoComp = OwnerPC->GetAutoCombatComponent())
+            {
+                bIsAutoBattle = AutoComp->IsAutoMode();
+            }
+
+            if (bIsAutoBattle) return;
+
             if (UUltimateEffectComponent* UltEffectComp = OwnerPC->GetUltimateEffectComponent())
             {
                 UltEffectComp->PlayUltimateEffect(2.5f);
