@@ -206,7 +206,7 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 			SkillInfoString = TEXT("무기 스킬: 없음");
 			if (!WpnStat->SkillActionHandle.IsNull())
 			{
-				if (FActionStats* ActionRow = WpnStat->SkillActionHandle.GetRow<FActionStats>(TEXT("UI_WeaponSkillNameLookup")))
+				if (FActionStats* ActionRow = WpnStat->SkillActionHandle.GetRow<FActionStats>(TEXT("SquadDetail_WeaponSkill")))
 				{
 					SkillInfoString = FString::Printf(TEXT("무기 스킬: %s"), *ActionRow->ActionName.ToString());
 				}
