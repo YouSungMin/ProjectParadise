@@ -3,6 +3,7 @@
 
 #include "Framework/System/GraphicsSettingsSubsystem.h"
 #include "GameFramework/GameUserSettings.h"
+#include "HAL/IConsoleManager.h"
 #include "GenericPlatform/GenericPlatformMemory.h"
 
 void UGraphicsSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -40,6 +41,25 @@ void UGraphicsSettingsSubsystem::SetGraphicsQuality(int32 NewQuality)
 		UserSettings->SetPostProcessingQuality(ClampedQuality);
 		UserSettings->SetShadowQuality(ClampedQuality); 
 		UserSettings->SetTextureQuality(ClampedQuality); 
+		UserSettings->SetFoliageQuality(ClampedQuality);
+
+		float CullScale = 1.0f; // 기본 배율 (1.0 = 에디터에서 설정한 거리 100%)
+
+		switch (ClampedQuality)
+		{
+		case 0: CullScale = 1.0f; break; // 낮음: 설정한 거리만큼 보여줌 
+		case 1: CullScale = 1.2f; break; // 보통 120퍼
+		case 2: CullScale = 1.4f; break; // 높음 140퍼
+		case 3: CullScale = 1.6f; break; // 에픽 160퍼
+		}
+
+		// 엔진 내부의 콘솔 변수를 찾아서 값을 덮어씌웁니다.
+		static IConsoleVariable* CVarCullDistance = IConsoleManager::Get().FindConsoleVariable(TEXT("foliage.CullDistanceScale"));
+		if (CVarCullDistance)
+		{
+			// ECVF_SetByGameSetting 플래그를 주어 게임 세팅에 의해 변경되었음을 명시합니다.
+			CVarCullDistance->Set(CullScale, ECVF_SetByGameSetting);
+		}
 
 		// 변경 사항을 화면에 즉시 적용, 디스크 파일에 영구 저장
 		UserSettings->ApplySettings(false);
