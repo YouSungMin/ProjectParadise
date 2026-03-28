@@ -159,14 +159,14 @@ public:
 	 * @details 플레이어: 무기 에셋의 AttackMontage / 몬스터: 본인의 AttackMontage
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TObjectPtr<UAnimMontage> MontageToPlay;
+	TObjectPtr<UAnimMontage> MontageToPlay = nullptr;
 
 	/* @brief 적용할 데미지 GE 클래스
 	 * @details 데미지 계산 공식(ExecutionCalculation)이 연결된 GE입니다.
 	 * (예: GE_DamageStandard, GE_FireDamage)
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TSubclassOf<UGameplayEffect> EffectClass;
+	TSubclassOf<UGameplayEffect> EffectClass = nullptr;
 
 	// =====================================
 	//  원거리 전용 (Ranged)

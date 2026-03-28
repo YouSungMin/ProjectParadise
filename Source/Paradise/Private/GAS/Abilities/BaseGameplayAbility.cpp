@@ -306,25 +306,29 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 
 const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 {
+	// 이미 캐싱되었다면 그대로 반환
 	if (bIsDataCached)
 	{
 		return CachedCombatData;
 	}
-
-	// 처음 호출된 경우 -> 인터페이스를 통해 데이터 가져오기
-	AActor* AvatarActor = GetAvatarActorFromActorInfo();
-
-	if (ICombatInterface* CombatInt = Cast<ICombatInterface>(AvatarActor))
+	
+	if (CurrentActorInfo)
 	{
-		// 데이터 요청 및 저장
-		CachedCombatData = CombatInt->GetCombatActionData(AbilityActionType);
+		CachedCombatData = GetCombatDataFromActorInfo(CurrentActorInfo, CurrentSpecHandle);
+	}
 
-		// 몽타주가 정상적으로 들어왔다면 캐싱 완료 처리
-		if (CachedCombatData.MontageToPlay)
-		{
-			bIsDataCached = true;
-			UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
-		}
+	// 몽타주가 정상적으로 들어왔다면 캐싱 완료 처리
+	if (CachedCombatData.MontageToPlay)
+	{
+		bIsDataCached = true;
+		UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
+	}
+	else
+	{
+		// 데이터가 없거나 몽타주가 비어있으면 에러 로그 출력
+		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 전투 데이터 또는 몽타주를 가져오지 못했습니다! (Type: %d)"),
+			CurrentActorInfo && CurrentActorInfo->AvatarActor.IsValid() ? *CurrentActorInfo->AvatarActor->GetName() : TEXT("Unknown"),
+			(int32)AbilityActionType);
 	}
 
 	return CachedCombatData;
