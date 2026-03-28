@@ -201,9 +201,6 @@ void ULevelLoadingSubsystem::UpdateLoadingProgress()
 {
 	TotalElapsedTime += 0.05f;
 
-	UE_LOG(LogTemp, Log, TEXT("[Loading] TotalElapsedTime=%.2f, TimeRatio=%.2f"),
-		TotalElapsedTime, TotalElapsedTime / MinLoadingTime);
-
 	// 1. 시간 비율 (2초 기준)
 	const float TimeRatio = FMath::Clamp(TotalElapsedTime / MinLoadingTime, 0.0f, 1.0f);
 	// 2. 가짜 진행률 (0~70%)
