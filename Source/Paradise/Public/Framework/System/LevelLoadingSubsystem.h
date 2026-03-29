@@ -90,6 +90,12 @@ private:
 
 	/** @brief 로딩 완료 후 최종 레벨로 이동 및 정리. */
 	void FinishLoading();
+
+	/**
+	 * @brief 현재 플레이어의 편대(캐릭터, 소환수) 및 장착 장비 정보를 바탕으로 로드할 에셋 경로를 동적으로 수집합니다.
+	 * @param OutAssetPaths 수집된 에셋 경로를 담을 배열 (참조 전달)
+	 */
+	void GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& OutAssetPaths);
 #pragma endregion 내부 로직
 
 #pragma region 데이터 및 상태
