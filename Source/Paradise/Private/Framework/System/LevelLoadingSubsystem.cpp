@@ -2,10 +2,16 @@
 
 
 #include "Framework/System/LevelLoadingSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/InventorySystem.h"
 #include "UI/Widgets/Loading/LoadingWidget.h" // 경로 확인 필요 (없으면 전방선언으로 대체하고 Cast)
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/ItemStructs.h"
+#include "Data/Structs/InventoryStruct.h"
 
 ULevelLoadingSubsystem::ULevelLoadingSubsystem()
 {
@@ -178,23 +184,109 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 		CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
 	}
 
-	// 비동기 로딩 요청
-	if (PendingAssetsToLoad.Num() > 0)
+	// 2. 로드할 에셋 경로를 모두 모을 거대한 배열 생성 (정적 + 동적 통합)
+	TArray<FSoftObjectPath> AssetPaths;
+
+	// 2-1. [정적 데이터] 기획자가 스테이지 데이터(ExtraPreloadAssets)에 넣은 고유 에셋 수집
+	for (const auto& AssetPtr : PendingAssetsToLoad)
 	{
-		TArray<FSoftObjectPath> AssetPaths;
-		for (const auto& AssetPtr : PendingAssetsToLoad)
-		{
-			if (!AssetPtr.IsNull()) AssetPaths.Add(AssetPtr.ToSoftObjectPath());
-		}
-		if (AssetPaths.Num() > 0) CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
+		if (!AssetPtr.IsNull()) AssetPaths.AddUnique(AssetPtr.ToSoftObjectPath());
 	}
 
+	// 2-2. [동적 데이터] 편대 서브시스템과 인벤토리를 뒤져서 현재 출전 멤버 에셋 수집!
+	GatherDynamicAssetsToLoad(AssetPaths);
+
+	// 3. 비동기 로딩 요청 (한 방에 비동기로 RAM에 올리기!)
+	if (AssetPaths.Num() > 0)
+	{
+		CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
+	}
+
+	// 4. 타이머 세팅
 	World->GetTimerManager().SetTimerForNextTick([this, World]()
 		{
 			World->GetTimerManager().SetTimer(
 				ProgressTimerHandle, this,
 				&ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
 		});
+}
+
+void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& OutAssetPaths)
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetOuter());
+	if (!GI) return;
+
+	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+
+	if (!SquadSys || !InvSys) return;
+
+	// =========================================================
+	// 1. 플레이어 캐릭터 및 장착된 장비(무기/방어구) 수집
+	// =========================================================
+	for (const FName& CharID : SquadSys->GetPlayerSquad())
+	{
+		if (CharID.IsNone()) continue;
+
+		// 1-1. 캐릭터 본체의 기본 에셋 수집 (외형, 몽타주 등)
+		if (FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharID))
+		{
+			if (!CharAssets->SkeletalMesh.IsNull()) OutAssetPaths.AddUnique(CharAssets->SkeletalMesh.ToSoftObjectPath());
+			if (!CharAssets->UltimateMontage.IsNull()) OutAssetPaths.AddUnique(CharAssets->UltimateMontage.ToSoftObjectPath());
+			// 필요한 경우 여기에 CharAssets->UltimateIcon 등 UI 리소스나 이펙트 추가 가능
+		}
+
+		// 1-2. 해당 캐릭터가 "현재 장착 중인" 장비 에셋 긁어오기
+		if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharID))
+		{
+			for (const auto& EquipPair : CharData->EquipmentMap)
+			{
+				FGuid ItemUID = EquipPair.Value;
+				if (FOwnedItemData* ItemData = InvSys->GetItemByGUID(ItemUID))
+				{
+					// 무기일 경우 (무기 메쉬, 스킬 이펙트 등)
+					if (EquipPair.Key == EEquipmentSlot::Weapon)
+					{
+						if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ItemData->ItemID))
+						{
+							if (!WeaponAsset->ItemMesh.IsNull()) OutAssetPaths.AddUnique(WeaponAsset->ItemMesh.ToSoftObjectPath());
+							if (!WeaponAsset->WeaponBasicAttackIcon.IsNull()) OutAssetPaths.AddUnique(WeaponAsset->WeaponBasicAttackIcon.ToSoftObjectPath());
+						}
+					}
+					// 방어구일 경우 (착용 메쉬 등)
+					else
+					{
+						if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ItemData->ItemID))
+						{
+							if (!ArmorAsset->ItemMesh.IsNull()) OutAssetPaths.AddUnique(ArmorAsset->ItemMesh.ToSoftObjectPath());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// =========================================================
+	// 2. 퍼밀리어(소환수) 스쿼드 에셋 수집
+	// =========================================================
+	for (const FName& FamiliarID : SquadSys->GetFamiliarSquad())
+	{
+		if (FamiliarID.IsNone()) continue;
+
+		if (FFamiliarAssets* FamAssets = GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, FamiliarID))
+		{
+			// 퍼밀리어의 외형, 기본 공격 몽타주, 비헤이비어 트리 등 필수 데이터 수집
+			if (!FamAssets->SkeletalMesh.IsNull()) OutAssetPaths.AddUnique(FamAssets->SkeletalMesh.ToSoftObjectPath());
+			if (!FamAssets->AttackMontage.IsNull()) OutAssetPaths.AddUnique(FamAssets->AttackMontage.ToSoftObjectPath());
+			if (!FamAssets->BehaviorTree.IsNull()) OutAssetPaths.AddUnique(FamAssets->BehaviorTree.ToSoftObjectPath());
+
+			// 다중 스킬 몽타주가 있다면 전부 수집
+			for (const auto& SkillMontage : FamAssets->SkillMontages)
+			{
+				if (!SkillMontage.IsNull()) OutAssetPaths.AddUnique(SkillMontage.ToSoftObjectPath());
+			}
+		}
+	}
 }
 
 void ULevelLoadingSubsystem::UpdateLoadingProgress()

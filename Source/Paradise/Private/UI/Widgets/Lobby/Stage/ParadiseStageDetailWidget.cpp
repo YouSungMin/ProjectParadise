@@ -76,7 +76,25 @@ void UParadiseStageDetailWidget::InitDetailPopup(FName InStageID)
 	CachedStageID = InStageID;
 
 	// 1. 타이틀 설정
-	if (Text_StageTitle) Text_StageTitle->SetText(FText::FromName(CachedStageID));
+	if (Text_StageTitle)
+	{
+		// 기본값은 ID로 두되, 테이블에서 찾으면 기획자가 적어둔 이름으로 덮어씌웁니다.
+		FText FinalStageName = FText::FromName(CachedStageID);
+
+		if (CachedGI.IsValid() && CachedGI->StatgeStatsDataTable)
+		{
+			if (FStageStats* StageStats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID))
+			{
+				// 테이블에 StageName이 비어있지 않다면 적용!
+				if (!StageStats->StageName.IsEmpty())
+				{
+					FinalStageName = StageStats->StageName;
+				}
+			}
+		}
+
+		Text_StageTitle->SetText(FinalStageName);
+	}
 
 	// 2. 내 스쿼드 UI 초기화 (기존 위젯 재활용)
 	if (UI_SquadPreview)
