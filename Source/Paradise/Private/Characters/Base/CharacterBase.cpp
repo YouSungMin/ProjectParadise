@@ -291,6 +291,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 void ACharacterBase::ResetHitActors()
 {
 	HitActors.Empty();
+	CurrentActiveActionData = FCombatActionData();
 }
 
 bool ACharacterBase::IsHostile(ACharacterBase* Target) const

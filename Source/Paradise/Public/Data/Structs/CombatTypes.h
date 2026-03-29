@@ -175,7 +175,7 @@ public:
 	 * @details 이 값이 비어있으면(None) '근거리(Melee)'로 간주하고, 값이 있으면 '원거리(Ranged)'로 간주합니다.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<AActor> ProjectileClass =nullptr;
 
 	// =====================================
 	// 전투 수치 데이터

@@ -141,6 +141,15 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 		}
 	}
 
+	if (ActorInfo && ActorInfo->AvatarActor.IsValid())
+	{
+		if (ACharacterBase* CharBase = Cast<ACharacterBase>(ActorInfo->AvatarActor.Get()))
+		{
+			//포인터 주소를 초기화
+			CharBase->SetCurrentActionData(FCombatActionData());
+		}
+	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
