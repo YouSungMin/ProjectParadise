@@ -13,18 +13,19 @@ void USendGameplayEventNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 	{
 		AActor* OwnerActor = MeshComp->GetOwner();
 
-		if (SocketName != NAME_None)
+		if (ACharacterBase* Character = Cast<ACharacterBase>(OwnerActor))
 		{
-			if (ACharacterBase* Character = Cast<ACharacterBase>(OwnerActor))
+			Character->SetCurrentMuzzleSocketInfo(SocketName, SocketTarget);
+
+			if (EventTag.IsValid())
 			{
-				// 이름과 타겟(무기/몸체)을 모두 넘겨서 저장해둡니다.
-				Character->SetCurrentMuzzleSocketInfo(SocketName, SocketTarget);
+				FGameplayEventData Payload;
+				Payload.Instigator = OwnerActor;
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OwnerActor, EventTag, Payload);
 			}
+
+			// 🌟 2. 새로 추가한 코드: 공격 사령탑을 호출하여 타격 판정이나 투사체를 발생시킵니다.
+			Character->ExecuteAttackFromNotify(SocketName, SocketTarget, false);
 		}
-
-		FGameplayEventData Payload;
-		Payload.Instigator = OwnerActor;
-
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OwnerActor, EventTag, Payload);
 	}
 }
