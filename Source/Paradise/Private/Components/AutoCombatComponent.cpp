@@ -81,7 +81,7 @@ void UAutoCombatComponent::CheckAndAutoSummon()
         // 돈이 모여서 성공적으로 뽑았다면 로그 출력!
         if (bSuccess)
         {
-            UE_LOG(LogParadiseAutoCombat, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
+           // UE_LOG(LogParadiseAutoCombat, Log, TEXT("✨ [AutoMode] 자동 소환 성공! (가장 왼쪽 슬롯)"));
         }
     }
 }
@@ -94,6 +94,7 @@ void UAutoCombatComponent::UpdateAutoCombat()
     if (!OwnerPC) return;
 
     APlayerBase* PlayerPawn = Cast<APlayerBase>(OwnerPC->GetPawn());
+    // 캐릭터가 정상이면 조용히 패스! (여기서 안 튕기고 아래로 잘 내려갑니다)
     if (!PlayerPawn || PlayerPawn->IsDead() || !PlayerPawn->CanMove()) return;
 
     float AttackRange = GetDynamicAttackRange(PlayerPawn);
@@ -103,73 +104,55 @@ void UAutoCombatComponent::UpdateAutoCombat()
     if (CurrentTarget.IsValid())
     {
         AUnitBase* TargetUnit = Cast<AUnitBase>(CurrentTarget.Get());
-
-        // 죽지 않았다면 기존 타겟을 그대로 유지하고 거리만 갱신
         if (TargetUnit && !TargetUnit->IsDead())
         {
             TargetEnemy = CurrentTarget.Get();
-            NearestDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
+            // 중심점 간의 진짜 거리를 구함
+            float CenterDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
+
+            // 나와 적의 충돌체(캡슐) 반지름을 가져옴
+            float MyRadius = PlayerPawn->GetSimpleCollisionRadius();
+            float TargetRadius = TargetEnemy->GetSimpleCollisionRadius();
+
+            // 중심 거리에서 양쪽의 반지름을 빼서 '표면 간의 거리'를 계산 (음수가 되면 0으로 처리)
+            NearestDist = FMath::Max(0.0f, CenterDist - MyRadius - TargetRadius);
+            //NearestDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
         }
         else
         {
-            // 타겟이 죽었거나 삭제되었다면 기억을 지움
             CurrentTarget.Reset();
         }
     }
 
     if (!TargetEnemy)
     {
-        //가장 가까운 적 탐색
         TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
-        if (TargetEnemy)
-        {
-            // 새로 찾은 녀석을 다음 프레임을 위해 기억해둠
-            CurrentTarget = TargetEnemy;
-        }
+        if (TargetEnemy) CurrentTarget = TargetEnemy;
     }
 
-    //현재 타겟 디버그
     if (TargetEnemy)
     {
-        if (GEngine)
-        {
-            FString DebugMsg = FString::Printf(TEXT("🎯 [오토 타겟]: %s (거리: %.1f / 사거리: %.1f)"), *TargetEnemy->GetName(), NearestDist, AttackRange);
-            GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Green, DebugMsg);
-        }
+        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🎯 [오토 타겟]: %s 추적 중! (거리: %.1f / 내 사거리: %.1f)"), *TargetEnemy->GetName(), NearestDist, AttackRange);
     }
     else
     {
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Yellow, TEXT("🔍 [오토 타겟]: 주변에 적 없음 (기지로 이동)"));
-        }
+        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🔍 [오토 타겟]: 주변에 적 없음! 기지로 이동합니다."));
     }
 
-    //적이 사거리 안에 들어왔다면 공격
+    // 적이 사거리 안에 들어왔다면 공격
     if (TargetEnemy && NearestDist <= AttackRange)
     {
-        //멈추기
         OwnerPC->StopMovement();
 
-        //적을 바라보게함
         FVector LookDir = TargetEnemy->GetActorLocation() - PlayerPawn->GetActorLocation();
         LookDir.Z = 0.f;
         PlayerPawn->SetActorRotation(LookDir.Rotation());
 
-        //우선순위 대로 공격 어빌리티 발동
         ExecutePrioritizedAction(PlayerPawn);
     }
     else
     {
-        AActor* MoveTarget = TargetEnemy;
-
-        // 맵에 적이없다면 기지로 이동
-        if (!MoveTarget)
-        {
-            MoveTarget = GetEnemyBase();
-        }
-
-        // 이동 목표가 설정되었다면 내비메쉬를 따라 이동
+        AActor* MoveTarget = TargetEnemy ? TargetEnemy : GetEnemyBase();
         if (MoveTarget)
         {
             UAIBlueprintHelperLibrary::SimpleMoveToActor(OwnerPC, MoveTarget);
@@ -182,61 +165,61 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     if (!PlayerPawn) return;
 
     UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent();
-    if (!ASC)
-    {
-        // ASC가 없으면 그냥 기본 평타 시도
-        PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
-        return;
-    }
+    if (!ASC) return;
 
-    //특정 InputID의 스킬이 쿨타임/마나 조건이 되는지(사용 가능한지) 검사
     auto CanUseAbility = [&](EInputID InputID) -> bool
-        {
-            for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
-            {
-                if (Spec.InputID == static_cast<int32>(InputID))
-                {
-                    return Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
-                }
-            }
-            return false;
-        };
-
-    //궁극기 사용 가능 여부 확인
-    if (CanUseAbility(EInputID::Ultimate))
     {
-        PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
-        //자동으로 궁극기를 써도 컨트롤러에게 화면 연출을 틀어라 라고 호출
-        if (AInGameController* OwnerPC = GetOwnerController())
+        for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
         {
-            //0327 김성현 - 자동모드시 궁극기 관련 연출 실행 X
-            bool bIsAutoBattle = false;
-            if (UAutoCombatComponent* AutoComp = OwnerPC->GetAutoCombatComponent())
+            if (Spec.Ability && Spec.InputID == static_cast<int32>(InputID))
             {
-                bIsAutoBattle = AutoComp->IsAutoMode();
-            }
-
-            if (bIsAutoBattle) return;
-
-            if (UUltimateEffectComponent* UltEffectComp = OwnerPC->GetUltimateEffectComponent())
-            {
-                UltEffectComp->PlayUltimateEffect(2.5f);
+                return Spec.Ability->CanActivateAbility(Spec.Handle, ASC->AbilityActorInfo.Get());
             }
         }
-        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🤖 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
+        return false;
+    };
+
+    // 1순위: 궁극기
+    if (CanUseAbility(EInputID::Ultimate))
+    {
+        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🔥 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
+        PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
+        PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, false); // 💡 눌렀다 떼기 필수!
+
+        if (AInGameController* OwnerPC = GetOwnerController())
+        {
+            bool bIsAutoBattle = OwnerPC->GetAutoCombatComponent() ? OwnerPC->GetAutoCombatComponent()->IsAutoMode() : false;
+            if (!bIsAutoBattle)
+            {
+                if (UUltimateEffectComponent* UltEffectComp = OwnerPC->GetUltimateEffectComponent())
+                {
+                    UltEffectComp->PlayUltimateEffect(2.5f);
+                }
+            }
+        }
         return;
     }
 
-    // 2순위: 일반 스킬 사용 가능 여부 확인
+    // 2순위: 일반 스킬
     if (CanUseAbility(EInputID::Skill))
     {
+        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("✨ [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
         PlayerPawn->SendAbilityInputToASC(EInputID::Skill, true);
-        UE_LOG(LogParadiseAutoCombat, Log, TEXT("🤖 [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
+        PlayerPawn->SendAbilityInputToASC(EInputID::Skill, false); // 💡 눌렀다 떼기 필수!
         return;
     }
 
-    //궁극기, 스킬 모두 안되면 기본 평타
-    PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
+    // 3순위: 평타 (평타도 쿨타임/조건이 맞을 때만 쏘게 보호막 설치!)
+    if (CanUseAbility(EInputID::Attack))
+    {
+        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("⚔️ [AutoCombat] %s - 평타 발동!"), *PlayerPawn->GetName());
+        PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
+        PlayerPawn->SendAbilityInputToASC(EInputID::Attack, false); // 💡 눌렀다 떼기 필수!
+    }
+    else
+    {
+        UE_LOG(LogParadiseAutoCombat, Error, TEXT("😱 [AutoCombat] %s - 사거리에는 들어왔는데, 아무 스킬도 쏠 수 없는 상태입니다! (쿨타임 대기중이거나 코스트 부족)"), *PlayerPawn->GetName());
+    }
 }
 
 AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDistance)
@@ -294,7 +277,12 @@ AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDist
     // 최종 반환할 때만 제곱근(루트)을 씌워서 실제 거리로 반환
     if (NearestEnemy)
     {
-        OutDistance = FMath::Sqrt(OutDistance);
+        float CenterDist = FMath::Sqrt(OutDistance);
+
+        float MyRadius = PlayerPawn->GetSimpleCollisionRadius();
+        float TargetRadius = NearestEnemy->GetSimpleCollisionRadius();
+
+        OutDistance = FMath::Max(0.0f, CenterDist - MyRadius - TargetRadius);
     }
 
     return NearestEnemy;
@@ -389,7 +377,7 @@ float UAutoCombatComponent::GetDynamicAttackRange(APlayerBase* PlayerPawn)
         }
     }
 
-    // 🚨 데이터를 찾지 못했을 때만 에러 파악을 위해 경고 로그 출력
+    //데이터를 찾지 못했을 때 경고 로그 출력
     UE_LOG(LogParadiseAutoCombat, Warning, TEXT("⚠️ [AutoCombat] 액션 데이터를 찾지 못했습니다. 기본 사거리(%.1f) 반환."), DefaultRange);
     return DefaultRange;
 }

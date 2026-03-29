@@ -141,6 +141,15 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 		}
 	}
 
+	if (ActorInfo && ActorInfo->AvatarActor.IsValid())
+	{
+		if (ACharacterBase* CharBase = Cast<ACharacterBase>(ActorInfo->AvatarActor.Get()))
+		{
+			//포인터 주소를 초기화
+			CharBase->SetCurrentActionData(FCombatActionData());
+		}
+	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -306,6 +315,11 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 
 const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 {
+	if (bIsDataCached && !IsValid(CachedCombatData.MontageToPlay))
+	{
+		UE_LOG(LogTemp, Error, TEXT("⚠️ [BaseGA] 몽타주 메모리가 유실되었습니다! 다시 안전하게 로드합니다."));
+		bIsDataCached = false; // 플래그를 꺼서 강제로 다시 엑셀에서 가져오게 함
+	}
 	// 이미 캐싱되었다면 그대로 반환
 	if (bIsDataCached)
 	{
