@@ -56,6 +56,7 @@ void UTestNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenc
 
 	if (ACharacterBase* Character = Cast<ACharacterBase>(MeshComp->GetOwner()))
 	{
-		Character->CheckHit(SocketName, SocketTarget);
+		// 🌟 스테이트 틱이므로 bIsTick = true 전달
+		Character->ExecuteAttackFromNotify(SocketName, SocketTarget, true);
 	}
 }

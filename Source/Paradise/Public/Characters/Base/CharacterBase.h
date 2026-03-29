@@ -137,6 +137,14 @@ public:
 	/** @brief 캐싱된 타겟(무기 or 몸체)을 기준으로 최종 발사 트랜스폼(위치+회전) 반환 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	FTransform GetCurrentMuzzleTransform() const;
+
+	/**
+	 * @brief 애니메이션 노티파이에서 호출하는 통합 공격 사령탑
+	 * @param bIsTick : false면 일반 Notify에서, true면 State(Tick)에서 호출됨을 의미
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ExecuteAttackFromNotify(FName SocketName, ESocketTargetType TargetType, bool bIsTick);
+
 protected:
 	virtual void BeginPlay() override;
 
