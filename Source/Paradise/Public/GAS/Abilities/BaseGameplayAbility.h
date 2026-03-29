@@ -125,6 +125,7 @@ private:
 	bool bIsDataCached = false;
 
 	/** @brief 한 번 가져온 데이터를 저장해두는 변수 */
+	UPROPERTY()
 	FCombatActionData CachedCombatData;
 
 	// [추가] 03/23 담당자: 최지원, 공격/스킬/궁극기 입력시 조이스틱 이동 토글 추가 
