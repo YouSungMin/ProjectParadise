@@ -48,37 +48,54 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
-
-	// 🌟 1. 시작점(TraceStart) 및 방향(TraceDirection) 결정 분기
-	if (SocketName.IsNone())
+	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
+	USceneComponent* TargetMesh = GetMesh();
+	if (TargetType == ESocketTargetType::EquippedWeapon)
 	{
-		// [플레이어 모드] 소켓 이름이 없으면: 액터 몸통 기준 + 데이터테이블 오프셋
-		// 인디케이터와 100% 동일한 공식 적용
-		TraceStart = GetActorLocation() + (TraceDirection * (BaseOffset + ForwardOffset));
+		if (USceneComponent* WpnMesh = GetWeaponMesh())
+		{
+			TargetMesh = WpnMesh; // 무기 메쉬로 성공적 교체
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 타겟을 설정했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
+		}
+	}
+
+	if (!SocketName.IsNone() && TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+	{
+		// 소켓 이름이 있고, 해당 메쉬(무기 or 몸통)에 소켓이 존재할 때
+		TraceStart = TargetMesh->GetSocketLocation(SocketName);
+		TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
+
+		// 소켓 방향을 기준으로 앞으로 살짝 밀어줍니다.
+		TraceStart += TraceDirection * ForwardOffset;
 	}
 	else
 	{
-		// [몬스터 모드] 소켓 이름이 주어지면: 해당 소켓 위치 및 회전 기준
-		USceneComponent* TargetMesh = GetMesh();
-
-		// 해당 메쉬에 소켓이 존재하는지 확인
-		if (TargetMesh && TargetMesh->DoesSocketExist(SocketName))
+		// 소켓 이름이 없거나(None), 오타가 나서 못 찾았을 때
+		if (TargetType == ESocketTargetType::EquippedWeapon && TargetMesh)
 		{
-			TraceStart = TargetMesh->GetSocketLocation(SocketName);
-			TraceDirection = TargetMesh->GetSocketRotation(SocketName).Vector();
-
-			// 몬스터도 소켓 위치에서 앞으로 살짝 밀어서 판정하고 싶다면 적용
+			// 타겟이 '무기'인데 소켓을 안 적어줬다면 -> 무기의 중심점에서 나갑니다.
+			TraceStart = TargetMesh->GetComponentLocation();
+			TraceDirection = TargetMesh->GetComponentRotation().Vector();
 			TraceStart += TraceDirection * ForwardOffset;
 		}
 		else
 		{
-			// 소켓 오타 등의 이유로 못 찾았을 때의 안전망 (플레이어 방식 임시 차용)
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] %s 소켓을 찾을 수 없어 몸통 기준으로 공격합니다."), *GetName(), *SocketName.ToString());
-			TraceStart = GetActorLocation() + (TraceDirection * (BaseOffset + ForwardOffset));
+			// 타겟이 '몸통'인데 소켓을 안 적어줬다면 -> 기존 공식(액터 몸통 기준) 적용
+			TraceStart = GetActorLocation() + (GetActorForwardVector() * (BaseOffset + ForwardOffset));
+			TraceDirection = GetActorForwardVector();
+		}
+
+		// 만약 소켓 이름을 적긴 적었는데 못 찾은 거라면 에러 로그 출력 (오타 방지용)
+		if (!SocketName.IsNone())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] '%s' 소켓을 찾을 수 없어 기본 위치에서 공격합니다. (오타 확인 필요!)"), *GetName(), *SocketName.ToString());
 		}
 	}
 
-	// 🌟 2. 끝점(TraceEnd) 계산 (사거리 적용)
+	// 끝점(TraceEnd) 계산 (사거리 적용)
 	FVector TraceEnd = TraceStart + (TraceDirection * AttackRange);
 	TArray<AActor*> ActorsToIgnore;
 
@@ -342,6 +359,28 @@ void ACharacterBase::OnDeathAnimationFinished()
 	}
 }
 
+void ACharacterBase::ExecuteAttackFromNotify(FName SocketName, ESocketTargetType TargetType, bool bIsTick)
+{
+	bool bIsProjectile = CurrentActiveActionData.ProjectileClass != nullptr;
+
+	if (bIsProjectile)
+	{
+		if (!bIsTick)
+		{
+			return;
+		}
+		// 만약 스테이트(Tick)가 불렀다면 무시하고 조용히 종료합니다.
+	}
+	else
+	{
+		if (bIsTick)
+		{
+			// 노티파이 스테이트(Tick) 구간에서만 타격 판정 수행!
+			CheckHit(SocketName, TargetType);
+		}
+	}
+}
+
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -431,24 +470,51 @@ void ACharacterBase::SetCurrentMuzzleSocketInfo(FName InSocketName, ESocketTarge
 
 FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 {
-	// 무기(Weapon)에서 소켓을 찾는 경우
-	if (CurrentMuzzleSocketTarget == ESocketTargetType::EquippedWeapon && CurrentWeaponActor)
+	// 🌟 1. 무기(Weapon)에서 소켓을 찾는 경우
+	if (CurrentMuzzleSocketTarget == ESocketTargetType::EquippedWeapon)
 	{
-		// 무기 액터가 가진 메쉬 컴포넌트를 탐색 (Static/Skeletal 모두 대응)
-		if (UMeshComponent* WeaponMesh = CurrentWeaponActor->FindComponentByClass<UMeshComponent>())
+		// 유저님의 구조: GetWeaponMesh()를 통해 캐릭터에 붙어있는 WeaponMesh 컴포넌트를 직접 가져옵니다.
+		if (USceneComponent* WpnMeshComp = GetWeaponMesh())
 		{
-			// 해당 무기 메쉬에서 지정된 소켓의 월드 트랜스폼 추출
-			return WeaponMesh->GetSocketTransform(CurrentMuzzleSocketName);
+			// 가져온 메쉬에 해당 소켓이 존재하는지 확인!
+			if (WpnMeshComp->DoesSocketExist(CurrentMuzzleSocketName))
+			{
+				// 찾았다면 소켓 위치 반환!
+				return WpnMeshComp->GetSocketTransform(CurrentMuzzleSocketName);
+			}
+			else
+			{
+				// 무기 메쉬는 찾았는데 소켓 이름이 틀렸을 때 에러 출력
+				UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
+			}
 		}
+		else
+		{
+			// 최악의 경우: WeaponMesh 컴포넌트 자체를 못 찾았을 때
+			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
+		}
+
+		// 소켓을 못 찾았을 때의 안전망 (캐릭터 위치 반환)
+		return GetActorTransform();
 	}
 
-	// 캐릭터 몸체(CharacterBody)에서 찾거나, 무기를 장착하지 않은 상태일 경우
+	// 🌟 2. 캐릭터 몸체(CharacterBody)에서 찾는 경우
 	if (USkeletalMeshComponent* BodyMesh = GetMesh())
 	{
-		return BodyMesh->GetSocketTransform(CurrentMuzzleSocketName);
+		if (BodyMesh->DoesSocketExist(CurrentMuzzleSocketName))
+		{
+			return BodyMesh->GetSocketTransform(CurrentMuzzleSocketName);
+		}
+
+		if (!CurrentMuzzleSocketName.IsNone())
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 캐릭터 몸통 메쉬에서 '%s' 소켓을 찾지 못했습니다!"), *CurrentMuzzleSocketName.ToString());
+		}
+
+		return BodyMesh->GetComponentTransform();
 	}
 
-	// 만약 위에서 아무것도 찾지 못했다면 안전망으로 캐릭터 본체의 트랜스폼 반환
+	// 3. 최후의 안전망
 	return GetActorTransform();
 }
 

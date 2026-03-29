@@ -32,11 +32,19 @@ void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	FCombatActionData CombatData = GetCombatDataFromActor();
 
+	if (ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo()))
+	{
+		AvatarChar->SetCurrentActionData(CombatData);
+	}
+
 	if (!CombatData.MontageToPlay)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("❌ [ProjectileAttackBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}if (ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo()))
+	{
+		AvatarChar->SetCurrentActionData(CombatData);
 	}
 
 	// 부모의 공용 함수로 몽타주 재생
