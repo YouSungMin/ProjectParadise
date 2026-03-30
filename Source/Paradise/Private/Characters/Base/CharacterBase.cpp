@@ -3,6 +3,8 @@
 
 #include "Characters/Base/CharacterBase.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
+#include "AIController.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -48,6 +50,8 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
+
+	UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
 	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
 	USceneComponent* TargetMesh = GetMesh();
 	if (TargetType == ESocketTargetType::EquippedWeapon)
@@ -291,7 +295,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 void ACharacterBase::ResetHitActors()
 {
 	HitActors.Empty();
-	CurrentActiveActionData = FCombatActionData();
+	//CurrentActiveActionData = FCombatActionData();
 }
 
 bool ACharacterBase::IsHostile(ACharacterBase* Target) const
@@ -596,4 +600,17 @@ void ACharacterBase::Die()
 		// 몽타주가 없다면 예외 처리로 즉시 종료 함수 호출
 		OnDeathAnimationFinished();
 	}
+
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		//비헤이비어 트리 안전 종료
+		if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(AICon->GetBrainComponent()))
+		{
+			BTComp->StopTree(EBTStopMode::Safe);
+		}
+
+		//육체 제어권 포기
+		AICon->UnPossess();
+	}
+
 }

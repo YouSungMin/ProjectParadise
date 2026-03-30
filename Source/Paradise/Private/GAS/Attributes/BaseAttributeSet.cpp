@@ -108,12 +108,12 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			const float NewHealth = GetHealth() - LocalDamage;
 			SetHealth(NewHealth);
 
-			// 1. 타겟 액터가 누구인지 확인
+			// 타겟 액터가 누구인지 확인
 			AActor* TargetActor = Data.Target.GetAvatarActor();
 			/*UE_LOG(LogTemp, Warning, TEXT("===================================="));
 			UE_LOG(LogTemp, Warning, TEXT("🩸 [데미지 판정] 타겟 액터: %s, 남은 HP: %.2f"), TargetActor ? *TargetActor->GetName() : TEXT("Null"), NewHealth);*/
 
-			// 2. 캐릭터 베이스로 캐스팅 시도
+			// 캐릭터 베이스로 캐스팅 시도
 			if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
 			{
 				if (NewHealth <= 0.0f)

@@ -16,6 +16,9 @@ class PARADISE_API AParadiseCameraManager : public APlayerCameraManager
 	
 
 public:
+	AParadiseCameraManager();
+
+	virtual void Tick(float DeltaTime) override;
 
 	/**
 	 * @brief OverViewCamera를 찾아서 초기화해두는 함수
@@ -39,6 +42,17 @@ protected:
 
 	// 실제로 잠금을 해제할 함수
 	void UnlockUltimateState();
+
+private:
+
+	/** @brief 전멸 여부 및 자동 전투 여부에 따라 카메라 위치/거리를 실시간으로 갱신합니다. */
+	void UpdateDynamicSmartCamera(float DeltaTime, bool bIsAuto, bool bIsWipedOut, APawn* ControlledPawn);
+
+	//궁극기 연출 기능 함수
+	void SetUltimateTimeDilation(AActor* TargetActor, bool bEnable);
+	void SetUltimateActorsVisibility(AActor* TargetActor, bool bHide);
+	void SetUltimateRenderingEffects(AActor* TargetActor, bool bEnable);
+	void SpawnUltimateLight(AActor* TargetActor);
 
 public:
 	/** @brief 현재 궁극기 연출 중인지 여부 (카메라 뺏김 방지) */
