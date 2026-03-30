@@ -3,6 +3,8 @@
 
 #include "Characters/Base/CharacterBase.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
+#include "AIController.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -598,4 +600,17 @@ void ACharacterBase::Die()
 		// 몽타주가 없다면 예외 처리로 즉시 종료 함수 호출
 		OnDeathAnimationFinished();
 	}
+
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		//비헤이비어 트리 안전 종료
+		if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(AICon->GetBrainComponent()))
+		{
+			BTComp->StopTree(EBTStopMode::Safe);
+		}
+
+		//육체 제어권 포기
+		AICon->UnPossess();
+	}
+
 }

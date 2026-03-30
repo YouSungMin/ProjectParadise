@@ -75,17 +75,13 @@ void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	//0326 김성현 궁극기 카메라 연출 추가
 	if (AbilityActionType == ECombatActionType::UltimateSkill)
 	{
+		//AI 일 경우도 있으므로 0번 컨트롤러
 		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
-
 		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
 		{
-			bool bIsAutoBattle = false;
-			if (UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent())
-			{
-				bIsAutoBattle = AutoComp->IsAutoMode();
-			}
+			UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent();
+			bool bIsAutoBattle = AutoComp ? AutoComp->IsAutoMode() : false;
 
-			// 수동 조작 상태(!bIsAutoBattle)일 때만 카메라 연출 실행
 			if (!bIsAutoBattle)
 			{
 				if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
@@ -121,7 +117,6 @@ void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, c
 	if (AbilityActionType == ECombatActionType::UltimateSkill)
 	{
 		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
-
 		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
 		{
 			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
@@ -254,6 +249,15 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 		}
 	}
+}
+
+AParadiseCameraManager* UBaseGameplayAbility::GetParadiseCameraManager() const
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetPlayerControllerFromActorInfo()))
+	{
+		return Cast<AParadiseCameraManager>(PC->PlayerCameraManager);
+	}
+	return nullptr;
 }
 
 UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName)

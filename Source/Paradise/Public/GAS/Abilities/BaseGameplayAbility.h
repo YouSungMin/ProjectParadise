@@ -83,6 +83,10 @@ public:
 	/** @brief 코스트(마나)를 실제로 깎는 함수 */
 	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 protected:
+
+	/** @brief 현재 어빌리티 실행자의 카메라 매니저를 캐싱/반환하는 헬퍼 함수 */
+	class AParadiseCameraManager* GetParadiseCameraManager() const;
+
 	/**
 	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수
 	 * @param MontageToPlay 재생할 몽타주
