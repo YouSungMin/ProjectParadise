@@ -125,7 +125,7 @@ void UGrowthSubsystem::HandleDuplicateCharacter(FName CharacterID)
 		//최대각성이므로 범용재화 에테르 지급
 		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
 		{
-		    EconSys->AddCurrency(ECurrencyType::Aether, 1000); // 잉여 조각 대신 에테르 지급 등
+		    EconSys->AddCurrency(ECurrencyType::Aether, 50); // 잉여 조각 대신 에테르 지급 등
 		}
 	}
 }
