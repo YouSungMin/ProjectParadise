@@ -38,7 +38,7 @@ EBTNodeResult::Type UBTTask_RangeAttack::ExecuteTask(UBehaviorTreeComponent& Own
         SelfPawn->SetActorRotation(Direction.Rotation());
 
         // 공격 함수 실행
-        SelfUnit->PlayRangeAttack();
+        //SelfUnit->PlayRangeAttack();
 
         // 성공 반환
         return EBTNodeResult::Succeeded;

@@ -170,7 +170,7 @@ bool UBaseGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle H
 				//이미 궁극기 연출을 진행 중이면
 				if (CamMgr->bIsUltimatePlaying)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("⚠️ [GAS] 다른 캐릭터가 이미 궁극기를 사용 중입니다! 발동 취소."));
+					//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GAS] 다른 캐릭터가 이미 궁극기를 사용 중입니다! 발동 취소."));
 
 					return false; // 발동 불가 처리
 				}
@@ -317,7 +317,7 @@ const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 {
 	if (bIsDataCached && !IsValid(CachedCombatData.MontageToPlay))
 	{
-		UE_LOG(LogTemp, Error, TEXT("⚠️ [BaseGA] 몽타주 메모리가 유실되었습니다! 다시 안전하게 로드합니다."));
+		//UE_LOG(LogTemp, Error, TEXT("⚠️ [BaseGA] 몽타주 메모리가 유실되었습니다! 다시 안전하게 로드합니다."));
 		bIsDataCached = false; // 플래그를 꺼서 강제로 다시 엑셀에서 가져오게 함
 	}
 	// 이미 캐싱되었다면 그대로 반환
@@ -335,14 +335,14 @@ const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 	if (CachedCombatData.MontageToPlay)
 	{
 		bIsDataCached = true;
-		UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
+		//UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
 	}
 	else
 	{
 		// 데이터가 없거나 몽타주가 비어있으면 에러 로그 출력
-		UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 전투 데이터 또는 몽타주를 가져오지 못했습니다! (Type: %d)"),
+	/*	UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 전투 데이터 또는 몽타주를 가져오지 못했습니다! (Type: %d)"),
 			CurrentActorInfo && CurrentActorInfo->AvatarActor.IsValid() ? *CurrentActorInfo->AvatarActor->GetName() : TEXT("Unknown"),
-			(int32)AbilityActionType);
+			(int32)AbilityActionType);*/
 	}
 
 	return CachedCombatData;

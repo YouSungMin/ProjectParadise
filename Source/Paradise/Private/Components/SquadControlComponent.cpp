@@ -66,7 +66,7 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
 
     if (!ActiveSquadPawns.IsValidIndex(PlayerIndex) || ActiveSquadPawns[PlayerIndex] == nullptr)
     {
-        UE_LOG(LogParadiseSquad, Warning, TEXT("⚠️ [Controller] 잘못된 인덱스 요청이거나 빈 슬롯입니다: %d"), PlayerIndex);
+        //UE_LOG(LogParadiseSquad, Warning, TEXT("⚠️ [Controller] 잘못된 인덱스 요청이거나 빈 슬롯입니다: %d"), PlayerIndex);
         return;
     }
 
@@ -109,9 +109,9 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
     FString Msg = FString::Printf(TEXT("Switch -> Hero %d"), PlayerIndex + 1);
     GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, Msg);
 
-    UE_LOG(LogParadiseSquad, Warning, TEXT("🔄 [Controller] 캐릭터 교체 완료 (%s -> %s)"),
+    /*UE_LOG(LogParadiseSquad, Warning, TEXT("🔄 [Controller] 캐릭터 교체 완료 (%s -> %s)"),
         OldPlayer ? *OldPlayer->GetName() : TEXT("None"),
-        *NewPlayer->GetName());
+        *NewPlayer->GetName());*/
 
     //UI/카메라 업데이트 명령 하달
     if (AParadiseCameraManager* CamManager = GetParadiseCameraManager())

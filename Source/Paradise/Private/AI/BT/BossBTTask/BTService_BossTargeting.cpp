@@ -51,10 +51,10 @@ void UBTService_BossTargeting::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 		CollisionParams
 	);
 
-	if (!bHit)
+	/*if (!bHit)
 	{
 		UE_LOG(LogParadiseAI, Error, TEXT("🛑 [보스 타겟팅] 주변(반경 %.1f)에 아무것도 겹치지 않음!"), SearchRadius);
-	}
+	}*/
 
 	AActor* BestTarget = nullptr;
 	int32 HighestPriority = 999;

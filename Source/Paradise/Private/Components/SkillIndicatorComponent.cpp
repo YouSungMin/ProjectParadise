@@ -94,7 +94,7 @@ void USkillIndicatorComponent::ShowIndicator(float AttackRange, float AttackRadi
 		GetWorld()->GetTimerManager().SetTimer(ScanTimerHandle, this, &USkillIndicatorComponent::ScanTargets, 0.1f, true);
 
 		// [로그 추가] 수치 확인용
-		UE_LOG(LogTemp, Warning, TEXT("🔵 [SkillIndicator] 사거리 데이터 (공격 범위: %.1f, 공격 반경: %.1f, 전방 오프셋: %.1f) | 시각적 스케일: %.2f"), AttackRange, AttackRadius, ForwardOffset, VisualScale);
+		//UE_LOG(LogTemp, Warning, TEXT("🔵 [SkillIndicator] 사거리 데이터 (공격 범위: %.1f, 공격 반경: %.1f, 전방 오프셋: %.1f) | 시각적 스케일: %.2f"), AttackRange, AttackRadius, ForwardOffset, VisualScale);
 	}
 }
 

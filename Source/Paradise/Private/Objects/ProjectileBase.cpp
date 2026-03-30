@@ -117,7 +117,7 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 	{
 		LifeTime = InAttackRange / CurrentSpeed;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
+	//UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
 	
 	// 타이머 재설정
 	if (UWorld* World = GetWorld())

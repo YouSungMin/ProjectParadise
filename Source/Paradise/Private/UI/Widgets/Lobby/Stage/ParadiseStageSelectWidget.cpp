@@ -46,7 +46,7 @@ void UParadiseStageSelectWidget::NativeDestruct()
 #pragma region 외부 인터페이스 구현
 void UParadiseStageSelectWidget::InitStageMap(int32 InChapterID)
 {
-	UE_LOG(LogTemp, Log, TEXT("[StageSelect] %d 챕터 진입. 해당 챕터의 노드만 활성화합니다."), InChapterID);
+	//UE_LOG(LogTemp, Log, TEXT("[StageSelect] %d 챕터 진입. 해당 챕터의 노드만 활성화합니다."), InChapterID);
 
 	CurrentChapterID = InChapterID;
 
@@ -94,7 +94,7 @@ void UParadiseStageSelectWidget::RefreshMapNodes()
 {
 	if (!Switcher_ChapterMaps || !DT_StageStats || !DT_StageAssets)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] 필수 컴포넌트 또는 데이터 테이블 누락"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] 필수 컴포넌트 또는 데이터 테이블 누락"));
 		return;
 	}
 
@@ -155,7 +155,7 @@ void UParadiseStageSelectWidget::HandleNodeClicked(FName SelectedStageID)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] UI_StageDetail이 없습니다. WBP_StageSelect 내부에 배치했는지 확인하세요."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageSelect] UI_StageDetail이 없습니다. WBP_StageSelect 내부에 배치했는지 확인하세요."));
 	}
 }
 

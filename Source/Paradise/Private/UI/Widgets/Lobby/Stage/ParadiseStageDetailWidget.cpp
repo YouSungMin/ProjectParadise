@@ -118,7 +118,7 @@ void UParadiseStageDetailWidget::SetupEnemyList(FName InStageID)
 
 	if (!EnemyIconClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] EnemyIconClass가 누락되었습니다. BP 설정을 확인하세요."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] EnemyIconClass가 누락되었습니다. BP 설정을 확인하세요."));
 		return;
 	}
 
@@ -249,7 +249,7 @@ void UParadiseStageDetailWidget::OnClickFormation()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageDetail] 맵에 배치된 AParadiseSquadSceneManager를 찾을 수 없어 카메라 전환을 스킵합니다."));
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageDetail] 맵에 배치된 AParadiseSquadSceneManager를 찾을 수 없어 카메라 전환을 스킵합니다."));
 		}
 	}
 }
@@ -272,7 +272,7 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 경고 위젯이 없어 화면에 띄울 수 없음! 사유: %s"), *ErrorMsg);
+				//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 경고 위젯이 없어 화면에 띄울 수 없음! 사유: %s"), *ErrorMsg);
 			}
 			return;
 		}
@@ -306,7 +306,7 @@ void UParadiseStageDetailWidget::ExecuteBattleTransition()
 
 	if (!Stats || !Assets || Assets->MapAsset.IsNull())
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 스테이지 데이터 누락: %s"), *CachedStageID.ToString());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 스테이지 데이터 누락: %s"), *CachedStageID.ToString());
 		return;
 	}
 

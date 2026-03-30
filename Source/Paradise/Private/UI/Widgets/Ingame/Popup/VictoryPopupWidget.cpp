@@ -46,8 +46,8 @@ void UVictoryPopupWidget::SetVictoryData(
 	FName InNextStageID,
 	FName InAcquiredFamiliar)
 {
-	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
-		InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
+		//InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
 
 	// 1. 내부 상태 캐싱
 	CachedNextStageID = InNextStageID;
@@ -69,7 +69,7 @@ void UVictoryPopupWidget::SetVictoryData(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel 바인딩 누락."));
+		//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel 바인딩 누락."));
 	}
 
 	// 5. 다음 스테이지가 없다면(마지막 스테이지) 다음 버튼을 숨기거나 비활성화 처리
@@ -83,12 +83,12 @@ void UVictoryPopupWidget::SetVictoryData(
 	{
 		if (InAcquiredFamiliar.IsNone())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar가 None — 퍼밀리어 위젯 숨김"));
+			//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar가 None — 퍼밀리어 위젯 숨김"));
 			WBP_FamiliarRewardPopup->HideReward();
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar: %s — ShowFamiliarReward 호출"), *InAcquiredFamiliar.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar: %s — ShowFamiliarReward 호출"), *InAcquiredFamiliar.ToString());
 			WBP_FamiliarRewardPopup->ShowFamiliarReward(InAcquiredFamiliar);
 		}
 	}
@@ -119,13 +119,13 @@ void UVictoryPopupWidget::SetStarImage(UImage* StarImage, int32 StarIndex, int32
 	{
 		StarImage->SetBrushFromTexture(TargetTexture);
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning,
 			TEXT("⚠️ [VictoryPopup] Star%d 텍스처가 비어있습니다!"
 				" WBP_VictoryPopup 디테일 패널에서 StarOnTexture / StarOffTexture 를 할당하세요."),
 			StarIndex);
-	}
+	}*/
 }
 
 void UVictoryPopupWidget::OnNextStageClicked()

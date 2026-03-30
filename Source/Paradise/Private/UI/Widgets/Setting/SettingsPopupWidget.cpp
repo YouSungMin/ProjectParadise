@@ -118,7 +118,7 @@ void USettingsPopupWidget::CloseSettings()
 	{
 		CachedAudioSettings->SaveToSlot();
 		CachedAudioSettings->ApplyVolumeSettings();
-		UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 팝업 닫힘 → 볼륨 디스크 저장 완료"));
+		//UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 팝업 닫힘 → 볼륨 디스크 저장 완료"));
 	}
 
 	/** @section 3. 게임 시간 복구 및 입력 모드 반환 */
@@ -143,7 +143,7 @@ void USettingsPopupWidget::InitializeVolumeSliders()
 {
 	if (!CachedAudioSettings.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] AudioSettings가 유효하지 않아 슬라이더 초기화를 건너뜁니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("[SettingsPopup] AudioSettings가 유효하지 않아 슬라이더 초기화를 건너뜁니다."));
 		return;
 	}
 
@@ -160,7 +160,7 @@ void USettingsPopupWidget::InitializeVolumeSliders()
 		Slider_SFX->SetValue(LoadedSFXVolume);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 슬라이더 초기화: BGM=%.2f, SFX=%.2f"), LoadedBGMVolume, LoadedSFXVolume);
+	//UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 슬라이더 초기화: BGM=%.2f, SFX=%.2f"), LoadedBGMVolume, LoadedSFXVolume);
 }
 
 void USettingsPopupWidget::OnBGMVolumeChanged(float Value)

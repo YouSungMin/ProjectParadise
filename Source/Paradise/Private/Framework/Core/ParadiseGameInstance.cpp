@@ -57,7 +57,7 @@ void UParadiseGameInstance::Init()
 void UParadiseGameInstance::Shutdown()
 {
 	SaveGameData();
-	UE_LOG(LogTemp, Warning, TEXT("🛑 [GameInstance] 게임 종료 전 자동 저장을 완료했습니다."));
+	//UE_LOG(LogTemp, Warning, TEXT("🛑 [GameInstance] 게임 종료 전 자동 저장을 완료했습니다."));
 
 
 	Super::Shutdown();
@@ -66,10 +66,10 @@ void UParadiseGameInstance::Shutdown()
 #if WITH_EDITOR
 void UParadiseGameInstance::CheckMeshScale(FString FolderPath)
 {
-	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	/*UE_LOG(LogTemp, Warning, TEXT("========================================================="));
 	UE_LOG(LogTemp, Warning, TEXT("🔍 [지뢰 탐지기 작동] 스켈레탈 메쉬 스케일 검사를 시작합니다."));
 	UE_LOG(LogTemp, Warning, TEXT("📂 검사 경로: %s"), *FolderPath);
-	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));*/
 
 	// 에셋 레지스트리를 통해 폴더 내의 모든 에셋 정보를 가져옵니다.
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -116,15 +116,15 @@ void UParadiseGameInstance::CheckMeshScale(FString FolderPath)
 				if (!bIsSafe)
 				{
 					TotalBadMeshes++;
-					UE_LOG(LogTemp, Error, TEXT("💣 [지뢰 발견] 에셋: %s %s"), *SkelMesh->GetName(), *BadBoneNames);
+					//UE_LOG(LogTemp, Error, TEXT("💣 [지뢰 발견] 에셋: %s %s"), *SkelMesh->GetName(), *BadBoneNames);
 				}
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	/*UE_LOG(LogTemp, Warning, TEXT("========================================================="));
 	UE_LOG(LogTemp, Warning, TEXT("🏁 [검사 완료] 총 %d개의 메쉬 검사됨 / 💣 지뢰(불량 메쉬) %d개 발견됨!"), TotalChecked, TotalBadMeshes);
-	UE_LOG(LogTemp, Warning, TEXT("========================================================="));
+	UE_LOG(LogTemp, Warning, TEXT("========================================================="));*/
 
 }
 #endif
@@ -134,7 +134,7 @@ void UParadiseGameInstance::SaveGameData()
 	//이미 세이브 파일이 존재하는데 로드에 실패했던 상태라면, 빈 데이터 저장을 차단합니다.
 	if (!bIsGameDataLoaded && UGameplayStatics::DoesSaveGameExist(SaveGameSlotName, 0))
 	{
-		UE_LOG(LogTemp, Error, TEXT("🛑 [SaveSystem] 비정상적인 로드 상태이므로 기존 데이터를 보호하기 위해 덮어쓰기를 취소합니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("🛑 [SaveSystem] 비정상적인 로드 상태이므로 기존 데이터를 보호하기 위해 덮어쓰기를 취소합니다!"));
 		return;
 	}
 
@@ -154,14 +154,15 @@ void UParadiseGameInstance::SaveGameData()
 	}
 
 	//저장 데이터 위변조 방지 암호화 적용
-	if (UParadiseSaveManager::SaveGameEncrypted(SaveObj, SaveGameSlotName))
+	UParadiseSaveManager::SaveGameEncrypted(SaveObj, SaveGameSlotName);
+	/*if (UParadiseSaveManager::SaveGameEncrypted(SaveObj, SaveGameSlotName))
 	{
 		UE_LOG(LogParadiseSaveGame, Log, TEXT("💾 [SaveSystem] 게임 데이터 [보안 암호화] 영구 저장 완료! (슬롯: %s)"), *SaveGameSlotName);
 	}
 	else
 	{
 		UE_LOG(LogParadiseSaveGame, Error, TEXT("❌ [SaveSystem] 게임 데이터 보안 저장에 실패했습니다."));
-	}
+	}*/
 }
 
 void UParadiseGameInstance::LoadGameData()
@@ -173,7 +174,7 @@ void UParadiseGameInstance::LoadGameData()
 
 	if (!LoadObj)
 	{
-		UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 초기 세이브 데이터를 생성합니다."));
+		//UE_LOG(LogParadiseSaveGame, Warning, TEXT("📂 [SaveSystem] 세이브 파일이 없습니다. 초기 세이브 데이터를 생성합니다."));
 		LoadObj = Cast<UParadiseSaveGame>(UGameplayStatics::CreateSaveGameObject(UParadiseSaveGame::StaticClass()));
 	}
 
@@ -214,7 +215,7 @@ void UParadiseGameInstance::LoadGameData()
 			GachaSys->LoadFromSaveGame(LoadObj);
 		}
 
-		UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
+		//UE_LOG(LogParadiseSaveGame, Log, TEXT("📂 [SaveSystem] 저장된 게임 불러오기 성공!"));
 	}
 
 }
@@ -237,12 +238,12 @@ bool UParadiseGameInstance::IsValidPlayerID(FName PlayerID) const
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (에셋 또는 스탯 데이터가 누락되었습니다)"), *PlayerID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (에셋 또는 스탯 데이터가 누락되었습니다)"), *PlayerID.ToString());
 			return false;
 		}
 
 	}
-	UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] CharacterStatsDataTable 또는 CharacterAssetsDataTable이 할당되지 않았습니다!"));
+	//UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] CharacterStatsDataTable 또는 CharacterAssetsDataTable이 할당되지 않았습니다!"));
 	return false;
 }
 
@@ -263,12 +264,12 @@ bool UParadiseGameInstance::IsValidFamiliarID(FName FamiliarID) const
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (퍼밀리어 에셋 또는 스탯 데이터가 누락되었습니다)"), *FamiliarID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (퍼밀리어 에셋 또는 스탯 데이터가 누락되었습니다)"), *FamiliarID.ToString());
 			return false;
 		}
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] FamiliarStatsDataTable 또는 FamiliarAssetsDataTable이 할당되지 않았습니다!"));
+	//UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] FamiliarStatsDataTable 또는 FamiliarAssetsDataTable이 할당되지 않았습니다!"));
 	return false;
 }
 
@@ -291,10 +292,10 @@ bool UParadiseGameInstance::IsValidItemID(FName ItemID) const
 			bIsValidWeapon = true; // 무기로서 유효함!
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] WeaponStatsDataTable 또는 WeaponAssetsDataTable이 할당되지 않았습니다!"));
-	}
+	}*/
 
 	//방어구(Armor) 스탯 & 에셋 테이블에서 검사
 	if (ArmorStatsDataTable && ArmorAssetsDataTable)
@@ -307,10 +308,10 @@ bool UParadiseGameInstance::IsValidItemID(FName ItemID) const
 			bIsValidArmor = true; // 방어구로서 유효함!
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] ArmorStatsDataTable 또는 ArmorAssetsDataTable이 할당되지 않았습니다!"));
-	}
+	}*/
 
 	//무기이거나 방어구 중 하나라도 쌍이 맞게 존재한다면 유효한 아이템
 	if (bIsValidWeapon || bIsValidArmor)
@@ -320,7 +321,7 @@ bool UParadiseGameInstance::IsValidItemID(FName ItemID) const
 	else
 	{
 		// 양쪽 다 없거나 데이터가 누락(반쪽짜리)된 경우
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (무기 또는 방어구 테이블 쌍에 완벽하게 존재하지 않습니다)"), *ItemID.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (무기 또는 방어구 테이블 쌍에 완벽하게 존재하지 않습니다)"), *ItemID.ToString());
 		return false;
 	}
 }
@@ -342,12 +343,12 @@ bool UParadiseGameInstance::IsValidUnitID(FName UnitID) const
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (적/유닛 에셋 또는 스탯 데이터가 누락되었습니다)"), *UnitID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GameInstance] 유효성 검증 실패: '%s' (적/유닛 에셋 또는 스탯 데이터가 누락되었습니다)"), *UnitID.ToString());
 			return false;
 		}
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] EnemyStatsDataTable 또는 EnemyAssetsDataTable이 할당되지 않았습니다!"));
+	//UE_LOG(LogTemp, Error, TEXT("❌ [GameInstance] EnemyStatsDataTable 또는 EnemyAssetsDataTable이 할당되지 않았습니다!"));
 	return false;
 }
 

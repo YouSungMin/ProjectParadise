@@ -77,10 +77,10 @@ void ADamageTextActor::InitializeDamageText(float DamageAmount, bool bIsCritical
 		{
 			DamageWidget->SetDamageText(DamageAmount, bIsCritical);
 		}
-		else
+		/*else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[DamageTextActor] DamageTextWidget을 찾을 수 없습니다."));
-		}
+		}*/
 	}
 
 	/** @section 3. 상승 애니메이션 (간단한 보간) */

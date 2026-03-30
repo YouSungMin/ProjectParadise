@@ -72,7 +72,7 @@ USaveGame* UParadiseSaveManager::LoadGameEncrypted(const FString& SlotName)
 	FString CurrentHash = FMD5::HashBytes(EncryptedData.GetData(), EncryptedDataSize);
 	if (CurrentHash != SavedHash)
 	{
-		UE_LOG(LogTemp, Error, TEXT("🛑 [보안 경고] 세이브 파일이 위변조되었습니다!! 로드를 중단합니다."));
+		//UE_LOG(LogTemp, Error, TEXT("🛑 [보안 경고] 세이브 파일이 위변조되었습니다!! 로드를 중단합니다."));
 		return nullptr;
 	}
 

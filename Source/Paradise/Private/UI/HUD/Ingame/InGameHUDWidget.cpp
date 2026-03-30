@@ -201,7 +201,7 @@ void UInGameHUDWidget::UnlockAutoModeButton()
 	if (Btn_AutoMode)
 	{
 		Btn_AutoMode->SetIsEnabled(true);
-		UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 카메라 연출(1.5초) 종료. 오토 버튼 재활성화 완료."));
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] 카메라 연출(1.5초) 종료. 오토 버튼 재활성화 완료."));
 	}
 }
 
@@ -209,7 +209,7 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 {
 	if (!CachedGameState.IsValid()) return;
 
-	UE_LOG(LogTemp, Log, TEXT("[InGameHUD] 페이즈 변경 감지: %d"), (int32)NewPhase);
+	//UE_LOG(LogTemp, Log, TEXT("[InGameHUD] 페이즈 변경 감지: %d"), (int32)NewPhase);
 
 	// 1. 결과 관련 상태 판별 (정산 혹은 종료 단계인지 확인)
 	const bool bIsFinishing = (NewPhase == EGamePhase::Victory || NewPhase == EGamePhase::Defeat || NewPhase == EGamePhase::Result);
@@ -394,7 +394,7 @@ void UInGameHUDWidget::OnAutoModeButtonClicked()
 		InGamePC->ToggleAutoBattleMode(bIsAutoMode);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] Auto Mode Toggled: %s"), bIsAutoMode ? TEXT("ON") : TEXT("OFF"));
+	//UE_LOG(LogTemp, Log, TEXT("🤖 [InGameHUD] Auto Mode Toggled: %s"), bIsAutoMode ? TEXT("ON") : TEXT("OFF"));
 }
 
 void UInGameHUDWidget::OnJoystickInput(FVector2D InputVector)

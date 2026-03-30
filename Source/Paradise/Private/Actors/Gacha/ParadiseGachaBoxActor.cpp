@@ -130,7 +130,7 @@ void AParadiseGachaBoxActor::PlayGachaSequence(const TArray<FGachaResult>& InRes
 
 	if (!IntroSequence)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] IntroSequence 누락! Idle로 바로 진입합니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] IntroSequence 누락! Idle로 바로 진입합니다."));
 		CurrentStep = EGachaSequenceStep::Intro;
 		OnSequenceFinished();
 		return;
@@ -237,7 +237,7 @@ void AParadiseGachaBoxActor::PlaySequenceInternal(
 
 	if (!SequencePlayer)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] LevelSequencePlayer 생성 실패!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] LevelSequencePlayer 생성 실패!"));
 		OnSequenceFinished();
 		return;
 	}
@@ -345,7 +345,7 @@ void AParadiseGachaBoxActor::EruptGachaItems()
 
 	if (!ItemActorClass || CachedResults.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] ItemActorClass 또는 CachedResults 없음!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] ItemActorClass 또는 CachedResults 없음!"));
 		return;
 	}
 
@@ -529,7 +529,7 @@ void AParadiseGachaBoxActor::ProcessTouchInput()
 
 void AParadiseGachaBoxActor::ProcessSingleTap()
 {
-	UE_LOG(LogTemp, Error, TEXT("👆 [GachaBox] 상자 터치 성공! Open 시퀀스로 넘어갑니다!"));
+	//UE_LOG(LogTemp, Error, TEXT("👆 [GachaBox] 상자 터치 성공! Open 시퀀스로 넘어갑니다!"));
 
 	// Open 시퀀스가 이미 재생 중이면 중복 실행 방지
 	if (bIsOpening) return;
@@ -542,7 +542,7 @@ void AParadiseGachaBoxActor::ProcessSingleTap()
 
 	if (!TargetSequence)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] Open 시퀀스 누락! 스킵 처리합니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [GachaBox] Open 시퀀스 누락! 스킵 처리합니다."));
 		SkipGachaSequence();
 		return;
 	}

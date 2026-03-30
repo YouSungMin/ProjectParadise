@@ -141,7 +141,7 @@ void USummonControlPanel::InitComponents()
 	if (bAllComponentsReady)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_InitCost);
-		UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 모든 컴포넌트 연결 완료"));
+		//UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 모든 컴포넌트 연결 완료"));
 	}
 	else
 	{
@@ -232,7 +232,7 @@ void USummonControlPanel::HandleAutoBattleStateChanged(bool bIsAuto)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("오토 모드 상태 변경 수신! 소환 UI %s"), bEnableSummonUI ? TEXT("잠금 해제") : TEXT("잠금 처리"));
+	//UE_LOG(LogTemp, Log, TEXT("오토 모드 상태 변경 수신! 소환 UI %s"), bEnableSummonUI ? TEXT("잠금 해제") : TEXT("잠금 처리"));
 }
 #pragma endregion 시스템 초기화
 
@@ -243,10 +243,10 @@ void USummonControlPanel::HandleSlotClickRequest(int32 SlotIndex)
 	{
 		bool bSuccess = CachedSummonComponent->RequestPurchase(SlotIndex);
 
-		if (!bSuccess)
+		/*if (!bSuccess)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[SummonPanel] 구매 실패: %d"), SlotIndex);
-		}
+		}*/
 	}
 
 }

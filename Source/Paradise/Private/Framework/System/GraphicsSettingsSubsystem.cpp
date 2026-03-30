@@ -15,7 +15,7 @@ void UGraphicsSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	{
 		UserSettings->LoadSettings(false);
 		UserSettings->ApplySettings(false);
-		UE_LOG(LogTemp, Log, TEXT("✅ [GraphicsSettings] 저장된 그래픽 설정을 로드했습니다. 현재 레벨: %d"), UserSettings->GetVisualEffectQuality());
+		//UE_LOG(LogTemp, Log, TEXT("✅ [GraphicsSettings] 저장된 그래픽 설정을 로드했습니다. 현재 레벨: %d"), UserSettings->GetVisualEffectQuality());
 	}
 }
 
@@ -77,12 +77,12 @@ void UGraphicsSettingsSubsystem::CheckDevicePerformanceAndApply()
 	// Byte 단위이므로 GB 단위로 변환
 	float TotalRAM_GB = MemoryConstants.TotalPhysical / (1024.0f * 1024.0f * 1024.0f);
 
-	UE_LOG(LogTemp, Log, TEXT("📱 [스펙 검사] 이 기기의 총 RAM 용량: %.2f GB"), TotalRAM_GB);
+	//UE_LOG(LogTemp, Log, TEXT("📱 [스펙 검사] 이 기기의 총 RAM 용량: %.2f GB"), TotalRAM_GB);
 
 	//RAM이 4GB 이하라면 저사양 기기로 판정
 	if (TotalRAM_GB <= 4.1f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [스펙 검사] 저사양 기기 감지! 강제로 그래픽을 '낮음'으로 설정합니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [스펙 검사] 저사양 기기 감지! 강제로 그래픽을 '낮음'으로 설정합니다."));
 
 		// 강제로 제일 낮은 옵션(0)으로 맞춰버리고 디스크에 저장
 		SetGraphicsQuality(0);

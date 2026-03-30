@@ -38,7 +38,7 @@ void UAutoCombatComponent::SetAutoBattleMode(bool bEnable)
     //자동전투 모드 변경 델리게이트
     OnAutoBattleStateChanged.Broadcast(bIsAutoMode);
 
-    UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
+    //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🤖 [Controller] 자동 전투 모드: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
 
     UWorld* World = GetWorld();
     if (!World) return;
@@ -182,7 +182,7 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     // 1순위: 궁극기
     if (CanUseAbility(EInputID::Ultimate))
     {
-        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🔥 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
+        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🔥 [AutoCombat] %s - 궁극기 발동!"), *PlayerPawn->GetName());
         PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, true);
         PlayerPawn->SendAbilityInputToASC(EInputID::Ultimate, false); // 💡 눌렀다 떼기 필수!
 
@@ -203,7 +203,7 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     // 2순위: 일반 스킬
     if (CanUseAbility(EInputID::Skill))
     {
-        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("✨ [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
+        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("✨ [AutoCombat] %s - 스킬 발동!"), *PlayerPawn->GetName());
         PlayerPawn->SendAbilityInputToASC(EInputID::Skill, true);
         PlayerPawn->SendAbilityInputToASC(EInputID::Skill, false); // 💡 눌렀다 떼기 필수!
         return;
@@ -212,14 +212,14 @@ void UAutoCombatComponent::ExecutePrioritizedAction(APlayerBase* PlayerPawn)
     // 3순위: 평타 (평타도 쿨타임/조건이 맞을 때만 쏘게 보호막 설치!)
     if (CanUseAbility(EInputID::Attack))
     {
-        UE_LOG(LogParadiseAutoCombat, Warning, TEXT("⚔️ [AutoCombat] %s - 평타 발동!"), *PlayerPawn->GetName());
+        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("⚔️ [AutoCombat] %s - 평타 발동!"), *PlayerPawn->GetName());
         PlayerPawn->SendAbilityInputToASC(EInputID::Attack, true);
         PlayerPawn->SendAbilityInputToASC(EInputID::Attack, false); // 💡 눌렀다 떼기 필수!
     }
-    else
+   /* else
     {
         UE_LOG(LogParadiseAutoCombat, Error, TEXT("😱 [AutoCombat] %s - 사거리에는 들어왔는데, 아무 스킬도 쏠 수 없는 상태입니다! (쿨타임 대기중이거나 코스트 부족)"), *PlayerPawn->GetName());
-    }
+    }*/
 }
 
 AActor* UAutoCombatComponent::FindNearestEnemy(APawn* PlayerPawn, float& OutDistance)

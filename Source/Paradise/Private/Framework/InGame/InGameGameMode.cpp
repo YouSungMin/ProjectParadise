@@ -53,20 +53,20 @@ void AInGameGameMode::BeginPlay()
 	//ID 전달
 	if (!TargetStageToPlay.IsNone())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🚀 [GameMode] 전달받은 스테이지 데이터(%s)로 게임을 세팅합니다!"), *TargetStageToPlay.ToString());
-		FString DebugMsg = FString::Printf(TEXT("🎯 [인게임] 전달받기 성공! 현재 플레이할 스테이지: %s"), *TargetStageToPlay.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, DebugMsg);
+		//UE_LOG(LogTemp, Warning, TEXT("🚀 [GameMode] 전달받은 스테이지 데이터(%s)로 게임을 세팅합니다!"), *TargetStageToPlay.ToString());
+		//FString DebugMsg = FString::Printf(TEXT("🎯 [인게임] 전달받기 성공! 현재 플레이할 스테이지: %s"), *TargetStageToPlay.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+		//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, DebugMsg);
 		InitializeStageData(TargetStageToPlay); 
 	}
 	else
 	{
 		// 에러 방지용 비상 코드
-		UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
+		//UE_LOG(LogTemp, Error, TEXT("⚠️ [GameMode] 전달받은 스테이지 ID가 없습니다! 임시로 1-1을 실행합니다."));
 		InitializeStageData(FName("Stage1_1"));
-		FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
-		UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
+		//FString ErrorMsg = TEXT("🚨 [인게임] 경고: 스테이지 ID를 전달받지 못했습니다! (None)");
+		//UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
+		//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, ErrorMsg);
 	}
 		
 	// 최적화 - 사전 풀링
@@ -89,7 +89,7 @@ void AInGameGameMode::BeginPlay()
 					if (USoundBase* StageBGM = Assets->BackgroundMusic.LoadSynchronous())
 					{
 						AudioSys->PlayBGM(StageBGM, true, 1.0f);
-						UE_LOG(LogTemp, Log, TEXT("스테이지 환경 BGM 재생 성공!"));
+						//UE_LOG(LogTemp, Log, TEXT("스테이지 환경 BGM 재생 성공!"));
 					}
 				}
 				for (const TSoftObjectPtr<UObject>& SoftObj : Assets->ExtraPreloadAssets)
@@ -102,7 +102,7 @@ void AInGameGameMode::BeginPlay()
 						{
 							// 보스나 무거운 이펙트를 풀에 1개 미리 만들어 둡니다. (필요 시 개수 조절)
 							PoolSystem->PreSpawnPool(PreloadedClass, GetWorld(), 1);
-							UE_LOG(LogTemp, Log, TEXT("✅ [ObjectPool] 프리로드 에셋 장전 완료: %s"), *PreloadedClass->GetName());
+							//UE_LOG(LogTemp, Log, TEXT("✅ [ObjectPool] 프리로드 에셋 장전 완료: %s"), *PreloadedClass->GetName());
 						}
 					}
 				}
@@ -168,7 +168,7 @@ void AInGameGameMode::OnStageTimerElapsed()
 
 		//타임오버 패배 처리 -> EndStage 호출
 		EndStage(false);
-		UE_LOG(LogTemp, Warning, TEXT("시간 초과! 패배 처리 로직 실행"));
+		//UE_LOG(LogTemp, Warning, TEXT("시간 초과! 패배 처리 로직 실행"));
 	}
 }
 
@@ -190,7 +190,7 @@ void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
 		// 배열이 비어있거나, 3칸 다 Name_None일 경우
 		if (MyPlayerIDs.Num() == 0 || (MyPlayerIDs.IsValidIndex(0) && MyPlayerIDs[0].IsNone() && MyPlayerIDs[1].IsNone() && MyPlayerIDs[2].IsNone()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ 편성된 플레이어가 없습니다! 기본 캐릭터(테스트용)를 강제 스폰합니다."));
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ 편성된 플레이어가 없습니다! 기본 캐릭터(테스트용)를 강제 스폰합니다."));
 
 			MyPlayerIDs.Init(NAME_None, 3);
 			MyPlayerIDs[0] = TEXT("test1");
@@ -202,7 +202,7 @@ void AInGameGameMode::SetupPlayerSquad(APlayerController* NewPlayer)
 		//(PlayerBase) 3개 스폰 및 Init
 		PC->GetSquadControlComponent()->InitializeSquadPawns();
 
-		UE_LOG(LogTemp, Log, TEXT("✅ [%s] 플레이어의 스쿼드 세팅이 성공적으로 완료되었습니다."), *PC->GetName());
+		//UE_LOG(LogTemp, Log, TEXT("✅ [%s] 플레이어의 스쿼드 세팅이 성공적으로 완료되었습니다."), *PC->GetName());
 	}
 }
 
@@ -263,7 +263,7 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] GameInstance를 찾을 수 없습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [GameMode] GameInstance를 찾을 수 없습니다."));
 		return;
 	}
 
@@ -300,7 +300,7 @@ void AInGameGameMode::InitializeStageData(FName StageID)
 
 void AInGameGameMode::OnPhaseReady()
 {
-	UE_LOG(LogTemp, Log, TEXT("Phase: Ready (3초 카운트다운)"));
+	//UE_LOG(LogTemp, Log, TEXT("Phase: Ready (3초 카운트다운)"));
 
 	//1. 플레이어 준비 상태로 전환
 
@@ -315,7 +315,7 @@ void AInGameGameMode::OnPhaseReady()
 
 void AInGameGameMode::OnPhaseCombat()
 {
-	UE_LOG(LogTemp, Log, TEXT("Phase: Combat (전투 시작)"));
+	//UE_LOG(LogTemp, Log, TEXT("Phase: Combat (전투 시작)"));
 
 	//1. 몬스터 스폰 매니저어게 웨이브 시작 요청하기 
 
@@ -341,7 +341,7 @@ void AInGameGameMode::OnPhaseVictory()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Phase: Victory! 보상 지급 준비"));
+	//UE_LOG(LogTemp, Log, TEXT("Phase: Victory! 보상 지급 준비"));
 	if (CachedGameState)
 	{
 		//1. 타이머 정지(GameState의 플래그 사용)
@@ -381,7 +381,7 @@ void AInGameGameMode::OnPhaseDefeat()
 	}
 
 	if(CachedGameState) CachedGameState->bIsTimerActive = false;
-	UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
+	//UE_LOG(LogTemp, Error, TEXT("Phase: Defeat.... 보상없음"));
 
 	//패배시 보상 없음
 	
@@ -456,7 +456,7 @@ void AInGameGameMode::DistributeStageRewards()
 			EarnedStars = 2;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("🌟 남은 시간 비율: %.1f%% -> 획득 별: %d개"), TimeRatio * 100.f, EarnedStars);
+		//UE_LOG(LogTemp, Warning, TEXT("🌟 남은 시간 비율: %.1f%% -> 획득 별: %d개"), TimeRatio * 100.f, EarnedStars);
 
 		//초회 3별 보상 검사
 		CachedGameState->EarnedStars = EarnedStars;
@@ -478,7 +478,7 @@ void AInGameGameMode::DistributeStageRewards()
 				InvSys->AddFamiliar(CurrentStageData.ClearFamiliar);
 				CachedGameState->AcquiredFamiliar = CurrentStageData.ClearFamiliar;
 			}
-			UE_LOG(LogTemp, Warning, TEXT("🎉 최초 3별 달성! 에테르 보상과 퍼밀리어가 지급되었습니다."));
+			//UE_LOG(LogTemp, Warning, TEXT("🎉 최초 3별 달성! 에테르 보상과 퍼밀리어가 지급되었습니다."));
 		}
 		else
 		{
@@ -509,5 +509,5 @@ void AInGameGameMode::DistributeStageRewards()
 
 	// 세이브 파일에 저장
 	GI->SaveGameData();
-	UE_LOG(LogTemp, Log, TEXT("🎁 [보상 시스템] 스테이지 보상 지급 및 게임 저장 완료!"));
+	//UE_LOG(LogTemp, Log, TEXT("🎁 [보상 시스템] 스테이지 보상 지급 및 게임 저장 완료!"));
 }

@@ -31,7 +31,7 @@ void AUnitSpawner::BeginPlay()
 	{
 		TargetStageID = StageSys->GetSelectedStageID();
 
-		UE_LOG(LogTemp, Log, TEXT("🚀 [Spawner] 선택된 스테이지 '%s'를 서브시스템에서 로드했습니다."), *TargetStageID.ToString());
+		//UE_LOG(LogTemp, Log, TEXT("🚀 [Spawner] 선택된 스테이지 '%s'를 서브시스템에서 로드했습니다."), *TargetStageID.ToString());
 	}
 
 	// 2. 로드된 ID를 바탕으로 웨이브 테이블 구성

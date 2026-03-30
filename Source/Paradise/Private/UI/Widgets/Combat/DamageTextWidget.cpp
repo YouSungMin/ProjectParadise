@@ -11,7 +11,7 @@ void UDamageTextWidget::SetDamageText(float DamageAmount, bool bIsCritical)
 {
 	if (!Text_Damage)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[DamageTextWidget] Text_Damage가 바인딩되지 않았습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("[DamageTextWidget] Text_Damage가 바인딩되지 않았습니다."));
 		return;
 	}
 

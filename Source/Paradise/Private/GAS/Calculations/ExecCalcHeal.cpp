@@ -50,7 +50,7 @@ void UExecCalcHeal::Execute_Implementation(const FGameplayEffectCustomExecutionP
 	// 최종 힐량 계산 = 시전자 공격력 * 엑셀 배율
 	float FinalHeal = AttackPower * HealMultiplier;
 
-	UE_LOG(LogTemp, Log, TEXT("FinalHeal %.1f"),FinalHeal);
+	//UE_LOG(LogTemp, Log, TEXT("FinalHeal %.1f"),FinalHeal);
 
 	if (FinalHeal > 0.f)
 	{
@@ -64,6 +64,6 @@ void UExecCalcHeal::Execute_Implementation(const FGameplayEffectCustomExecutionP
 		);
 
 		// 디버그용 로그
-		UE_LOG(LogTemp, Log, TEXT("💚 [힐 적용] 공격력(%.1f) * 배율(%.1f) = 총 힐량: %.1f"), AttackPower, HealMultiplier, FinalHeal);
+		//UE_LOG(LogTemp, Log, TEXT("💚 [힐 적용] 공격력(%.1f) * 배율(%.1f) = 총 힐량: %.1f"), AttackPower, HealMultiplier, FinalHeal);
 	}
 }

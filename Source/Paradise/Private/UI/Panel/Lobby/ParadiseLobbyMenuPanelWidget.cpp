@@ -15,10 +15,10 @@ void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 
 	// 1. 컨트롤러 캐싱 (매번 GetOwningPlayer를 호출하는 비용 절약)
 	CachedController = GetOwningPlayer<ALobbyPlayerController>();
-	if (!CachedController)
+	/*if (!CachedController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[MenuPanel] Owning Player Controller is NOT ALobbyPlayerController!"));
-	}
+	}*/
 
 	// 2. 버튼 델리게이트 바인딩 (안전하게 nullptr 체크 후 연결)
 	if (Btn_Battle) Btn_Battle->OnClicked.AddDynamic(this, &UParadiseLobbyMenuPanelWidget::OnClickBattle);

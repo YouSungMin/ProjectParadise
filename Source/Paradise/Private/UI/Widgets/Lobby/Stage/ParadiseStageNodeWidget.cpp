@@ -53,7 +53,7 @@ void UParadiseStageNodeWidget::SetupNode(const FStageStats& InStats, const FStag
 		else
 		{
 			Img_Thumbnail->SetBrushFromTexture(nullptr);
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageNode] %s 스테이지의 썸네일 에셋이 없습니다."), *InStats.StageName.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageNode] %s 스테이지의 썸네일 에셋이 없습니다."), *InStats.StageName.ToString());
 		}
 	}
 
@@ -72,7 +72,7 @@ void UParadiseStageNodeWidget::OnClickEnter()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[StageNode] 노드 클릭됨. 팝업 호출 요청. ID: %s"), *StageID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("[StageNode] 노드 클릭됨. 팝업 호출 요청. ID: %s"), *StageID.ToString());
 
 	if (OnNodeClicked.IsBound())
 	{

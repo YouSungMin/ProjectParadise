@@ -49,7 +49,7 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 			// 사용한(깎인) 마나 계산
 			float UsedMana = CurrentMana - ClampedNewValue;
 
-			UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
+			//UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
 		}
 	}
 	// 치명타 확률 (CritRate)
@@ -80,8 +80,8 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		if (!FMath::IsNearlyEqual(CurrentAttackPower, NewValue))
 		{
 			float Difference = NewValue - CurrentAttackPower;
-			UE_LOG(LogTemp, Warning, TEXT("⚔️ [버프/디버프] 공격력 변경! 이전: %.1f ➡️ 현재: %.1f (변화량: %+.1f)"),
-				CurrentAttackPower, NewValue, Difference);
+			/*UE_LOG(LogTemp, Warning, TEXT("⚔️ [버프/디버프] 공격력 변경! 이전: %.1f ➡️ 현재: %.1f (변화량: %+.1f)"),
+				CurrentAttackPower, NewValue, Difference);*/
 		}
 	}
 	// 사거리, 이속, 쿨타임, 방어력 등

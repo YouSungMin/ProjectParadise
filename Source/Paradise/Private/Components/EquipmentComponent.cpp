@@ -23,7 +23,7 @@ void UEquipmentComponent::InitializeEquipment(const TMap<EEquipmentSlot, FGuid>&
 {
 	UInventorySystem* InvSys = GetInventorySystem();
 	if (!InvSys) {
-		UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
 		return;
 	}
 
@@ -51,7 +51,7 @@ FName UEquipmentComponent::GetEquippedItemID(EEquipmentSlot Slot) const
 {
 	UInventorySystem* InvSys = GetInventorySystem();
 	if (!InvSys) {
-		UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
 		return NAME_None;
 	}
 
@@ -74,7 +74,7 @@ bool UEquipmentComponent::GetEquippedItemData(EEquipmentSlot Slot, FOwnedItemDat
 {
 	UInventorySystem* InvSys = GetInventorySystem();
 	if (!InvSys) {
-		UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("[UEquipmentComponent] 인벤토리 시스템이 존재하지 않습니다."));
 		return false;
 	}
     
@@ -111,7 +111,7 @@ void UEquipmentComponent::UpdateVisuals(APlayerBase* TargetCharacter)
 	APlayerBase* Char = TargetCharacter ? TargetCharacter : Cast<APlayerBase>(GetOwner());
 	if (!Char) return;
 
-	UE_LOG(LogTemp, Log, TEXT("🎨 [Visual] 캐릭터 외형 업데이트 시작... (Optimized)"));
+	//UE_LOG(LogTemp, Log, TEXT("🎨 [Visual] 캐릭터 외형 업데이트 시작... (Optimized)"));
 
 	//시각적으로 표현할 메쉬가 있는 슬롯들
 	const TArray<EEquipmentSlot> VisualSlots = {
@@ -144,7 +144,7 @@ TMap<FName, int32> UEquipmentComponent::CalculateActiveSetBonuses() const
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetWorld()->GetGameInstance());
 	if (!GI) return SetCounts;
 
-	UE_LOG(LogTemp, Warning, TEXT("=== 🔄 세트 효과 계산 시작 ==="));
+	//UE_LOG(LogTemp, Warning, TEXT("=== 🔄 세트 효과 계산 시작 ==="));
 	// 컴포넌트 본인이 들고 있는 EquippedItems 순회
 	for (const auto& Pair : EquippedItems)
 	{
@@ -178,14 +178,14 @@ TMap<FName, int32> UEquipmentComponent::CalculateActiveSetBonuses() const
 		{
 			int32& Count = SetCounts.FindOrAdd(SetID);
 			Count++;
-			UE_LOG(LogTemp, Log, TEXT("✅ 장비 인식: [%s] -> 적용 세트: [%s] (누적 %d개)"), *ItemID.ToString(), *SetID.ToString(), Count);
+			//UE_LOG(LogTemp, Log, TEXT("✅ 장비 인식: [%s] -> 적용 세트: [%s] (누적 %d개)"), *ItemID.ToString(), *SetID.ToString(), Count);
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("=== 📊 최종 활성화된 세트 효과 목록 ==="));
-	for (const auto& Result : SetCounts)
-	{
-		UE_LOG(LogTemp, Warning, TEXT(" - 세트 ID: [%s] | 장착 부위 개수: %d"), *Result.Key.ToString(), Result.Value);
-	}
+	//UE_LOG(LogTemp, Warning, TEXT("=== 📊 최종 활성화된 세트 효과 목록 ==="));
+	//for (const auto& Result : SetCounts)
+	//{
+	//	//UE_LOG(LogTemp, Warning, TEXT(" - 세트 ID: [%s] | 장착 부위 개수: %d"), *Result.Key.ToString(), Result.Value);
+	//}
 
 	return SetCounts;
 }
@@ -239,7 +239,7 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 
 	if (!LoadedMesh)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [Visual] 메쉬 로드 실패: %s"), *ItemID.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [Visual] 메쉬 로드 실패: %s"), *ItemID.ToString());
 		return;
 	}
 
@@ -263,11 +263,11 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 				FAttachmentTransformRules::SnapToTargetIncludingScale,
 				SocketName
 			);
-			UE_LOG(LogTemp, Error, TEXT("❌ [Visual] 소켓 있음: %s."), *SocketName.ToString());
+			//UE_LOG(LogTemp, Error, TEXT("❌ [Visual] 소켓 있음: %s."), *SocketName.ToString());
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [Visual] 소켓 없음: %s. 기본값(hand_r) 사용 시도."), *SocketName.ToString());
+			//UE_LOG(LogTemp, Error, TEXT("❌ [Visual] 소켓 없음: %s. 기본값(hand_r) 사용 시도."), *SocketName.ToString());
 			TargetMeshComp->AttachToComponent(Char->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("hand_r"));
 		}
 	}
@@ -279,7 +279,7 @@ void UEquipmentComponent::SetEquipmentMesh(APlayerBase* Char, EEquipmentSlot Slo
 		TargetMeshComp->SetLeaderPoseComponent(Char->GetMesh()); // 애니메이션 동기화
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("⚔️🛡️ [Visual] 장비 적용 완료: %s (Slot: %d)"), *ItemID.ToString(), (int32)Slot);
+	//UE_LOG(LogTemp, Log, TEXT("⚔️🛡️ [Visual] 장비 적용 완료: %s (Slot: %d)"), *ItemID.ToString(), (int32)Slot);
 }
 
 

@@ -31,10 +31,10 @@ void AParadiseMapEnvironmentActor::BeginPlay()
 		// 0번 인덱스의 머티리얼을 기반으로 다이내믹 머티리얼을 생성하고 적용합니다.
 		DynamicMapMaterial = MapMeshComponent->CreateAndSetMaterialInstanceDynamic(0);
 
-		if (!DynamicMapMaterial)
+	/*	if (!DynamicMapMaterial)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("⚠️ [MapEnvActor] 다이내믹 머티리얼 생성 실패! 메시에 머티리얼이 할당되었는지 확인하세요."));
-		}
+		}*/
 	}
 }
 #pragma endregion 초기화 및 생명주기 구현
@@ -44,7 +44,7 @@ void AParadiseMapEnvironmentActor::ChangeMapBackground(UTexture2D* NewMapTexture
 {
 	if (!NewMapTexture)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[MapEnvActor] 전달받은 텍스처가 유효하지 않습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("[MapEnvActor] 전달받은 텍스처가 유효하지 않습니다."));
 		return;
 	}
 
@@ -52,12 +52,12 @@ void AParadiseMapEnvironmentActor::ChangeMapBackground(UTexture2D* NewMapTexture
 	if (DynamicMapMaterial)
 	{
 		DynamicMapMaterial->SetTextureParameterValue(TextureParameterName, NewMapTexture);
-		UE_LOG(LogTemp, Log, TEXT("[MapEnvActor] 지도 배경이 성공적으로 교체되었습니다: %s"), *NewMapTexture->GetName());
+		//UE_LOG(LogTemp, Log, TEXT("[MapEnvActor] 지도 배경이 성공적으로 교체되었습니다: %s"), *NewMapTexture->GetName());
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[MapEnvActor] 다이내믹 머티리얼이 캐싱되지 않아 텍스처를 바꿀 수 없습니다."));
-	}
+	}*/
 }
 #pragma endregion 외부 인터페이스 구현
 

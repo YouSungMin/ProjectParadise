@@ -31,10 +31,10 @@ void UParadiseSquadMainWidget::NativeConstruct()
 
 	// 1. GameInstance 캐싱 (데이터 테이블 접근)
 	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
-	if (!CachedGI.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("[SquadMain] GameInstance is invalid! Data loading will fail."));
-	}
+	//if (!CachedGI.IsValid())
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("[SquadMain] GameInstance is invalid! Data loading will fail."));
+	//}
 
 	// 2. 인벤토리 변경 시 자동 갱신 델리게이트 바인딩
 	if (UInventorySystem* InvSys = GetInventorySystem())
@@ -45,10 +45,10 @@ void UParadiseSquadMainWidget::NativeConstruct()
 	BindSquadSubsystemDelegates();
 
 	SceneManager = Cast<AParadiseSquadSceneManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AParadiseSquadSceneManager::StaticClass()));
-	if (!SceneManager)
+	/*if (!SceneManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] 맵에 배치된 AParadiseSquadSceneManager를 찾을 수 없습니다. 3D 모델링이 표시되지 않습니다."));
-	}
+	}*/
 	// 3. 탭 버튼 바인딩
 	if (Btn_Tab_Character) Btn_Tab_Character->OnClicked.AddDynamic(this, &UParadiseSquadMainWidget::OnClickCharTab);
 	if (Btn_Tab_Weapon)    Btn_Tab_Weapon->OnClicked.AddDynamic(this, &UParadiseSquadMainWidget::OnClickWpnTab);
@@ -732,15 +732,15 @@ void UParadiseSquadMainWidget::HandleConfirmAction()
 										CurrentVoiceComponent = UGameplayStatics::SpawnSound2D(this, LoadedVoice);
 									}
 								}
-								else
+								/*else
 								{
 									UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadMain] %s의 FXDataAsset 안에 %s 태그와 매칭되는 이펙트(Payload)가 없습니다!"), *PendingSelection.ID.ToString(), *VoiceTag.ToString());
-								}
+								}*/
 							}
-							else
+							/*else
 							{
 								UE_LOG(LogTemp, Error, TEXT("❌ [SquadMain] %s 캐릭터의 데이터 테이블(CharacterFX.UltimateTag)이 비어있습니다! 에디터에서 세팅해주세요."), *PendingSelection.ID.ToString());
-							}
+							}*/
 						}
 					}
 				}

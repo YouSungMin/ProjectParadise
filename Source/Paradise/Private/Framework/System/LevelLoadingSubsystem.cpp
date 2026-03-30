@@ -168,7 +168,7 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	World->GetTimerManager().ClearTimer(ProgressTimerHandle);
 	TotalElapsedTime = 0.0f;
 
-	UE_LOG(LogTemp, Warning, TEXT("[Loading] BeginAsyncLoading 시작 - TotalElapsedTime 초기화: %.2f"), TotalElapsedTime);
+	//UE_LOG(LogTemp, Warning, TEXT("[Loading] BeginAsyncLoading 시작 - TotalElapsedTime 초기화: %.2f"), TotalElapsedTime);
 
 	// 1. 위젯 생성 및 부착
 	CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);

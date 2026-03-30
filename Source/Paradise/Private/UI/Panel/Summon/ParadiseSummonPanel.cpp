@@ -46,7 +46,7 @@ void UParadiseSummonPanel::RefreshPanelData()
 {
 	if (!CachedGI.IsValid() || BannerDataRow.IsNull())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [SummonPanel] BannerDataRow 미설정 또는 GI 없음"));
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [SummonPanel] BannerDataRow 미설정 또는 GI 없음"));
 		return;
 	}
 
@@ -56,7 +56,7 @@ void UParadiseSummonPanel::RefreshPanelData()
 	FGachaBannerData* BannerData = BannerDataRow.GetRow<FGachaBannerData>(TEXT("SummonPanel"));
 	if (!BannerData)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [SummonPanel] BannerData 행을 찾지 못했습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [SummonPanel] BannerData 행을 찾지 못했습니다."));
 		return;
 	}
 
@@ -66,7 +66,7 @@ void UParadiseSummonPanel::RefreshPanelData()
 	// 천장 UI 갱신
 	RefreshPityUI();
 
-	UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 배너 초기화 완료: %s"), *BannerDataRow.RowName.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("[SummonPanel] 배너 초기화 완료: %s"), *BannerDataRow.RowName.ToString());
 }
 #pragma endregion 외부 인터페이스
 
@@ -121,7 +121,7 @@ void UParadiseSummonPanel::RequestSummonAction(int32 DrawCount)
 
 	CachedGI->SaveGameData();
 
-	UE_LOG(LogTemp, Log, TEXT("[SummonPanel] %d회 소환 요청"), DrawCount);
+	//UE_LOG(LogTemp, Log, TEXT("[SummonPanel] %d회 소환 요청"), DrawCount);
 }
 
 void UParadiseSummonPanel::RefreshPityUI()

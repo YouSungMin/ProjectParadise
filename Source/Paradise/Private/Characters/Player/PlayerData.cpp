@@ -33,7 +33,7 @@ APlayerData::APlayerData()
 void APlayerData::InitCombatAttributes()
 {
 	if (!CombatAttributeSet2) {
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] CombatAttributeSet가 없습니다."));
+		//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] CombatAttributeSet가 없습니다."));
 		return;
 	} 
 
@@ -195,7 +195,7 @@ void APlayerData::InitCombatAttributes()
 		CombatAttributeSet2->InitAttackRange(FinalAttackRange);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
 
 	if (AbilitySystemComponent)
 	{
@@ -210,7 +210,7 @@ void APlayerData::InitCombatAttributes()
 			if (ManaSpecHandle.IsValid())
 			{
 				ManaRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*ManaSpecHandle.Data.Get());
-				UE_LOG(LogTemp, Log, TEXT("💧 [PlayerData] 마나 리젠 가동 시작!"));
+				//UE_LOG(LogTemp, Log, TEXT("💧 [PlayerData] 마나 리젠 가동 시작!"));
 			}
 		}
 
@@ -221,7 +221,7 @@ void APlayerData::InitCombatAttributes()
 			if (HealthSpecHandle.IsValid())
 			{
 				HealthRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*HealthSpecHandle.Data.Get());
-				UE_LOG(LogTemp, Log, TEXT("💖 [PlayerData] 체력 리젠 가동 시작!"));
+				//UE_LOG(LogTemp, Log, TEXT("💖 [PlayerData] 체력 리젠 가동 시작!"));
 			}
 		}
 	}
@@ -267,7 +267,7 @@ void APlayerData::InitPlayerAssets()
 
 			UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
+			//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
 		}
 	}
 
@@ -284,7 +284,7 @@ void APlayerData::InitPlayerAssets()
 			{
 				// 스킬 및 애니메이션 부여
 				this->InitializeWeaponAbilities(WeaponAssets);
-				UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기(%s) 어빌리티가 성공적으로 부여되었습니다."), *WeaponID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기(%s) 어빌리티가 성공적으로 부여되었습니다."), *WeaponID.ToString());
 			}
 		}
 	}
@@ -300,7 +300,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance 없음!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance 없음!"));
 		return Result;
 	}
 
@@ -395,14 +395,14 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 						if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("PlayerWeaponProjectileLookup")))
 						{
 							Result.ProjectileStats = *ProjRow;
-							UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
+							//UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
 						}
 					}
 				}
-				else
+				/*else
 				{
 					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 Action 데이터를 찾을 수 없습니다!"));
-				}
+				}*/
 			}
 		}
 	}

@@ -183,6 +183,6 @@ void UVirtualJoystickWidget::HandleAutoBattleStateChanged(bool bIsAuto)
 		SetIsEnabled(true);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[VirtualJoystick] 오토 모드 상태 변경 수신! 조이스틱 %s"), bIsAuto ? TEXT("잠금 처리") : TEXT("잠금 해제"));
+	//UE_LOG(LogTemp, Log, TEXT("[VirtualJoystick] 오토 모드 상태 변경 수신! 조이스틱 %s"), bIsAuto ? TEXT("잠금 처리") : TEXT("잠금 해제"));
 }
 #pragma endregion 내부 로직
