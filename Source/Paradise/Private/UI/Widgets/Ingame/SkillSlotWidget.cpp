@@ -176,7 +176,7 @@ void USkillSlotWidget::SetShortcutTextVisibility(bool bShow)
 {
 	if (Text_Shortcut)
 	{
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 

@@ -27,7 +27,7 @@ void USummonSlotWidget::NativeConstruct()
 	if (Text_Shortcut)
 	{
 		Text_Shortcut->SetText(ShortcutKeyText);
-		Text_Shortcut->SetVisibility(ESlateVisibility::Collapsed);
+		Text_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	//StopCooldownTimer();
@@ -143,7 +143,7 @@ void USummonSlotWidget::SetShortcutTextVisibility(bool bShow)
 	if (Text_Shortcut)
 	{
 		// 키보드 모드면 클릭을 방해하지 않는(HitTestInvisible) 상태로 보여주고, 터치 모드면 숨깁니다.
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 

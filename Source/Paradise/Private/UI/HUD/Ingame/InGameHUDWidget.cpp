@@ -125,6 +125,15 @@ void UInGameHUDWidget::NativeConstruct()
 					{
 						ActionControlPanel->InitTagButtons();
 					}
+
+					if (SummonControlPanel)
+					{
+						SummonControlPanel->ToggleShortcutKeys(false);
+					}
+					if (ActionControlPanel)
+					{
+						ActionControlPanel->ToggleShortcutKeys(false);
+					}
 				})
 		);
 	}
