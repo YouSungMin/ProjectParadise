@@ -39,7 +39,7 @@ void ASquadAIController::SetLeader(AActor* CurrentLeaderActor)
 	if (Blackboard)
 	{
 		Blackboard->SetValueAsObject(FName("LeaderActor"), CurrentLeaderActor);
-		UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] 리더 타겟 갱신: %s"), *CurrentLeaderActor->GetName());
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] 리더 타겟 갱신: %s"), *CurrentLeaderActor->GetName());
 	}
 }
 
@@ -49,7 +49,7 @@ void ASquadAIController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (AIPerception)
 	{
-		UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] AIPerception 바인딩 성공"));
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] AIPerception 바인딩 성공"));
 		AIPerception->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &ASquadAIController::OnTargetDetected);
 	}
 
@@ -62,7 +62,7 @@ void ASquadAIController::OnPossess(APawn* InPawn)
 		// Blackboard->SetValueAsFloat(TEXT("TargetAttackRange"), 200.f);
 
 		RunBehaviorTree(BTAsset);
-		UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] 동료 AI 비헤이비어 트리 가동 시작!"));
+		//UE_LOG(LogTemp, Log, TEXT("🤖 [SquadAI] 동료 AI 비헤이비어 트리 가동 시작!"));
 	}
 }
 
@@ -105,7 +105,7 @@ void ASquadAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 
 				// 기존 타겟이 없거나, 죽었을 때만 새로운 타겟을 설정
 				Blackboard->SetValueAsObject(FName("TargetEnemy"), Actor);
-				UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 새로운 타겟 고정: %s"), *Actor->GetName());
+				//UE_LOG(LogTemp, Warning, TEXT("🗡️ [SquadAI] 새로운 타겟 고정: %s"), *Actor->GetName());
 			}
 		}
 	}

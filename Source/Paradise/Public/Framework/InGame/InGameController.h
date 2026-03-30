@@ -163,6 +163,48 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_SwitchHero3 = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Move = nullptr;
+
+	/** @brief 퍼밀리어 소환 액션 키 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot1 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot2 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot3 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot4 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction>IA_SummonSlot5 = nullptr;
+
+	/** @brief 공격, 스킬, 궁극기 액션 키 */
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Attack = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Skill = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Ultimate = nullptr;
+
+private:
+	/** @brief 퍼밀리어 소환 액션 키와 매칭될 실행 함수 */
+	void OnInputSummonSlot1();
+	void OnInputSummonSlot2();
+	void OnInputSummonSlot3();
+	void OnInputSummonSlot4();
+	void OnInputSummonSlot5();
+
+	void OnInputMove(const FInputActionValue& Value);
+
+	void OnInputAttack(const FInputActionValue& Value);
+	void OnInputSkill(const FInputActionValue& Value);
+	void OnInputUltimate(const FInputActionValue& Value);
+
+	/** @brief 소환 공통 처리 함수 */
+	void RequestFamiliarSummon(int32 SlotIndex);
+
 private:
 	/**
 	 * @brief 게임 인스턴스 캐싱

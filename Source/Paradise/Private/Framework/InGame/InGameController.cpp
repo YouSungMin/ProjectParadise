@@ -18,6 +18,8 @@
 #include "AIController.h"
 #include "AI/Squad/SquadAIController.h"
 
+#include "Camera/CameraComponent.h"
+
 #include "Framework/InGame/InGameGameMode.h"//디버그치트함수때문에 추가 이후 삭제
 #include "GAS/Attributes/BaseAttributeSet.h"//디버그치트함수때문에 추가 이후 삭제
 #include "AbilitySystemComponent.h"//데미지 주는 치트함수 때문에 추가 이후 삭제 예정
@@ -30,6 +32,7 @@
 #include "UI/HUD/Ingame/InGameHUDWidget.h"
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "UI/Panel/Ingame/ActionControlPanel.h"
+#include "UI/Panel/Ingame/SummonControlPanel.h"
 #include "Blueprint/UserWidget.h"
 
 AInGameController::AInGameController()
@@ -46,12 +49,22 @@ void AInGameController::BeginPlay()
 	Super::BeginPlay();
 
     //입력 매핑 컨텍스트 연결
-    if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+    if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+        ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
     {
         if (DefaultMappingContext)
         {
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
+            UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext 등록 완료"));
         }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Input] DefaultMappingContext가 null - BP에서 할당했는지 확인"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Input] EnhancedInputSubsystem을 찾을 수 없음"));
     }
 
     CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
@@ -67,6 +80,10 @@ void AInGameController::SetupInputComponent()
 {
     Super::SetupInputComponent();
 
+    UE_LOG(LogTemp, Warning, TEXT("[Input] IA_SwitchHero1=%s, IA_Move=%s"),
+        IA_SwitchHero1 ? TEXT("유효") : TEXT("NULL"),
+        IA_Move ? TEXT("유효") : TEXT("NULL"));
+
     // Enhanced Input 바인딩
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
@@ -81,10 +98,107 @@ void AInGameController::SetupInputComponent()
         // 3번 키 -> 인덱스 2
         if (IA_SwitchHero3)
             EnhancedInputComponent->BindAction(IA_SwitchHero3, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero3);
+        
+        if (IA_Move)
+        {
+            EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AInGameController::OnInputMove);
+        }
+        // 퍼밀리어 소환 슬롯 바인딩
+        if (IA_SummonSlot1) EnhancedInputComponent->BindAction(IA_SummonSlot1, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot1);
+        if (IA_SummonSlot2) EnhancedInputComponent->BindAction(IA_SummonSlot2, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot2);
+        if (IA_SummonSlot3) EnhancedInputComponent->BindAction(IA_SummonSlot3, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot3);
+        if (IA_SummonSlot4) EnhancedInputComponent->BindAction(IA_SummonSlot4, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot4);
+        if (IA_SummonSlot5) EnhancedInputComponent->BindAction(IA_SummonSlot5, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot5);
+
+        if (IA_Attack)
+            EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &AInGameController::OnInputAttack);
+        if (IA_Skill)
+            EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Started, this, &AInGameController::OnInputSkill);
+        if (IA_Ultimate)
+            EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Started, this, &AInGameController::OnInputUltimate);
     }
 
 }
 
+void AInGameController::OnInputMove(const FInputActionValue& Value)
+{
+
+    APlayerBase* CurrentPawn = Cast<APlayerBase>(GetPawn());
+    if (!CurrentPawn)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Move] Pawn이 없음"));
+        return;
+    }
+    if (!CurrentPawn->CanMove())
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Move] CanMove() = false"));
+        return;
+    }
+
+    const FVector2D MoveInput = Value.Get<FVector2D>();
+
+    if (UCameraComponent* CameraComp = CurrentPawn->FindComponentByClass<UCameraComponent>())
+    {
+        const FRotator YawRot(0, CameraComp->GetComponentRotation().Yaw, 0);
+        const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+        const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+
+        CurrentPawn->AddMovementInput(Forward, MoveInput.Y);
+        CurrentPawn->AddMovementInput(Right, MoveInput.X);
+    }
+}
+
+void AInGameController::OnInputSummonSlot1() { RequestFamiliarSummon(0); }
+void AInGameController::OnInputSummonSlot2() { RequestFamiliarSummon(1); }
+void AInGameController::OnInputSummonSlot3() { RequestFamiliarSummon(2); }
+void AInGameController::OnInputSummonSlot4() { RequestFamiliarSummon(3); }
+void AInGameController::OnInputSummonSlot5() { RequestFamiliarSummon(4); }
+
+void AInGameController::OnInputAttack(const FInputActionValue& Value)
+{
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->KeyboardAttack();
+        }
+    }
+}
+
+void AInGameController::OnInputSkill(const FInputActionValue& Value)
+{
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->KeyboardSkill();
+        }
+    }
+}
+
+void AInGameController::OnInputUltimate(const FInputActionValue& Value)
+{
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->KeyboardUltimate();
+        }
+    }
+}
+
+void AInGameController::RequestFamiliarSummon(int32 SlotIndex)
+{
+
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (USummonControlPanel* SummonPanel = HUD->GetSummonControlPanel()) // 패널 접근자 필요
+        {
+            // UI 슬롯 클릭 이벤트로 연결된 함수를 직접 호출하여 완벽하게 우회 실행합니다.
+            SummonPanel->HandleSlotClickRequest(SlotIndex);
+        }
+    }
+}
 
 void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
 {
@@ -220,8 +334,10 @@ UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
             InGameHUDInstance->AddToViewport();
             InGameHUDInstance->InitializeHUD();
             
-            FInputModeGameOnly GameInputMode;
-            SetInputMode(GameInputMode);
+            // 03/30 커먼 UI 잠금 해제
+            FInputModeGameAndUI GameAndUIMode;
+            GameAndUIMode.SetHideCursorDuringCapture(false);
+            SetInputMode(GameAndUIMode);
         }
     }
     return InGameHUDInstance;

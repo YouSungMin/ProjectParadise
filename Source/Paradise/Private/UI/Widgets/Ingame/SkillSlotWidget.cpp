@@ -38,6 +38,12 @@ void USkillSlotWidget::NativeConstruct()
 		}
 	}
 
+	if (Text_Shortcut)
+	{
+		Text_Shortcut->SetText(ShortcutKeyText);
+		Text_Shortcut->SetVisibility(ESlateVisibility::Collapsed); // 초기엔 숨김
+	}
+
 	// 초기 상태 설정
 	ClearCooldownVisual();
 }
@@ -166,19 +172,13 @@ void USkillSlotWidget::OnSkillButtonReleased()
 	}
 }
 
-//void USkillSlotWidget::OnSkillButtonClicked()
-//{
-//	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
-//
-//	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
-//	if (CurrentCooldown <= 0.0f)
-//	{
-//		if (OnSkillActionRequested.IsBound())
-//		{
-//			OnSkillActionRequested.Broadcast();
-//		}
-//	}
-//}
+void USkillSlotWidget::SetShortcutTextVisibility(bool bShow)
+{
+	if (Text_Shortcut)
+	{
+		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
 
 void USkillSlotWidget::UpdateCooldownVisual()
 {

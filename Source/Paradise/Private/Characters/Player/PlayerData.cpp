@@ -414,7 +414,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 {
 	if (!AbilitySystemComponent || !WeaponData) return;
 
-	UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기 어빌리티 교체 시작..."));
+	//UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기 어빌리티 교체 시작..."));
 
 	// ---------------------------------------------------------
 	// 기존 무기 어빌리티 제거 (Clean Up)
@@ -449,7 +449,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 		WeaponSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
 
 	// ---------------------------------------------------------
 	// 무기 FX 데이터 캐싱
@@ -457,7 +457,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	if (WeaponData)
 	{
 		CachedWeaponFX = WeaponData->WeaponFX;
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
+		//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
 		if (!CachedWeaponFX.FXData.IsNull())
 		{
 			CachedWeaponFX.FXData.LoadSynchronous();
@@ -478,11 +478,11 @@ void APlayerData::InitPlayerData(FName HeroID)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance를 찾을 수 없습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance를 찾을 수 없습니다."));
 		return;
 	}
 	this->CharacterID = HeroID;
-	UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
 
 	UInventorySystem* InvSys = GI->GetMainInventory();
 	if (InvSys)
@@ -509,12 +509,12 @@ void APlayerData::InitPlayerData(FName HeroID)
 
 			ApplySetBonuses();
 
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
+			//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
 		}
-		else
+		/*else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerData] 인벤토리에서 %s 데이터를 못 찾음. 1레벨 기본값 적용."), *HeroID.ToString());
-		}
+		}*/
 	}
 
 	//전투 스탯 초기화 (내부에서 스스로 테이블 조회)
@@ -523,7 +523,7 @@ void APlayerData::InitPlayerData(FName HeroID)
 	//시각적 에셋 초기화 (내부에서 스스로 테이블 조회)
 	InitPlayerAssets();
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
 	
 }
 
@@ -539,7 +539,7 @@ void APlayerData::OnDeath()
 	}
 
 	// 부활 타이머 시작 (예: 5초 뒤 부활)
-    UE_LOG(LogTemp, Error, TEXT("👻 [PlayerData] 영혼 사망 확인. 5초 뒤 리스폰 가능합니다"));
+   // UE_LOG(LogTemp, Error, TEXT("👻 [PlayerData] 영혼 사망 확인. 5초 뒤 리스폰 가능합니다"));
 	GetWorld()->GetTimerManager().SetTimer(
 		RespawnTimerHandle, 
 		this, 
@@ -547,7 +547,7 @@ void APlayerData::OnDeath()
 		RespawnTimer, 
 		false);
 
-	UE_LOG(LogTemp, Warning, TEXT("5초 뒤 부활 예정."));
+	//UE_LOG(LogTemp, Warning, TEXT("5초 뒤 부활 예정."));
     // TODO: 여기서 GameMode나 PlayerController에게 "새 몸 줘!"라고 요청하는 코드 필요
     // 예: GetWorld()->GetAuthGameMode<AMyGameMode>()->RespawnHero(this);
 }
@@ -555,7 +555,7 @@ void APlayerData::OnDeath()
 void APlayerData::OnRespawnFinished()
 {
 	bIsDead = false;
-	UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
+	//UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
 }
 
 void APlayerData::ResetStateForRespawn()
@@ -576,7 +576,7 @@ void APlayerData::ResetStateForRespawn()
 
 		AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TagsToRemove);
 
-		UE_LOG(LogTemp, Log, TEXT("✨ [PlayerData] %s의 영혼 상태(체력/마나/디버프)가 완벽히 정화되었습니다!"), *GetName());
+		//UE_LOG(LogTemp, Log, TEXT("✨ [PlayerData] %s의 영혼 상태(체력/마나/디버프)가 완벽히 정화되었습니다!"), *GetName());
 	}
 
 	if (AbilitySystemComponent)
@@ -741,7 +741,7 @@ void APlayerData::ApplySetBonuses()
 				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 				AppliedSetEffectHandles.Add(ActiveHandle); // 나중에 지우기 위해 저장
 
-				UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 1단계 적용 완료!"), *SetID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 1단계 적용 완료!"), *SetID.ToString());
 			}
 		}
 
@@ -759,7 +759,7 @@ void APlayerData::ApplySetBonuses()
 				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 				AppliedSetEffectHandles.Add(ActiveHandle);
 
-				UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 2단계 적용 완료!"), *SetID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 2단계 적용 완료!"), *SetID.ToString());
 			}
 		}
 
@@ -774,7 +774,7 @@ void APlayerData::ApplySetBonuses()
 
 				AppliedSetAbilityHandles.Add(ActiveHandle);
 
-				UE_LOG(LogTemp, Log, TEXT("⚡ [SetBonus] %s 3단계 어빌리티 부여 완료!"), *SetID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("⚡ [SetBonus] %s 3단계 어빌리티 부여 완료!"), *SetID.ToString());
 			}
 		}
 	}

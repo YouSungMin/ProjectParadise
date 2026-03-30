@@ -170,15 +170,24 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 	FSquadItemUIData Result;
 	Result.ID = ID;
 	Result.Level = InLevel;
-	Result.Name = FText::FromName(ID);
+	//Result.Name = FText::FromName(ID);
 
 	if (!CachedGI.IsValid()) return Result;
 
 	if (TabType == SquadTabs::Character)
 	{
+		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
+		{
+			Result.Name = Stat->DisplayName;
+		}
+		else
+		{
+			Result.Name = FText::FromName(ID); // 테이블에 데이터가 없을 때의 방어 코드
+		}
+
+		// 2. 기존 Assets 테이블 아이콘 가져오기 로직 유지
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
-			// 강화 인벤토리에서도 전신(Body)을 보여주려면 bUseBodyIcon을 활용
 			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
 			Result.Icon = TargetIcon.LoadSynchronous();
 			Result.Rarity = Asset->Rarity;

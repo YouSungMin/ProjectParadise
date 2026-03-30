@@ -22,6 +22,9 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Camera/CameraComponent.h"
+#include "CommonInputBaseTypes.h"
+#include "CommonInputSubsystem.h"
+#include "Engine/LocalPlayer.h"
 
 #include "Data/Assets/ParadiseFXAudioData.h"
 #include "Characters/Base/CharacterBase.h"
@@ -74,6 +77,18 @@ void UInGameHUDWidget::NativeConstruct()
 
 	// 5. 시스템 초기화 및 데이터 동기화
 	InitializeHUD();
+
+	if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
+	{
+		if (UCommonInputSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UCommonInputSubsystem>())
+		{
+			// 이벤트 바인딩
+			InputSubsystem->OnInputMethodChangedNative.AddUObject(this, &UInGameHUDWidget::HandleInputMethodChanged);
+
+			// 초기 생성 시 현재 기기 상태를 즉시 1회 동기화
+			HandleInputMethodChanged(InputSubsystem->GetCurrentInputType());
+		}
+	}
 #pragma endregion 초기화
 
 	// 6. UI 갱신 타이머 시작 (최적화를 위해 0.5초 간격 유지)
@@ -128,6 +143,14 @@ void UInGameHUDWidget::NativeDestruct()
 	if (CachedGameState.IsValid())
 	{
 		CachedGameState->OnGamePhaseChanged.RemoveAll(this);
+	}
+
+	if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
+	{
+		if (UCommonInputSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UCommonInputSubsystem>())
+		{
+			InputSubsystem->OnInputMethodChangedNative.RemoveAll(this);
+		}
 	}
 
 	Super::NativeDestruct();
@@ -439,6 +462,28 @@ void UInGameHUDWidget::OnUpdateHUD()
 			// GameState에 남은 시간 변수가 public이라고 가정
 			GameTimerWidget->UpdateTime(CachedGameState->RemainingTime);
 		}
+	}
+}
+
+void UInGameHUDWidget::HandleInputMethodChanged(ECommonInputType NewInputType)
+{
+
+	// 1. 터치 모드일 때만 조이스틱을 켭니다.
+	const bool bShowJoystick = (NewInputType == ECommonInputType::Touch);
+	const bool bShowShortcutTexts = !bShowJoystick;
+
+	if (VirtualJoystick)
+	{
+		VirtualJoystick->SetVisibility(bShowJoystick ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+
+	if (SummonControlPanel)
+	{
+		SummonControlPanel->ToggleShortcutKeys(bShowShortcutTexts);
+	}
+	if (ActionControlPanel)
+	{
+		ActionControlPanel->ToggleShortcutKeys(bShowShortcutTexts);
 	}
 }
 #pragma endregion 내부 로직 구현
