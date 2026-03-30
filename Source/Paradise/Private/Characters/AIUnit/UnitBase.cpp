@@ -293,7 +293,7 @@ void AUnitBase::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAssets)
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[%s] Initialized. Faction: %s"), *GetName(), *FactionTag.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("[%s] Initialized. Faction: %s"), *GetName(), *FactionTag.ToString());
 }
 
 void AUnitBase::Die()
@@ -317,11 +317,11 @@ bool AUnitBase::IsEnemy(AUnitBase* OtherUnit)
 	return !this->FactionTag.MatchesTag(OtherUnit->FactionTag);
 }
 
-void AUnitBase::PlayRangeAttack()
-{
-	// 공격 몽타주 실행 또는 발사체 생성 로직
-	UE_LOG(LogTemp, Log, TEXT("%s 유닛이 원거리 공격을 수행합니다."), *GetName());
-}
+//void AUnitBase::PlayRangeAttack()
+//{
+//	// 공격 몽타주 실행 또는 발사체 생성 로직
+//	//UE_LOG(LogTemp, Log, TEXT("%s 유닛이 원거리 공격을 수행합니다."), *GetName());
+//}
 
 UAnimMontage* AUnitBase::GetDeathMontage() const
 {

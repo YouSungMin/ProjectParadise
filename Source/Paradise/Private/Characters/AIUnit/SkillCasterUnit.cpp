@@ -41,12 +41,12 @@ void ASkillCasterUnit::InitializeUnit(FAIUnitStats* InStats, FAIUnitAssets* InAs
 				if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("SkillProjectileLookup")))
 				{
 					SkillData.ProjectileStats = *ProjRow;
-					UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 스킬 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
+					//UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 스킬 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
 				}
-				else
+				/*else
 				{
 					UE_LOG(LogTemp, Error, TEXT("❌ [%s] 투사체 외래키가 등록되어 있으나 실제 데이터를 찾을 수 없습니다! 엑셀을 확인하세요."), *GetName());
-				}
+				}*/
 			}
 		}
 

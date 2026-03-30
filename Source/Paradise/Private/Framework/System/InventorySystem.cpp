@@ -45,10 +45,10 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 			{
 				OwnedCharacters.Add(InHeroes[i]);
 			}
-			else
+			/*else
 			{
 				UE_LOG(LogParadiseInventory, Warning, TEXT("[Inventory] 영웅 유효성 실패(Asset/Stat 누락): %s"), *InHeroes[i].CharacterID.ToString());
-			}
+			}*/
 		}
 	}
 
@@ -61,10 +61,10 @@ void UInventorySystem::InitInventory(const TArray<FOwnedCharacterData>& InHeroes
 			{
 				OwnedFamiliars.Add(InFamiliars[i]);
 			}
-			else
+			/*else
 			{
 				UE_LOG(LogParadiseInventory, Warning, TEXT("[Inventory] 퍼밀리어 유효성 실패(Asset/Stat 누락): %s"), *InFamiliars[i].FamiliarID.ToString());
-			}
+			}*/
 		}
 	}
 

@@ -31,11 +31,11 @@ void ACharacterBase::TestKillSelf()
 {
 	if (bIsDead)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [Debug] 이미 사망한 상태입니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [Debug] 이미 사망한 상태입니다."));
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("💀 [Debug] 강제 사망 명령 실행! (TestKillSelf)"));
+	//UE_LOG(LogTemp, Warning, TEXT("💀 [Debug] 강제 사망 명령 실행! (TestKillSelf)"));
 	Die();
 }
 
@@ -56,10 +56,10 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		{
 			TargetMesh = WpnMesh; // 무기 메쉬로 성공적 교체
 		}
-		else
+		/*else
 		{
 			UE_LOG(LogTemp, Error, TEXT("⚠️ [%s] 무기 타겟을 설정했으나 무기 메쉬가 없습니다! 몸통을 대신 사용합니다."), *GetName());
-		}
+		}*/
 	}
 
 	if (!SocketName.IsNone() && TargetMesh && TargetMesh->DoesSocketExist(SocketName))

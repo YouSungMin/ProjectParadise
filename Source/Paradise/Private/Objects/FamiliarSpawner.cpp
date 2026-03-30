@@ -31,7 +31,7 @@ void AFamiliarSpawner::BeginPlay()
 			if (TempUnit) PoolSubsystem->ReturnToPool(TempUnit);
 		}
 	}
-	UE_LOG(LogTemp, Log, TEXT("🛡️ FamiliarSpawner: 초기화 및 오브젝트 풀링 완료."));
+	//UE_LOG(LogTemp, Log, TEXT("🛡️ FamiliarSpawner: 초기화 및 오브젝트 풀링 완료."));
 }
 
 void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
@@ -114,7 +114,7 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 						}
 					}
 				}
-				UE_LOG(LogTemp, Log, TEXT("✅ Familiar Spawned: %s"), *UnitID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("✅ Familiar Spawned: %s"), *UnitID.ToString());
 			}
 		}
 	}

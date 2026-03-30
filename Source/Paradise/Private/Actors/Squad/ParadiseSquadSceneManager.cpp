@@ -72,7 +72,7 @@ void AParadiseSquadSceneManager::RefreshSquadScene()
 	UpdateSlotVisual(1, PlayerSquad.IsValidIndex(1) ? PlayerSquad[1] : NAME_None, Point_Sub1);
 	UpdateSlotVisual(2, PlayerSquad.IsValidIndex(2) ? PlayerSquad[2] : NAME_None, Point_Sub2);
 
-	UE_LOG(LogTemp, Log, TEXT("[SquadScene] 3D 디오라마 모델링 갱신 완료"));
+	//UE_LOG(LogTemp, Log, TEXT("[SquadScene] 3D 디오라마 모델링 갱신 완료"));
 }
 #pragma endregion 외부 인터페이스
 

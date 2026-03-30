@@ -48,7 +48,7 @@ void UParadiseSquadDetailWidget::ShowInfo(const FSquadItemUIData& InData, ESquad
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [SquadDetail] GameInstance를 찾을 수 없습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [SquadDetail] GameInstance를 찾을 수 없습니다."));
 		SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}

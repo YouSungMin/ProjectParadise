@@ -47,7 +47,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Unit|Logic")
 	bool IsEnemy(AUnitBase* OtherUnit);
 
-	void PlayRangeAttack();
+	//void PlayRangeAttack();
 
 	/** @brief 캐싱된 기본 공격 사거리 반환 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")

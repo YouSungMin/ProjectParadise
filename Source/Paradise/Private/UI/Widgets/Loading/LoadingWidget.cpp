@@ -113,19 +113,19 @@ void ULoadingWidget::InitLoadingImage(FName CurrentLevel, FName TargetLevel, TSo
 	if (CurrentMapName.Contains(TEXT("title")) && TargetMapName.Contains(TEXT("lobby")))
 	{
 		FinalImage = SpecialImages.TitleToLobby;
-		UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Title -> Lobby"));
+		//UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Title -> Lobby"));
 	}
 	// 목적지가 로비인데, 출발지가 타이틀이 아니었다면 (스테이지 -> 로비)
 	else if (TargetMapName.Contains(TEXT("lobby")))
 	{
 		FinalImage = SpecialImages.StageToLobby;
-		UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Stage -> Lobby"));
+		//UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Stage -> Lobby"));
 	}
 	// 그 외 일반 스테이지 진입 상황
 	else if (!InDefaultStageImage.IsNull())
 	{
 		FinalImage = InDefaultStageImage;
-		UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Enter Stage"));
+		//UE_LOG(LogTemp, Log, TEXT("[LoadingUI] Situation: Enter Stage"));
 	}
 
 	// 3. 최종 폴백 (Fallback)

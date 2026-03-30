@@ -62,7 +62,7 @@ void UGameResultWidgetBase::OnRetryClicked()
 	}
 
 	UWorld* World = GetWorld();
-	UE_LOG(LogTemp, Error, TEXT("[ResultBase] GetWorld(): %s"), World ? TEXT("유효") : TEXT("NULL"));
+	//UE_LOG(LogTemp, Error, TEXT("[ResultBase] GetWorld(): %s"), World ? TEXT("유효") : TEXT("NULL"));
 
 	if (World)
 	{
@@ -95,7 +95,7 @@ void UGameResultWidgetBase::ExecuteLobby()
 
 void UGameResultWidgetBase::ExecuteRetry()
 {
-	UE_LOG(LogTemp, Error, TEXT("[ResultBase] ExecuteRetry 호출됨!"));
+	//UE_LOG(LogTemp, Error, TEXT("[ResultBase] ExecuteRetry 호출됨!"));
 	// 현재 레벨 이름 가져와서 다시 열기
 	FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 

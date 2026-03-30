@@ -30,7 +30,7 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 	UInventorySystem* InvSys = GetInventorySystem();
 	if (!InvSys)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [SquadInit] 인벤토리 시스템을 찾을 수 없습니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [SquadInit] 인벤토리 시스템을 찾을 수 없습니다!"));
 		return;
 	}
 
@@ -63,12 +63,12 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 				{
 					// 찾은 데이터의 장비 맵으로 초기화
 					EquipComp->InitializeEquipment(CharData->EquipmentMap);
-					UE_LOG(LogTemp, Log, TEXT("🔗 [SquadInit] %s 장비 데이터 동기화 완료"), *HeroID.ToString());
+					//UE_LOG(LogTemp, Log, TEXT("🔗 [SquadInit] %s 장비 데이터 동기화 완료"), *HeroID.ToString());
 				}
-				else
+				/*else
 				{
 					UE_LOG(LogTemp, Warning, TEXT("⚠️ [SquadInit] 인벤토리에 %s 데이터가 없습니다."), *HeroID.ToString());
-				}
+				}*/
 			}
 			//캐릭터 데이터 초기화
 			NewSoul->InitPlayerData(HeroID);
@@ -78,7 +78,7 @@ void AInGamePlayerState::InitSquad(const TArray<FName>& StartingHeroIDs)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (크기: %d)"), SquadMembers.Num());
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerState] 스쿼드 초기화 완료 (크기: %d)"), SquadMembers.Num());
 }
 
 UInventorySystem* AInGamePlayerState::GetInventorySystem() const

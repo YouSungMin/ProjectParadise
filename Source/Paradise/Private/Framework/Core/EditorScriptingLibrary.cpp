@@ -37,7 +37,7 @@ void UEditorScriptingLibrary::BatchApplySoundConcurrency(const TArray<USoundBase
 {
 	if (!ConcurrencySetting)
 	{
-		UE_LOG(LogTemp, Error, TEXT("적용할 동시성(Concurrency) 에셋이 비어있습니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("적용할 동시성(Concurrency) 에셋이 비어있습니다!"));
 		return;
 	}
 
@@ -60,5 +60,5 @@ void UEditorScriptingLibrary::BatchApplySoundConcurrency(const TArray<USoundBase
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("✅ 총 %d개의 사운드 에셋에 동시성 적용이 완료되었습니다! (저장 버튼을 눌러 확정해주세요)"), SuccessCount);
+	//UE_LOG(LogTemp, Warning, TEXT("✅ 총 %d개의 사운드 에셋에 동시성 적용이 완료되었습니다! (저장 버튼을 눌러 확정해주세요)"), SuccessCount);
 }

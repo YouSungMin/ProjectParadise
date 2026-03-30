@@ -91,8 +91,8 @@ void UParadiseChapterSelectWidget::BuildChapterList()
 {
 	if (!Scroll_ChapterList || !DT_ChapterData || !ChapterSlotClass)
 	{
-		UE_LOG(LogTemp, Error,
-			TEXT("❌ [ChapterSelect] DT_ChapterData 또는 ChapterSlotClass 가 세팅되지 않았습니다."));
+		/*UE_LOG(LogTemp, Error,
+			TEXT("❌ [ChapterSelect] DT_ChapterData 또는 ChapterSlotClass 가 세팅되지 않았습니다."));*/
 		return;
 	}
 

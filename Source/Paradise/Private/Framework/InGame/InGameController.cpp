@@ -101,14 +101,14 @@ void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
 
     if (bIsMyCharacter)
     {
-        UE_LOG(LogTemp, Warning, TEXT("🚨 [Controller] 플레이어 사망 확인! -> 다음 생존자 탐색 시작"));
+       // UE_LOG(LogTemp, Warning, TEXT("🚨 [Controller] 플레이어 사망 확인! -> 다음 생존자 탐색 시작"));
 
         //스쿼드 관리 컴포넌트에서 처리
         bool bHasSurvivor = SquadControlComponent->SwitchToNextSurvivor();
 
         if (!bHasSurvivor)
         {
-            UE_LOG(LogTemp, Error, TEXT("💀 [Controller] 모든 스쿼드 멤버가 사망했습니다."));
+            //UE_LOG(LogTemp, Error, TEXT("💀 [Controller] 모든 스쿼드 멤버가 사망했습니다."));
 
             if (AParadiseCameraManager* CamManager = Cast<AParadiseCameraManager>(PlayerCameraManager))
             {
@@ -121,10 +121,10 @@ void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
             }
         }
     }
-    else
+    /*else
     {
         UE_LOG(LogTemp, Warning, TEXT("🤖 [Controller] 동료(AI)가 사망했습니다."));
-    }
+    }*/
 
     //죽은 캐릭터 덱 풀에 넣기
     int32 DeadIndex = ActiveSquadPawns.Find(DeadPlayer);
@@ -160,29 +160,29 @@ void AInGameController::OnPlayerDied(APlayerBase* DeadPlayer)
             //수집된 데이터를 컴포넌트에 주입
             SummonComp->InjectCharacterRespawnCard(DeadIndex, RespawnCost, CharacterIcon);
 
-            UE_LOG(LogTemp, Log, TEXT("💀 [Controller] 캐릭터(%d번) 사망: 부활 카드 생성 (비용: %d)"), DeadIndex, RespawnCost);
+            //UE_LOG(LogTemp, Log, TEXT("💀 [Controller] 캐릭터(%d번) 사망: 부활 카드 생성 (비용: %d)"), DeadIndex, RespawnCost);
         }
     }
 }
 
 void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData)
 {
-    UE_LOG(LogTemp, Error, TEXT("================ [UI 연동 추적 시작: %d번 슬롯] ================"), PlayerIndex);
+    //UE_LOG(LogTemp, Error, TEXT("================ [UI 연동 추적 시작: %d번 슬롯] ================"), PlayerIndex);
 
     UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
 
     // 1. HUD 인스턴스가 있는지 확인
     if (!InGameHUDInstance)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InGameHUDInstance가 NULL입니다!"));
-        UE_LOG(LogTemp, Error, TEXT("   -> 원인: BP_InGameController의 'InGameHUDClass'에 위젯이 안 채워져 있거나, 생성에 실패했습니다."));
+        //UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InGameHUDInstance가 NULL입니다!"));
+        //UE_LOG(LogTemp, Error, TEXT("   -> 원인: BP_InGameController의 'InGameHUDClass'에 위젯이 안 채워져 있거나, 생성에 실패했습니다."));
         return;
     }
 
     // 2. 플레이어 데이터가 있는지 확인
     if (!InPlayerData)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InPlayerData가 NULL입니다!"));
+        //UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: InPlayerData가 NULL입니다!"));
         return;
     }
 
@@ -190,17 +190,17 @@ void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerD
     UPartyStatusPanel* PartyPanel = InGameHUDInstance->GetPartyStatusPanel();
     if (!PartyPanel)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: PartyStatusPanel이 NULL입니다!"));
-        UE_LOG(LogTemp, Error, TEXT("   -> 원인: WBP_InGameHUD 안에 파티 패널이 없거나, 변수 이름(BindWidget)이 틀렸습니다."));
+        //UE_LOG(LogTemp, Error, TEXT("❌ 추적 실패: PartyStatusPanel이 NULL입니다!"));
+        //UE_LOG(LogTemp, Error, TEXT("   -> 원인: WBP_InGameHUD 안에 파티 패널이 없거나, 변수 이름(BindWidget)이 틀렸습니다."));
         return;
     }
 
     // 4. 통과 완료! 
-    UE_LOG(LogTemp, Warning, TEXT("✅ 추적 통과: 모든 패널이 정상! PartyPanel에게 바인딩을 명령합니다."));
+    //UE_LOG(LogTemp, Warning, TEXT("✅ 추적 통과: 모든 패널이 정상! PartyPanel에게 바인딩을 명령합니다."));
 
     PartyPanel->AddPartyMemberUI(InPlayerData->CharacterID, InPlayerData->GetAbilitySystemComponent());
 
-    UE_LOG(LogTemp, Error, TEXT("=================================================================="));
+    //UE_LOG(LogTemp, Error, TEXT("=================================================================="));
 }
 
 UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
@@ -238,7 +238,7 @@ void AInGameController::SetActionPanelEnabled(bool bEnabled)
     {
         ActionPanel->SetIsEnabled(bEnabled);
 
-        UE_LOG(LogTemp, Log, TEXT("📱 [UI] 액션 패널 활성화 상태 변경: %s"), bEnabled ? TEXT("True") : TEXT("False"));
+        //UE_LOG(LogTemp, Log, TEXT("📱 [UI] 액션 패널 활성화 상태 변경: %s"), bEnabled ? TEXT("True") : TEXT("False"));
     }
 }
 
@@ -297,7 +297,7 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
         // 유효한 인덱스인지, 해당 슬롯에 캐릭터가 존재하는지 확인
         if (!SquadControlComponent->GetActiveSquadPawns().IsValidIndex(PlayerIndex) || SquadControlComponent->GetActiveSquadPawns()[PlayerIndex] == nullptr)
         {
-            UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 유효하지 않은 인덱스거나 슬롯이 비어있습니다. (요청 인덱스: %d)"), PlayerIndex);
+            //UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 유효하지 않은 인덱스거나 슬롯이 비어있습니다. (요청 인덱스: %d)"), PlayerIndex);
             return;
         }
 
@@ -306,14 +306,14 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
         // 이미 죽은 캐릭터인지 확인
         if (TargetCharacter->IsDead())
         {
-            UE_LOG(LogTemp, Warning, TEXT("⚠️ [Cheat] %d번 캐릭터(%s)는 이미 사망한 상태입니다."), PlayerIndex, *TargetCharacter->GetName());
+            //UE_LOG(LogTemp, Warning, TEXT("⚠️ [Cheat] %d번 캐릭터(%s)는 이미 사망한 상태입니다."), PlayerIndex, *TargetCharacter->GetName());
             return;
         }
 
         // GAS를 통해 치명적인 데미지 적용
         if (UAbilitySystemComponent* ASC = TargetCharacter->GetAbilitySystemComponent())
         {
-            UE_LOG(LogTemp, Warning, TEXT("💀 [Cheat] %d번 캐릭터(%s)에게 999,999의 데미지를 가합니다!"), PlayerIndex, *TargetCharacter->GetName());
+            //UE_LOG(LogTemp, Warning, TEXT("💀 [Cheat] %d번 캐릭터(%s)에게 999,999의 데미지를 가합니다!"), PlayerIndex, *TargetCharacter->GetName());
 
             //일회성(Instant) 게임플레이 이펙트를 생성
             UGameplayEffect* CheatKillGE = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("CheatKillGE")));

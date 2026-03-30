@@ -23,7 +23,7 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 {
 	if (!InASC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[CharacterStatusWidget] 유효하지 않은 ASC가 전달되어 바인딩을 취소합니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("[CharacterStatusWidget] 유효하지 않은 ASC가 전달되어 바인딩을 취소합니다."));
 		return;
 	}
 
@@ -70,7 +70,7 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 		Text_Mana->SetText(FText::FromString(MPString));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[CharacterStatusWidget] ASC 바인딩 및 UI 동기화 완료"));
+	//UE_LOG(LogTemp, Log, TEXT("[CharacterStatusWidget] ASC 바인딩 및 UI 동기화 완료"));
 }
 #pragma endregion 외부 인터페이스 구현
 

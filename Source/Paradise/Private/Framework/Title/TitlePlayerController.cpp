@@ -18,10 +18,10 @@ void ATitlePlayerController::BeginPlay()
 			TitleWidget->AddToViewport();
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[TitlePC] TitleHUDClass is NOT set! Please check BP_TitlePlayerController."));
-	}
+	}*/
 
 	//0326 김성현 그래픽 설정 초기 체크 함수 추가
 	if (UGameInstance* GI = GetGameInstance())

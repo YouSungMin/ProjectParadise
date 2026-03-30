@@ -24,7 +24,7 @@ void UParadiseEnemyIconWidget::SetupIcon(TSoftObjectPtr<UTexture2D> InFaceIcon)
 	{
 		// 데이터가 없을 경우 이미지를 비우거나 기본(Default) 이미지를 세팅하도록 방어 코드 작성
 		Img_EnemyIcon->SetBrushFromTexture(nullptr);
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [EnemyIcon] 전달받은 텍스처(FaceIcon)가 비어있습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [EnemyIcon] 전달받은 텍스처(FaceIcon)가 비어있습니다."));
 		return;
 	}
 

@@ -40,7 +40,7 @@ bool UBTDecorator_CanUseAbilityByTag::CalculateRawConditionValue(UBehaviorTreeCo
 
 			if (bCanActivate)
 			{
-				UE_LOG(LogParadiseAI, Log, TEXT("✅ [보스 AI] '%s' 스킬 사용 가능! (조건 통과)"), *AbilityTagToCheck.ToString());
+				//UE_LOG(LogParadiseAI, Log, TEXT("✅ [보스 AI] '%s' 스킬 사용 가능! (조건 통과)"), *AbilityTagToCheck.ToString());
 				return true;
 			}
 			else
@@ -52,28 +52,28 @@ bool UBTDecorator_CanUseAbilityByTag::CalculateRawConditionValue(UBehaviorTreeCo
 				// 어빌리티로부터 실제 쿨타임 정보를 받아옵니다.
 				Spec.Ability->GetCooldownTimeRemainingAndDuration(Spec.Handle, ASC->AbilityActorInfo.Get(), TimeRemaining, CooldownDuration);
 
-				if (Spec.IsActive())
-				{
-					// 스킬이 아직 안 끝나서(EndAbility 미호출) 못 쓰는 경우
-					UE_LOG(LogParadiseAI, Error, TEXT("🛑 [보스 AI] '%s' 불가 사유: 스킬이 이미 실행 중입니다!"), *AbilityTagToCheck.ToString());
-				}
-				else if (TimeRemaining > 0.f)
-				{
-					// 정확히 쿨타임에 걸려있는 경우 (몇 초 남았는지 출력)
-					UE_LOG(LogParadiseAI, Warning, TEXT("⏳ [보스 AI] '%s' 쿨타임 대기 중... (남은 시간: %.1f초 / 전체 쿨타임: %.1f초)"),
-						*AbilityTagToCheck.ToString(), TimeRemaining, CooldownDuration);
-				}
-				else if (!FailureTags.IsEmpty())
-				{
-					// 마나 부족 등 다른 태그에 의한 실패
-					UE_LOG(LogParadiseAI, Warning, TEXT("🚫 [보스 AI] '%s' 불가 사유: %s"),
-						*AbilityTagToCheck.ToString(), *FailureTags.ToStringSimple());
-				}
-				else
-				{
-					// 그 외 시스템적 실패 (GE 설정 누락 등)
-					UE_LOG(LogParadiseAI, Error, TEXT("❓ [보스 AI] '%s' 불가 사유: 알 수 없음 (태그 없음)"), *AbilityTagToCheck.ToString());
-				}
+				//if (Spec.IsActive())
+				//{
+				//	// 스킬이 아직 안 끝나서(EndAbility 미호출) 못 쓰는 경우
+				//	UE_LOG(LogParadiseAI, Error, TEXT("🛑 [보스 AI] '%s' 불가 사유: 스킬이 이미 실행 중입니다!"), *AbilityTagToCheck.ToString());
+				//}
+				//else if (TimeRemaining > 0.f)
+				//{
+				//	// 정확히 쿨타임에 걸려있는 경우 (몇 초 남았는지 출력)
+				//	UE_LOG(LogParadiseAI, Warning, TEXT("⏳ [보스 AI] '%s' 쿨타임 대기 중... (남은 시간: %.1f초 / 전체 쿨타임: %.1f초)"),
+				//		*AbilityTagToCheck.ToString(), TimeRemaining, CooldownDuration);
+				//}
+				//else if (!FailureTags.IsEmpty())
+				//{
+				//	// 마나 부족 등 다른 태그에 의한 실패
+				//	UE_LOG(LogParadiseAI, Warning, TEXT("🚫 [보스 AI] '%s' 불가 사유: %s"),
+				//		*AbilityTagToCheck.ToString(), *FailureTags.ToStringSimple());
+				//}
+				//else
+				//{
+				//	// 그 외 시스템적 실패 (GE 설정 누락 등)
+				//	UE_LOG(LogParadiseAI, Error, TEXT("❓ [보스 AI] '%s' 불가 사유: 알 수 없음 (태그 없음)"), *AbilityTagToCheck.ToString());
+				//}
 
 				return false;
 			}

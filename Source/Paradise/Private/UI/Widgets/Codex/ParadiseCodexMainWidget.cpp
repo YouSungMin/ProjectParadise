@@ -260,7 +260,7 @@ void UParadiseCodexMainWidget::OnClickBack()
 	if (CachedGI.IsValid())
 	{
 		CachedGI->SaveGameData();
-		UE_LOG(LogTemp, Log, TEXT("💾 [CodexMain] 도감을 닫으며 게임 데이터를 자동 저장합니다."));
+		//UE_LOG(LogTemp, Log, TEXT("💾 [CodexMain] 도감을 닫으며 게임 데이터를 자동 저장합니다."));
 	}
 
 	if (OnBackRequested.IsBound())

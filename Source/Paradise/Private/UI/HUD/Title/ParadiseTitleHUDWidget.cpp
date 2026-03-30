@@ -93,7 +93,7 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 		AudioMag->StopBGM(1.0f);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
 
 	// 2. 타이머를 설정하여 1초(페이드 아웃 및 효과음 재생 시간) 뒤에 로딩 맵으로 넘깁니다.
 	FTimerHandle TransitionTimerHandle;
@@ -109,13 +109,13 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 void UParadiseTitleHUDWidget::OnQuitButtonClicked()
 {
 	// PC 빌드 등에서 게임을 완전히 종료합니다.
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 게임 종료 요청"));
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 게임 종료 요청"));
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
 }
 
 void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
 
 	// 공통 설정 팝업 버튼 클릭음 재생
 	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
@@ -143,7 +143,7 @@ void UParadiseTitleHUDWidget::ExecuteLevelTransition()
 	else
 	{
 		// Fallback: GI 캐스팅 실패 시 일반 로딩
-		UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
+		//UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
 		UGameplayStatics::OpenLevel(this, NextLevelName);
 	}
 }

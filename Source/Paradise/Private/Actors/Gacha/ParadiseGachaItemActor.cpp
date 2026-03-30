@@ -118,9 +118,9 @@ void AParadiseGachaItemActor::InitializeItemData(const FGachaResult& InResult, U
 			if (RefBonePose[i].GetScale3D().ContainsNaN())
 			{
 				bIsSafe = false;
-				UE_LOG(LogTemp, Error,
+				/*UE_LOG(LogTemp, Error,
 					TEXT("[방어막 작동] %s의 %d번 뼈에 NaN 스케일이 있어 렌더링을 차단했습니다!"),
-					*CachedItemData.CharacterSkeletalMesh->GetName(), i);
+					*CachedItemData.CharacterSkeletalMesh->GetName(), i);*/
 				break;
 			}
 		}
@@ -245,12 +245,12 @@ void AParadiseGachaItemActor::CacheGachaCamera()
 	{
 		CachedGachaCamera = FoundActors[0];
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning,
 			TEXT("⚠️ [GachaItemActor] 태그 '%s'를 가진 카메라를 찾지 못했습니다. 레벨 액터에 태그를 추가하세요."),
 			*GachaCameraTag.ToString());
-	}
+	}*/
 }
 
 void AParadiseGachaItemActor::RotateTowardGachaCamera()

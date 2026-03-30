@@ -32,10 +32,10 @@ void UGachaSubsystem::InitializeBanner(const FGachaBannerData& InBannerData)
 			}
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [GachaSubsystem] 타겟 풀(Pool) 테이블을 로드하지 못했습니다."));
-	}
+	}*/
 }
 
 TArray<FGachaResult> UGachaSubsystem::PerformGacha(int32 PullCount, const TArray<FName>& OwnedItems)

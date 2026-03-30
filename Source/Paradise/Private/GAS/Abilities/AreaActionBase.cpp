@@ -30,7 +30,7 @@ void UAreaActionBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 	if (!CombatData.MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [AreaActionBase] 재생할 몽타주가 없습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("❌ [AreaActionBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -64,7 +64,7 @@ void UAreaActionBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	// GE 클래스가 없으면 데미지 못 줌
 	if (!CombatData.EffectClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ [AreaActionBase] DamageEffectClass가 설정되지 않았습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("⚠️ [AreaActionBase] DamageEffectClass가 설정되지 않았습니다."));
 		return;
 	}
 

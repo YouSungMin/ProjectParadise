@@ -20,12 +20,12 @@ void AParadiseCameraManager::InitializeOverviewCamera()
 {
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), OverviewCameraTag, FoundActors);
-    UE_LOG(LogTemp, Warning, TEXT("🔍 [Camera] 태그로 찾은 액터 수: %d개"), FoundActors.Num());
+   // UE_LOG(LogTemp, Warning, TEXT("🔍 [Camera] 태그로 찾은 액터 수: %d개"), FoundActors.Num());
     if (FoundActors.Num() > 0)
     {
         OverviewCameraActor = FoundActors[0];
-        UE_LOG(LogTemp, Log, TEXT("✅ [Camera] 태그 '%s'로 카메라 액터(%s)를 찾았습니다."),
-            *OverviewCameraTag.ToString(), *OverviewCameraActor->GetName());
+        /*UE_LOG(LogTemp, Log, TEXT("✅ [Camera] 태그 '%s'로 카메라 액터(%s)를 찾았습니다."),
+            *OverviewCameraTag.ToString(), *OverviewCameraActor->GetName());*/
     }
 }
 

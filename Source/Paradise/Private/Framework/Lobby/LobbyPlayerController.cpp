@@ -38,7 +38,7 @@ void ALobbyPlayerController::BeginPlay()
 		Camera_Summon = LobbySetup->Camera_Summon;
 		Camera_GachaAction = LobbySetup->Camera_GachaAction;
 
-		UE_LOG(LogTemp, Log, TEXT("[LobbyController] 카메라 설정 로드 완료 via SetupActor"));
+		//UE_LOG(LogTemp, Log, TEXT("[LobbyController] 카메라 설정 로드 완료 via SetupActor"));
 	}
 	AParadiseGachaBoxActor* FoundBox = Cast<AParadiseGachaBoxActor>(UGameplayStatics::GetActorOfClass(this, AParadiseGachaBoxActor::StaticClass()));
 	if (FoundBox)
@@ -48,23 +48,23 @@ void ALobbyPlayerController::BeginPlay()
 		// 게임 시작 시에는 가챠 상자가 안 보여야 하므로 일단 숨겨둡니다.
 		FoundBox->SetActorHiddenInGame(true);
 
-		UE_LOG(LogTemp, Log, TEXT("✅ [LobbyController] 가챠 박스 캐싱 완료!"));
+		//UE_LOG(LogTemp, Log, TEXT("✅ [LobbyController] 가챠 박스 캐싱 완료!"));
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] 맵에 배치된 BP_GachaBoxActor가 없습니다! 맵에 끌어다 놓으세요."));
-	}
+	}*/
 
 	// 2. 초기 카메라 설정
 	if (Camera_Main)
 	{
 		SetViewTarget(Camera_Main);
 	}
-	else
-	{
-		// 카메라를 못 찾았을 때의 방어 코드
-		UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] Main Camera가 설정되지 않았습니다!"));
-	}
+	//else
+	//{
+	//	// 카메라를 못 찾았을 때의 방어 코드
+	//	UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] Main Camera가 설정되지 않았습니다!"));
+	//}
 
 	//1. 마우스 커서 보이게 설정
 	bShowMouseCursor = true;
@@ -77,7 +77,7 @@ void ALobbyPlayerController::BeginPlay()
 	InputModeData.SetHideCursorDuringCapture(false);
 	SetInputMode(InputModeData);
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyController: Mouse Cursor On"));
+	//UE_LOG(LogTemp, Log, TEXT("LobbyController: Mouse Cursor On"));
 
 	// 2. HUD 위젯 생성 및 부착
 	if (LobbyHUDClass)
@@ -93,13 +93,13 @@ void ALobbyPlayerController::BeginPlay()
 			// 캐싱 (이미 HUD NativeConstruct에서 SetLobbyHUD를 호출하지만, 확실하게 한번 더 해도 무방)
 			SetLobbyHUD(LobbyHUD);
 
-			UE_LOG(LogTemp, Log, TEXT("[LobbyController] WBP_LobbyHUD 생성 및 부착 성공!"));
+			//UE_LOG(LogTemp, Log, TEXT("[LobbyController] WBP_LobbyHUD 생성 및 부착 성공!"));
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[LobbyController] LobbyHUDClass가 설정되지 않았습니다! BP를 확인하세요."));
-	}
+	}*/
 }
 
 void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)
@@ -109,7 +109,7 @@ void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)
 		if (UInventorySystem* InvSys = GI->GetMainInventory())
 		{
 			InvSys->AddCharacter(CharacterID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 획득: %s"), *CharacterID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 획득: %s"), *CharacterID.ToString());
 		}
 	}
 }
@@ -121,7 +121,7 @@ void ALobbyPlayerController::CheatAddFamiliar(FName FamiliarID)
 		if (UInventorySystem* InvSys = GI->GetMainInventory())
 		{
 			InvSys->AddFamiliar(FamiliarID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 획득: %s"), *FamiliarID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 획득: %s"), *FamiliarID.ToString());
 		}
 	}
 }
@@ -133,7 +133,7 @@ void ALobbyPlayerController::CheatAddItem(FName ItemID, int32 Count)
 		if (UInventorySystem* InvSys = GI->GetMainInventory())
 		{
 			InvSys->AddItem(ItemID, Count, 0); // 0강 상태로 지급
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 아이템 획득: %s (%d개)"), *ItemID.ToString(), Count);
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 아이템 획득: %s (%d개)"), *ItemID.ToString(), Count);
 		}
 	}
 }
@@ -157,7 +157,7 @@ void ALobbyPlayerController::CheatSetPlayerSlot(int32 SlotIndex, FName Character
 		{
 			// UI 대신 직접 서브시스템에 데이터 꽂아넣기
 			SquadSys->SetPlayerToSlot(SlotIndex, CharacterID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *CharacterID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *CharacterID.ToString());
 		}
 	}
 }
@@ -169,7 +169,7 @@ void ALobbyPlayerController::CheatSetFamiliarSlot(int32 SlotIndex, FName Familia
 		if (USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>())
 		{
 			SquadSys->SetFamiliarToSlot(SlotIndex, FamiliarID);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *FamiliarID.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 퍼밀리어 편성 완료: 슬롯[%d] -> %s"), SlotIndex, *FamiliarID.ToString());
 		}
 	}
 }
@@ -207,12 +207,12 @@ void ALobbyPlayerController::CheatEquipItem(FName CharacterID, FName ItemID)
 			if (TargetCharUID.IsValid() && TargetItemUID.IsValid())
 			{
 				InvSys->EquipItemToCharacter(TargetCharUID, TargetItemUID);
-				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 장착 성공: [%s]가 [%s] 장착!"), *CharacterID.ToString(), *ItemID.ToString());
+				//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 장착 성공: [%s]가 [%s] 장착!"), *CharacterID.ToString(), *ItemID.ToString());
 			}
-			else
+			/*else
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장착 실패: 인벤토리에서 %s 캐릭터나 %s 아이템을 찾지 못했습니다."), *CharacterID.ToString(), *ItemID.ToString());
-			}
+			}*/
 		}
 	}
 }
@@ -224,7 +224,7 @@ void ALobbyPlayerController::CheatAddGold(int32 Amount)
 		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
 		{
 			EconSys->AddCurrency(ECurrencyType::Gold, Amount);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 골드 %d 획득! (현재 총 골드: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 골드 %d 획득! (현재 총 골드: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
 		}
 	}
 }
@@ -236,7 +236,7 @@ void ALobbyPlayerController::CheatAddAether(int32 Amount)
 		if (UEconomySubsystem* EconSys = GI->GetSubsystem<UEconomySubsystem>())
 		{
 			EconSys->AddCurrency(ECurrencyType::Aether, Amount);
-			UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 에테르 %d 획득! (현재 총 에테르: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
+			//UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 에테르 %d 획득! (현재 총 에테르: %d)"), Amount, EconSys->GetCurrency(ECurrencyType::Gold));
 		}
 	}
 }
@@ -266,7 +266,7 @@ void ALobbyPlayerController::CheatSellItem(FName ItemID, int32 QuantityToSell)
 			if (!bFound)
 			{
 				FString Msg = FString::Printf(TEXT("[Cheat] 실패: 인벤토리에 [%s] 아이템이 없습니다!"), *ItemID.ToString());
-				UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
+				//UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
 				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, Msg);
 				return;
 			}
@@ -276,14 +276,14 @@ void ALobbyPlayerController::CheatSellItem(FName ItemID, int32 QuantityToSell)
 			if (InvenSys->SellItem(TargetUID, QuantityToSell, ErrorMsg))
 			{
 				FString Msg = FString::Printf(TEXT("[Cheat] 성공: [%s] 아이템을 %d개 판매했습니다!"), *ItemID.ToString(), QuantityToSell);
-				UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg);
+				//UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg);
 				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, Msg);
 			}
 			else
 			{
 				// 실패 시 (누군가 장착 중이거나 갯수 부족 등) ErrorMsg를 화면에 띄워줍니다.
 				FString Msg = FString::Printf(TEXT("[Cheat] 판매 거부: %s"), *ErrorMsg);
-				UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
+				//UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
 				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, Msg);
 			}
 		}
@@ -297,14 +297,14 @@ void ALobbyPlayerController::CheatAwakenCharacter(FName CharacterID)
 		if (UGrowthSubsystem* GrowthSys = GI->GetSubsystem<UGrowthSubsystem>())
 		{
 			bool bSuccess = GrowthSys->AwakenCharacter(CharacterID);
-			if (bSuccess)
+			/*if (bSuccess)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 캐릭터 각성 성공: %s"), *CharacterID.ToString());
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 캐릭터 각성 실패: %s (조각/골드 부족 또는 최대 레벨)"), *CharacterID.ToString());
-			}
+			}*/
 		}
 	}
 }
@@ -333,19 +333,19 @@ void ALobbyPlayerController::CheatEnhanceEquipment(FName ItemID)
 			if (TargetItemUID.IsValid())
 			{
 				bool bSuccess = GrowthSys->EnhanceEquipment(TargetItemUID);
-				if (bSuccess)
+				/*if (bSuccess)
 				{
 					UE_LOG(LogTemp, Warning, TEXT("🕹️ [Cheat] 장비 강화 성공: %s"), *ItemID.ToString());
 				}
 				else
 				{
 					UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 장비 강화 실패: %s (골드 부족 또는 최대 레벨)"), *ItemID.ToString());
-				}
+				}*/
 			}
-			else
+			/*else
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [Cheat] 인벤토리에서 %s 아이템을 찾지 못했습니다."), *ItemID.ToString());
-			}
+			}*/
 		}
 	}
 }
@@ -364,7 +364,7 @@ void ALobbyPlayerController::CheatAddAwakeningPiece(FName CharacterID, int32 Cou
 
 			// 2. 조각 개수 추가
 			InvSys->AddAwakeningPiece(CharacterID, Count);
-			UE_LOG(LogTemp, Warning, TEXT("🧩 [Cheat] %s 캐릭터의 각성 조각 %d개 획득!"), *CharacterID.ToString(), Count);
+			//UE_LOG(LogTemp, Warning, TEXT("🧩 [Cheat] %s 캐릭터의 각성 조각 %d개 획득!"), *CharacterID.ToString(), Count);
 		}
 	}
 }
@@ -381,7 +381,7 @@ void ALobbyPlayerController::CheatGrantAll()
 	if (EconSys)
 	{
 		EconSys->AddCurrency(ECurrencyType::Gold, 9999999);
-		UE_LOG(LogTemp, Warning, TEXT("💰 [Cheat] 9,999,999 골드 지급 완료!"));
+		//UE_LOG(LogTemp, Warning, TEXT("💰 [Cheat] 9,999,999 골드 지급 완료!"));
 	}
 
 	//모든 데이터 지급
@@ -394,7 +394,7 @@ void ALobbyPlayerController::CheatGrantAll()
 			{
 				InvSys->AddCharacter(RowName);
 			}
-			UE_LOG(LogTemp, Warning, TEXT("👥 [Cheat] 모든 캐릭터 지급 완료!"));
+			//UE_LOG(LogTemp, Warning, TEXT("👥 [Cheat] 모든 캐릭터 지급 완료!"));
 		}
 
 		//모든 퍼밀리어 지급
@@ -404,7 +404,7 @@ void ALobbyPlayerController::CheatGrantAll()
 			{
 				InvSys->AddFamiliar(RowName);
 			}
-			UE_LOG(LogTemp, Warning, TEXT("🐾 [Cheat] 모든 퍼밀리어 지급 완료!"));
+			//UE_LOG(LogTemp, Warning, TEXT("🐾 [Cheat] 모든 퍼밀리어 지급 완료!"));
 		}
 
 		//모든 무기 지급
@@ -414,7 +414,7 @@ void ALobbyPlayerController::CheatGrantAll()
 			{
 				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
 			}
-			UE_LOG(LogTemp, Warning, TEXT("⚔️ [Cheat] 모든 무기 지급 완료!"));
+			//UE_LOG(LogTemp, Warning, TEXT("⚔️ [Cheat] 모든 무기 지급 완료!"));
 		}
 
 		//모든 방어구/장신구 지급
@@ -424,7 +424,7 @@ void ALobbyPlayerController::CheatGrantAll()
 			{
 				InvSys->AddItem(RowName, 1, 0); // 1개, 0강
 			}
-			UE_LOG(LogTemp, Warning, TEXT("🛡️ [Cheat] 모든 방어구 및 장신구 지급 완료!"));
+			//UE_LOG(LogTemp, Warning, TEXT("🛡️ [Cheat] 모든 방어구 및 장신구 지급 완료!"));
 		}
 
 		//지급이 끝난 후 UI 갱신
@@ -578,7 +578,7 @@ void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
 
 	if (!EconSys->ConsumeCurrency(ECurrencyType::Aether, TotalAetherNeeded))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [Gacha] 에테르가 부족합니다! (필요: %d)"), TotalAetherNeeded);
+		//UE_LOG(LogTemp, Warning, TEXT("❌ [Gacha] 에테르가 부족합니다! (필요: %d)"), TotalAetherNeeded);
 		return;
 	}
 
@@ -599,7 +599,7 @@ void ALobbyPlayerController::StartGachaActionSequence(int32 DrawCount)
 	// 5. 레벨에 캐싱된 박스 유효성 확인
 	if (!CachedGachaBox.IsValid())
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [Gacha] 레벨에 BP_GachaBoxActor 가 없습니다! 레벨에 배치했는지 확인하세요."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [Gacha] 레벨에 BP_GachaBoxActor 가 없습니다! 레벨에 배치했는지 확인하세요."));
 		return;
 	}
 
@@ -637,7 +637,7 @@ void ALobbyPlayerController::ReturnFromGachaToSummon()
 
 void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>& FinalResults)
 {
-	UE_LOG(LogTemp, Log, TEXT("결과창을 띄우고 보상을 지급합니다."));
+	//UE_LOG(LogTemp, Log, TEXT("결과창을 띄우고 보상을 지급합니다."));
 
 	// 1. 위젯이 없으면 최초 1회만 생성 (Lazy Initialization)
 	if (!CachedResultWidget && GachaResultWidgetClass)
@@ -676,7 +676,7 @@ void ALobbyPlayerController::OnShowGachaResultScreen(const TArray<FGachaResult>&
 			}
 			// 4. 모든 지급이 끝난 후 게임 자동 세이브!
 			GI->SaveGameData();
-			UE_LOG(LogTemp, Log, TEXT("가챠 보상 지급 및 게임 저장 완료!"));
+			//UE_LOG(LogTemp, Log, TEXT("가챠 보상 지급 및 게임 저장 완료!"));
 		}
 	}
 }

@@ -37,14 +37,14 @@ void UUltimateEffectComponent::BeginPlay()
 	{
 		// 초기엔 완전히 꺼둠
 		CachedPPVolume->BlendWeight = 0.0f;
-		UE_LOG(LogTemp, Log, TEXT("✅ [UltimateEffect] PostProcessVolume 캐싱 완료"));
+		//UE_LOG(LogTemp, Log, TEXT("✅ [UltimateEffect] PostProcessVolume 캐싱 완료"));
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error,
 			TEXT("❌ [UltimateEffect] 태그 'UltimatePostProcess' 가 달린 PostProcessVolume 이 없습니다!"
 				" 레벨에 배치하고 태그를 추가하세요."));
-	}
+	}*/
 
 }
 

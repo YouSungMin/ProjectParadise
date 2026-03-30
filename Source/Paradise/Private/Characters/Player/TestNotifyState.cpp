@@ -36,7 +36,7 @@ void UTestNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 		if (CamMgr->CurrentUltimateTarget != OwnerActor) return;
 
 		// 6. 모든 관문을 통과했으므로 실제 연출 끄기 실행
-		UE_LOG(LogTemp, Warning, TEXT("[TestNotify] 궁극기 연출 종료 : %s"), *OwnerActor->GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("[TestNotify] 궁극기 연출 종료 : %s"), *OwnerActor->GetName());
 		CamMgr->StopUltimateCamera(OwnerActor);
 
 		if (UUltimateEffectComponent* EffectComp = InGamePC->GetUltimateEffectComponent())

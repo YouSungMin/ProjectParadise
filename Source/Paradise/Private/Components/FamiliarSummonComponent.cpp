@@ -34,12 +34,12 @@ void UFamiliarSummonComponent::BeginPlay()
 	if (FoundActor)
 	{
 		LinkedSpawner = Cast<AFamiliarSpawner>(FoundActor);
-		UE_LOG(LogTemp, Log, TEXT("✅ 스포너를 찾아서 연결했습니다."));
+		//UE_LOG(LogTemp, Log, TEXT("✅ 스포너를 찾아서 연결했습니다."));
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ 월드에 배치된 AFamiliarSpawner가 없습니다!"));
-	}
+	}*/
 }
 
 void UFamiliarSummonComponent::InitializeDeckPool()

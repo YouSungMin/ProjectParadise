@@ -39,7 +39,7 @@ void UProjectileAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	if (!CombatData.MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [ProjectileAttackBase] 재생할 몽타주가 없습니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("❌ [ProjectileAttackBase] 재생할 몽타주가 없습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}if (ACharacterBase* AvatarChar = Cast<ACharacterBase>(GetAvatarActorFromActorInfo()))
@@ -92,7 +92,7 @@ void UProjectileAttackBase::OnGameplayEventReceived(FGameplayEventData Payload)
 	// 투사체 클래스가 비어있으면 에러
 	if (!CombatData.ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ProjectileAttackBase] 발사할 ProjectileClass가 없습니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [ProjectileAttackBase] 발사할 ProjectileClass가 없습니다!"));
 		return;
 	}
 

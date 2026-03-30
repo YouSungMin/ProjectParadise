@@ -87,15 +87,7 @@ void UAudioSettingsSubsystem::SaveToSlot()
 	SaveObj->SFXVolume = CurrentSFXVolume;
 
 	/** @section 3. 디스크에 쓰기 (I/O 발생) */
-	if (UGameplayStatics::SaveGameToSlot(SaveObj, SaveSlotName, 0))
-	{
-		UE_LOG(LogTemp, Log, TEXT("[AudioSettings] 디스크 저장 완료! (슬롯: %s, BGM=%.2f, SFX=%.2f)"),
-			*SaveSlotName, CurrentBGMVolume, CurrentSFXVolume);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[AudioSettings] 디스크 저장 실패!"));
-	}
+	UGameplayStatics::SaveGameToSlot(SaveObj, SaveSlotName, 0);
 }
 
 void UAudioSettingsSubsystem::LoadFromSlot()
@@ -103,8 +95,8 @@ void UAudioSettingsSubsystem::LoadFromSlot()
 	/** @section 1. 세이브 파일 존재 여부 확인 */
 	if (!UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AudioSettings] 세이브 파일 없음. 기본값 사용 (BGM=%.2f, SFX=%.2f)"),
-			DefaultBGMVolume, DefaultSFXVolume);
+		/*UE_LOG(LogTemp, Warning, TEXT("[AudioSettings] 세이브 파일 없음. 기본값 사용 (BGM=%.2f, SFX=%.2f)"),
+			DefaultBGMVolume, DefaultSFXVolume);*/
 
 		/** @section Fallback: 기본값 사용 */
 		CurrentBGMVolume = DefaultBGMVolume;
@@ -119,7 +111,7 @@ void UAudioSettingsSubsystem::LoadFromSlot()
 
 	if (!LoadObj)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[AudioSettings] 세이브 파일 로드 실패! 기본값 사용"));
+		//UE_LOG(LogTemp, Error, TEXT("[AudioSettings] 세이브 파일 로드 실패! 기본값 사용"));
 		CurrentBGMVolume = DefaultBGMVolume;
 		CurrentSFXVolume = DefaultSFXVolume;
 		return;
@@ -129,7 +121,7 @@ void UAudioSettingsSubsystem::LoadFromSlot()
 	CurrentBGMVolume = LoadObj->BGMVolume;
 	CurrentSFXVolume = LoadObj->SFXVolume;
 
-	UE_LOG(LogTemp, Log, TEXT("[AudioSettings] 디스크 로드 완료! (BGM=%.2f, SFX=%.2f)"),
-		CurrentBGMVolume, CurrentSFXVolume);
+	/*UE_LOG(LogTemp, Log, TEXT("[AudioSettings] 디스크 로드 완료! (BGM=%.2f, SFX=%.2f)"),
+		CurrentBGMVolume, CurrentSFXVolume);*/
 }
 #pragma endregion 외부 인터페이스 - 디스크 I/O (1회)
