@@ -40,6 +40,14 @@ protected:
 	// 실제로 잠금을 해제할 함수
 	void UnlockUltimateState();
 
+private:
+
+	//궁극기 연출 기능 함수
+	void SetUltimateTimeDilation(AActor* TargetActor, bool bEnable);
+	void SetUltimateActorsVisibility(AActor* TargetActor, bool bHide);
+	void SetUltimateRenderingEffects(AActor* TargetActor, bool bEnable);
+	void SpawnUltimateLight(AActor* TargetActor);
+
 public:
 	/** @brief 현재 궁극기 연출 중인지 여부 (카메라 뺏김 방지) */
 	bool bIsUltimatePlaying = false;

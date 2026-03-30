@@ -81,224 +81,65 @@ void AParadiseCameraManager::UpdateCameraSystem()
 void AParadiseCameraManager::StartUltimateCamera(AActor* TargetActor)
 {
     if (!TargetActor) return;
-    AInGameController* PC = Cast<AInGameController>(GetOwningPlayerController());
-    if (!PC) return;
 
-    if (bIsUltimatePlaying || CurrentUltimateTarget != nullptr || HiddenActors.Num() > 0)
+    if (bIsUltimatePlaying || CurrentUltimateTarget != nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("⚠️ [Camera] 궁극기 겹침 감지! 이전 시전자의 배속/투명화 상태를 강제로 초기화합니다."));
-        StopUltimateCamera(nullptr);
+        StopUltimateCamera(nullptr); // 기존 겹침 방지 강제 종료
     }
 
     bIsUltimatePlaying = true;
-    CurrentUltimateTarget = TargetActor; // 복구를 위해 현재 스킬 시전자를 기억해둠
+    CurrentUltimateTarget = TargetActor;
 
     if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayerController()))
-    {
         InGamePC->SetActionPanelEnabled(false);
-    }
-    HiddenActors.Empty();
 
-    // 검사 설정
-    FVector ScanLocation = TargetActor->GetActorLocation();
-    float ScanRadius = 3000.0f; // 카메라 밖까지 고려하여 넉넉히 30미터 설정
+    //코드 정리
+    SetUltimateActorsVisibility(TargetActor, true);     // 1. 주변 캐릭터 숨김 & 무적
+    SetUltimateRenderingEffects(TargetActor, true);     // 2. 외곽선 및 핀 조명 렌더링 세팅
+    SetUltimateTimeDilation(TargetActor, true);         // 3. 타임 딜레이 (슬로우 모션)
+    SpawnUltimateLight(TargetActor);                    // 4. 전용 라이트 스폰
 
-    // 검색할 클래스들 (ACharacterBase를 상속받는 모든 유닛들)
-    TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-    ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+    //카메라 위치 계산 및 이동
+    if (!UltimateCamera) UltimateCamera = GetWorld()->SpawnActor<ACameraActor>(ACameraActor::StaticClass());
 
-    TArray<AActor*> OutActors;
-    TArray<AActor*> ActorsToIgnore;
-    ActorsToIgnore.Add(TargetActor); // 시전자 본인은 무시
+    FVector CamPos = TargetActor->GetActorLocation() + TargetActor->GetActorTransform().TransformVector(UltimateCameraOffset);
+    FVector LookTarget = TargetActor->GetActorLocation() + TargetActor->GetActorTransform().TransformVector(UltimateLookAtOffset);
 
-    // 구체(Sphere) 범위 내에 있는 캐릭터들만
-    UKismetSystemLibrary::SphereOverlapActors(
-        GetWorld(),
-        ScanLocation,
-        ScanRadius,
-        ObjectTypes,
-        ACharacterBase::StaticClass(),
-        ActorsToIgnore,
-        OutActors
-    );
-
-    //궁극기 연출 중 주변 캐릭터 숨김처리 
-    for (AActor* Actor : OutActors)
-    {
-        // 이미 숨겨진 액터가 아니라면 숨김 처리
-        if (Actor && !Actor->IsHidden())
-        {
-            Actor->SetActorHiddenInGame(true);
-
-            if (APlayerBase* PlayerPawn = Cast<APlayerBase>(Actor))
-            {
-                if (UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent())
-                {
-                    FGameplayTag InvincibleTag = FGameplayTag::RequestGameplayTag(FName("State.Buff.Invincible"));
-                    ASC->AddLooseGameplayTag(InvincibleTag);
-                }
-                // 2. [추가] 현재 재생 중인 모든 애니메이션 몽타주 즉시 정지
-                if (UAnimInstance* AnimInst = PlayerPawn->GetMesh()->GetAnimInstance())
-                {
-                    // 0.0f 블렌드 아웃 시간으로 즉시 멈춤
-                    AnimInst->Montage_Stop(0.0f);
-                }
-            }
-
-
-            HiddenActors.Add(Actor);
-        }
-    }
-
-    // 카메라 스폰
-    if (!UltimateCamera)
-    {
-        UltimateCamera = GetWorld()->SpawnActor<ACameraActor>(ACameraActor::StaticClass());
-    }
-
-    // 설정한 오프셋(Offset) 값을 기반으로 위치 계산
-    FVector TargetLoc = TargetActor->GetActorLocation();
-    FVector ForwardDir = TargetActor->GetActorForwardVector();
-    FVector RightDir = TargetActor->GetActorRightVector();
-    FVector UpDir = TargetActor->GetActorUpVector();
-
-    // 캐릭터의 앞/뒤, 좌/우, 위/아래 방향에 맞춰서 오프셋을 적용
-    FVector CamPos = TargetLoc + (ForwardDir * UltimateCameraOffset.X) + (RightDir * UltimateCameraOffset.Y) + (UpDir * UltimateCameraOffset.Z);
-    FVector LookAtTarget = TargetLoc + (ForwardDir * UltimateLookAtOffset.X) + (RightDir * UltimateLookAtOffset.Y) + (UpDir * UltimateLookAtOffset.Z);
-
-    FRotator CamRot = (LookAtTarget - CamPos).Rotation();
-
-    UltimateCamera->SetActorLocationAndRotation(CamPos, CamRot);
-    UltimateCamera->GetCameraComponent()->PostProcessSettings.bOverride_MotionBlurAmount = true;
-    UltimateCamera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount = 0.0f;
+    UltimateCamera->SetActorLocationAndRotation(CamPos, (LookTarget - CamPos).Rotation());
     UltimateCamera->GetCameraComponent()->SetFieldOfView(UltimateCameraFOV);
 
-    // 카메라 트랜지션
-    PC->SetViewTargetWithBlend(UltimateCamera, 0.15f, VTBlend_Cubic, 0.5f, true);
-
-    // 슬로우 모션 및 시전자 속도 상쇄
-    // 월드 전체를 설정한 배율(예: 0.3)로 느리게 만듭니다.
-    UGameplayStatics::SetGlobalTimeDilation(GetWorld(), UltimateTimeDilation);
-    UE_LOG(LogTemp, Warning, TEXT("⏳ [StartUltimate] 월드 시간 조절 적용 -> [배속: %.2f]"), UltimateTimeDilation);
-    // 캐릭터만 정상 속도로 움직이도록 설정
-    if (UltimateTimeDilation > 0.0f)
+    if (AInGameController* PC = Cast<AInGameController>(GetOwningPlayerController()))
     {
-        float NewCustomDilation = 1.0f / UltimateTimeDilation;
-        TargetActor->CustomTimeDilation = NewCustomDilation;
-        UE_LOG(LogTemp, Warning, TEXT("⚡ [StartUltimate] 시전자(%s) 개별 배속 설정 -> [CustomTimeDilation: %.2f] (월드 슬로우 상쇄용)"),
-            *TargetActor->GetName(), NewCustomDilation);
-    }
-
-    //CustomDepth(어둠 면역) + LightingChannel(전용 빛 수신) 동시 적용
-    if (TargetActor)
-    {
-        TArray<UMeshComponent*> Meshes;
-        TargetActor->GetComponents<UMeshComponent>(Meshes);
-        for (UMeshComponent* Mesh : Meshes)
-        {
-            //커스텀 뎁스와 스텐실 켜기
-            Mesh->SetRenderCustomDepth(true);
-            Mesh->SetCustomDepthStencilValue(3);
-
-            //전용 핀 조명(Channel 1)을 받을 수 있도록 채널을 켭니다.
-            bool bCh0 = Mesh->LightingChannels.bChannel0;
-            bool bCh2 = Mesh->LightingChannels.bChannel2;
-            Mesh->SetLightingChannels(bCh0, true, bCh2);
-        }
-    }
-
-    //오직 시전자만 비추는 전용 핀 조명 스폰
-    if (!UltimateLightActor)
-    {
-        FVector LightPos = TargetLoc + (ForwardDir * UltimateLightOffset.X) + (RightDir * UltimateLightOffset.Y) + (UpDir * UltimateLightOffset.Z);
-
-        UltimateLightActor = GetWorld()->SpawnActor<APointLight>(APointLight::StaticClass(), LightPos, FRotator::ZeroRotator);
-
-        if (UPointLightComponent* LightComp = UltimateLightActor->PointLightComponent)
-        {
-           //빛 강도와 반경 설정
-            LightComp->SetIntensity(UltimateLightIntensity);
-            LightComp->SetAttenuationRadius(UltimateLightRadius);
-            //'Channel 1'이 켜진 캐릭터만 비춥니다
-            LightComp->SetLightingChannels(false, true, false);
-        }
+        PC->SetViewTargetWithBlend(UltimateCamera, 0.15f, VTBlend_Cubic, 0.5f, true);
     }
 }
 
 void AParadiseCameraManager::StopUltimateCamera(AActor* RequestingActor)
 {
-    if (RequestingActor != nullptr && RequestingActor != CurrentUltimateTarget)
-    {
-        return;
-    }
+    if (RequestingActor && RequestingActor != CurrentUltimateTarget) return;
 
-    // 월드의 시간을 원래대로(1.0) 복구합니다.
-    float CurrentGlobalDilation = UGameplayStatics::GetGlobalTimeDilation(GetWorld());
-    UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
-    UE_LOG(LogTemp, Error, TEXT("⏳ [StopUltimate] 월드 시간 복구 실행 (이전 월드 배속: %.2f -> 변경: 1.0)"), CurrentGlobalDilation);
+    //원상 복구 로직 정리
     if (CurrentUltimateTarget)
     {
-        TArray<UMeshComponent*> Meshes;
-        CurrentUltimateTarget->GetComponents<UMeshComponent>(Meshes);
-        for (UMeshComponent* Mesh : Meshes)
-        {
-            //연출이 끝났으므로 마스크와 빛 채널을 모두 끄기
-            Mesh->SetRenderCustomDepth(false);
-
-            bool bCh0 = Mesh->LightingChannels.bChannel0;
-            bool bCh2 = Mesh->LightingChannels.bChannel2;
-            Mesh->SetLightingChannels(bCh0, false, bCh2);
-        } 
-
-        float OldCustomDilation = CurrentUltimateTarget->CustomTimeDilation;
-        CurrentUltimateTarget->CustomTimeDilation = 1.0f;
-        UE_LOG(LogTemp, Error, TEXT("⚡ [StopUltimate] 시전자(%s) 배속 복구 (이전 CustomTimeDilation: %.2f -> 변경: 1.0)"),
-            *CurrentUltimateTarget->GetName(), OldCustomDilation);
-        CurrentUltimateTarget = nullptr;
+        SetUltimateTimeDilation(CurrentUltimateTarget, false);
+        SetUltimateRenderingEffects(CurrentUltimateTarget, false);
     }
-    // 궁극기 연출 중 숨겨진 캐릭터 보이게 처리
-    for (auto& Actor : HiddenActors)
-    {
-        if (Actor.IsValid() && Actor->IsHidden())
-        {
-            Actor->SetActorHiddenInGame(false);
-            //플레이어 캐릭터만 무적 제거
-            if (APlayerBase* PlayerPawn = Cast<APlayerBase>(Actor.Get()))
-            {
-                if (UAbilitySystemComponent* ASC = PlayerPawn->GetAbilitySystemComponent())
-                {
-                    FGameplayTag InvincibleTag = FGameplayTag::RequestGameplayTag(FName("State.Buff.Invincible"));
-                    ASC->RemoveLooseGameplayTag(InvincibleTag);
-                }
-            }
+    SetUltimateActorsVisibility(nullptr, false);
 
-        }
-    }
-
-    // 켜두었던 핀 조명 파괴
     if (UltimateLightActor)
     {
         UltimateLightActor->Destroy();
         UltimateLightActor = nullptr;
     }
-    HiddenActors.Empty();
+
     bIsUltimatePlaying = false;
+    CurrentUltimateTarget = nullptr;
 
-    // 2. 이제 튕기지 않고 정상적으로 카메라 복귀(Blend) 명령이 들어갑니다!
-    UpdateCameraSystem();
+    UpdateCameraSystem(); // 카메라 복귀
 
-    // 3. 카메라가 돌아가기 시작했으니, 동료들이 스킬을 못 쓰게 즉시 다시 잠가버립니다!
-    bIsUltimatePlaying = true;
-
-    float DelayTime = CameraBlendTime > 0.0f ? CameraBlendTime : 1.0f; // 기본 블렌딩 시간 사용 (보통 1~2초)
-
-    GetWorld()->GetTimerManager().SetTimer(
-        UltimateCooldownTimerHandle,
-        this,
-        &AParadiseCameraManager::UnlockUltimateState,
-        DelayTime, // 이 시간 동안은 아무도 궁극기를 쓸 수 없음
-        false
-    );
+    bIsUltimatePlaying = true; // 복귀 중 궁극기 차단
+    float DelayTime = CameraBlendTime > 0.0f ? CameraBlendTime : 1.0f;
+    GetWorld()->GetTimerManager().SetTimer(UltimateCooldownTimerHandle, this, &AParadiseCameraManager::UnlockUltimateState, DelayTime, false);
 }
 
 void AParadiseCameraManager::BeginPlay()
@@ -316,4 +157,93 @@ void AParadiseCameraManager::UnlockUltimateState()
         InGamePC->SetActionPanelEnabled(true);
     }
     UE_LOG(LogTemp, Log, TEXT("✅ [Camera] 카메라 복귀 완료. 이제 다음 궁극기 사용이 가능합니다."));
+}
+
+void AParadiseCameraManager::SetUltimateTimeDilation(AActor* TargetActor, bool bEnable)
+{
+    if (bEnable)
+    {
+        UGameplayStatics::SetGlobalTimeDilation(GetWorld(), UltimateTimeDilation);
+        if (UltimateTimeDilation > 0.0f)
+            TargetActor->CustomTimeDilation = 1.0f / UltimateTimeDilation;
+    }
+    else
+    {
+        UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+        if (TargetActor) TargetActor->CustomTimeDilation = 1.0f;
+    }
+}
+
+void AParadiseCameraManager::SetUltimateRenderingEffects(AActor* TargetActor, bool bEnable)
+{
+    if (!TargetActor) return;
+    TArray<UMeshComponent*> Meshes;
+    TargetActor->GetComponents<UMeshComponent>(Meshes);
+
+    for (UMeshComponent* Mesh : Meshes)
+    {
+        Mesh->SetRenderCustomDepth(bEnable);
+        Mesh->SetCustomDepthStencilValue(3);
+        Mesh->SetLightingChannels(Mesh->LightingChannels.bChannel0, bEnable, Mesh->LightingChannels.bChannel2);
+    }
+}
+
+void AParadiseCameraManager::SpawnUltimateLight(AActor* TargetActor)
+{
+    if (UltimateLightActor || !TargetActor) return;
+
+    FVector LightPos = TargetActor->GetActorLocation() + TargetActor->GetActorTransform().TransformVector(UltimateLightOffset);
+    UltimateLightActor = GetWorld()->SpawnActor<APointLight>(APointLight::StaticClass(), LightPos, FRotator::ZeroRotator);
+
+    if (UPointLightComponent* LightComp = UltimateLightActor->PointLightComponent)
+    {
+        LightComp->SetIntensity(UltimateLightIntensity);
+        LightComp->SetAttenuationRadius(UltimateLightRadius);
+        LightComp->SetLightingChannels(false, true, false);
+    }
+}
+
+void AParadiseCameraManager::SetUltimateActorsVisibility(AActor* TargetActor, bool bHide)
+{
+    if (bHide)
+    {
+        HiddenActors.Empty();
+        TArray<AActor*> OutActors;
+        TArray<AActor*> Ignore; Ignore.Add(TargetActor);
+        TArray<TEnumAsByte<EObjectTypeQuery>> ObjTypes; ObjTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+        UKismetSystemLibrary::SphereOverlapActors(GetWorld(), TargetActor->GetActorLocation(), 3000.0f, ObjTypes, ACharacterBase::StaticClass(), Ignore, OutActors);
+
+        for (AActor* Actor : OutActors)
+        {
+            if (!Actor->IsHidden())
+            {
+                Actor->SetActorHiddenInGame(true);
+                if (APlayerBase* Player = Cast<APlayerBase>(Actor))
+                {
+                    if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
+                        ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("State.Buff.Invincible"));
+                    if (UAnimInstance* Anim = Player->GetMesh()->GetAnimInstance())
+                        Anim->Montage_Stop(0.0f);
+                }
+                HiddenActors.Add(Actor);
+            }
+        }
+    }
+    else
+    {
+        for (auto& Actor : HiddenActors)
+        {
+            if (Actor.IsValid() && Actor->IsHidden())
+            {
+                Actor->SetActorHiddenInGame(false);
+                if (APlayerBase* Player = Cast<APlayerBase>(Actor.Get()))
+                {
+                    if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
+                        ASC->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag("State.Buff.Invincible"));
+                }
+            }
+        }
+        HiddenActors.Empty();
+    }
 }
