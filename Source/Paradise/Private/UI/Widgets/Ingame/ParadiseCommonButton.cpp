@@ -80,7 +80,7 @@ void UParadiseCommonButton::NativeConstruct()
 	if (Text_Shortcut)
 	{
 		Text_Shortcut->SetText(ShortcutKeyText);
-		Text_Shortcut->SetVisibility(ESlateVisibility::Collapsed);
+		Text_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 #pragma endregion 생명주기 및 초기화
@@ -184,7 +184,7 @@ void UParadiseCommonButton::SetShortcutTextVisibility(bool bShow)
 	if (Text_Shortcut)
 	{
 		// 키보드 모드(true)면 클릭을 방해하지 않는 HitTestInvisible로 켜고, 터치 모드(false)면 끕니다.
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 #pragma endregion 외부 인터페이스 구현
