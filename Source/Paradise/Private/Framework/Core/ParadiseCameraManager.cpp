@@ -6,6 +6,7 @@
 #include "Components/SquadControlComponent.h"
 #include "Components/AutoCombatComponent.h"
 #include "Characters/Base/CharacterBase.h"
+#include "Characters/AIUnit/UnitBase.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
@@ -15,6 +16,35 @@
 #include "Components/PointLightComponent.h"
 #include "Components/MeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+
+AParadiseCameraManager::AParadiseCameraManager()
+{
+    PrimaryActorTick.bCanEverTick = true;
+}
+
+void AParadiseCameraManager::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    if (bIsUltimatePlaying) return;
+
+    AInGameController* PC = Cast<AInGameController>(GetOwningPlayerController());
+    if (!PC) return;
+
+    UAutoCombatComponent* AutoComp = PC->GetAutoCombatComponent();
+    USquadControlComponent* SquadComp = PC->GetSquadControlComponent();
+    if (!AutoComp || !SquadComp) return;
+
+    bool bIsAuto = AutoComp->IsAutoMode();
+    bool bIsSquadWipedOut = SquadComp->bIsSquadWipedOut;
+
+    // 💡 수동+생존 상태가 아닐 때만 스마트 카메라 로직 가동
+    if (bIsAuto || bIsSquadWipedOut)
+    {
+        UpdateDynamicSmartCamera(DeltaTime, bIsAuto, bIsSquadWipedOut, PC->GetPawn());
+    }
+}
 
 void AParadiseCameraManager::InitializeOverviewCamera()
 {
@@ -36,43 +66,27 @@ void AParadiseCameraManager::UpdateCameraSystem()
     AInGameController* PC = Cast<AInGameController>(GetOwningPlayerController());
     if (!PC) return;
 
-    // 우선순위 1: 전멸했거나 자동 모드일 때 -> Overview 카메라
     UAutoCombatComponent* AutoComp = PC->GetAutoCombatComponent();
     USquadControlComponent* SquadComp = PC->GetSquadControlComponent();
-
     if (!AutoComp || !SquadComp) return;
 
-    bool bIsAuto = AutoComp ? AutoComp->IsAutoMode() : false;
+    bool bIsAuto = AutoComp->IsAutoMode();
     bool bIsSquadWipedOut = SquadComp->bIsSquadWipedOut;
 
-
-
-    if ((bIsSquadWipedOut || bIsAuto) && OverviewCameraActor)
+    // 💡 1. [수동 + 생존] 상태: 원래 쓰던 숄더뷰/탑뷰 등 캐릭터 기본 카메라 사용
+    if (!bIsAuto && !bIsSquadWipedOut)
     {
-        if (bIsSquadWipedOut)
-        {
-            //컨트롤러(나 자신)를 마지막 사망 위치로 이동시킴
-            PC->ClientSetLocation(LastDeathLocation, LastDeathRotation);
-
-            //뷰 타겟을 this 컨트롤러로 즉시 고정
-            //전멸시 카메라 시점 이상한것 해결
-            PC->SetViewTarget(this);
-        }
-
-        //Overview로 부드럽게 이동
-        if (GetViewTarget() != OverviewCameraActor)
-        {
-            PC->SetViewTargetWithBlend(OverviewCameraActor, 1.5f, VTBlend_Cubic, 2.0f, true);
-            UE_LOG(LogTemp, Log, TEXT("📷 [Camera] Overview 모드로 전환 (From Death Pos)"));
-        }
-    }
-    // 우선순위 2: 조종 가능한 캐릭터가 있을 때 -> 캐릭터 카메라
-    else if (PC->GetPawn())
-    {
-        if (GetViewTarget() != PC->GetPawn())
+        if (PC->GetPawn() && GetViewTarget() != PC->GetPawn())
         {
             PC->SetViewTargetWithBlend(PC->GetPawn(), CameraBlendTime, VTBlend_Cubic, 2.0f, true);
-            UE_LOG(LogTemp, Log, TEXT("📷 [Camera] 캐릭터 모드로 복귀"));
+        }
+    }
+    // 💡 2. [그 외 모든 상태]: OverviewCameraActor를 드론 렌즈로 사용 (세부 이동은 Tick에서 처리)
+    else
+    {
+        if (OverviewCameraActor && GetViewTarget() != OverviewCameraActor)
+        {
+            PC->SetViewTargetWithBlend(OverviewCameraActor, 1.5f, VTBlend_Cubic, 2.0f, true);
         }
     }
 }
@@ -159,6 +173,100 @@ void AParadiseCameraManager::UnlockUltimateState()
     UE_LOG(LogTemp, Log, TEXT("✅ [Camera] 카메라 복귀 완료. 이제 다음 궁극기 사용이 가능합니다."));
 }
 
+void AParadiseCameraManager::UpdateDynamicSmartCamera(float DeltaTime, bool bIsAuto, bool bIsWipedOut, APawn* ControlledPawn)
+{
+    if (!OverviewCameraActor)
+    {
+        InitializeOverviewCamera();
+    }
+    // 🚨 1번 체크: 관전 카메라(드론)가 존재하는가?
+    if (!OverviewCameraActor)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Red, TEXT("❌ [SmartCamera] OverviewCameraActor가 없습니다!"));
+        return;
+    }
+
+    FVector TargetCenter = FVector::ZeroVector;
+    FString TargetName = TEXT("None"); // 디버그 출력용
+
+    // ==========================================
+    // 1. [누구를 비출 것인가?] 타겟 중심점 계산
+    // ==========================================
+    if (bIsWipedOut)
+    {
+        TArray<AActor*> Enemies;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), Enemies);
+
+        int32 AliveEnemyCount = 0;
+        for (AActor* Actor : Enemies)
+        {
+            if (AUnitBase* Enemy = Cast<AUnitBase>(Actor))
+            {
+                if (!Enemy->IsDead())
+                {
+                    TargetCenter += Enemy->GetActorLocation();
+                    AliveEnemyCount++;
+                }
+            }
+        }
+        if (AliveEnemyCount > 0)
+        {
+            TargetCenter /= AliveEnemyCount;
+            TargetName = FString::Printf(TEXT("적 무리 (%d명)"), AliveEnemyCount);
+        }
+        else
+        {
+            TargetCenter = LastDeathLocation;
+            TargetName = TEXT("마지막 사망 위치(적 없음)");
+        }
+    }
+    else if (ControlledPawn)
+    {
+        TargetCenter = ControlledPawn->GetActorLocation();
+        TargetName = ControlledPawn->GetName();
+    }
+    else
+    {
+        TargetName = TEXT("타겟 소실(Pawn 없음)");
+    }
+
+    // ==========================================
+    // 2. [얼마나 멀리서 비출 것인가?] 오프셋 계산
+    // ==========================================
+    FVector CameraOffset;
+    if (bIsAuto)
+    {
+        CameraOffset = FVector(-1200.0f, 0.0f, 1500.0f);
+    }
+    else
+    {
+        CameraOffset = FVector(-800.0f, 0.0f, 1000.0f);
+    }
+
+    // ==========================================
+    // 3. 카메라 부드럽게 이동 및 회전
+    // ==========================================
+    FVector TargetCamLoc = TargetCenter + CameraOffset;
+    FRotator TargetCamRot = UKismetMathLibrary::FindLookAtRotation(TargetCamLoc, TargetCenter);
+
+    FVector NewLoc = FMath::VInterpTo(OverviewCameraActor->GetActorLocation(), TargetCamLoc, DeltaTime, 2.5f);
+    FRotator NewRot = FMath::RInterpTo(OverviewCameraActor->GetActorRotation(), TargetCamRot, DeltaTime, 2.5f);
+
+    OverviewCameraActor->SetActorLocationAndRotation(NewLoc, NewRot);
+
+    // 💡 [디버그 로그 출력] 키(Key) 값을 1번으로 주어 한 줄에서 계속 숫자가 갱신되도록 합니다.
+    if (GEngine)
+    {
+        FString DebugMsg = FString::Printf(TEXT("📷 [SmartCamera 작동중]\n모드: %s | 전멸여부: %s\n현재 타겟: %s\n목표 좌표: %s\n현재 카메라 좌표: %s"),
+            bIsAuto ? TEXT("자동(Auto)") : TEXT("수동(Manual)"),
+            bIsWipedOut ? TEXT("전멸(O)") : TEXT("생존(X)"),
+            *TargetName,
+            *TargetCamLoc.ToString(),
+            *NewLoc.ToString());
+
+        GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan, DebugMsg);
+    }
+}
 void AParadiseCameraManager::SetUltimateTimeDilation(AActor* TargetActor, bool bEnable)
 {
     if (bEnable)

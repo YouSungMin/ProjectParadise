@@ -88,60 +88,75 @@ void UAutoCombatComponent::CheckAndAutoSummon()
 
 void UAutoCombatComponent::UpdateAutoCombat()
 {
+    //자동 전투 모드 활성화 여부 체크
     if (!bIsAutoMode) return;
 
+    //컨트롤러 유효성 검사
     AInGameController* OwnerPC = GetOwnerController();
-    if (!OwnerPC) return;
+    if (!IsValid(OwnerPC)) return;
 
-    APlayerBase* PlayerPawn = Cast<APlayerBase>(OwnerPC->GetPawn());
-    // 캐릭터가 정상이면 조용히 패스! (여기서 안 튕기고 아래로 잘 내려갑니다)
-    if (!PlayerPawn || PlayerPawn->IsDead() || !PlayerPawn->CanMove()) return;
+    //스쿼드 전멸 상태 확인
+    USquadControlComponent* SquadComp = OwnerPC->GetSquadControlComponent();
+    if (!SquadComp || SquadComp->bIsSquadWipedOut)
+    {
+        OwnerPC->StopMovement();
+        return;
+    }
 
+    //조종 중인 폰 유효성검사
+    APawn* OwningPawn = OwnerPC->GetPawn();
+    APlayerBase* PlayerPawn = Cast<APlayerBase>(OwningPawn);
+
+    //유효성 , 사망여부 , 이동가능 여부 검사
+    if (!IsValid(PlayerPawn) || PlayerPawn->IsDead() || !PlayerPawn->CanMove())
+    {
+        OwnerPC->StopMovement();
+        return;
+    }
+
+    //타겟팅 및 사거리 계산 로직
     float AttackRange = GetDynamicAttackRange(PlayerPawn);
     float NearestDist = 999999.0f;
     AActor* TargetEnemy = nullptr;
 
+    // 기존 타겟 유효성 확인
     if (CurrentTarget.IsValid())
     {
-        AUnitBase* TargetUnit = Cast<AUnitBase>(CurrentTarget.Get());
-        if (TargetUnit && !TargetUnit->IsDead())
+        AActor* TargetPtr = CurrentTarget.Get();
+        if (IsValid(TargetPtr))
         {
-            TargetEnemy = CurrentTarget.Get();
-            // 중심점 간의 진짜 거리를 구함
-            float CenterDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
-
-            // 나와 적의 충돌체(캡슐) 반지름을 가져옴
-            float MyRadius = PlayerPawn->GetSimpleCollisionRadius();
-            float TargetRadius = TargetEnemy->GetSimpleCollisionRadius();
-
-            // 중심 거리에서 양쪽의 반지름을 빼서 '표면 간의 거리'를 계산 (음수가 되면 0으로 처리)
-            NearestDist = FMath::Max(0.0f, CenterDist - MyRadius - TargetRadius);
-            //NearestDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
+            AUnitBase* TargetUnit = Cast<AUnitBase>(TargetPtr);
+            if (TargetUnit && !TargetUnit->IsDead())
+            {
+                TargetEnemy = TargetPtr;
+                float CenterDist = FVector::Distance(PlayerPawn->GetActorLocation(), TargetEnemy->GetActorLocation());
+                float MyRadius = PlayerPawn->GetSimpleCollisionRadius();
+                float TargetRadius = TargetEnemy->GetSimpleCollisionRadius();
+                NearestDist = FMath::Max(0.0f, CenterDist - MyRadius - TargetRadius);
+            }
         }
-        else
+
+        // 타겟이 유효하지 않게 되었다면 리셋
+        if (!TargetEnemy)
         {
             CurrentTarget.Reset();
         }
     }
 
+    // 새로운 타겟 탐색
     if (!TargetEnemy)
     {
         TargetEnemy = FindNearestEnemy(PlayerPawn, NearestDist);
-        if (TargetEnemy) CurrentTarget = TargetEnemy;
+        if (IsValid(TargetEnemy))
+        {
+            CurrentTarget = TargetEnemy;
+        }
     }
 
-    if (TargetEnemy)
+    //전투 실행 또는 이동 명령
+    if (IsValid(TargetEnemy) && NearestDist <= AttackRange)
     {
-        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🎯 [오토 타겟]: %s 추적 중! (거리: %.1f / 내 사거리: %.1f)"), *TargetEnemy->GetName(), NearestDist, AttackRange);
-    }
-    else
-    {
-        //UE_LOG(LogParadiseAutoCombat, Warning, TEXT("🔍 [오토 타겟]: 주변에 적 없음! 기지로 이동합니다."));
-    }
-
-    // 적이 사거리 안에 들어왔다면 공격
-    if (TargetEnemy && NearestDist <= AttackRange)
-    {
+        // 사거리 진입 시 이동 정지 후 공격 수행
         OwnerPC->StopMovement();
 
         FVector LookDir = TargetEnemy->GetActorLocation() - PlayerPawn->GetActorLocation();
@@ -152,10 +167,17 @@ void UAutoCombatComponent::UpdateAutoCombat()
     }
     else
     {
-        AActor* MoveTarget = TargetEnemy ? TargetEnemy : GetEnemyBase();
-        if (MoveTarget)
+        // 이동 대상 설정 (적 혹은 적 기지)
+        AActor* MoveTarget = IsValid(TargetEnemy) ? TargetEnemy : GetEnemyBase();
+
+        //유효성 검사
+        if (IsValid(MoveTarget))
         {
             UAIBlueprintHelperLibrary::SimpleMoveToActor(OwnerPC, MoveTarget);
+        }
+        else
+        {
+            OwnerPC->StopMovement();
         }
     }
 }
