@@ -169,7 +169,6 @@ void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 		IgnoredActors.Add(this);
 		IgnoredActors.Add(GetInstigator());
 
-		// 🌟 제자리 폭발은 OverlapActors 사용!
 		UKismetSystemLibrary::SphereOverlapActors(
 			this,
 			GetActorLocation(),

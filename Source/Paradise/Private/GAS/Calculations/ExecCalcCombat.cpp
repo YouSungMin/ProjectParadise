@@ -119,7 +119,7 @@ void UExecCalcCombat::Execute_Implementation(const FGameplayEffectCustomExecutio
 	// 비율 감소
 	CurrentDamage *= (100.f / (100.f + Defense));
 
-	// 최소 데미지 보장 (방어력이 높아도 최소 1은 들어감)
+	// 최소 데미지 보장
 	CurrentDamage = FMath::Max(CurrentDamage, 1.0f);
 
 
