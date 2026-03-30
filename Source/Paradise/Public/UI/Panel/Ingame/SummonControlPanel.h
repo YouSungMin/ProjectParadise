@@ -78,6 +78,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void UpdateCostDisplay(float CurrentCost, float MaxCost);
+
+	/**
+	 * @brief 키보드 모드 진입 시 각 소환 슬롯의 단축키 텍스트 노출 여부를 일괄 제어합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleShortcutKeys(bool bShow);
 #pragma endregion 외부 인터페이스
 
 #pragma region 위젯 바인딩

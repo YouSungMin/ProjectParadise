@@ -53,7 +53,7 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 	CachedDeckPool.Empty();
 	const TArray<FName>& SelectedIDs = SquadSys->GetFamiliarSquad();
 
-	UE_LOG(LogTemp, Warning, TEXT("========== 🎴 [내 덱 캐싱 시작] 🎴 =========="));
+	//UE_LOG(LogTemp, Warning, TEXT("========== 🎴 [내 덱 캐싱 시작] 🎴 =========="));
 
 	for (const FName& UnitID : SelectedIDs)
 	{
@@ -74,15 +74,15 @@ void UFamiliarSummonComponent::InitializeDeckPool()
 		}
 
 		CachedDeckPool.Add(CachedSlot);
-		UE_LOG(LogTemp, Log, TEXT("  [덱에 추가됨] 유닛: %s | 가격: %d"), *UnitID.ToString(), CachedSlot.CardCost);
+		//UE_LOG(LogTemp, Log, TEXT("  [덱에 추가됨] 유닛: %s | 가격: %d"), *UnitID.ToString(), CachedSlot.CardCost);
 	}
 
-	if (CachedDeckPool.IsEmpty())
+	/*if (CachedDeckPool.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ [FamiliarSummon] 편성된 유닛이 하나도 없습니다! 편성창을 확인하세요."));
-	}
+	}*/
 
-	UE_LOG(LogTemp, Warning, TEXT("============================================="));
+	//UE_LOG(LogTemp, Warning, TEXT("============================================="));
 }
 
 void UFamiliarSummonComponent::InjectCharacterRespawnCard(int32 TargetCharacterIndex, int32 RespawnCost, TSoftObjectPtr<UTexture2D> InCardIcon)
@@ -97,7 +97,7 @@ void UFamiliarSummonComponent::InjectCharacterRespawnCard(int32 TargetCharacterI
 	//리스폰 가능해진 캐릭터를 스폰 가능 덱 풀에 추가
 	CachedDeckPool.Add(RespawnCard);
 
-	UE_LOG(LogTemp, Warning, TEXT("🔀 [SummonDeck] %d번 캐릭터 부활 카드가 덱에 섞였습니다! (현재 덱 크기: %d)"), TargetCharacterIndex, CachedDeckPool.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("🔀 [SummonDeck] %d번 캐릭터 부활 카드가 덱에 섞였습니다! (현재 덱 크기: %d)"), TargetCharacterIndex, CachedDeckPool.Num());
 }
 
 void UFamiliarSummonComponent::RefreshAllSlots()
@@ -105,7 +105,7 @@ void UFamiliarSummonComponent::RefreshAllSlots()
 	// 캐싱된 덱이 없으면 진행 불가
 	if (CachedDeckPool.IsEmpty()) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("========== 🎰 [게임 시작: 5장 드로우] 🎰 =========="));
+	//UE_LOG(LogTemp, Warning, TEXT("========== 🎰 [게임 시작: 5장 드로우] 🎰 =========="));
 	CurrentSlots.Empty();
 
 	// 메모리 풀(CachedDeckPool)에서 무작위로 5장을 뽑습니다.
@@ -114,10 +114,10 @@ void UFamiliarSummonComponent::RefreshAllSlots()
 		FSummonSlotInfo NewCard = DrawRandomCardFromPool();
 		CurrentSlots.Add(NewCard);
 
-		UE_LOG(LogTemp, Log, TEXT("[%d번 슬롯] 유닛: %s | 가격: %d"), i + 1, *NewCard.FamiliarID.ToString(), NewCard.CardCost);
+		//UE_LOG(LogTemp, Log, TEXT("[%d번 슬롯] 유닛: %s | 가격: %d"), i + 1, *NewCard.FamiliarID.ToString(), NewCard.CardCost);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("==================================================="));
+	//UE_LOG(LogTemp, Warning, TEXT("==================================================="));
 
 	// UI 갱신 방송
 	if (OnSummonSlotsUpdated.IsBound())
@@ -179,7 +179,7 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 	float PriceToPay = (float)SlotInfo.CardCost; // 혹은 FinalCost
 	if (!CostManager || !CostManager->TrySpendCost(PriceToPay))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ 잔액 부족! (필요: %.0f)"), PriceToPay);
+		//UE_LOG(LogTemp, Warning, TEXT("❌ 잔액 부족! (필요: %.0f)"), PriceToPay);
 		return false;
 	}
 
@@ -207,10 +207,10 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 		{
 			LinkedSpawner->SpawnFamiliarByID(SlotInfo.FamiliarID);
 		}
-		else
+		/*else
 		{
 			UE_LOG(LogTemp, Error, TEXT("❌ 월드에서 AFamiliarSpawner를 찾을 수 없습니다!"));
-		}
+		}*/
 		break;
 	}
 	}
@@ -229,7 +229,7 @@ bool UFamiliarSummonComponent::RequestPurchase(int32 SlotIndex)
 void UFamiliarSummonComponent::RegisterSpawner(AFamiliarSpawner* NewSpanwer)
 {
 	LinkedSpawner = NewSpanwer;
-	UE_LOG(LogTemp, Warning, TEXT("✅ Familiar Spawner Linked 성공"));
+	//UE_LOG(LogTemp, Warning, TEXT("✅ Familiar Spawner Linked 성공"));
 }
 
 //구매한 슬롯 제거하고 맨 뒤에 채우는 함수(Queue 방식)
@@ -245,7 +245,7 @@ void UFamiliarSummonComponent::ConsumeSpecificSlot(int32 SlotIndex)
 	FSummonSlotInfo NewCard = DrawRandomCardFromPool();
 	CurrentSlots.Add(NewCard);
 
-	UE_LOG(LogTemp, Log, TEXT("🔥 슬롯[%d] 사용 완료 -> 맨 뒤에 [%s] 추가됨"), SlotIndex, *NewCard.FamiliarID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("🔥 슬롯[%d] 사용 완료 -> 맨 뒤에 [%s] 추가됨"), SlotIndex, *NewCard.FamiliarID.ToString());
 
 	// 3. UI 갱신 방송
 	if (OnSummonSlotsUpdated.IsBound())
@@ -265,7 +265,7 @@ FSummonSlotInfo UFamiliarSummonComponent::DrawRandomCardFromPool()
 	if (DrawnCard.CardType == ESummonCardType::CharacterRespawn)
 	{
 		CachedDeckPool.RemoveAt(RandomIndex);
-		UE_LOG(LogTemp, Warning, TEXT("🎟️ [SummonDeck] 부활 카드가 뽑혔습니다! (덱에서 제거됨)"));
+		//UE_LOG(LogTemp, Warning, TEXT("🎟️ [SummonDeck] 부활 카드가 뽑혔습니다! (덱에서 제거됨)"));
 	}
 
 	return DrawnCard;

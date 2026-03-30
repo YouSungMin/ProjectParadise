@@ -63,6 +63,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetGlowRingActive(bool bIsActive);
+
+	/**
+	 * @brief 키보드/마우스 모드 진입 시 단축키 텍스트의 가시성을 변경합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetShortcutTextVisibility(bool bShow);
 #pragma endregion 외부 인터페이스
 
 private:
@@ -96,6 +103,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|TagButton",
 		meta = (DisplayName = "태그 비활성(대기) 색상"))
 	FLinearColor TagInactiveColor = FLinearColor(0.4f, 0.4f, 0.4f, 0.7f);
+
+	/**
+	 * @brief 기획자가 에디터에서 설정할 단축키 텍스트 (예: "J", "U" 등)
+	 * @details 이 필드에 값을 입력하면 PC(키보드) 모드에서 해당 텍스트가 버튼에 노출됩니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
+	FText ShortcutKeyText;
 #pragma endregion 데이터
 
 private:
@@ -120,6 +134,10 @@ private:
 	 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> Img_GlowRing = nullptr;
+
+	/** @brief 단축키를 화면에 그려줄 텍스트 블록 (선택적 바인딩이므로 없는 버튼에서도 에러가 안 납니다!) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_Shortcut = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 데이터 드리븐 설정

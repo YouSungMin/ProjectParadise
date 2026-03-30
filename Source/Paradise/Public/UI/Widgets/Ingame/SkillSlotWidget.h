@@ -63,6 +63,26 @@ public:
 	void SetManaAffordable(bool bAffordable);
 #pragma endregion 외부 인터페이스
 
+#pragma region 단축키 데이터
+public:
+	/**
+	 * @brief 키보드/마우스 모드일 때 단축키 텍스트의 가시성을 변경합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetShortcutTextVisibility(bool bShow);
+
+protected:
+	/** @brief 기획자가 에디터에서 설정할 단축키 텍스트 (예: "K", "L" 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
+	FText ShortcutKeyText;
+
+private:
+	/** @brief 단축키를 화면에 그려줄 텍스트 블록 (선택적 바인딩) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_Shortcut = nullptr;
+#pragma endregion 단축키 데이터
+
 #pragma region Getter
 	/**
 	 * @brief 내부 버튼에 접근하기 위한 Getter입니다.

@@ -267,4 +267,15 @@ void USummonControlPanel::UpdateCostDisplay(float CurrentCost, float MaxCost)
 		CostWidget->UpdateCost(CurrentCost, MaxCost);
 	}
 }
+void USummonControlPanel::ToggleShortcutKeys(bool bShow)
+{
+	for (USummonSlotWidget* SlotWidget : SummonSlots)
+	{
+		if (SlotWidget)
+		{
+			// 이 함수는 SlotWidget 쪽에 만들어 두신(또는 만드실) 텍스트 제어 함수입니다.
+			SlotWidget->SetShortcutTextVisibility(bShow);
+		}
+	}
+}
 #pragma endregion 외부 인터페이스 구현

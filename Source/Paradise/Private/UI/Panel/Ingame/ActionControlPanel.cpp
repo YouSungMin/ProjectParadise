@@ -545,6 +545,53 @@ void UActionControlPanel::SetTagButtonsEnabled(bool bShouldEnable)
 	}
 }
 
+void UActionControlPanel::ToggleShortcutKeys(bool bShow)
+{
+	// 1. 공격/태그 버튼 (UParadiseCommonButton 타입)
+	if (AttackBtn)
+	{
+		AttackBtn->SetShortcutTextVisibility(bShow);
+	}
+
+	for (UParadiseCommonButton* TagBtn : TagButtons)
+	{
+		if (TagBtn)
+		{
+			TagBtn->SetShortcutTextVisibility(bShow);
+		}
+	}
+
+	// 2. 액티브 스킬 슬롯 (USkillSlotWidget 타입)
+	if (SkillSlot_Active)
+	{
+		SkillSlot_Active->SetShortcutTextVisibility(bShow);
+	}
+
+	// 3. 궁극기 스킬 슬롯 (USkillSlotWidget 타입)
+	if (SkillSlot_Ultimate)
+	{
+		SkillSlot_Ultimate->SetShortcutTextVisibility(bShow);
+	}
+}
+
+void UActionControlPanel::KeyboardAttack()
+{
+	OnAttackButtonPressed();
+	OnAttackButtonReleased();
+}
+
+void UActionControlPanel::KeyboardSkill()
+{
+	OnActiveSkillPressed();
+	OnActiveSkillReleased();
+}
+
+void UActionControlPanel::KeyboardUltimate()
+{
+	OnUltimateSkillPressed();
+	OnUltimateSkillReleased();
+}
+
 void UActionControlPanel::OnAttackButtonPressed()
 {
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());

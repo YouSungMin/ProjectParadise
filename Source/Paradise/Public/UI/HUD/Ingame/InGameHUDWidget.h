@@ -24,6 +24,8 @@ class UImage;
 class UWidgetAnimation;
 class UAutoCombatComponent;
 class USquadControlComponent;
+/** @brief 헤더 인클루드 방지 및 캡슐화를 위한 Common UI 열거형 전방 선언 */
+enum class ECommonInputType : uint8;
 #pragma endregion 전방 선언
 
 /**
@@ -112,6 +114,14 @@ private:
 	 */
 	UFUNCTION()
 	void HandleAutoBattleStateChanged(bool bIsAuto);
+
+	/**
+	 * @brief 사용자의 입력 기기(터치/마우스/키보드 등)가 변경되었을 때 Common UI Subsystem으로부터 호출됩니다.
+	 * @details 마우스나 터치 입력일 때는 조이스틱을 유지하고, 오직 키보드 입력일 때만 조이스틱을 숨기며 단축키를 노출합니다.
+	 * @param NewInputType 새로 감지된 입력 타입
+	 */
+	UFUNCTION()
+	void HandleInputMethodChanged(ECommonInputType NewInputType);
 
 	/** @brief 카메라 연출 시간 종료 후 오토 버튼 잠금 해제 */
 	void UnlockAutoModeButton();

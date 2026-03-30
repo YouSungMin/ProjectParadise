@@ -47,6 +47,11 @@ void UParadiseCommonButton::NativePreConstruct()
 
 	// 에디터 프리뷰용 텍스트만 (바인딩 전이라 이미지 세팅 불가)
 	SetButtonText(ButtonLabelText);
+
+	if (Text_Shortcut)
+	{
+		Text_Shortcut->SetText(ShortcutKeyText);
+	}
 }
 
 void UParadiseCommonButton::NativeConstruct()
@@ -70,6 +75,12 @@ void UParadiseCommonButton::NativeConstruct()
 	if (Img_GlowRing)
 	{
 		Img_GlowRing->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (Text_Shortcut)
+	{
+		Text_Shortcut->SetText(ShortcutKeyText);
+		Text_Shortcut->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 #pragma endregion 생명주기 및 초기화
@@ -165,6 +176,15 @@ void UParadiseCommonButton::SetGlowRingActive(bool bIsActive)
 	if (Img_GlowRing)
 	{
 		Img_GlowRing->SetVisibility(bIsActive ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
+
+void UParadiseCommonButton::SetShortcutTextVisibility(bool bShow)
+{
+	if (Text_Shortcut)
+	{
+		// 키보드 모드(true)면 클릭을 방해하지 않는 HitTestInvisible로 켜고, 터치 모드(false)면 끕니다.
+		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 #pragma endregion 외부 인터페이스 구현

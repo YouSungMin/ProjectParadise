@@ -93,7 +93,25 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetTagButtonsEnabled(bool bShouldEnable);
+
+	/**
+	 * @brief 키보드 모드 진입 시 공격/스킬 버튼들의 단축키 텍스트 노출 여부를 일괄 제어합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleShortcutKeys(bool bShow);
 #pragma endregion 외부 인터페이스
+
+public:
+#pragma region 키보드 입력 연동 (InGameController에서 호출)
+	/** @brief 키보드 공격 입력 */
+	void KeyboardAttack();
+	/** @brief 키보드 스킬 입력 */
+	void KeyboardSkill();
+	/** @brief 키보드 궁극기 입력 */
+	void KeyboardUltimate();
+#pragma endregion 키보드 입력 연동
+
 private:
 #pragma region 내부 로직
 

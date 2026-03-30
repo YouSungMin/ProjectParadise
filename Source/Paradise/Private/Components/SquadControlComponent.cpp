@@ -141,7 +141,7 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS || !ActiveSquadPawns.IsValidIndex(PlayerIndex))
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
+        //UE_LOG(LogTemp, Error, TEXT("❌ [Respawn] 잘못된 인덱스거나 PS가 없습니다."));
         return;
     }
 
@@ -150,7 +150,7 @@ void USquadControlComponent::RespawnSquadPlayer(int32 PlayerIndex)
 
     if (ActiveSquadPawns[PlayerIndex] && !ActiveSquadPawns[PlayerIndex]->IsDead())
     {
-        UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
+        //UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 해당 멤버는 이미 살아있습니다."));
         return;
     }
 
@@ -246,7 +246,7 @@ void USquadControlComponent::GetSafeRespawnLocationAndRotation(AInGameController
                 if (NavSystem->GetRandomPointInNavigableRadius(LeaderPawn->GetActorLocation(), 300.0f, ProjectedNavLoc))
                 {
                     OutLocation = ProjectedNavLoc.Location + FVector(0.0f, 0.0f, 50.0f);
-                    UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 뒤쪽이 벽입니다. 리더 근처 안전 지대로 우회 스폰합니다."));
+                    //UE_LOG(LogTemp, Warning, TEXT("⚠️ [Respawn] 뒤쪽이 벽입니다. 리더 근처 안전 지대로 우회 스폰합니다."));
                 }
             }
             else
@@ -271,7 +271,7 @@ void USquadControlComponent::InitializeSquadPawns()
     AInGamePlayerState* PS = PC->GetPlayerState<AInGamePlayerState>();
     if (!PS) return;
 
-    UE_LOG(LogParadiseSquad, Warning, TEXT("🎮 [Controller] 육체(Pawn) 소환 시작..."));
+    //UE_LOG(LogParadiseSquad, Warning, TEXT("🎮 [Controller] 육체(Pawn) 소환 시작..."));
 
     int32 SquadSize = PS->GetSquadSize();
     ActiveSquadPawns.Init(nullptr, SquadSize);
@@ -336,10 +336,10 @@ void USquadControlComponent::InitializeSquadPawns()
     {
         RequestSwitchPlayer(FirstValidIndex);
     }
-    else
+   /* else
     {
         UE_LOG(LogParadiseSquad, Error, TEXT("❌ [Controller] 스폰된 캐릭터가 아무도 없습니다!"));
-    }
+    }*/
 }
 
 void USquadControlComponent::PossessAI(APlayerBase* TargetCharacter)
@@ -377,7 +377,7 @@ void USquadControlComponent::PossessAI(APlayerBase* TargetCharacter)
             SquadAI->SetLeader(PC ? PC->GetPawn() : nullptr);
         }
 
-        UE_LOG(LogParadiseSquad, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
+       //UE_LOG(LogParadiseSquad, Log, TEXT("🤖 [AI] %s에게 AI 컨트롤러가 빙의했습니다."), *TargetCharacter->GetName());
     }
 }
 

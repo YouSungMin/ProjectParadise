@@ -110,15 +110,15 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 			// 1. 타겟 액터가 누구인지 확인
 			AActor* TargetActor = Data.Target.GetAvatarActor();
-			UE_LOG(LogTemp, Warning, TEXT("===================================="));
-			UE_LOG(LogTemp, Warning, TEXT("🩸 [데미지 판정] 타겟 액터: %s, 남은 HP: %.2f"), TargetActor ? *TargetActor->GetName() : TEXT("Null"), NewHealth);
+			/*UE_LOG(LogTemp, Warning, TEXT("===================================="));
+			UE_LOG(LogTemp, Warning, TEXT("🩸 [데미지 판정] 타겟 액터: %s, 남은 HP: %.2f"), TargetActor ? *TargetActor->GetName() : TEXT("Null"), NewHealth);*/
 
 			// 2. 캐릭터 베이스로 캐스팅 시도
 			if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
 			{
 				if (NewHealth <= 0.0f)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("💀 [데미지 판정] 타겟 사망! -> Die() 호출"));
+					//UE_LOG(LogTemp, Warning, TEXT("💀 [데미지 판정] 타겟 사망! -> Die() 호출"));
 					if (!Character->IsDead())
 					{
 						Character->Die();
@@ -126,15 +126,15 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 				}
 				else
 				{
-					UE_LOG(LogTemp, Warning, TEXT("🎯 [데미지 판정] 타겟 생존! -> PlayHitReaction() 호출 시도!"));
+					//UE_LOG(LogTemp, Warning, TEXT("🎯 [데미지 판정] 타겟 생존! -> PlayHitReaction() 호출 시도!"));
 					Character->PlayHitReaction();
 				}
 			}
-			else
+			/*else
 			{
 				UE_LOG(LogTemp, Error, TEXT("❌ [데미지 판정] 타겟 액터를 ACharacterBase로 캐스팅 실패!"));
-			}
-			UE_LOG(LogTemp, Warning, TEXT("===================================="));
+			}*/
+			//UE_LOG(LogTemp, Warning, TEXT("===================================="));
 		}
 	}
 }
@@ -144,10 +144,10 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
 	// 값이 실제로 변했을 때만 디버그 로그 출력
-	if (OldValue != NewValue)
-	{
-		// 어떤 스탯인지, 몇에서 몇으로 변했는지, 증감량은 얼마인지 출력!
-		UE_LOG(LogTemp, Warning, TEXT("📈 [스탯 변경] %s : %.1f ➡️ %.1f (%+.1f)"),
-			*Attribute.GetName(), OldValue, NewValue, NewValue - OldValue);
-	}
+	//if (OldValue != NewValue)
+	//{
+	//	// 어떤 스탯인지, 몇에서 몇으로 변했는지, 증감량은 얼마인지 출력!
+	//	UE_LOG(LogTemp, Warning, TEXT("📈 [스탯 변경] %s : %.1f ➡️ %.1f (%+.1f)"),
+	//		*Attribute.GetName(), OldValue, NewValue, NewValue - OldValue);
+	//}
 }
