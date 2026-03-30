@@ -48,6 +48,8 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float ForwardOffset = CurrentActiveActionData.Stats.ForwardOffset;
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
+
+	UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
 	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
 	USceneComponent* TargetMesh = GetMesh();
 	if (TargetType == ESocketTargetType::EquippedWeapon)
@@ -291,7 +293,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 void ACharacterBase::ResetHitActors()
 {
 	HitActors.Empty();
-	CurrentActiveActionData = FCombatActionData();
+	//CurrentActiveActionData = FCombatActionData();
 }
 
 bool ACharacterBase::IsHostile(ACharacterBase* Target) const
