@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AIController.h"
+#include "DetourCrowdAIController.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "SquadAIController.generated.h"
 
@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class PARADISE_API ASquadAIController : public AAIController
+class PARADISE_API ASquadAIController : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 	
