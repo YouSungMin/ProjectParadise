@@ -15,6 +15,8 @@
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
 #include "UI/Widgets/Codex/ParadiseCodexMainWidget.h"
 
+#include "Kismet/GameplayStatics.h"
+
 #include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyHUDWidget::NativeConstruct()
@@ -225,6 +227,27 @@ void UParadiseLobbyHUDWidget::OnStartCameraMove()
 	if (Switcher_Content) Switcher_Content->SetVisibility(ESlateVisibility::Collapsed);
 
 	// 팁: 애니메이션(Fade Out)을 재생하면 더 고급스럽습니다.
+}
+
+void UParadiseLobbyHUDWidget::ToggleSettingsPopup()
+{
+	// 방어 코드
+	if (!SettingsPopupInstance)
+	{
+		return;
+	}
+
+	// 팝업이 닫혀있는 상태에서 열릴 때만 효과음 재생 (디테일한 UX)
+	if (SettingsPopupInstance->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
+
+	// 내부 팝업 인스턴스에 토글 역할 위임 (단일 책임 원칙)
+	SettingsPopupInstance->ToggleSettings();
 }
 
 void UParadiseLobbyHUDWidget::HandleBackToMainLobby()

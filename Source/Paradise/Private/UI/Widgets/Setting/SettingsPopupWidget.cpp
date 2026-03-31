@@ -88,8 +88,32 @@ void USettingsPopupWidget::NativeConstruct()
 #pragma endregion 생명주기
 
 #pragma region 외부 인터페이스 구현
+void USettingsPopupWidget::ToggleSettings()
+{
+	if (bIsSettingsOpen)
+	{
+		// 열려있을 때 토글: 0.1초 딜레이 닫기로 우아하게 닫음
+		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+		{
+			CursorSys->SetCursorForceVisible(false);
+		}
+		OnResumeGameClicked();
+	}
+	else
+	{
+		// 닫혀있을 때 토글: 그냥 염
+		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+		{
+			CursorSys->SetCursorForceVisible(true);
+		}
+		OpenSettings();
+	}
+}
+
 void USettingsPopupWidget::OpenSettings()
 {
+	bIsSettingsOpen = true;
+
 	/** @section 1. 가시성 켜기 */
 	SetVisibility(ESlateVisibility::Visible);
 
@@ -106,8 +130,8 @@ void USettingsPopupWidget::OpenSettings()
 			PC->SetPause(true);
 		}
 
-		FInputModeUIOnly InputMode;
-		//InputMode.SetWidgetToFocus(TakeWidget());
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
 	}
@@ -115,13 +139,19 @@ void USettingsPopupWidget::OpenSettings()
 
 void USettingsPopupWidget::CloseSettings()
 {
+	bIsSettingsOpen = false;
+
 	/** @section 1. 가시성 끄기 (파괴하지 않고 숨김 처리) */
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	// 팝업이 닫힐 때 커서 강제 표시 해제 (인게임 원래 로직으로 복귀)
-	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+	// 타이틀과 로비(bPauseGameOnOpen == false)에서는 커서가 유지되도록
+	if (bPauseGameOnOpen)
 	{
-		CursorSys->SetCursorForceVisible(false);
+		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+		{
+			CursorSys->SetCursorForceVisible(false);
+		}
 	}
 
 	/** @section 2. 디스크에 1회 저장 (I/O 병목 회피) */
@@ -199,7 +229,7 @@ void USettingsPopupWidget::OnResumeGameClicked()
 			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
 		}
 	}
-	// 2. 🌟 핵심: 게임의 일시정지(Pause)만 먼저 풀어줍니다! (그래야 아래의 GetWorld() 타이머가 돌아갑니다)
+	// 게임의 일시정지(Pause)만 먼저 풀어줍니다
 	if (APlayerController* PC = GetOwningPlayer())
 	{
 		if (bPauseGameOnOpen)
@@ -208,13 +238,13 @@ void USettingsPopupWidget::OnResumeGameClicked()
 		}
 	}
 
-	// 3. 🌟 핵심: 버튼이 '눌렸다 떼어지는' Slate 이벤트 처리가 완전히 끝날 수 있도록 딱 0.1초의 시간을 벌어주고 CloseSettings를 실행합니다!
+	// 버튼이 '눌렸다 떼어지는' Slate 이벤트 처리가 완전히 끝날 수 있도록 딱 0.1초의 시간을 벌어주고 CloseSettings를 실행합니다!
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(
 			TimerHandle_Resume,
 			this,
-			&USettingsPopupWidget::CloseSettings, // 기존 함수 손댈 필요 없이 그대로 호출!
+			&USettingsPopupWidget::CloseSettings,
 			0.1f,
 			false
 		);

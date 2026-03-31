@@ -64,6 +64,30 @@ void UParadiseTitleHUDWidget::NativeConstruct()
 	}
 }
 
+void UParadiseTitleHUDWidget::ToggleSettingsPopup()
+{
+	// 방어 코드
+	if (!SettingsPopupInstance)
+	{
+		return;
+	}
+
+	// 팝업이 닫혀있는 상태에서 열릴 때만 효과음 재생 (디테일한 UX)
+	if (SettingsPopupInstance->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+		{
+			if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+			{
+				UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+			}
+		}
+	}
+
+	// 내부 팝업 인스턴스에 토글 역할 위임 (단일 책임 원칙)
+	SettingsPopupInstance->ToggleSettings();
+}
+
 void UParadiseTitleHUDWidget::OnScreenTouched()
 {
 	// 중복 실행 방지
@@ -87,11 +111,11 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 		}
 	}
 
-	// BGM 정지 요청
-	if (UAudioManagementSubsystem* AudioMag = GetGameInstance()->GetSubsystem<UAudioManagementSubsystem>())
-	{
-		AudioMag->StopBGM(1.0f);
-	}
+	//// BGM 정지 요청
+	//if (UAudioManagementSubsystem* AudioMag = GetGameInstance()->GetSubsystem<UAudioManagementSubsystem>())
+	//{
+	//	AudioMag->StopBGM(1.0f);
+	//}
 
 	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
 
@@ -118,18 +142,7 @@ void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
 	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
 
 	// 공통 설정 팝업 버튼 클릭음 재생
-	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
-	{
-		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
-		{
-			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
-		}
-	}
-
-	if (SettingsPopupInstance)
-	{
-		SettingsPopupInstance->OpenSettings();
-	}
+	ToggleSettingsPopup();
 }
 
 void UParadiseTitleHUDWidget::ExecuteLevelTransition()

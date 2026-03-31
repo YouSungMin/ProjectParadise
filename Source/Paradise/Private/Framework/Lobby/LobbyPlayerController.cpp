@@ -148,35 +148,10 @@ void ALobbyPlayerController::OnInputOpenSettings(const FInputActionValue& Value)
 		return;
 	}
 
-	// 로비 HUD를 통해 설정 팝업 위젯 포인터 획득
-	USettingsPopupWidget* SettingsPopup = CachedLobbyHUD->GetSettingsPopupInstance();
-	if (!SettingsPopup)
-	{
-		bIsTogglingSettings = false;
-		return;
-	}
+	// 컨트롤러는 그저 HUD에게 "팝업 토글해!" 라고 지시만 합니다. (캡슐화 달성)
+	CachedLobbyHUD->ToggleSettingsPopup();
 
-	// 팝업이 열려있는지 확인
-	const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
-
-	if (bIsOpen)
-	{
-		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
-
-		// 🌟 인게임과 동일하게 OnResumeGameClicked() 호출 (0.1초 딜레이 닫기 적용)
-		SettingsPopup->OnResumeGameClicked();
-	}
-	else
-	{
-		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
-		SettingsPopup->OpenSettings();
-	}
-
-	// 다음 틱에 토글 플래그 해제
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { bIsTogglingSettings = false; });
-	}
+	bIsTogglingSettings = false;
 }
 
 void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)

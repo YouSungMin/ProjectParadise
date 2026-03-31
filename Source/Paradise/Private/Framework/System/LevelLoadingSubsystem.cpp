@@ -233,7 +233,6 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 		{
 			if (!CharAssets->SkeletalMesh.IsNull()) OutAssetPaths.AddUnique(CharAssets->SkeletalMesh.ToSoftObjectPath());
 			if (!CharAssets->UltimateMontage.IsNull()) OutAssetPaths.AddUnique(CharAssets->UltimateMontage.ToSoftObjectPath());
-			// 필요한 경우 여기에 CharAssets->UltimateIcon 등 UI 리소스나 이펙트 추가 가능
 		}
 
 		// 1-2. 해당 캐릭터가 "현재 장착 중인" 장비 에셋 긁어오기

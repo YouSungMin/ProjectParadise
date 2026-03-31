@@ -40,6 +40,13 @@ protected:
 #pragma region 외부 인터페이스
 public:
 	/**
+	 * @brief 설정창을 열고 닫는 토글 함수입니다.
+	 * @details ESC 키 입력 시 컨트롤러에서 이 함수만 호출하면 내부 상태(bool)에 따라 알아서 작동합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettings();
+
+	/**
 	 * @brief 팝업을 화면에 표시하고 게임을 일시정지합니다.
 	 * @details 인게임 HUD나 컨트롤러에서 설정 버튼을 눌렀을 때 호출해야 합니다.
 	 */
@@ -202,6 +209,9 @@ protected:
 
 #pragma region 런타임 상태
 private:
+	/** @brief 설정창이 현재 열려있는지 상태를 추적하는 토글 변수 */
+	bool bIsSettingsOpen = false;
+
 	/**
 	 * @brief 캐싱된 AudioSettingsSubsystem.
 	 * @details NativeConstruct에서 캐싱하여 매번 GetSubsystem 비용을 절약합니다.

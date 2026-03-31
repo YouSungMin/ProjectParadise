@@ -199,42 +199,13 @@ void AInGameController::OnInputOpenSettings(const FInputActionValue& Value)
     if (bIsTogglingSettings) return;
     bIsTogglingSettings = true;
 
-    UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
-    if (!HUD)
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
-        bIsTogglingSettings = false;
-        return;
+        // 컨트롤러는 그저 HUD에게 "팝업 토글해!" 라고 지시만 합니다. (캡슐화 달성)
+        HUD->ToggleSettingsPopup();
     }
 
-    USettingsPopupWidget* SettingsPopup = HUD->GetSettingsPopupInstance();
-    if (!SettingsPopup)
-    {
-        bIsTogglingSettings = false;
-        return;
-    }
-
-    const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
-    if (bIsOpen)
-    {
-        // 창을 닫을 때는 커서를 숨겨야(또는 HUD의 감지 로직에 맡겨야) 합니다.
-        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
-        SettingsPopup->OnResumeGameClicked();
-    }
-    else
-    {
-        // 창을 열 때는 커서를 확실히 보여줍니다.
-        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
-        SettingsPopup->OpenSettings();
-    }
-
-    // 다음 프레임에 플래그 해제
-    if (GetWorld())
-    {
-        GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-            {
-                bIsTogglingSettings = false;
-            });
-    }
+    bIsTogglingSettings = false;
 }
 
 void AInGameController::RequestFamiliarSummon(int32 SlotIndex)
