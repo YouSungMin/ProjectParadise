@@ -104,6 +104,11 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 {
 	CachedProjStats = InProjStats; // 스탯 캐싱
 
+	if (SphereComp && InAttackRadius > 0.0f)
+	{
+		SphereComp->SetSphereRadius(InAttackRadius);
+	}
+
 	// 속도 적용
 	if (ProjectileMovementComp)
 	{
@@ -145,11 +150,13 @@ void AProjectileBase::ApplyDamageToTarget(AActor* TargetActor)
 
 void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// 자기 자신이나, 나를 쏜 주인(Instigator)은 무시
 	if (!IsValidTarget(OtherActor)) return;
 
-	// 이미 맞은 적 무시 (다단히트 방지)
+	// 2. 이미 맞은 적 무시
 	if (HitActors.Contains(OtherActor)) return;
+
+	// 🌟 [여기로 로그 이동!] 여기까지 살아남았다면 이건 진짜 적(플레이어)입니다!
+	UE_LOG(LogTemp, Warning, TEXT("💥 [진짜 명중!] 투사체가 적(%s)을 맞췄습니다!"), *OtherActor->GetName());
 
 	// 타격 명단 등록 및 데미지 적용
 	HitActors.Add(OtherActor);
