@@ -16,6 +16,7 @@ class UParadiseGachaResultWidget;
 class UParadiseStageSelectWidget;
 class UParadiseChapterSelectWidget;
 class UAudioComponent;
+class UParadiseCursorWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -241,4 +242,19 @@ public:
 	void StopCameraSwoosh();
 #pragma endregion 오디오 제어
 
+#pragma region 커서 설정
+protected:
+	/**
+	 * @brief 커스텀 커서 위젯 클래스
+	 * @details 에디터에서 WBP_ParadiseCursor를 할당하세요.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
+	TSubclassOf<UParadiseCursorWidget> CursorWidgetClass;
+
+	/**
+	 * @brief 커스텀 커서 텍스처
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
+	TObjectPtr<UTexture2D> Tex_CustomCursor = nullptr;
+#pragma endregion 커서 설정
 };

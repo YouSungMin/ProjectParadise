@@ -3,6 +3,7 @@
 
 #include "Framework/Title/TitlePlayerController.h"
 #include "Framework/System/GraphicsSettingsSubsystem.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Blueprint/UserWidget.h"
 
 void ATitlePlayerController::BeginPlay()
@@ -18,10 +19,7 @@ void ATitlePlayerController::BeginPlay()
 			TitleWidget->AddToViewport();
 		}
 	}
-	/*else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[TitlePC] TitleHUDClass is NOT set! Please check BP_TitlePlayerController."));
-	}*/
+
 
 	//0326 김성현 그래픽 설정 초기 체크 함수 추가
 	if (UGameInstance* GI = GetGameInstance())
@@ -38,5 +36,11 @@ void ATitlePlayerController::BeginPlay()
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 
 	SetInputMode(InputMode);
-	bShowMouseCursor = true;
+	bShowMouseCursor = false;
+	// 마우스 커서 서브시스템 커서 초기화
+	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+	{
+		CursorSys->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, this);
+		CursorSys->ShowCursor(true);
+	}
 }

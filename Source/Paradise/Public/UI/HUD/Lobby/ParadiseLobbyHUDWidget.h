@@ -31,7 +31,7 @@ class PARADISE_API UParadiseLobbyHUDWidget : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 #pragma region UI 컴포넌트
 protected:
 	/** @brief 상단 재화 및 설정 바 (WBP_TopBar) */
@@ -86,10 +86,11 @@ public:
 
 private:
 	/**
-	 * @brief [최적화] 여러 팝업의 뒤로가기 요청을 하나로 통합 처리합니다.
+	 * @brief 여러 팝업의 뒤로가기 요청을 하나로 통합 처리합니다.
 	 * (메뉴로 복귀하는 단일 책임)
 	 */
 	UFUNCTION()
 	void HandleBackToMainLobby();
 #pragma endregion 외부 제어
+
 };

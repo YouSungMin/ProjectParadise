@@ -15,11 +15,13 @@
 #include "UI/Widgets/Ingame/Popup/DefeatPopupWidget.h"
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "UI/Widgets/Ingame/HomeBaseHPWidget.h"
+#include "UI/Mouse/ParadiseCursorWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
 #include "Framework/InGame/InGameController.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Camera/CameraComponent.h"
@@ -42,6 +44,23 @@
 void UInGameHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// 서브시스템 1회 캐싱
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		CachedCursorSubsystem = GI->GetSubsystem<UParadiseCursorSubsystem>();
+	}
+	// OS 기본 커서 숨기고 소프트웨어 커서 생성
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->bShowMouseCursor = false;
+	}
+
+	if (CachedCursorSubsystem.IsValid())
+	{
+		CachedCursorSubsystem->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, GetOwningPlayer());
+		CachedCursorSubsystem->ShowCursor(true);
+	}
 
 #pragma region 초기화 (Initialization)
 	// 1. 결과 팝업 초기화 (숨김 상태로 시작)
@@ -79,6 +98,7 @@ void UInGameHUDWidget::NativeConstruct()
 	// 5. 시스템 초기화 및 데이터 동기화
 	InitializeHUD();
 
+	// 6. Common UI 입력 감지 바인딩
 	if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
 	{
 		if (UCommonInputSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UCommonInputSubsystem>())
@@ -92,7 +112,7 @@ void UInGameHUDWidget::NativeConstruct()
 	}
 #pragma endregion 초기화
 
-	// 6. UI 갱신 타이머 시작 (최적화를 위해 0.5초 간격 유지)
+	// 7. UI 갱신 타이머 시작 (최적화를 위해 0.5초 간격 유지)
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(
@@ -103,7 +123,7 @@ void UInGameHUDWidget::NativeConstruct()
 			true
 		);
 
-		// 7. CommonUI 스타일 동기화 완료 후 이미지 세팅 (한 프레임 지연)
+		// 8. CommonUI 스타일 동기화 완료 후 이미지 세팅 (한 프레임 지연)
 		GetWorld()->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
@@ -135,6 +155,14 @@ void UInGameHUDWidget::NativeConstruct()
 				{
 					ActionControlPanel->ToggleShortcutKeys(false);
 				}
+				// 패널 초기화 완료 후 현재 입력 타임으로 즉시 동기화
+				if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
+				{
+					if (UCommonInputSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UCommonInputSubsystem>())
+					{
+						HandleInputMethodChanged(InputSubsystem->GetCurrentInputType());
+					}
+				}
 			})
 		);
 	}
@@ -164,7 +192,37 @@ void UInGameHUDWidget::NativeDestruct()
 		}
 	}
 
+	CachedCursorSubsystem = nullptr;
 	Super::NativeDestruct();
+}
+
+FReply UInGameHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	// 마우스 커서 움직임 감지
+	if (CachedCursorSubsystem.IsValid())
+	{
+		CachedCursorSubsystem->UpdateCursorPosition(InMouseEvent.GetScreenSpacePosition());
+		CachedCursorSubsystem->ShowCursor(true);
+	}
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UInGameHUDWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	// 마우스 커서 클릭 감지
+	if (CachedCursorSubsystem.IsValid())
+	{
+		CachedCursorSubsystem->ShowCursor(true);
+	}
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+void UInGameHUDWidget::ShowMouseCursor(bool bShow)
+{
+	if (CachedCursorSubsystem.IsValid())
+	{
+		CachedCursorSubsystem->ShowCursor(bShow);
+	}
 }
 
 #pragma region 내부 로직 구현
@@ -283,6 +341,8 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 		break;
 
 	case EGamePhase::Result:
+		// 결과창 시 마우스 커서 표시
+		ShowMouseCursor(true);
 		// 모든 정산이 끝난 '진짜' 결과 시점
 		if (CachedGameState.IsValid())
 		{
@@ -426,6 +486,8 @@ void UInGameHUDWidget::OnSettingButtonClicked()
 			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
 		}
 	}
+	// 설정창 열릴 때 커서 표시
+	ShowMouseCursor(true);
 	/** @section 팝업 열기 (인게임은 열릴 때 시간이 멈춥니다!) */
 	if (SettingsPopupInstance)
 	{
@@ -506,7 +568,7 @@ void UInGameHUDWidget::OnUpdateHUD()
 void UInGameHUDWidget::HandleInputMethodChanged(ECommonInputType NewInputType)
 {
 
-	// 1. 터치 모드일 때만 조이스틱을 켭니다.
+	// 터치일 때만 조이스틱 표시, 마우스/키보드는 단축키 모드
 	const bool bShowJoystick = (NewInputType == ECommonInputType::Touch);
 	const bool bShowShortcutTexts = !bShowJoystick;
 
@@ -514,7 +576,6 @@ void UInGameHUDWidget::HandleInputMethodChanged(ECommonInputType NewInputType)
 	{
 		VirtualJoystick->SetVisibility(bShowJoystick ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
-
 	if (SummonControlPanel)
 	{
 		SummonControlPanel->ToggleShortcutKeys(bShowShortcutTexts);
