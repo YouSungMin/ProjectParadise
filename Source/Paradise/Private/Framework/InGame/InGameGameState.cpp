@@ -2,6 +2,7 @@
 
 
 #include "Framework/InGame/InGameGameState.h"
+#include "Objects/HomeBase.h"
 
 /**
  * @details 상태 중복 체크 후 값을 갱신하며, 델리게이트에 바인딩된 UI 및 시스템에 상태 변화를 알립니다.
@@ -23,4 +24,16 @@ void AInGameGameState::SetCurrentPhase(EGamePhase NewPhase)
         OnGamePhaseChanged.Broadcast(CurrentPhase);
     }
 
+}
+
+void AInGameGameState::RegisterAllyHomeBase(AHomeBase* InBase)
+{
+    AllyHomeBase = InBase;
+    OnHomeBaseRegistered.Broadcast(true);
+}
+
+void AInGameGameState::RegisterEnemyHomeBase(AHomeBase* InBase)
+{
+    EnemyHomeBase = InBase;
+    OnHomeBaseRegistered.Broadcast(false);
 }

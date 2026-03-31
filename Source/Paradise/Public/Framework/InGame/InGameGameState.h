@@ -7,6 +7,10 @@
 #include "Data/Enums/GameEnums.h"
 #include "InGameGameState.generated.h"
 
+#pragma region 전방 선언
+class AHomeBase;
+#pragma endregion 전방 선언
+
 /**
 * @brief 게임 상태 변경 시 호출되는 다이나믹 멀티캐스트 델리게이트
 * @param NewPhase 변경된 새로운 게임 단계
@@ -17,6 +21,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGamePhaseChanged, EGamePhase, New
 * @brief 스테이지 타이머 변경 시 호출되는 다이나믹 멀티캐스트 델리게이트
 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerChanged, int32, NewRemainingTime);
+
+/**
+* @brief 홈베이스가 GameState에 등록될 때 발생하는 델리게이트
+* @param bIsAlly true면 아군 홈베이스, false면 적군 홈베이스
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHomeBaseRegistered, bool, bIsAlly);
 
 /**
  * @class AInGameGameState
@@ -78,4 +88,26 @@ public:
 	/** @brief [상태] 현재 진행 중인 게임 페이즈 (FSM 상태값) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage Data")
 	EGamePhase CurrentPhase;
+
+#pragma region 홈베이스 참조
+public:
+	/** @brief 홈베이스 등록 시 발생하는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnHomeBaseRegistered OnHomeBaseRegistered;
+
+	/** @brief 아군 홈베이스 등록 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|GameState")
+	void RegisterAllyHomeBase(AHomeBase* InBase);
+
+	/** @brief 적군 홈베이스 등록 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|GameState")
+	void RegisterEnemyHomeBase(AHomeBase* InBase);
+
+	FORCEINLINE AHomeBase* GetAllyHomeBase() const { return AllyHomeBase.Get(); }
+	FORCEINLINE AHomeBase* GetEnemyHomeBase() const { return EnemyHomeBase.Get(); }
+
+private:
+	TWeakObjectPtr<AHomeBase> AllyHomeBase = nullptr;
+	TWeakObjectPtr<AHomeBase> EnemyHomeBase = nullptr;
+#pragma endregion 홈베이스 참조
 };

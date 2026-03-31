@@ -14,6 +14,7 @@
 #include "UI/Widgets/Ingame/Popup/VictoryPopupWidget.h"
 #include "UI/Widgets/Ingame/Popup/DefeatPopupWidget.h"
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
+#include "UI/Widgets/Ingame/HomeBaseHPWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
 #include "Framework/InGame/InGameController.h"
@@ -105,36 +106,36 @@ void UInGameHUDWidget::NativeConstruct()
 		// 7. CommonUI 스타일 동기화 완료 후 이미지 세팅 (한 프레임 지연)
 		GetWorld()->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				// 오토 버튼 초기 이미지 세팅
+				if (Btn_AutoMode)
 				{
-					// 오토 버튼 초기 이미지 세팅
-					if (Btn_AutoMode)
-					{
-						Btn_AutoMode->SetButtonText(FText::GetEmpty());
-						Btn_AutoMode->SetButtonIcon(Tex_AutoModeOff);
-					}
+					Btn_AutoMode->SetButtonText(FText::GetEmpty());
+					Btn_AutoMode->SetButtonIcon(Tex_AutoModeOff);
+				}
 
-					// 눌림 이미지 없이 Normal 하나만 주입!
-					if (Btn_Setting)
-					{
-						Btn_Setting->SetButtonText(FText::GetEmpty());
-						Btn_Setting->SetButtonIcon(Tex_SettingNormal);
-					}
+				// 눌림 이미지 없이 Normal 하나만 주입!
+				if (Btn_Setting)
+				{
+					Btn_Setting->SetButtonText(FText::GetEmpty());
+					Btn_Setting->SetButtonIcon(Tex_SettingNormal);
+				}
 
-					// 태그 버튼 FaceIcon + 공격 버튼 아이콘 세팅
-					if (ActionControlPanel)
-					{
-						ActionControlPanel->InitTagButtons();
-					}
+				// 태그 버튼 FaceIcon + 공격 버튼 아이콘 세팅
+				if (ActionControlPanel)
+				{
+					ActionControlPanel->InitTagButtons();
+				}
 
-					if (SummonControlPanel)
-					{
-						SummonControlPanel->ToggleShortcutKeys(false);
-					}
-					if (ActionControlPanel)
-					{
-						ActionControlPanel->ToggleShortcutKeys(false);
-					}
-				})
+				if (SummonControlPanel)
+				{
+					SummonControlPanel->ToggleShortcutKeys(false);
+				}
+				if (ActionControlPanel)
+				{
+					ActionControlPanel->ToggleShortcutKeys(false);
+				}
+			})
 		);
 	}
 }
@@ -152,6 +153,7 @@ void UInGameHUDWidget::NativeDestruct()
 	if (CachedGameState.IsValid())
 	{
 		CachedGameState->OnGamePhaseChanged.RemoveAll(this);
+		CachedGameState->OnHomeBaseRegistered.RemoveAll(this);
 	}
 
 	if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
@@ -179,6 +181,19 @@ void UInGameHUDWidget::InitializeHUD()
 
 		// 현재 상태 즉시 반영 (이미 게임 진행 중일 경우 대비)
 		HandleGamePhaseChanged(GS->CurrentPhase);
+
+		GS->OnHomeBaseRegistered.RemoveDynamic(this, &UInGameHUDWidget::HandleHomeBaseRegistered);
+		GS->OnHomeBaseRegistered.AddDynamic(this, &UInGameHUDWidget::HandleHomeBaseRegistered);
+
+		// 이미 등록된 경우 즉시 처리 (레벨 로드 타이밍 대비)
+		if (Widget_AllyBaseHP && GS->GetAllyHomeBase())
+		{
+			Widget_AllyBaseHP->InitWithHomeBase(GS->GetAllyHomeBase());
+		}
+		if (Widget_EnemyBaseHP && GS->GetEnemyHomeBase())
+		{
+			Widget_EnemyBaseHP->InitWithHomeBase(GS->GetEnemyHomeBase());
+		}
 	}
 
 	if (AInGameController* InGamePC = Cast<AInGameController>(GetOwningPlayer()))
@@ -323,6 +338,20 @@ void UInGameHUDWidget::HandlePlayerSwitched(int32 NewCharacterIndex)
 	if (VirtualJoystick)
 	{
 		VirtualJoystick->SetMovementLocked(false);
+	}
+}
+
+void UInGameHUDWidget::HandleHomeBaseRegistered(bool bIsAlly)
+{
+	if (!CachedGameState.IsValid()) return;
+
+	if (bIsAlly && Widget_AllyBaseHP && CachedGameState->GetAllyHomeBase())
+	{
+		Widget_AllyBaseHP->InitWithHomeBase(CachedGameState->GetAllyHomeBase());
+	}
+	else if (!bIsAlly && Widget_EnemyBaseHP && CachedGameState->GetEnemyHomeBase())
+	{
+		Widget_EnemyBaseHP->InitWithHomeBase(CachedGameState->GetEnemyHomeBase());
 	}
 }
 
