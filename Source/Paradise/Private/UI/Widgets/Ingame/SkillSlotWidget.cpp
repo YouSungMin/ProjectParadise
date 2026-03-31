@@ -38,10 +38,13 @@ void USkillSlotWidget::NativeConstruct()
 		}
 	}
 
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
-		Text_Shortcut->SetText(ShortcutKeyText);
-		Text_Shortcut->SetVisibility(ESlateVisibility::Collapsed); // 초기엔 숨김
+		if (!ShortcutKeyImage.IsNull())
+		{
+			Img_Shortcut->SetBrushFromTexture(ShortcutKeyImage.LoadSynchronous());
+		}
+		Img_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	// 초기 상태 설정
@@ -174,9 +177,9 @@ void USkillSlotWidget::OnSkillButtonReleased()
 
 void USkillSlotWidget::SetShortcutTextVisibility(bool bShow)
 {
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		Img_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 

@@ -51,7 +51,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
 
-	UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
+	//UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
 	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
 	USceneComponent* TargetMesh = GetMesh();
 	if (TargetType == ESocketTargetType::EquippedWeapon)
@@ -95,7 +95,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		// 만약 소켓 이름을 적긴 적었는데 못 찾은 거라면 에러 로그 출력 (오타 방지용)
 		if (!SocketName.IsNone())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] '%s' 소켓을 찾을 수 없어 기본 위치에서 공격합니다. (오타 확인 필요!)"), *GetName(), *SocketName.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] '%s' 소켓을 찾을 수 없어 기본 위치에서 공격합니다. (오타 확인 필요!)"), *GetName(), *SocketName.ToString());
 		}
 	}
 
@@ -168,7 +168,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 			FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, Payload);
 
-			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 다중 타격 성공! 대상: %s"), *GetName(), *HitActor->GetName());
+			//UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 다중 타격 성공! 대상: %s"), *GetName(), *HitActor->GetName());
 		}
 	}
 }
@@ -332,14 +332,14 @@ void ACharacterBase::PlayHitReaction()
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [%s] AnimInstance를 찾을 수 없습니다!"), *GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [%s] AnimInstance를 찾을 수 없습니다!"), *GetName());
 		return;
 	}
 
 	// 1. 슈퍼아머(다른 몽타주 재생 중) 체크
 	if (AnimInst->IsAnyMontagePlaying())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
 		return;
 	}
 
@@ -347,12 +347,12 @@ void ACharacterBase::PlayHitReaction()
 	UAnimMontage* HitMontage = GetHitMontage();
 	if (!HitMontage)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [%s] HitMontage가 Null입니다! (데이터 테이블이나 캐싱 코드 확인 필요)"), *GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [%s] HitMontage가 Null입니다! (데이터 테이블이나 캐싱 코드 확인 필요)"), *GetName());
 		return;
 	}
 
 	// 3. 정상 재생 명령
-	UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
+	//UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
 	AnimInst->Montage_Play(HitMontage);
 }
 
@@ -425,8 +425,8 @@ void ACharacterBase::AttachWeapon(AActor* NewWeapon, FName SocketName)
 	//소유자 설정 (GAS 데미지 계산 시 Instigator로 활용됨)
 	CurrentWeaponActor->SetOwner(this);
 
-	UE_LOG(LogTemp, Warning, TEXT("⚔️ [CharacterBase] 무기 장착 완료: %s -> 소켓: %s"),
-		*NewWeapon->GetName(), *SocketName.ToString());
+	/*UE_LOG(LogTemp, Warning, TEXT("⚔️ [CharacterBase] 무기 장착 완료: %s -> 소켓: %s"),
+		*NewWeapon->GetName(), *SocketName.ToString());*/
 }
 
 void ACharacterBase::PlayHitFlash()
@@ -490,13 +490,13 @@ FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 			else
 			{
 				// 무기 메쉬는 찾았는데 소켓 이름이 틀렸을 때 에러 출력
-				UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
+				//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
 			}
 		}
 		else
 		{
 			// 최악의 경우: WeaponMesh 컴포넌트 자체를 못 찾았을 때
-			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
+			//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
 		}
 
 		// 소켓을 못 찾았을 때의 안전망 (캐릭터 위치 반환)
@@ -513,7 +513,7 @@ FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 
 		if (!CurrentMuzzleSocketName.IsNone())
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 캐릭터 몸통 메쉬에서 '%s' 소켓을 찾지 못했습니다!"), *CurrentMuzzleSocketName.ToString());
+			//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 캐릭터 몸통 메쉬에서 '%s' 소켓을 찾지 못했습니다!"), *CurrentMuzzleSocketName.ToString());
 		}
 
 		return BodyMesh->GetComponentTransform();
@@ -533,7 +533,7 @@ void ACharacterBase::SpawnDamagePopup(float DamageAmount, bool bIsCritical)
 		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
 		{
 			// 타겟 머리 위 위치 계산 (캐릭터 Z축 위로 80cm 정도 띄움)
-			UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
+			//UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
 			FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
 
 			ADamageTextActor* DmgText = PoolSubsystem->SpawnPoolActor<ADamageTextActor>(

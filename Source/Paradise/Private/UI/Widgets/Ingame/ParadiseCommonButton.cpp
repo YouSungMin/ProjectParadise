@@ -47,11 +47,6 @@ void UParadiseCommonButton::NativePreConstruct()
 
 	// 에디터 프리뷰용 텍스트만 (바인딩 전이라 이미지 세팅 불가)
 	SetButtonText(ButtonLabelText);
-
-	if (Text_Shortcut)
-	{
-		Text_Shortcut->SetText(ShortcutKeyText);
-	}
 }
 
 void UParadiseCommonButton::NativeConstruct()
@@ -77,10 +72,13 @@ void UParadiseCommonButton::NativeConstruct()
 		Img_GlowRing->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
-		Text_Shortcut->SetText(ShortcutKeyText);
-		Text_Shortcut->SetVisibility(ESlateVisibility::Hidden);
+		if (!ShortcutKeyImage.IsNull())
+		{
+			Img_Shortcut->SetBrushFromTexture(ShortcutKeyImage.LoadSynchronous());
+		}
+		Img_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 #pragma endregion 생명주기 및 초기화
@@ -162,10 +160,14 @@ void UParadiseCommonButton::SetButtonIcon(UTexture2D* InNormalIcon, UTexture2D* 
 
 void UParadiseCommonButton::SetTagActiveState(bool bIsActive)
 {
-	// SetIsEnabled 대신 색상 틴트로 시각적 상태를 표현합니다.
-	// bIsActive = true  → 현재 조작 중 → 밝게 (TagActiveColor)
-	// bIsActive = false → 교체 대기   → 어둡게 (TagInactiveColor)
-	SetColorAndOpacity(bIsActive ? TagActiveColor : TagInactiveColor);
+	const FLinearColor TargetColor = bIsActive ? TagActiveColor : TagInactiveColor;
+
+	// 전체 위젯 틴트 대신 개별 이미지만 틴트 적용
+	if (Img_Bg)   Img_Bg->SetColorAndOpacity(TargetColor);
+	if (Img_Icon) Img_Icon->SetColorAndOpacity(TargetColor);
+
+	// Img_Shortcut은 항상 흰색 유지 (틴트 영향 없음)
+	if (Img_Shortcut) Img_Shortcut->SetColorAndOpacity(FLinearColor::White);
 
 	SetGlowRingActive(bIsActive);
 }
@@ -181,10 +183,10 @@ void UParadiseCommonButton::SetGlowRingActive(bool bIsActive)
 
 void UParadiseCommonButton::SetShortcutTextVisibility(bool bShow)
 {
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
 		// 키보드 모드(true)면 클릭을 방해하지 않는 HitTestInvisible로 켜고, 터치 모드(false)면 끕니다.
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		Img_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 #pragma endregion 외부 인터페이스 구현
