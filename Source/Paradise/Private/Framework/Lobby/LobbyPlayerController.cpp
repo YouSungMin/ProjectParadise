@@ -10,6 +10,7 @@
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/System/GachaSubsystem.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Components/AudioComponent.h"
@@ -23,12 +24,25 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
 
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
+#include "InputMappingContext.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
+#include "TimerManager.h"
+
 void ALobbyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		if (DefaultMappingContext)
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+
 	// 1. [최적화] 태그 검색 대신, 레벨 설정 액터 하나만 찾습니다.
-	// (GetActorOfClass는 찾으면 즉시 리턴하므로 GetAllActors보다 훨씬 빠릅니다)
 	ALobbySetupActor* LobbySetup = Cast<ALobbySetupActor>(UGameplayStatics::GetActorOfClass(this, ALobbySetupActor::StaticClass()));
 	if (LobbySetup)
 	{
@@ -66,8 +80,15 @@ void ALobbyPlayerController::BeginPlay()
 	//	UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] Main Camera가 설정되지 않았습니다!"));
 	//}
 
-	//1. 마우스 커서 보이게 설정
-	bShowMouseCursor = true;
+	//1. 기존 os 마우스 커서는 끄기
+	bShowMouseCursor = false;
+	// 커서 서브시스템으로 커서 초기화
+	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+	{
+		CachedCursorSubsystem = CursorSys;
+		CursorSys->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, this);
+		CursorSys->ShowCursor(true);
+	}
 	bEnableClickEvents = true; // 이거 없으면 3D 액터 클릭 안 됨!
 	bEnableTouchEvents = true;
 
@@ -100,6 +121,62 @@ void ALobbyPlayerController::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[LobbyController] LobbyHUDClass가 설정되지 않았습니다! BP를 확인하세요."));
 	}*/
+}
+
+void ALobbyPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		if (IA_OpenSettings)
+		{
+			EnhancedInputComponent->BindAction(IA_OpenSettings, ETriggerEvent::Started, this, &ALobbyPlayerController::OnInputOpenSettings);
+		}
+	}
+}
+
+void ALobbyPlayerController::OnInputOpenSettings(const FInputActionValue& Value)
+{
+	if (bIsTogglingSettings) return;
+	bIsTogglingSettings = true;
+
+	// 로비 HUD가 캐싱되어 있는지 확인 (없으면 에러)
+	if (!CachedLobbyHUD)
+	{
+		bIsTogglingSettings = false;
+		return;
+	}
+
+	// 로비 HUD를 통해 설정 팝업 위젯 포인터 획득
+	USettingsPopupWidget* SettingsPopup = CachedLobbyHUD->GetSettingsPopupInstance();
+	if (!SettingsPopup)
+	{
+		bIsTogglingSettings = false;
+		return;
+	}
+
+	// 팝업이 열려있는지 확인
+	const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
+
+	if (bIsOpen)
+	{
+		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
+
+		// 🌟 인게임과 동일하게 OnResumeGameClicked() 호출 (0.1초 딜레이 닫기 적용)
+		SettingsPopup->OnResumeGameClicked();
+	}
+	else
+	{
+		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
+		SettingsPopup->OpenSettings();
+	}
+
+	// 다음 틱에 토글 플래그 해제
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { bIsTogglingSettings = false; });
+	}
 }
 
 void ALobbyPlayerController::CheatAddCharacter(FName CharacterID)

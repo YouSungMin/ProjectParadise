@@ -3,6 +3,7 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/Core/ParadiseCameraManager.h"
 #include "Characters/Base/PlayerBase.h"
@@ -33,6 +34,7 @@
 #include "UI/Panel/Ingame/PartyStatusPanel.h"
 #include "UI/Panel/Ingame/ActionControlPanel.h"
 #include "UI/Panel/Ingame/SummonControlPanel.h"
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "Blueprint/UserWidget.h"
 
 AInGameController::AInGameController()
@@ -62,6 +64,12 @@ void AInGameController::BeginPlay()
     CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
     CachedPlayerState = GetPlayerState<AInGamePlayerState>();
 
+    // 마우스 커서 서브시스템 캐싱
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        CachedCursorSubsystem = GI->GetSubsystem<UParadiseCursorSubsystem>();
+    }
+
     // [추가] 26/02/04, 담당자: 최지원, [UI 생성] 로컬 플레이어인 경우에만 HUD 생성 (서버/AI 제외)
     
     GetOrCreateInGameHUD();
@@ -76,21 +84,15 @@ void AInGameController::SetupInputComponent()
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
         // 1번 키 -> 인덱스 0
-        if (IA_SwitchHero1)
-            EnhancedInputComponent->BindAction(IA_SwitchHero1, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero1);
+        if (IA_SwitchHero1) EnhancedInputComponent->BindAction(IA_SwitchHero1, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero1);
 
         // 2번 키 -> 인덱스 1
-        if (IA_SwitchHero2)
-            EnhancedInputComponent->BindAction(IA_SwitchHero2, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero2);
+        if (IA_SwitchHero2) EnhancedInputComponent->BindAction(IA_SwitchHero2, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero2);
 
         // 3번 키 -> 인덱스 2
-        if (IA_SwitchHero3)
-            EnhancedInputComponent->BindAction(IA_SwitchHero3, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero3);
+        if (IA_SwitchHero3) EnhancedInputComponent->BindAction(IA_SwitchHero3, ETriggerEvent::Triggered, this, &AInGameController::OnInputSwitchHero3);
         
-        if (IA_Move)
-        {
-            EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AInGameController::OnInputMove);
-        }
+        if (IA_Move)EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AInGameController::OnInputMove);
         // 퍼밀리어 소환 슬롯 바인딩
         if (IA_SummonSlot1) EnhancedInputComponent->BindAction(IA_SummonSlot1, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot1);
         if (IA_SummonSlot2) EnhancedInputComponent->BindAction(IA_SummonSlot2, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot2);
@@ -98,30 +100,26 @@ void AInGameController::SetupInputComponent()
         if (IA_SummonSlot4) EnhancedInputComponent->BindAction(IA_SummonSlot4, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot4);
         if (IA_SummonSlot5) EnhancedInputComponent->BindAction(IA_SummonSlot5, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot5);
 
-        if (IA_Attack)
-            EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &AInGameController::OnInputAttack);
-        if (IA_Skill)
-            EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Started, this, &AInGameController::OnInputSkill);
-        if (IA_Ultimate)
-            EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Started, this, &AInGameController::OnInputUltimate);
+        if (IA_Attack) EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &AInGameController::OnInputAttack);
+        if (IA_Skill) EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Started, this, &AInGameController::OnInputSkill);
+        if (IA_Ultimate) EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Started, this, &AInGameController::OnInputUltimate);
+
+        if (IA_OpenSettings) EnhancedInputComponent->BindAction(IA_OpenSettings, ETriggerEvent::Started, this, &AInGameController::OnInputOpenSettings);
     }
 
 }
 
 void AInGameController::OnInputMove(const FInputActionValue& Value)
 {
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
 
     APlayerBase* CurrentPawn = Cast<APlayerBase>(GetPawn());
-    if (!CurrentPawn)
-    {
-       // UE_LOG(LogTemp, Error, TEXT("[Move] Pawn이 없음"));
-        return;
-    }
-    if (!CurrentPawn->CanMove())
-    {
-        //UE_LOG(LogTemp, Error, TEXT("[Move] CanMove() = false"));
-        return;
-    }
+    if (!CurrentPawn || !CurrentPawn->CanMove()) return;
 
     const FVector2D MoveInput = Value.Get<FVector2D>();
 
@@ -144,6 +142,13 @@ void AInGameController::OnInputSummonSlot5() { RequestFamiliarSummon(4); }
 
 void AInGameController::OnInputAttack(const FInputActionValue& Value)
 {
+    //bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
+
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
@@ -155,6 +160,13 @@ void AInGameController::OnInputAttack(const FInputActionValue& Value)
 
 void AInGameController::OnInputSkill(const FInputActionValue& Value)
 {
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
+
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
@@ -166,12 +178,62 @@ void AInGameController::OnInputSkill(const FInputActionValue& Value)
 
 void AInGameController::OnInputUltimate(const FInputActionValue& Value)
 {
+    //bShowMouseCursor = true;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
+
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
         {
             ActionPanel->KeyboardUltimate();
         }
+    }
+}
+
+void AInGameController::OnInputOpenSettings(const FInputActionValue& Value)
+{
+    if (bIsTogglingSettings) return;
+    bIsTogglingSettings = true;
+
+    UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
+    if (!HUD)
+    {
+        bIsTogglingSettings = false;
+        return;
+    }
+
+    USettingsPopupWidget* SettingsPopup = HUD->GetSettingsPopupInstance();
+    if (!SettingsPopup)
+    {
+        bIsTogglingSettings = false;
+        return;
+    }
+
+    const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
+    if (bIsOpen)
+    {
+        // 창을 닫을 때는 커서를 숨겨야(또는 HUD의 감지 로직에 맡겨야) 합니다.
+        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
+        SettingsPopup->OnResumeGameClicked();
+    }
+    else
+    {
+        // 창을 열 때는 커서를 확실히 보여줍니다.
+        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
+        SettingsPopup->OpenSettings();
+    }
+
+    // 다음 프레임에 플래그 해제
+    if (GetWorld())
+    {
+        GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+            {
+                bIsTogglingSettings = false;
+            });
     }
 }
 
@@ -308,10 +370,7 @@ void AInGameController::BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerD
 UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
 {
     // 1. 이미 존재한다면 그대로 반환
-    if (InGameHUDInstance)
-    {
-        return InGameHUDInstance;
-    }
+    if (InGameHUDInstance) return InGameHUDInstance;
 
     // 2. 타이밍 이슈로 아직 없다면 즉시 생성(Lazy Init)
     if (IsLocalController() && InGameHUDClass)
@@ -322,10 +381,15 @@ UInGameHUDWidget* AInGameController::GetOrCreateInGameHUD()
             InGameHUDInstance->AddToViewport();
             InGameHUDInstance->InitializeHUD();
             
-            // 03/30 커먼 UI 잠금 해제
+            // OS 기본 커서 완전히 숨김 (소프트웨어 커서로 대체)
             FInputModeGameAndUI GameAndUIMode;
             GameAndUIMode.SetHideCursorDuringCapture(false);
+            GameAndUIMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             SetInputMode(GameAndUIMode);
+            bShowMouseCursor = false;
+
+            // 인게임 진입 시 소프트웨어 커서 표시
+            InGameHUDInstance->ShowMouseCursor(true);
         }
     }
     return InGameHUDInstance;
@@ -348,18 +412,36 @@ void AInGameController::SetActionPanelEnabled(bool bEnabled)
 
 void AInGameController::OnInputSwitchHero1(const FInputActionValue& Value)
 {
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(0);
 }
 
 void AInGameController::OnInputSwitchHero2(const FInputActionValue& Value)
 {
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(1);
 }
 
 void AInGameController::OnInputSwitchHero3(const FInputActionValue& Value)
 {
+     //bShowMouseCursor = false;
+
+     if (CachedCursorSubsystem.IsValid())
+     {
+         CachedCursorSubsystem->ShowCursor(false);
+     }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(2);
 }
@@ -434,8 +516,6 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
             ASC->ApplyGameplayEffectToSelf(CheatKillGE, 1.0f, ASC->MakeEffectContext());
         }
     }
-
-    
 }
 
 void AInGameController::CheatRespawn(int32 PlayerIndex)

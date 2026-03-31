@@ -16,6 +16,11 @@ class UParadiseGachaResultWidget;
 class UParadiseStageSelectWidget;
 class UParadiseChapterSelectWidget;
 class UAudioComponent;
+class UParadiseCursorWidget;
+class UParadiseCursorSubsystem;
+class UInputMappingContext;
+class UInputAction;
+struct FInputActionValue;
 #pragma endregion 전방 선언
 
 /**
@@ -29,6 +34,18 @@ class PARADISE_API ALobbyPlayerController : public APlayerController
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+
+#pragma region 입력 에셋 (추가)
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Input")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext = nullptr;
+
+	/** @brief 설정 창 열기 액션 (ESC) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Input")
+	TObjectPtr<UInputAction> IA_OpenSettings = nullptr;
+#pragma endregion 입력 에셋 (추가)
+
 #pragma region 0224 김성현 - 디버그테스트 전용 함수 (삭제예정)
 
 public:
@@ -241,4 +258,32 @@ public:
 	void StopCameraSwoosh();
 #pragma endregion 오디오 제어
 
+#pragma region 커서 설정
+protected:
+	/**
+	 * @brief 커스텀 커서 위젯 클래스
+	 * @details 에디터에서 WBP_ParadiseCursor를 할당하세요.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
+	TSubclassOf<UParadiseCursorWidget> CursorWidgetClass;
+
+	/**
+	 * @brief 커스텀 커서 텍스처
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
+	TObjectPtr<UTexture2D> Tex_CustomCursor = nullptr;
+
+private:
+		/** @brief 커서 서브시스템 캐싱 */
+		TWeakObjectPtr<UParadiseCursorSubsystem> CachedCursorSubsystem = nullptr;
+#pragma endregion 커서 설정
+
+#pragma region 내부 로직
+private:
+	/** @brief ESC 키 입력 처리 함수 */
+	void OnInputOpenSettings(const FInputActionValue& Value);
+
+	/** @brief 설정창 토글 중복 방지 플래그 */
+	bool bIsTogglingSettings = false;
+#pragma endregion 내부 로직
 };

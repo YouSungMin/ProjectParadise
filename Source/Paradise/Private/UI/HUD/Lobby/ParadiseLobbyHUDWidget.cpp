@@ -5,8 +5,10 @@
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/AudioManagementSubsystem.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Components/WidgetSwitcher.h"
 
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
@@ -44,8 +46,30 @@ void UParadiseLobbyHUDWidget::NativeConstruct()
 		}
 	}
 
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100); // 팝업이 최상단에 뜨도록 ZOrder 100 부여
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
+		}
+	}
+
 	// 초기화 시 None(메인 로비) 상태로 시작
 	UpdateMenuStats(EParadiseLobbyMenu::None);
+}
+
+FReply UParadiseLobbyHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UParadiseCursorSubsystem* CursorSys = GI->GetSubsystem<UParadiseCursorSubsystem>())
+		{
+			CursorSys->ShowCursor(true);
+		}
+	}
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
 void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)

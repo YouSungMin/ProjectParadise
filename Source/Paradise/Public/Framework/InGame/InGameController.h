@@ -6,7 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InGameController.generated.h"
 
-
+#pragma region 전방 선언
 class APlayerBase;
 class APlayerData;
 class AAIController;
@@ -14,12 +14,14 @@ class UAutoCombatComponent;
 class USquadControlComponent;
 class UUltimateEffectComponent;
 class UParadiseGameInstance;
+class UParadiseCursorSubsystem;
 class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
 class UInGameHUDWidget; //[추가] 26/02/04, 담당자 : 최지원 
-
+class UTexture2D;
 struct FInputActionValue;
+#pragma endregion 전방 선언
 
 /**
  * @brief 인게임 플레이어 컨트롤러
@@ -39,8 +41,9 @@ public:
 	//  스쿼드 제어 (Squad Control)
 public:
 #pragma region Getter 함수
-
+	/** @brief 자동 전투 관리 컴포넌트를 반환합니다. */
 	class UAutoCombatComponent* GetAutoCombatComponent() { return AutoCombatComponent; }
+	/** @brief 스쿼드 관리 컴포넌트를 반환합니다. */
 	class USquadControlComponent* GetSquadControlComponent() { return SquadControlComponent; }
 
 	/** @brief 궁극기 화면 연출 컴포넌트를 반환합니다. */
@@ -81,7 +84,7 @@ public:
 	
 
 	/**
-	 * @brief [단일 책임 원칙(SRP) 핵심] 생성된 캐릭터(데이터)를 UI와 연동합니다.
+	 * @brief 생성된 캐릭터(데이터)를 UI와 연동합니다.
 	 * @param PlayerIndex 파티 내 인덱스 (0~2)
 	 * @param InPlayerData 연동할 데이터(영혼) 객체
 	 */
@@ -166,6 +169,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Move = nullptr;
 
+	/** @brief 설정 창 열기 액션 (ESC) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Input")
+	TObjectPtr<UInputAction> IA_OpenSettings = nullptr;
+
 	/** @brief 퍼밀리어 소환 액션 키 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
 	TObjectPtr<UInputAction> IA_SummonSlot1 = nullptr;
@@ -197,7 +204,7 @@ private:
 	void OnInputSummonSlot5();
 
 	void OnInputMove(const FInputActionValue& Value);
-
+	void OnInputOpenSettings(const FInputActionValue& Value);
 	void OnInputAttack(const FInputActionValue& Value);
 	void OnInputSkill(const FInputActionValue& Value);
 	void OnInputUltimate(const FInputActionValue& Value);
@@ -216,4 +223,10 @@ private:
 	 * @brief 플레이어 스테이트 캐싱
 	 */
 	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
+
+	/** @brief 커서 서브시스템 캐싱 (매번 GetSubsystem 호출 방지) */
+	TWeakObjectPtr<UParadiseCursorSubsystem> CachedCursorSubsystem = nullptr;
+
+	/** @brief 설정창 토글 중복 방지 플래그 */
+	bool bIsTogglingSettings = false;
 };
