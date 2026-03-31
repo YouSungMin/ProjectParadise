@@ -18,4 +18,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void Die() override;
+
+protected:
+	UPROPERTY(VisibleAnywhere, Category = "Spawning|Data")
+	FName TargetStageID;
 };

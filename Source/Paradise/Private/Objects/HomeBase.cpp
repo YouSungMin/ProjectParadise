@@ -3,8 +3,10 @@
 #include "Objects/HomeBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Framework/System/StageSubsystem.h"
 #include "Framework/InGame/InGameGameMode.h"
 #include "Framework/InGame/InGameGameState.h"
+#include "Framework/Core/ParadiseGameInstance.h"
 
 AHomeBase::AHomeBase()
 {
@@ -18,6 +20,17 @@ AHomeBase::AHomeBase()
 void AHomeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+    UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+    if (!GI) return;
+
+    // 1. StageSubsystem에서 현재 선택된 StageID 자동으로 가져오기
+    if (UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>())
+    {
+        TargetStageID = StageSys->GetSelectedStageID();
+
+        //UE_LOG(LogTemp, Log, TEXT("🚀 [Spawner] 선택된 스테이지 '%s'를 서브시스템에서 로드했습니다."), *TargetStageID.ToString());
+    }
 
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
