@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Containers/Ticker.h"
 #include "ParadiseCursorSubsystem.generated.h"
 
 #pragma region 전방 선언
@@ -48,11 +49,11 @@ public:
     void ShowCursor(bool bShow);
 
     /**
-     * @brief 커서 위치를 갱신합니다.
-     * @param InPosition 화면 좌표
+     * @brief 메뉴(설정, 결과창 등)가 열렸을 때 키보드 입력이 들어와도 커서가 숨겨지지 않도록 강제합니다.
+     * @param bForce true면 강제 표시, false면 일반 로직으로 복귀
      */
     UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Cursor")
-    void UpdateCursorPosition(FVector2D InPosition);
+    void SetCursorForceVisible(bool bForce);
 
     /**
      * @brief 현재 플랫폼이 모바일인지 확인합니다.
@@ -71,5 +72,27 @@ private:
     /** @brief 소프트웨어 커서 위젯 인스턴스 */
     UPROPERTY()
     TObjectPtr<UParadiseCursorWidget> CursorWidgetInstance = nullptr;
+
+    /** @brief 소유 플레이어 컨트롤러 캐싱 */
+    TWeakObjectPtr<APlayerController> CachedPlayerController = nullptr;
+
+    /** @brief 게임 일시정지와 무관하게 동작하는 코어 레벨 커서 갱신 핸들 */
+    FTSTicker::FDelegateHandle CursorTickHandle;
+
+    /** @brief 이전 프레임 마우스 위치 (이동 감지용) */
+    FVector2D LastCursorPos = FVector2D::ZeroVector;
+
+    /** @brief 커서가 현재 숨김 상태인지 여부 */
+    bool bCursorHidden = false;
 #pragma endregion 내부 데이터
+private:
+    /** @brief 매 프레임 마우스 위치를 추적하여 커서 위젯을 갱신합니다. */
+    bool UpdateCursorTick(float DeltaTime);
+
+    /**
+     * @brief Slate 절대 좌표를 뷰포트 상대 좌표로 변환합니다.
+     * @param OutPosition 변환된 뷰포트 상대 좌표
+     * @return 위치 획득 성공 여부
+     */
+    bool GetCursorPositionInViewportSpace(FVector2D& OutPosition) const;
 };

@@ -55,7 +55,6 @@ FReply UParadiseLobbyHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, c
 	{
 		if (UParadiseCursorSubsystem* CursorSys = GI->GetSubsystem<UParadiseCursorSubsystem>())
 		{
-			CursorSys->UpdateCursorPosition(InMouseEvent.GetScreenSpacePosition());
 			CursorSys->ShowCursor(true);
 		}
 	}

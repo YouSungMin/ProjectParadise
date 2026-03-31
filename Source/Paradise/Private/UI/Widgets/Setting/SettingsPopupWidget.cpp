@@ -9,6 +9,7 @@
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/GraphicsSettingsSubsystem.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Components/TextBlock.h"
 #include "Data/Assets/ParadiseFXAudioData.h"
 
@@ -92,19 +93,23 @@ void USettingsPopupWidget::OpenSettings()
 	/** @section 1. 가시성 켜기 */
 	SetVisibility(ESlateVisibility::Visible);
 
+	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+	{
+		CursorSys->SetCursorForceVisible(true);
+	}
+
 	/** @section 2. 게임 일시정지 및 조작 권한 탈취 */
 	if (APlayerController* PC = GetOwningPlayer())
 	{
-		// 기획자가 true로 체크했을 때만 시간을 멈춥니다!
 		if (bPauseGameOnOpen)
 		{
 			PC->SetPause(true);
 		}
 
 		FInputModeUIOnly InputMode;
-		InputMode.SetWidgetToFocus(TakeWidget());
+		//InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = true;
 	}
 }
 
@@ -113,6 +118,12 @@ void USettingsPopupWidget::CloseSettings()
 	/** @section 1. 가시성 끄기 (파괴하지 않고 숨김 처리) */
 	SetVisibility(ESlateVisibility::Collapsed);
 
+	// 팝업이 닫힐 때 커서 강제 표시 해제 (인게임 원래 로직으로 복귀)
+	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
+	{
+		CursorSys->SetCursorForceVisible(false);
+	}
+
 	/** @section 2. 디스크에 1회 저장 (I/O 병목 회피) */
 	if (CachedAudioSettings.IsValid())
 	{
@@ -120,7 +131,6 @@ void USettingsPopupWidget::CloseSettings()
 		CachedAudioSettings->ApplyVolumeSettings();
 		//UE_LOG(LogTemp, Log, TEXT("[SettingsPopup] 팝업 닫힘 → 볼륨 디스크 저장 완료"));
 	}
-
 	/** @section 3. 게임 시간 복구 및 입력 모드 반환 */
 	if (APlayerController* PC = GetOwningPlayer())
 	{
@@ -132,8 +142,8 @@ void USettingsPopupWidget::CloseSettings()
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = false;
 	}
 }
 #pragma endregion 외부 인터페이스 구현
@@ -189,8 +199,26 @@ void USettingsPopupWidget::OnResumeGameClicked()
 			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
 		}
 	}
+	// 2. 🌟 핵심: 게임의 일시정지(Pause)만 먼저 풀어줍니다! (그래야 아래의 GetWorld() 타이머가 돌아갑니다)
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		if (bPauseGameOnOpen)
+		{
+			PC->SetPause(false);
+		}
+	}
 
-	CloseSettings();
+	// 3. 🌟 핵심: 버튼이 '눌렸다 떼어지는' Slate 이벤트 처리가 완전히 끝날 수 있도록 딱 0.1초의 시간을 벌어주고 CloseSettings를 실행합니다!
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_Resume,
+			this,
+			&USettingsPopupWidget::CloseSettings, // 기존 함수 손댈 필요 없이 그대로 호출!
+			0.1f,
+			false
+		);
+	}
 }
 
 void USettingsPopupWidget::OnReturnToLobbyClicked()
@@ -257,6 +285,10 @@ void USettingsPopupWidget::ResumeTimeOnly()
 		{
 			PC->SetPause(false);
 		}
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
 	}
 }
 

@@ -14,6 +14,7 @@ class UAutoCombatComponent;
 class USquadControlComponent;
 class UUltimateEffectComponent;
 class UParadiseGameInstance;
+class UParadiseCursorSubsystem;
 class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
@@ -222,4 +223,10 @@ private:
 	 * @brief 플레이어 스테이트 캐싱
 	 */
 	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
+
+	/** @brief 커서 서브시스템 캐싱 (매번 GetSubsystem 호출 방지) */
+	TWeakObjectPtr<UParadiseCursorSubsystem> CachedCursorSubsystem = nullptr;
+
+	/** @brief 설정창 토글 중복 방지 플래그 */
+	bool bIsTogglingSettings = false;
 };

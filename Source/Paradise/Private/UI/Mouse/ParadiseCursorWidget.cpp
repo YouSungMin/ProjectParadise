@@ -25,9 +25,6 @@ void UParadiseCursorWidget::SetCursorTexture(UTexture2D* InTexture)
 
 void UParadiseCursorWidget::UpdatePosition(FVector2D InPosition)
 {
-    if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Slot))
-    {
-        CanvasSlot->SetPosition(InPosition);
-    }
+    SetPositionInViewport(InPosition, false);
 }
 #pragma endregion 외부 인터페이스 구현

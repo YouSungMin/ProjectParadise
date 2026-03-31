@@ -201,9 +201,9 @@ FReply UInGameHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FP
 	// 마우스 커서 움직임 감지
 	if (CachedCursorSubsystem.IsValid())
 	{
-		CachedCursorSubsystem->UpdateCursorPosition(InMouseEvent.GetScreenSpacePosition());
 		CachedCursorSubsystem->ShowCursor(true);
 	}
+
 	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
@@ -214,6 +214,13 @@ FReply UInGameHUDWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, co
 	{
 		CachedCursorSubsystem->ShowCursor(true);
 	}
+
+	if (SettingsPopupInstance &&
+		SettingsPopupInstance->GetVisibility() == ESlateVisibility::Visible)
+	{
+		return FReply::Handled();
+	}
+
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
@@ -329,6 +336,8 @@ void UInGameHUDWidget::HandleGamePhaseChanged(EGamePhase NewPhase)
 	if (PartyStatusPanel)  PartyStatusPanel->SetVisibility(ControlUIVis);
 	if (Btn_AutoMode)      Btn_AutoMode->SetVisibility(ControlUIVis);
 	if (Btn_Setting)       Btn_Setting->SetVisibility(ControlUIVis);
+	if (Widget_AllyBaseHP) Widget_AllyBaseHP->SetVisibility(ControlUIVis);
+	if (Widget_EnemyBaseHP) Widget_EnemyBaseHP->SetVisibility(ControlUIVis);
 
 	// 3. 단계별 팝업 노출 처리 (상태 머신)
 	switch (NewPhase)

@@ -3,6 +3,7 @@
 
 #include "Framework/InGame/InGameController.h"
 #include "Framework/InGame/InGamePlayerState.h"
+#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/Core/ParadiseCameraManager.h"
 #include "Characters/Base/PlayerBase.h"
@@ -63,6 +64,12 @@ void AInGameController::BeginPlay()
     CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
     CachedPlayerState = GetPlayerState<AInGamePlayerState>();
 
+    // 마우스 커서 서브시스템 캐싱
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        CachedCursorSubsystem = GI->GetSubsystem<UParadiseCursorSubsystem>();
+    }
+
     // [추가] 26/02/04, 담당자: 최지원, [UI 생성] 로컬 플레이어인 경우에만 HUD 생성 (서버/AI 제외)
     
     GetOrCreateInGameHUD();
@@ -104,7 +111,12 @@ void AInGameController::SetupInputComponent()
 
 void AInGameController::OnInputMove(const FInputActionValue& Value)
 {
-    bShowMouseCursor = false;
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
 
     APlayerBase* CurrentPawn = Cast<APlayerBase>(GetPawn());
     if (!CurrentPawn || !CurrentPawn->CanMove()) return;
@@ -130,7 +142,12 @@ void AInGameController::OnInputSummonSlot5() { RequestFamiliarSummon(4); }
 
 void AInGameController::OnInputAttack(const FInputActionValue& Value)
 {
-    bShowMouseCursor = false;
+    //bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
 
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
@@ -143,7 +160,12 @@ void AInGameController::OnInputAttack(const FInputActionValue& Value)
 
 void AInGameController::OnInputSkill(const FInputActionValue& Value)
 {
-    bShowMouseCursor = false;
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
 
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
@@ -156,7 +178,12 @@ void AInGameController::OnInputSkill(const FInputActionValue& Value)
 
 void AInGameController::OnInputUltimate(const FInputActionValue& Value)
 {
-    bShowMouseCursor = true;
+    //bShowMouseCursor = true;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
 
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
@@ -169,15 +196,44 @@ void AInGameController::OnInputUltimate(const FInputActionValue& Value)
 
 void AInGameController::OnInputOpenSettings(const FInputActionValue& Value)
 {
-    // 설정창 열 때 커서 표시
-    bShowMouseCursor = true;
+    if (bIsTogglingSettings) return;
+    bIsTogglingSettings = true;
 
-    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    UInGameHUDWidget* HUD = GetOrCreateInGameHUD();
+    if (!HUD)
     {
-        if (USettingsPopupWidget* SettingsPopup = HUD->GetSettingsPopupInstance())
-        {
-            SettingsPopup->OpenSettings();
-        }
+        bIsTogglingSettings = false;
+        return;
+    }
+
+    USettingsPopupWidget* SettingsPopup = HUD->GetSettingsPopupInstance();
+    if (!SettingsPopup)
+    {
+        bIsTogglingSettings = false;
+        return;
+    }
+
+    const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
+    if (bIsOpen)
+    {
+        // 창을 닫을 때는 커서를 숨겨야(또는 HUD의 감지 로직에 맡겨야) 합니다.
+        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
+        SettingsPopup->CloseSettings();
+    }
+    else
+    {
+        // 창을 열 때는 커서를 확실히 보여줍니다.
+        if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
+        SettingsPopup->OpenSettings();
+    }
+
+    // 다음 프레임에 플래그 해제
+    if (GetWorld())
+    {
+        GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+            {
+                bIsTogglingSettings = false;
+            });
     }
 }
 
@@ -356,21 +412,36 @@ void AInGameController::SetActionPanelEnabled(bool bEnabled)
 
 void AInGameController::OnInputSwitchHero1(const FInputActionValue& Value)
 {
-    bShowMouseCursor = false;
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(0);
 }
 
 void AInGameController::OnInputSwitchHero2(const FInputActionValue& Value)
 {
-    bShowMouseCursor = false;
+   // bShowMouseCursor = false;
+
+    if (CachedCursorSubsystem.IsValid())
+    {
+        CachedCursorSubsystem->ShowCursor(false);
+    }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(1);
 }
 
 void AInGameController::OnInputSwitchHero3(const FInputActionValue& Value)
 {
-     bShowMouseCursor = false;
+     //bShowMouseCursor = false;
+
+     if (CachedCursorSubsystem.IsValid())
+     {
+         CachedCursorSubsystem->ShowCursor(false);
+     }
     //입력 액션 바인딩 함수 후에 UI 모바일 버튼으로 바인딩예정
     if(SquadControlComponent) SquadControlComponent->RequestSwitchPlayer(2);
 }

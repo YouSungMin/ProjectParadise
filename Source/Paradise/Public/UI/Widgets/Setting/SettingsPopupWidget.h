@@ -214,6 +214,9 @@ private:
 	/** @brief 효과음 재생 후 레벨 재시작 딜레이용 타이머 핸들 */
 	FTimerHandle TimerHandle_Retry;
 
+	/** @brief 버튼 상태 꼬임 방지를 위한 닫기 지연 타이머 핸들 */
+	FTimerHandle TimerHandle_Resume;
+
 	TWeakObjectPtr<UGraphicsSettingsSubsystem> CachedGraphicsSettings = nullptr;
 #pragma endregion 런타임 상태
 };
