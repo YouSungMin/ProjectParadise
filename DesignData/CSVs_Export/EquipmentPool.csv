@@ -1,64 +1,69 @@
-Name,ItemID,Rarity,Weight,DuplicateFragmentReward
-1,Blunt_DefaultBlunt,Common,1,0
-2,Blunt_Wrench,Common,1,0
-3,Blunt_Cleaner,Rare,1,0
-4,Blunt_Nobel,Rare,1,0
-5,Blunt_Nurse,Rare,1,0
-6,Blunt_Tuner,Rare,1,0
-7,Blunt_DevilBat,Epic,1,0
-8,Blunt_Outsider,Epic,1,0
-9,Blunt_Event_01,Epic,1,0
-10,Blunt_TreasureChest,Legendary,1,0
-11,Book_DefaultBook,Common,1,0
-12,Book_CookingForDummie,Common,1,0
-13,Book_Dictionary,Common,1,0
-14,Book_DeckCase,Rare,1,0
-15,Book_HologramHud,Rare,1,0
-16,Book_PerfectHarmony,Rare,1,0
-17,Book_BookOfRed,Epic,1,0
-18,Book_MementoMori,Epic,1,0
-19,Book_Event_01,Epic,1,0
-20,Book_FlawlessPlaying,Legendary,1,0
-21,Gun_BlackNose,Epic,1,0
-22,Gun_Smithers,Common,1,0
-23,Gun_Nail_Gun,Common,1,0
-24,Gun_LovelyCoil,Rare,1,0
-25,Gun_Mustang,Rare,1,0
-26,Gun_PayBack,Epic,1,0
-27,Gun_Demonia,Epic,1,0
-28,Gun_Event_01,Epic,1,0
-29,Gun_BlackBeard,Legendary,1,0
-30,Staff_Rogue,Common,1,0
-31,Staff_Bard,Common,1,0
-32,Staff_OneStroke,Rare,1,0
-33,Staff_Decanter,Rare,1,0
-34,Staff_Merry,Rare,1,0
-35,Staff_DeathMatch,Epic,1,0
-36,Staff_WinterCane,Epic,1,0
-37,Staff_Event_01,Epic,1,0
-38,Sword_Army,Common,1,0
-39,Sword_ButterSlayer,Common,1,0
-40,Sword_Carver,Rare,1,0
-41,Sword_Maid,Rare,1,0
-42,Sword_BeamSword,Epic,1,0
-43,Sword_ChainSword,Epic,1,0
-44,Sword_Event_01,Epic,1,0
-45,Sword_MilkyWay,Legendary,1,0
-46,Armor_Raiders,Common,1,0
-47,Armor_Webrunner,Rare,1,0
-48,Armor_HazmatSuit,Rare,1,0
-49,Armor_Rescue,Rare,1,0
-50,Armor_BishopsRobe,Epic,1,0
-51,Armor_Displacer,Legendary,1,0
-52,Hat_Bluerose,Rare,1,0
-53,Hat_FeliceHat,Rare,1,0
-54,Hat_Angela,Epic,1,0
-55,Hat_Tiara,Legendary,1,0
-56,Necklace_NecklaceOfGuide,Rare,1,0
-57,Necklace_PendantOfPassion,Rare,1,0
-58,Necklace_NecklaceOfAmplifier,Epic,1,0
-59,Necklace_ButterflyDance,Legendary,1,0
-60,Ring_RingOfAssassin,Rare,1,0
-61,Ring_RingOfWarrior,Rare,1,0
-62,Ring_RingOfHunter,Epic,1,0
-63,Ring_RingOfCommander,Legendary,1,0
+---,ItemID,ItemDisplayName,ItemIcon,ItemCardIllust,Rarity,ItemBannerType,Weight,CharacterSkeletalMesh,CharacterIdleAnim,RevealMeshScale,EquipmentStaticMesh
+1,Blunt_DefaultBlunt,기본 둔기,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Default_Blunt.Icon_Default_Blunt,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/기본_둔기.기본_둔기,Common,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/ScaledWeaponMesh/Blunt/DefaultBlunt/SM_Blunt_DefaultBlunt.SM_Blunt_DefaultBlunt
+2,Blunt_Wrench,렌치,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Wrench.Icon_Blunt_Wrench,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/렌치.렌치,Common,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Blunt/Blunt_Wrench/SM_Blunt_Wrench.SM_Blunt_Wrench
+3,Blunt_Cleaner,청소부의 빗자루,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Cleaner.Icon_Blunt_Cleaner,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/청소부의_빗자루.청소부의_빗자루,Rare,Equipment,1,None,None,"(X=1.300000,Y=1.300000,Z=1.300000)",/Game/External_Assets/Weapon/Blunt/Blunt_Cleaner/SM_Blunt_Cleaner.SM_Blunt_Cleaner
+4,Blunt_Nobel,노벨의 망치,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Nobel.Icon_Blunt_Nobel,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/노벨의_망치.노벨의_망치,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Blunt/Blunt_Noble/SM_Blunt_Nobel.SM_Blunt_Nobel
+5,Blunt_Nurse,간호사의 주사기,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Nurse.Icon_Blunt_Nurse,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/간호사의_주사기.간호사의_주사기,Rare,Equipment,1,None,None,"(X=0.600000,Y=0.600000,Z=0.600000)",/Game/External_Assets/Weapon/Blunt/Blunt_Nurse/SM_Blunt_Nurse.SM_Blunt_Nurse
+6,Blunt_Tuner,조율자의 해머,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Tuner.Icon_Blunt_Tuner,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/조율자의_해머.조율자의_해머,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Blunt/Blunt_Tuner/SM_Blunt_Tuner.SM_Blunt_Tuner
+7,Blunt_DevilBat,악마의 방망이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_DevilBat.Icon_Blunt_DevilBat,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/악마의_방망이.악마의_방망이,Uncommon,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Blunt/Blunt_Devilbat/SM_Blunt_Devilbat.SM_Blunt_Devilbat
+8,Blunt_Outsider,이방인의 곡괭이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Outsider.Icon_Blunt_Outsider,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/이방인의_곡괭이.이방인의_곡괭이,Uncommon,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/Weapon/Blunt/Blunt_Outsider/SM_Blunt_Outsider.SM_Blunt_Outsider
+9,Blunt_Event_01,황금 뿅망치 (이벤트),/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Event_01.Icon_Blunt_Event_01,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/황금_뿅망치.황금_뿅망치,Epic,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/Weapon/Blunt/Blunt_Event_01/SM_Blunt_Event_01.SM_Blunt_Event_01
+10,Blunt_TreasureChest,보물상자 철퇴,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_TreasureChest.Icon_Blunt_TreasureChest,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/보물상자_철퇴.보물상자_철퇴,Legendary,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Blunt/Blunt_TreasureChest/SM_Blunt_TreasureChest.SM_Blunt_TreasureChest
+11,Book_DefaultBook,기본 마도서,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_DefaultBook.Icon_Book_DefaultBook,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/기본_마도서.기본_마도서,Common,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_DefaultBook/StaticMesh.StaticMesh
+12,Book_CookingForDummie,요리 기초 책,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_12041_CookingForDummies.Icon_Book_12041_CookingForDummies,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/요리_기초_책.요리_기초_책,Common,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_CookingForDummies/StaticMesh.StaticMesh
+13,Book_Dictionary,두꺼운 사전,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_12011_Dictionary.Icon_Book_12011_Dictionary,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/두꺼운_사전.두꺼운_사전,Common,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_Dictionary/StaticMesh.StaticMesh
+14,Book_DeckCase,덱 케이스,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_12061_DeckCase.Icon_Book_12061_DeckCase,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/덱_케이스.덱_케이스,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_DeckCase/StaticMesh.StaticMesh
+15,Book_HologramHud,홀로그램 HUD,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_Courier.Icon_Book_Courier,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/홀로그램_HUD.홀로그램_HUD,Rare,Equipment,1,None,None,"(X=2.500000,Y=2.500000,Z=2.500000)",/Game/External_Assets/Weapon/Book/Book_HologramHud/StaticMesh.StaticMesh
+16,Book_PerfectHarmony,완벽한 조화,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_PerfectHarmony.Icon_Book_PerfectHarmony,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/완벽한_조화.완벽한_조화,Rare,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Book/Book_PerfectHarmony/StaticMesh.StaticMesh
+17,Book_BookOfRed,붉은 책,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_12021_BookOfRedMage.Icon_Book_12021_BookOfRedMage,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/붉은_책.붉은_책,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_BookOfRedMage/StaticMesh.StaticMesh
+18,Book_MementoMori,메멘토 모리,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_Hermit.Icon_Book_Hermit,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/메멘토_모리.메멘토_모리,Uncommon,Equipment,1,None,None,"(X=3.000000,Y=3.000000,Z=3.000000)",/Game/External_Assets/Weapon/Book/Book_Mementomori/StaticMesh.StaticMesh
+19,Book_Event_01,축제의 마도서 (이벤트),/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_Event_01.Icon_Book_Event_01,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/축제의_마도서.축제의_마도서,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Book/Book_Event_01/StaticMesh.StaticMesh
+20,Book_FlawlessPlaying,완벽한 연주,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Book_FlawlessPlaying.Icon_Book_FlawlessPlaying,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/완벽한_연주.완벽한_연주,Legendary,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Book/Book_FlawlessPlaying/StaticMesh.StaticMesh
+21,Gun_BlackNose,블랙 노즈,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_BlackNose.Icon_Gun_BlackNose,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/블랙_노즈.블랙_노즈,Uncommon,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/Weapon/Gun/Gun_BlackNose/StaticMesh.StaticMesh
+22,Gun_Smithers,경비병의 총,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_Smithers.Icon_Gun_Smithers,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/경비병의_총.경비병의_총,Common,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/Weapon/Gun/Gun_Smithers/SM_Gun_Smithers.SM_Gun_Smithers
+23,Gun_Nail_Gun,네일 건,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_NailGun.Icon_Gun_NailGun,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/네일_건.네일_건,Common,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Gun/Gun_DefaultGun/StaticMesh.StaticMesh
+24,Gun_LovelyCoil,러블리 코일,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_13051_LovelyCoil.Icon_Gun_13051_LovelyCoil,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/러블리_코일.러블리_코일,Rare,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Gun/Gun_Lovelycoil/SM_Gun_Lovelycoil.SM_Gun_Lovelycoil
+25,Gun_Mustang,머스탱,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_13061_Mustang.Icon_Gun_13061_Mustang,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/머스탱.머스탱,Rare,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Gun/Gun_Mustang/SM_Gun_Mustang.SM_Gun_Mustang
+26,Gun_PayBack,페이백,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_13011_PayBack.Icon_Gun_13011_PayBack,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/페이백.페이백,Epic,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Gun/Gun_Payback/SM_Gun_Payback.SM_Gun_Payback
+27,Gun_Demonia,데모니아,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_Demonia.Icon_Gun_Demonia,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/데모니아_무기.데모니아_무기,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Gun/Gun_Demonia/SM_Gun_Demonia.SM_Gun_Demonia
+28,Gun_Event_01,물총 (이벤트),/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_Event_01.Icon_Gun_Event_01,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/물총.물총,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Gun/Gun_Event_01/SM_Gun_Event_01.SM_Gun_Event_01
+29,Gun_BlackBeard,검은 수염,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Gun_13041_BlackBeard.Icon_Gun_13041_BlackBeard,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/검은_수염.검은_수염,Legendary,Equipment,1,None,None,"(X=3.000000,Y=3.000000,Z=3.000000)",/Game/External_Assets/Weapon/Gun/Gun_Blackbeard/SM_Gun_Blackbeard1.SM_Gun_Blackbeard1
+30,Staff_GazeOfDragon,불량배의 막대기,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_Rogue.Icon_Staff_Rogue,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/불량배의_막대기.불량배의_막대기,Common,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Staff/Staff_GazeOfDragon/StaticMesh.StaticMesh
+31,Staff_StandUp,유랑시인의 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_Bard.Icon_Staff_Bard,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/유랑시인의_지팡이.유랑시인의_지팡이,Common,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Staff/Staff_StandUp/SM_Staff_StandUp.SM_Staff_StandUp
+32,Staff_OneStroke,일필휘지,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_11041_OneStroke.Icon_Staff_11041_OneStroke,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/일필휘지.일필휘지,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_OneStroke/SM_Staff_OneStroke.SM_Staff_OneStroke
+33,Staff_Decanter,디캔터 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_11051_Decanter.Icon_Staff_11051_Decanter,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/디캔터_지팡이.디캔터_지팡이,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Decanter/SM_Staff_Decanter.SM_Staff_Decanter
+34,Staff_DeathMatch,데스매치,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_11031_DeathMatch.Icon_Staff_11031_DeathMatch,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/데스매치.데스매치,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Deathmatch/StaticMesh.StaticMesh
+35,Staff_WinterCane,겨울의 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_11061_WinterCane.Icon_Staff_11061_WinterCane,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/겨울의_지팡이.겨울의_지팡이,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Wintercane/SM_Staff_Wintercane.SM_Staff_Wintercane
+36,Staff_Event_01,요술 지팡이 (이벤트),/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Staff_Event_01.Icon_Staff_Event_01,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/요술_지팡이.요술_지팡이,Epic,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/Weapon/Staff/Staff_Event_01/SM_Staff_Event_01.SM_Staff_Event_01
+37,Sword_Army,보급형 군용검,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_Army.Icon_Sword_Army,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/보금형_군용검.보금형_군용검,Common,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Sword/Sword_Justice/SM_Sword_Justice.SM_Sword_Justice
+38,Sword_ButterSlayer,버터 슬레이어,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_ButterSlayer.Icon_Sword_ButterSlayer,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/버터_슬레이어.버터_슬레이어,Common,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Sword/Sword_Butterslayer/SM_Sword_Butterslayer.SM_Sword_Butterslayer
+39,Sword_HonetBlade,조각가의 검,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_HonetBlade.Icon_Sword_HonetBlade,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/조각가의_검.조각가의_검,Rare,Equipment,1,None,None,"(X=2.200000,Y=2.200000,Z=2.200000)",/Game/External_Assets/Weapon/Sword/Sword_HornetBlade/SM_Sword_HornetBlade.SM_Sword_HornetBlade
+40,Sword_Maid,메이드의 장검,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_Maid.Icon_Sword_Maid,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/메이드의_장검.메이드의_장검,Rare,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Sword/Sword_Ironmaid/SM_Sword_Ironmaid.SM_Sword_Ironmaid
+41,Sword_BeamSword,빔 소드,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_BeamSword.Icon_Sword_BeamSword,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/빔_소드.빔_소드,Uncommon,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Sword/Sword_BeamSword/SM_Sword_BeamSword.SM_Sword_BeamSword
+42,Sword_ChainSword,체인 소드,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_ChainSword.Icon_Sword_ChainSword,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/체인_소드.체인_소드,Uncommon,Equipment,1,None,None,"(X=2.000000,Y=2.000000,Z=2.000000)",/Game/External_Assets/Weapon/Sword/Sword_ChainSword/SM_Sword_ChainSword.SM_Sword_ChainSword
+43,Sword_Event_01,광선검 (이벤트),/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_Event_01.Icon_Sword_Event_01,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/광선검.광선검,Epic,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/Weapon/Sword/Sword_Event_01/SM_Sword_Event_01.SM_Sword_Event_01
+44,Sword_MilkyWay,은하수 검,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Sword_MilkWay.Icon_Sword_MilkWay,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/은하수_검.은하수_검,Legendary,Equipment,1,None,None,"(X=3.000000,Y=3.000000,Z=3.000000)",/Game/External_Assets/Weapon/Sword/Sword_Carver/SM_Sword_Carver.SM_Sword_Carver
+45,Armor_Raiders,레이더의 가죽 갑옷,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20041_Raiders.Icon_Armor_20041_Raiders,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/레이더의_가죽_갑옷.레이더의_가죽_갑옷,Common,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_Raiders.SM_Armor_Raiders
+46,Armor_Webrunner,웹러너의 재킷,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20061_Webrunner.Icon_Armor_20061_Webrunner,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/웹러너의_재킷.웹러너의_재킷,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_Webrunner.SM_Armor_Webrunner
+47,Armor_HazmatSuit,위험물 처리복,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20031_HazmatSuit.Icon_Armor_20031_HazmatSuit,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/위험물_처리복.위험물_처리복,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_HazmatSuit.SM_Armor_HazmatSuit
+48,Armor_Rescue,구조대원의 방호복,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20021_Rescue.Icon_Armor_20021_Rescue,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/구조대원의_방호복.구조대원의_방호복,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_Rescue.SM_Armor_Rescue
+49,Armor_BishopsRobe,주교의 로브,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20051_BishopsRobe.Icon_Armor_20051_BishopsRobe,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/주교의_로브.주교의_로브,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_BishopsRobe.SM_Armor_BishopsRobe
+50,Armor_Displacer,디스플레이서의 갑옷,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Armor_20011_Displacer.Icon_Armor_20011_Displacer,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/디스플레이서의_갑옷.디스플레이서의_갑옷,Legendary,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Armor_Displacer.SM_Armor_Displacer
+51,Hat_Bluerose,푸른 장미의 모자,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Hat_60011_Bluerose.Icon_Hat_60011_Bluerose,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/푸른_장미의_모자.푸른_장미의_모자,Rare,Equipment,1,None,None,"(X=0.250000,Y=0.250000,Z=0.250000)",/Game/External_Assets/ArmorMesh/Hat_Bluerose/Meshy_AI_Blue_Rose_with_Pearl__0227043200_texture.Meshy_AI_Blue_Rose_with_Pearl__0227043200_texture
+52,Hat_FeliceHat,펠리체의 챙 모자,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Hat_60041_FeliceHat.Icon_Hat_60041_FeliceHat,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/펠리체의_챙_모자.펠리체의_챙_모자,Uncommon,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Armors/SM_Hat_FeliceHat.SM_Hat_FeliceHat
+53,Hat_Angela,안젤라의 리본,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Hat_60021_Angela.Icon_Hat_60021_Angela,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/안젤라의_리본.안젤라의_리본,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Hat_Angela/Meshy_AI_Ring_of_Fire_0227043153_texture.Meshy_AI_Ring_of_Fire_0227043153_texture
+54,Hat_Tiara,왕녀의 티아라,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Hat_60031_Tiara.Icon_Hat_60031_Tiara,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/왕녀의_티아라.왕녀의_티아라,Legendary,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/ArmorMesh/Hat_Tiara/Meshy_AI_Purple_Crown_0227043141_texture.Meshy_AI_Purple_Crown_0227043141_texture
+55,Necklace_NecklaceOfGuide,인도자의 목걸이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Necklace_50021_NecklaceOfGuide.Icon_Necklace_50021_NecklaceOfGuide,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/인도자의_목걸이.인도자의_목걸이,Uncommon,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/ArmorMesh/Necklace/Medieval_Necklace/SM_NecklaceOfGuide.SM_NecklaceOfGuide
+56,Necklace_PendantOfPassion,정열의 펜던트,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Necklace_50041_PendantOfPassion.Icon_Necklace_50041_PendantOfPassion,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/정열의_펜던트.정열의_펜던트,Rare,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/ArmorMesh/Necklace/Medieval_Necklace/SM_PendantOfPassion.SM_PendantOfPassion
+57,Necklace_NecklaceOfAmplifier,증폭의 목걸이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Necklace_50031_NecklaceOfAmplify.Icon_Necklace_50031_NecklaceOfAmplify,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/증폭의_목걸이.증폭의_목걸이,Epic,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/ArmorMesh/Necklace/Medieval_Necklace/SM_NecklaceOfGuide.SM_NecklaceOfGuide
+58,Necklace_ButterflyDance,나비춤의 목걸이,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Necklace_50011_ButterflyDance.Icon_Necklace_50011_ButterflyDance,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/나비춤의_목걸이.나비춤의_목걸이,Legendary,Equipment,1,None,None,"(X=4.000000,Y=4.000000,Z=4.000000)",/Game/External_Assets/ArmorMesh/Necklace/Medieval_Necklace/SM_ButterflyDance.SM_ButterflyDance
+59,Ring_RingOfAssassin,암살자의 반지,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Ring_30021_RingOfAssassin.Icon_Ring_30021_RingOfAssassin,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/암살자의_반지.암살자의_반지,Rare,Equipment,1,None,None,"(X=0.250000,Y=0.250000,Z=0.250000)",/Game/External_Assets/ArmorMesh/Rings/SM_Ring_RingOfAssassin.SM_Ring_RingOfAssassin
+60,Ring_RingOfWarrior,전사의 반지,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Ring_30011_RingOfWarrior.Icon_Ring_30011_RingOfWarrior,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/전사의_반지.전사의_반지,Rare,Equipment,1,None,None,"(X=0.250000,Y=0.250000,Z=0.250000)",/Game/External_Assets/ArmorMesh/Rings/SM_Ring_RingOfWarrior.SM_Ring_RingOfWarrior
+61,Ring_RingOfHunter,사냥꾼의 반지,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Ring_30031_RingOfHunter.Icon_Ring_30031_RingOfHunter,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/사냥꾼의_반지.사냥꾼의_반지,Epic,Equipment,1,None,None,"(X=0.250000,Y=0.250000,Z=0.250000)",/Game/External_Assets/ArmorMesh/Rings/SM_Ring_RingOfHunter.SM_Ring_RingOfHunter
+62,Ring_RingOfCommander,지휘관의 반지,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Ring_30041_RingOfCommander.Icon_Ring_30041_RingOfCommander,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/지휘관의_반지.지휘관의_반지,Legendary,Equipment,1,None,None,"(X=0.250000,Y=0.250000,Z=0.250000)",/Game/External_Assets/ArmorMesh/Rings/SM_Ring_RingOfCommander.SM_Ring_RingOfCommander
+63,Blunt_Merry,메리 망치,/Game/External_Assets/UI/Icon/Icon_Equip/Icon_Blunt_Merry.Icon_Blunt_Merry,/Game/External_Assets/UI/Icon/Icon_Equip_Cards/메리_망치.메리_망치,Rare,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Blunt/Blunt_Merry/SM_Blunt_Merry.SM_Blunt_Merry
+64,Staff_Anubis,아누비스의 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Staff_Anubis.Staff_Anubis,/Game/External_Assets/UI/Icon/Icon_Cards/아누비스의_지팡이.아누비스의_지팡이,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Anubis/SM_Staff_Anubis.SM_Staff_Anubis
+65,Staff_Binder,바인더의 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Staff_Binder.Staff_Binder,/Game/External_Assets/UI/Icon/Icon_Cards/바인더의_지팡이.바인더의_지팡이,Epic,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Binder/SM_Staff_Binder.SM_Staff_Binder
+66,Staff_DefaultStaff,기본 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Staff_DefaultStaff.Staff_DefaultStaff,/Game/External_Assets/UI/Icon/Icon_Cards/기본_지팡이.기본_지팡이,Common,Equipment,1,None,None,"(X=0.500000,Y=0.500000,Z=0.500000)",/Game/External_Assets/Weapon/Staff/Staff_DefaultStaff/SM_Staff_DefaultStaff.SM_Staff_DefaultStaff
+67,Staff_Initiator,선구자의 지팡이,/Game/External_Assets/UI/Icon/Icon_Equip/Staff_Initiator.Staff_Initiator,/Game/External_Assets/UI/Icon/Icon_Cards/선구자의_지팡이.선구자의_지팡이,Legendary,Equipment,1,None,None,"(X=1.000000,Y=1.000000,Z=1.000000)",/Game/External_Assets/Weapon/Staff/Staff_Initiator/SM_Staff_Initiator.SM_Staff_Initiator
+68,Staff_OverTheHorizon,지평의 끝,/Game/External_Assets/UI/Icon/Icon_Equip/Staff_OverTheHorizon.Staff_OverTheHorizon,/Game/External_Assets/UI/Icon/Icon_Cards/지평의_끝.지평의_끝,Rare,Equipment,1,None,None,"(X=1.500000,Y=1.500000,Z=1.500000)",/Game/External_Assets/Weapon/Staff/Staff_OverTheHorizon/SM_Staff_OverTheHorizon.SM_Staff_OverTheHorizon

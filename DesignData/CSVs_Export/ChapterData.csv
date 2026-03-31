@@ -1,0 +1,6 @@
+---,ChapterID,FirstStageID,ChapterMapTexture,ChapterButtonMaterial
+Chapter1,"1","None","/Game/UI/Img/Img_Chapter/Chapter1.Chapter1","/Game/External_Assets/UIMaterialLab/Widgets/ComponentMaterials/MaterialInstances/MI_UI_Chapter1.MI_UI_Chapter1"
+Chapter2,"2","Stage2_1","/Game/UI/Img/Img_Chapter/Chapter2.Chapter2","/Game/External_Assets/UIMaterialLab/Widgets/ComponentMaterials/MaterialInstances/MI_UI_Chapter2.MI_UI_Chapter2"
+Chapter3,"3","Stage3_1","/Game/UI/Img/Img_Chapter/Chapter3.Chapter3","/Game/External_Assets/UIMaterialLab/Widgets/ComponentMaterials/MaterialInstances/MI_UI_Chapter3.MI_UI_Chapter3"
+Chapter4,"4","Stage4_1","/Game/UI/Img/Img_Chapter/Chapter4Map.Chapter4Map","/Game/External_Assets/UIMaterialLab/Widgets/ComponentMaterials/MaterialInstances/MI_UI_Chapter4.MI_UI_Chapter4"
+Chapter5,"5","Stage5_1","/Game/UI/Img/Img_Chapter/Chapter5Map.Chapter5Map","/Game/External_Assets/UIMaterialLab/Widgets/ComponentMaterials/MaterialInstances/MI_UI_Chapter5.MI_UI_Chapter5"
