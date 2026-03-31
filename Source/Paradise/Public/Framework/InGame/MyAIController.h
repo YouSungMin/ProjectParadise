@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionTypes.h"
+#include "DetourCrowdAIController.h"
 #include "MyAIController.generated.h"
 
 UCLASS()
-class PARADISE_API AMyAIController : public AAIController
+class PARADISE_API AMyAIController : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 

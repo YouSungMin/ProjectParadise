@@ -48,22 +48,18 @@ void UBTService_CheckAttackRange::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		ActionName = FString::Printf(TEXT("%d번 스킬"), ActionIndex);
 	}
 
-	// 2. 실제 거리 계산
-	float DistanceToTarget = BossChar->GetDistanceTo(TargetActor);
+	//콜라이더 반경(Radius)
+	float BossRadius = BossChar->GetSimpleCollisionRadius();
+	float TargetRadius = TargetActor->GetSimpleCollisionRadius();
 
-	// 3. 사거리 진입 여부 계산
-	bool bIsInRange = DistanceToTarget <= (AttackRange + AcceptableRadius);
+	//실제 거리 계산 (중심점 기준)
+	float DistanceToTarget = BossChar->GetHorizontalDistanceTo(TargetActor); // (추천: 2D 수평 거리)
 
-	// 🚨 [추가] 사거리 계산 결과 로그 출력
-	/*UE_LOG(LogParadiseAI, Warning, TEXT("📏 [사거리 체크] 대상: %s | 액션: %s | 사거리(%.1f) + 오차(%.1f) vs 현재 거리(%.1f) => 결과: %s"),
-		*TargetActor->GetName(),
-		*ActionName,
-		AttackRange,
-		AcceptableRadius,
-		DistanceToTarget,
-		bIsInRange ? TEXT("✅ 통과 (공격 가능)") : TEXT("❌ 불가 (너무 멂)")
-	);*/
+	//사거리 진입 여부 계산 (콜라이더 겉표면 기준)
+	float RequiredDistance = AttackRange + AcceptableRadius + BossRadius + TargetRadius;
 
-	// 4. 계산된 결과를 블랙보드에 덮어쓰기 (데코레이터 인터럽트 발동)
+	bool bIsInRange = DistanceToTarget <= RequiredDistance;
+
+	//계산된 결과를 블랙보드에 Set
 	BlackboardComp->SetValueAsBool(ResultBoolKey.SelectedKeyName, bIsInRange);
 }
