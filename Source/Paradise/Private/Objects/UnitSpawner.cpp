@@ -73,6 +73,133 @@ void AUnitSpawner::BeginPlay()
 	}
 }
 
+//void AUnitSpawner::SpawnUnit()
+//{
+//	if (!WaveConfigs.IsValidIndex(CurrentWaveIndex))
+//	{
+//		GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+//		return;
+//	}
+//
+//	EnemyRowName = WaveConfigs[CurrentWaveIndex].UnitRowName;
+//	UObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
+//	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+//
+//	if (!PoolSubsystem || (!UnitClass && !SkillCasterClass) || EnemyRowName.IsNone() || !GI) return;
+//
+//	FEnemyStats* StatData = nullptr;
+//	FEnemyAssets* AssetData = nullptr;
+//
+//	if (GI->EnemyStatsDataTable && GI->EnemyAssetsDataTable)
+//	{
+//		StatData = GI->GetDataTableRow<FEnemyStats>(GI->EnemyStatsDataTable, EnemyRowName);
+//		AssetData = GI->GetDataTableRow<FEnemyAssets>(GI->EnemyAssetsDataTable, EnemyRowName);
+//	}
+//
+//	if (!StatData || !AssetData) return;
+//
+//	TSubclassOf<AUnitBase> ClassToSpawn = UnitClass;
+//
+//	if (StatData->PatternActionHandles.Num() > 0 && SkillCasterClass)
+//	{
+//		ClassToSpawn = SkillCasterClass; // 보스(스킬 캐스터) 클래스로 변경!
+//	}
+//
+//	// 유배지에서 복귀할 정확한 전장 좌표 계산
+//	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 20.0f);
+//	FRotator SpawnRotation = FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f);
+//
+//	// 풀에서 유닛을 가져옴 (이때 내부적으로 OnPoolActivate 호출)
+//	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(ClassToSpawn, SpawnLocation, SpawnRotation, this, nullptr);
+//
+//	if (NewUnit)
+//	{
+//		// 전장 좌표로 즉시 순간이동 및 물리 리셋
+//		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
+//
+//		NewUnit->SetUnitID(EnemyRowName);
+//		// 스탯 및 메시 초기화
+//		NewUnit->InitializeUnit(StatData, AssetData);
+//
+//		if (AssetData->AIController)
+//		{
+//			NewUnit->AIControllerClass = AssetData->AIController;
+//		}
+//
+//		// 컨트롤러가 없으면 스폰합니다. (이제 테이블에 설정한 보스 컨트롤러가 스폰됨)
+//		if (!NewUnit->GetController())
+//		{
+//			NewUnit->SpawnDefaultController();
+//		}
+//
+//		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
+//		
+//
+//		if (AIC)
+//		{
+//			AIC->Possess(NewUnit);
+//
+//			if (!AssetData->BehaviorTree.IsNull())
+//			{
+//				UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
+//				if (BT)
+//				{
+//					// BT 실행
+//					AIC->RunBehaviorTree(BT);
+//
+//					// 🚨 [수정 3] 보스도 쉴 때 본진으로 걸어가야 하므로 똑같이 타겟팅 해줍니다.
+//					UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+//					if (BB)
+//					{
+//						TArray<AActor*> FoundBases;
+//						UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
+//
+//						AHomeBase* TargetFriendlyBase = nullptr;
+//						for (AActor* BaseActor : FoundBases)
+//						{
+//							AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
+//							if (HomeBase && NewUnit->IsHostile(HomeBase)) // 기존에 작성하신 IsHostile 유지
+//							{
+//								TargetFriendlyBase = HomeBase;
+//								break;
+//							}
+//						}
+//
+//						if (TargetFriendlyBase)
+//						{
+//							// BB에 목적지(본진) 세팅
+//							BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
+//							BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
+//
+//							FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
+//							FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
+//							FVector TargetLocation = BaseLoc + (Dir * 200.0f);
+//
+//							BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
+//						}
+//					}
+//					// AI 로직 강제 재시작
+//					if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->RestartLogic();
+//				}
+//			}
+//		}
+//	}
+//
+//	// 웨이브 진행 관리
+//	CurrentSpawnCountInWave++;
+//	if (CurrentSpawnCountInWave >= WaveConfigs[CurrentWaveIndex].SpawnCount)
+//	{
+//		CurrentSpawnCountInWave = 0;
+//		int32 FinishedIdx = CurrentWaveIndex;
+//		CurrentWaveIndex++;
+//		GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+//		if (WaveConfigs.IsValidIndex(CurrentWaveIndex))
+//		{
+//			GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AUnitSpawner::SpawnUnit,
+//				WaveConfigs[CurrentWaveIndex].SpawnInterval, true, WaveConfigs[FinishedIdx].NextWaveDelay);
+//		}
+//	}
+//}
 void AUnitSpawner::SpawnUnit()
 {
 	if (!WaveConfigs.IsValidIndex(CurrentWaveIndex))
@@ -114,78 +241,47 @@ void AUnitSpawner::SpawnUnit()
 
 	if (NewUnit)
 	{
-		// 전장 좌표로 즉시 순간이동 및 물리 리셋
+		// 1. 전장 좌표로 즉시 순간이동 및 물리 리셋
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
 
+		// 2. 스탯 및 데이터 초기화
 		NewUnit->SetUnitID(EnemyRowName);
-		// 스탯 및 메시 초기화
 		NewUnit->InitializeUnit(StatData, AssetData);
 
+		// 3. 데이터 테이블에 설정된 전용 AI 컨트롤러 클래스 장착
 		if (AssetData->AIController)
 		{
 			NewUnit->AIControllerClass = AssetData->AIController;
 		}
 
-		// 컨트롤러가 없으면 스폰합니다. (이제 테이블에 설정한 보스 컨트롤러가 스폰됨)
-		if (!NewUnit->GetController())
+		// ==========================================================
+		// 🚨 4. AI 컨트롤러 빙의 (스포너의 개입은 여기까지!)
+		// 기존에 있던 BT 실행, BB 세팅, 본진 검색(GetAllActorsOfClass) 로직 삭제 완료.
+		// 이 로직들은 빙의(Possess) 시 AIController의 OnPossess에서 스스로 알아서 처리합니다.
+		// ==========================================================
+		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
+
+		if (!AIC)
 		{
+			// 컨트롤러가 없으면 스폰 (SpawnDefaultController 내부에 Possess가 포함되어 있음)
 			NewUnit->SpawnDefaultController();
 		}
-
-		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
-		
-
-		if (AIC)
+		else if (AIC->GetPawn() != NewUnit)
 		{
+			// 컨트롤러는 있지만 현재 유닛과 연결이 끊겨 있다면 강제 빙의
 			AIC->Possess(NewUnit);
-
-			if (!AssetData->BehaviorTree.IsNull())
+		}
+		else
+		{
+			// (오브젝트 풀링용) 이미 완벽하게 빙의된 상태로 풀에서 꺼내졌다면 뇌(Brain)만 재시작
+			if (AIC->GetBrainComponent())
 			{
-				UBehaviorTree* BT = AssetData->BehaviorTree.LoadSynchronous();
-				if (BT)
-				{
-					// BT 실행
-					AIC->RunBehaviorTree(BT);
-
-					// 🚨 [수정 3] 보스도 쉴 때 본진으로 걸어가야 하므로 똑같이 타겟팅 해줍니다.
-					UBlackboardComponent* BB = AIC->GetBlackboardComponent();
-					if (BB)
-					{
-						TArray<AActor*> FoundBases;
-						UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
-
-						AHomeBase* TargetFriendlyBase = nullptr;
-						for (AActor* BaseActor : FoundBases)
-						{
-							AHomeBase* HomeBase = Cast<AHomeBase>(BaseActor);
-							if (HomeBase && NewUnit->IsHostile(HomeBase)) // 기존에 작성하신 IsHostile 유지
-							{
-								TargetFriendlyBase = HomeBase;
-								break;
-							}
-						}
-
-						if (TargetFriendlyBase)
-						{
-							// BB에 목적지(본진) 세팅
-							BB->SetValueAsObject(FName("EnemyBaseActor"), TargetFriendlyBase);
-							BB->SetValueAsObject(FName("HomeBaseActor"), TargetFriendlyBase);
-
-							FVector BaseLoc = TargetFriendlyBase->GetActorLocation();
-							FVector Dir = (NewUnit->GetActorLocation() - BaseLoc).GetSafeNormal();
-							FVector TargetLocation = BaseLoc + (Dir * 200.0f);
-
-							BB->SetValueAsVector(FName("MoveLocation"), TargetLocation);
-						}
-					}
-					// AI 로직 강제 재시작
-					if (AIC->GetBrainComponent()) AIC->GetBrainComponent()->RestartLogic();
-				}
+				AIC->GetBrainComponent()->RestartLogic();
 			}
 		}
 	}
 
-	// 웨이브 진행 관리
+	// 5. 웨이브 진행 관리 (기존과 동일)
 	CurrentSpawnCountInWave++;
 	if (CurrentSpawnCountInWave >= WaveConfigs[CurrentWaveIndex].SpawnCount)
 	{

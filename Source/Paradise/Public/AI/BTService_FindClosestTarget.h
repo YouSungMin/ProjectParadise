@@ -21,5 +21,5 @@ protected:
 	FBlackboardKeySelector TargetActorKey;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
-	float SearchRadius = 1000.0f;
+	float SearchRadius = 3000.0f;
 };

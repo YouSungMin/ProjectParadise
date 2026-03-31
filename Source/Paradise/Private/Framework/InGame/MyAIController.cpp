@@ -7,6 +7,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Characters/AIUnit/UnitBase.h"
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Objects/HomeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -31,6 +32,15 @@ AMyAIController::AMyAIController()
 			AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 		}
 	}
+
+
+    if (UCrowdFollowingComponent* CrowdComp = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()))
+    {
+        CrowdComp->SetCrowdSeparation(true);
+        // 가중치를 50.0f 정도로 다시 올려서 유닛끼리 부드럽게 비켜가도록 둡니다.
+        CrowdComp->SetCrowdSeparationWeight(50.0f);
+        CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::High);
+    }
 
 	if (AIPerception)
 	{

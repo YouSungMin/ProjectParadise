@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "DetourCrowdAIController.h"
 #include "MyAIController_Range.generated.h"
 
 UCLASS()
-class PARADISE_API AMyAIController_Range : public AAIController
+class PARADISE_API AMyAIController_Range : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 
