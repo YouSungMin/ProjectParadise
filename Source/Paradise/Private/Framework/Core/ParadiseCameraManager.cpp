@@ -9,6 +9,7 @@
 #include "Characters/AIUnit/UnitBase.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Objects/HomeBase.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
 #include "Characters/Base/PlayerBase.h"
@@ -178,93 +179,136 @@ void AParadiseCameraManager::UpdateDynamicSmartCamera(float DeltaTime, bool bIsA
     if (!OverviewCameraActor)
     {
         InitializeOverviewCamera();
-    }
-    // 🚨 1번 체크: 관전 카메라(드론)가 존재하는가?
-    if (!OverviewCameraActor)
-    {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Red, TEXT("❌ [SmartCamera] OverviewCameraActor가 없습니다!"));
-        return;
+        if (!OverviewCameraActor) return;
     }
 
     FVector TargetCenter = FVector::ZeroVector;
-    FString TargetName = TEXT("None"); // 디버그 출력용
+    FString TargetName = TEXT("None");
 
-    // ==========================================
-    // 1. [누구를 비출 것인가?] 타겟 중심점 계산
-    // ==========================================
-    if (bIsWipedOut)
+    //카메라 피로도(시간) 업데이트
+    if (CurrentSmartTarget)
     {
-        TArray<AActor*> Enemies;
-        UGameplayStatics::GetAllActorsOfClass(GetWorld(), AUnitBase::StaticClass(), Enemies);
+        CurrentTargetFocusTime += DeltaTime;
+    }
 
-        int32 AliveEnemyCount = 0;
-        for (AActor* Actor : Enemies)
+    // 2. 모든 캐릭터 순회하며 가중치 평가
+    TArray<AActor*> AllCharacters;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacterBase::StaticClass(), AllCharacters);
+
+    AActor* BestTarget = nullptr;
+    float HighestScore = -9999.0f;
+
+    for (AActor* Actor : AllCharacters)
+    {
+        ACharacterBase* Character = Cast<ACharacterBase>(Actor);
+
+        // 유효성, 생존, 기지 제외 체크
+        if (!Character || Character->IsHidden() || Character->IsA<AHomeBase>()) continue;
+
+        //사망한 캐릭터 체크
+        if (Character->IsDead()) continue; 
+
+        //기본 점수에 일정 범위의 무작위 점수를 부여
+        float CurrentScore = FMath::RandRange(0.0f, 5.0f);
+
+        //우선순위 설정
+        if (Character == ControlledPawn)
         {
-            if (AUnitBase* Enemy = Cast<AUnitBase>(Actor))
-            {
-                if (!Enemy->IsDead())
-                {
-                    TargetCenter += Enemy->GetActorLocation();
-                    AliveEnemyCount++;
-                }
-            }
+            CurrentScore += 40.0f; // 플레이어
+            if (bIsWipedOut) CurrentScore -= 100.0f;
         }
-        if (AliveEnemyCount > 0)
+        else if (Character->ActorHasTag(TEXT("Unit.Faction.Friendly.Familiar")))
         {
-            TargetCenter /= AliveEnemyCount;
-            TargetName = FString::Printf(TEXT("적 무리 (%d명)"), AliveEnemyCount);
+            CurrentScore += 30.0f; // 아군
         }
         else
         {
-            TargetCenter = LastDeathLocation;
-            TargetName = TEXT("마지막 사망 위치(적 없음)");
+            CurrentScore += 20.0f; // 적군 
+        }
+
+        // 공격, 스킬, 궁극기를 사용중이면 점수 +
+        if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
+        {
+            if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("State")))
+            {
+                CurrentScore += 40.0f;
+            }
+        }
+
+        //너무 오래 한대상을 비췄다면
+        if (Character == CurrentSmartTarget)
+        {
+            if (CurrentTargetFocusTime > 6.0f) // 6초
+            {
+                CurrentScore -= 200.0f; //패널티 점수
+            }
+            else
+            {
+                CurrentScore += 50.0f; // 6초가 되기 전까지는 높은 보너스를 주어 타겟이 휙휙 바뀌는 멀미 방지
+            }
+        }
+
+        // --- 최고 점수 갱신 ---
+        if (CurrentScore > HighestScore)
+        {
+            HighestScore = CurrentScore;
+            BestTarget = Character;
         }
     }
-    else if (ControlledPawn)
+
+    //최종 타겟 확정 및 피로도 초기화
+    if (BestTarget)
     {
-        TargetCenter = ControlledPawn->GetActorLocation();
-        TargetName = ControlledPawn->GetName();
+        // 타겟이 새롭게 변경되었다면 시간 초기화
+        if (CurrentSmartTarget != BestTarget)
+        {
+            CurrentSmartTarget = BestTarget;
+            CurrentTargetFocusTime = 0.0f;
+        }
+
+        TargetCenter = BestTarget->GetActorLocation();
+        TargetName = FString::Printf(TEXT("%s (Score: %.0f)"), *BestTarget->GetName(), HighestScore);
+        LastDeathLocation = TargetCenter;
     }
     else
     {
-        TargetName = TEXT("타겟 소실(Pawn 없음)");
+        TargetCenter = LastDeathLocation;
+        TargetName = TEXT("타겟 소실 (마지막 위치)");
     }
 
-    // ==========================================
-    // 2. [얼마나 멀리서 비출 것인가?] 오프셋 계산
-    // ==========================================
     FVector CameraOffset;
-    if (bIsAuto)
+    float TargetFOV = 90.0f; // 기본 시야각
+
+    if (bIsAuto || bIsWipedOut)
     {
-        CameraOffset = FVector(-1200.0f, 0.0f, 1500.0f);
+        //자동 or 스쿼드 전멸시 카메라
+        CameraOffset = FVector(0.0f, 2800.0f, 1000.0f);
+        TargetFOV = 45.0f; // 일반적인 쿼터뷰/탑뷰 게임의 시야각
     }
     else
     {
-        CameraOffset = FVector(-800.0f, 0.0f, 1000.0f);
+        //수동모드 카메라
+        CameraOffset = FVector(0.0f, 1315.0f, 480.0f);
+        TargetFOV = 45.0f;
     }
 
-    // ==========================================
-    // 3. 카메라 부드럽게 이동 및 회전
-    // ==========================================
     FVector TargetCamLoc = TargetCenter + CameraOffset;
+
+    // Overview 카메라가 항상 타겟의 중앙을 바라보도록 회전값 계산
     FRotator TargetCamRot = UKismetMathLibrary::FindLookAtRotation(TargetCamLoc, TargetCenter);
 
-    FVector NewLoc = FMath::VInterpTo(OverviewCameraActor->GetActorLocation(), TargetCamLoc, DeltaTime, 2.5f);
-    FRotator NewRot = FMath::RInterpTo(OverviewCameraActor->GetActorRotation(), TargetCamRot, DeltaTime, 2.5f);
+    float InterpSpeed = 2.5f;
 
-    OverviewCameraActor->SetActorLocationAndRotation(NewLoc, NewRot);
+    // 위치와 회전 부드럽게 보간
+    OverviewCameraActor->SetActorLocationAndRotation(
+        FMath::VInterpTo(OverviewCameraActor->GetActorLocation(), TargetCamLoc, DeltaTime, InterpSpeed),
+        FMath::RInterpTo(OverviewCameraActor->GetActorRotation(), TargetCamRot, DeltaTime, InterpSpeed)
+    );
 
-    // 💡 [디버그 로그 출력] 키(Key) 값을 1번으로 주어 한 줄에서 계속 숫자가 갱신되도록 합니다.
-    if (GEngine)
+    //시야각 플레이어와 보간
+    if (UCameraComponent* CamComp = OverviewCameraActor->FindComponentByClass<UCameraComponent>())
     {
-        FString DebugMsg = FString::Printf(TEXT("📷 [SmartCamera 작동중]\n모드: %s | 전멸여부: %s\n현재 타겟: %s\n목표 좌표: %s\n현재 카메라 좌표: %s"),
-            bIsAuto ? TEXT("자동(Auto)") : TEXT("수동(Manual)"),
-            bIsWipedOut ? TEXT("전멸(O)") : TEXT("생존(X)"),
-            *TargetName,
-            *TargetCamLoc.ToString(),
-            *NewLoc.ToString());
-
-        GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan, DebugMsg);
+        CamComp->SetFieldOfView(FMath::FInterpTo(CamComp->FieldOfView, TargetFOV, DeltaTime, InterpSpeed));
     }
 }
 void AParadiseCameraManager::SetUltimateTimeDilation(AActor* TargetActor, bool bEnable)

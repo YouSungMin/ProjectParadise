@@ -13,6 +13,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Camera/CameraShakeBase.h"
+#include "Characters/AIUnit/SkillCasterUnit.h"
 
 UMasterCueNotifyStatic::UMasterCueNotifyStatic()
 {
@@ -28,7 +29,6 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 	}
 
 	//UE_LOG(LogTemp, Warning, TEXT("=================================================="));
-	//UE_LOG(LogTemp, Warning, TEXT("🔥 [MasterCue] OnExecute 실행! Target: %s, EventType: %d"), *MyTarget->GetName(), (int32)TargetEventType);
 
 	FVector HitLocation = Parameters.Location.IsZero() ? MyTarget->GetActorLocation() : FVector(Parameters.Location);
 	FRotator HitRotation = Parameters.Normal.IsZero() ? MyTarget->GetActorRotation() : Parameters.Normal.Rotation();
@@ -37,6 +37,7 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 	auto PlayFXForActor = [&](AActor* SourceActor, EFXEventType EventType, const FString& ActorRole)
 		{
 			if (!SourceActor) return;
+			//UE_LOG(LogTemp, Warning, TEXT("🎯 [마스터 큐] 요청받은 EventType: %d / 현재 캐스팅 인덱스: %d"), (int32)EventType, Cast<ASkillCasterUnit>(SourceActor)->GetCurrentCastingSkillIndex());
 
 			//UE_LOG(LogTemp, Log, TEXT("  -> [%s] %s에게서 데이터 조회 시도 중..."), *ActorRole, *SourceActor->GetName());
 

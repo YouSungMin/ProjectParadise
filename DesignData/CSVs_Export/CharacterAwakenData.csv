@@ -1,8 +1,8 @@
-Name,RequiredAwakeningPieces,RequiredGold,MaxLevelCap,BonusStatMultiplier
-0,0,0,30,1
-1,1,0,35,1.025
-2,1,0,40,1.05
-3,1,0,45,1.085
-4,1,0,50,1.125
-5,1,0,55,1.15
-6,1,0,60,1.2
+---,RequiredAwakeningPieces,RequiredGold,MaxLevelCap,BonusStatMultiplier
+0,"0","0","30","1.000000"
+1,"1","0","35","1.025000"
+2,"1","0","40","1.050000"
+3,"1","0","45","1.085000"
+4,"1","0","50","1.125000"
+5,"1","0","55","1.150000"
+6,"1","0","60","1.200000"

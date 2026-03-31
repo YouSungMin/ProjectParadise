@@ -51,7 +51,6 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
 
-	//UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
 	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
 	USceneComponent* TargetMesh = GetMesh();
 	if (TargetType == ESocketTargetType::EquippedWeapon)
@@ -336,14 +335,14 @@ void ACharacterBase::PlayHitReaction()
 		return;
 	}
 
-	// 1. 슈퍼아머(다른 몽타주 재생 중) 체크
+	// 슈퍼아머(다른 몽타주 재생 중) 체크
 	if (AnimInst->IsAnyMontagePlaying())
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
 		return;
 	}
 
-	// 2. 피격 몽타주 데이터 확인
+	// 피격 몽타주 데이터 확인
 	UAnimMontage* HitMontage = GetHitMontage();
 	if (!HitMontage)
 	{
@@ -351,7 +350,7 @@ void ACharacterBase::PlayHitReaction()
 		return;
 	}
 
-	// 3. 정상 재생 명령
+	// 정상 재생 명령
 	//UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
 	AnimInst->Montage_Play(HitMontage);
 }

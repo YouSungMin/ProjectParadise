@@ -1,0 +1,6 @@
+---,SetIcon,Slot1_Effect,Slot2_Effect,Slot3_Ability
+TestSet,"None","/Game/GAS/Effects/SetBonus/GE_SetBonus_AttackPower.GE_SetBonus_AttackPower_C","/Game/GAS/Effects/SetBonus/GE_SetBonus_AttackPower.GE_SetBonus_AttackPower_C","/Game/GAS/Abilities/GA_ProjectileSkill.GA_ProjectileSkill_C"
+AttackSet,"None","/Game/GAS/Effects/SetBonus/GE_SetBonus_AttackPower.GE_SetBonus_AttackPower_C","/Game/GAS/Effects/SetBonus/GE_SetBonus_AttackPower.GE_SetBonus_AttackPower_C","None"
+CriticalSet,"None","/Game/GAS/Effects/SetBonus/GE_SetBonus_CritRate.GE_SetBonus_CritRate_C","/Game/GAS/Effects/SetBonus/GE_SetBonus_CritRate.GE_SetBonus_CritRate_C","None"
+DefenseSet,"None","/Game/GAS/Effects/SetBonus/GE_SetBonus_Defense.GE_SetBonus_Defense_C","/Game/GAS/Effects/SetBonus/GE_SetBonus_Defense.GE_SetBonus_Defense_C","None"
+SpeedSet,"None","/Game/GAS/Effects/SetBonus/GE_SetBonus_MoveSpeed.GE_SetBonus_MoveSpeed_C","/Game/GAS/Effects/SetBonus/GE_SetBonus_MoveSpeed.GE_SetBonus_MoveSpeed_C","None"

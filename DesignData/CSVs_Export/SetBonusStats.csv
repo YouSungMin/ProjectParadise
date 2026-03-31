@@ -1,2 +1,6 @@
-,SetName,Slot1_Count,Slot1_AttributeTag,Slot1_Value,Slot1_Desc,Slot2_Count,Slot2_AttributeTag,Slot2_Value,Slot2_Desc,Slot3_Count,Slot3_Value,Slot3_Desc
-Set_Fire,화염 세트,2,SetBonus.Stat.AttackPower,10,화염 2세트입니다.,3,SetBonus.Stat.AttackPower,20,화염 3세트입니다.,4,10,화염 4세트입니다.
+---,SetName,Slot1_Count,Slot1_AttributeTag,Slot1_Value,Slot1_Desc,Slot2_Count,Slot2_AttributeTag,Slot2_Value,Slot2_Desc,Slot3_Count,Slot3_Value,Slot3_Desc
+TestSet,Test 세트,2,"(TagName=""SetBonus.Stat.AttackPower"")",10,Test 2세트입니다.,3,"(TagName=""SetBonus.Stat.AttackPower"")",20,Test 3세트입니다.,4,10,"NSLOCTEXT(""DT_SetBonusStats [7A14BCEEC2A68BEE2485303AB104C621]"", ""Set_Fire_Slot3_Desc"", ""Test 4세트입니다."")"
+AttackSet,공격력 세트,2,"(TagName=""SetBonus.Stat.AttackPower"")",0,2세트시 공격력이 증가합니다.,3,"(TagName=""SetBonus.Stat.AttackPower"")",0,3세트시 공격력이 추가 증가합니다.,4,0,
+CriticalSet,치명타 세트,2,"(TagName=""SetBonus.Stat.CritRate"")",0,2세트시 치명타확률이 증가합니다.,3,"(TagName=""SetBonus.Stat.CritRate"")",0,3세트시 치명타확률이 추가 증가합니다.,4,0,
+DefenseSet,방어력 세트,2,"(TagName=""SetBonus.Stat.Defense"")",0,2세트시 방어력이 증가합니다.,3,"(TagName=""SetBonus.Stat.Defense"")",0,3세트 시 방어력이 추가 증가합니다,4,0,
+SpeedSet,속도 세트,2,"(TagName=""SetBonus.Stat.MoveSpeed"")",0,2세트시 이동속도가 증가합니다.,3,"(TagName=""SetBonus.Stat.MoveSpeed"")",0,3세트시 이동속도가 추가 증가합니다.,4,0,

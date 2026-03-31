@@ -115,6 +115,12 @@ protected:
 	float UltimateLightRadius = 2000.0f;
 
 private:
+	/** @brief 스마트 카메라가 현재 포커스 중인 타겟 */
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentSmartTarget = nullptr;
+
+	/** @brief 현재 타겟을 비춘 시간 (타겟 고착화 방지용) */
+	float CurrentTargetFocusTime = 0.0f;
 
 	/** @brief 궁극기 연출을 위해 임시로 생성할 컷신 카메라 */
 	UPROPERTY()
