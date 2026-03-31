@@ -86,6 +86,13 @@ public:
 	void OnStartCameraMove();
 
 	/**
+	 * @brief 컨트롤러의 ESC 입력 또는 화면 설정 버튼 클릭 시 설정 팝업을 토글합니다.
+	 * @details 내부의 USettingsPopupWidget 인스턴스에 접근하여 열림/닫힘(Toggle)을 위임합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettingsPopup();
+
+	/**
 	 * @brief 설정 팝업 인스턴스를 반환합니다.
 	 * @details LobbyController의 ESC 입력 처리 시 호출합니다.
 	 */

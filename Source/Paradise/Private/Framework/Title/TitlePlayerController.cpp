@@ -31,6 +31,7 @@ void ATitlePlayerController::BeginPlay()
 		if (TitleWidget)
 		{
 			TitleWidget->AddToViewport();
+			CachedTitleHUD = Cast<UParadiseTitleHUDWidget>(TitleWidget);
 		}
 	}
 
@@ -67,6 +68,7 @@ void ATitlePlayerController::SetupInputComponent()
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
+
 		if (IA_OpenSettings)
 		{
 			EnhancedInputComponent->BindAction(IA_OpenSettings, ETriggerEvent::Started, this, &ATitlePlayerController::OnInputOpenSettings);
@@ -76,6 +78,7 @@ void ATitlePlayerController::SetupInputComponent()
 
 void ATitlePlayerController::OnInputOpenSettings(const FInputActionValue& Value)
 {
+
 	if (bIsTogglingSettings) return;
 	bIsTogglingSettings = true;
 
@@ -86,33 +89,8 @@ void ATitlePlayerController::OnInputOpenSettings(const FInputActionValue& Value)
 		return;
 	}
 
-	// 타이틀 HUD를 통해 팝업 인스턴스를 가져옵니다 (TitleHUD에 GetSettingsPopupInstance 함수가 있어야 함!)
-	USettingsPopupWidget* SettingsPopup = CachedTitleHUD->GetSettingsPopupInstance();
-	if (!SettingsPopup)
-	{
-		bIsTogglingSettings = false;
-		return;
-	}
+	// 컨트롤러는 그저 HUD에게 "팝업 토글해!" 라고 지시만 합니다.
+	CachedTitleHUD->ToggleSettingsPopup();
 
-	// 열려있는지 상태 판별
-	const bool bIsOpen = SettingsPopup->GetVisibility() == ESlateVisibility::Visible;
-
-	if (bIsOpen)
-	{
-		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
-
-		// 🌟 인게임/로비와 동일하게 0.1초 딜레이를 두고 닫는 함수 호출
-		SettingsPopup->OnResumeGameClicked();
-	}
-	else
-	{
-		if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(true);
-		SettingsPopup->OpenSettings();
-	}
-
-	// 타이머를 통해 토글 플래그 해제
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { bIsTogglingSettings = false; });
-	}
+	bIsTogglingSettings = false;
 }

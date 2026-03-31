@@ -11,6 +11,7 @@
 class ULoadingWidget;
 class UUserWidget;
 class UTexture2D;
+class UFXDataAsset;
 #pragma endregion 전방 선언
 
 UENUM()
@@ -52,16 +53,17 @@ public:
 	 * @param InLoadingImage 데이터테이블용 로딩 이미지
 	 * @param InStageName 스테이지 이름 (로딩창 표시용)
 	 * @param InStageDesc 스테이지 설명 (로딩창 표시용)
+	 * @param bInGatherDynamicAssets  스쿼드/인벤토리 기반 동적 에셋 수집 여부
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Paradise|System|Loading", meta = (AutoCreateRefTerm = "InAssetsToPreload, InLoadingMapName"))
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Loading")
 	void StartLevelTransition(
 		FName InTargetLevelName,
 		FName InLoadingMapName,
 		const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload,
 		TSoftObjectPtr<UTexture2D> InLoadingImage = nullptr,
-		FText InStageName = FText::GetEmpty(), 
-		FText InStageDesc = FText::GetEmpty()  
-	);
+		FText InStageName = FText::GetEmpty(),
+		FText InStageDesc = FText::GetEmpty(),
+		bool bInGatherDynamicAssets = false);
 
 	/** @brief 로딩 위젯 클래스 설정 (GameInstance 호출용) */
 	void SetLoadingWidgetClass(TSubclassOf<UUserWidget> NewLoadingWidgetClass);
@@ -96,6 +98,18 @@ private:
 	 * @param OutAssetPaths 수집된 에셋 경로를 담을 배열 (참조 전달)
 	 */
 	void GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& OutAssetPaths);
+
+	/**
+	 * @brief UFXDataAsset을 동기 로드하여 내부 EffectMap의 Niagara/Sound 경로를 수집합니다.
+	 * @details UFXDataAsset은 경량 DataAsset(태그-페이로드 맵)이므로
+	 *          LoadSynchronous() 비용이 매우 낮습니다.
+	 *          GatherDynamicAssetsToLoad()에서만 호출합니다.
+	 * @param InFXData    수집할 FXDataAsset 소프트 레퍼런스
+	 * @param OutAssetPaths 경로를 추가할 배열
+	 */
+	void GatherFXDataAssetPaths(
+		const TSoftObjectPtr<UFXDataAsset>& InFXData,
+		TSet<FSoftObjectPath>& OutAssetPaths);
 #pragma endregion 내부 로직
 
 #pragma region 데이터 및 상태
@@ -141,6 +155,13 @@ private:
 	/** @brief 현재 로딩 시퀀스가 진행 중인지 여부. */
 	bool bIsLoadingInProgress = false;
 
+	/**
+	 * @brief 동적 에셋 수집 활성 여부.
+	 * @details StartLevelTransition() 호출 시 bInGatherDynamicAssets 값으로 세팅됩니다.
+	 *          스테이지 진입 시에만 true이며, 로비 등 비전투 전환 시에는 false입니다.
+	 */
+	bool bShouldGatherDynamicAssets = false;
+
 	/** @brief 현재 로딩에 사용할 커스텀 배경 이미지 캐싱 */
 	UPROPERTY()
 	TSoftObjectPtr<UTexture2D> PendingLoadingImage = nullptr;
@@ -154,13 +175,13 @@ private:
 private:
 	ELoadingPhase CurrentPhase = ELoadingPhase::None;
 #pragma endregion 내부 상태 추가
-	public:
-		/** @brief 위젯의 Anim_Appear 완료 시 호출 */
-		void NotifyAppearFinished();
+public:
+	/** @brief 위젯의 Anim_Appear 완료 시 호출 */
+	void NotifyAppearFinished();
 
-		/** @brief 위젯의 Anim_Disappear 완료 시 호출 */
-		void NotifyDisappearFinished();
+	/** @brief 위젯의 Anim_Disappear 완료 시 호출 */
+	void NotifyDisappearFinished();
 
-		/** @brief 현재 Appearing 단계인지 확인 */
-		bool IsAppearingPhase() const { return CurrentPhase == ELoadingPhase::Appearing; }
+	/** @brief 현재 Appearing 단계인지 확인 */
+	bool IsAppearingPhase() const { return CurrentPhase == ELoadingPhase::Appearing; }
 };

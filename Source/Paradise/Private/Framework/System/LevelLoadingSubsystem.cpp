@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/Assets/FXDataAsset.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/InventoryStruct.h"
@@ -57,7 +58,8 @@ void ULevelLoadingSubsystem::StartLevelTransition(
 	const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload, 
 	TSoftObjectPtr<UTexture2D> InLoadingImage, 
 	FText InStageName, 
-	FText InStageDesc)
+	FText InStageDesc,
+	bool bInGatherDynamicAssets)
 {
 	if (InTargetLevelName.IsNone()) return;
 
@@ -79,6 +81,7 @@ void ULevelLoadingSubsystem::StartLevelTransition(
 	PendingStageDesc = InStageDesc; 
 
 	bIsLoadingInProgress = true;
+	bShouldGatherDynamicAssets = bInGatherDynamicAssets;
 	// 이미지는 위젯 내부의 InitLoadingImage에서 스스로 판단합니다.
 
 	CurrentPhase = ELoadingPhase::Appearing;
@@ -194,7 +197,10 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	}
 
 	// 2-2. [동적 데이터] 편대 서브시스템과 인벤토리를 뒤져서 현재 출전 멤버 에셋 수집!
-	GatherDynamicAssetsToLoad(AssetPaths);
+	if (bShouldGatherDynamicAssets)
+	{
+		GatherDynamicAssetsToLoad(AssetPaths);
+	}
 
 	// 3. 비동기 로딩 요청 (한 방에 비동기로 RAM에 올리기!)
 	if (AssetPaths.Num() > 0)
@@ -221,6 +227,10 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 
 	if (!SquadSys || !InvSys) return;
 
+	// TSet은 해시 기반으로 O(1) 삽입/중복 체크가 가능합니다.
+	TSet<FSoftObjectPath> GatheredPaths;
+	GatheredPaths.Reserve(64);
+
 	// =========================================================
 	// 1. 플레이어 캐릭터 및 장착된 장비(무기/방어구) 수집
 	// =========================================================
@@ -231,9 +241,13 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 		// 1-1. 캐릭터 본체의 기본 에셋 수집 (외형, 몽타주 등)
 		if (FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharID))
 		{
-			if (!CharAssets->SkeletalMesh.IsNull()) OutAssetPaths.AddUnique(CharAssets->SkeletalMesh.ToSoftObjectPath());
-			if (!CharAssets->UltimateMontage.IsNull()) OutAssetPaths.AddUnique(CharAssets->UltimateMontage.ToSoftObjectPath());
-			// 필요한 경우 여기에 CharAssets->UltimateIcon 등 UI 리소스나 이펙트 추가 가능
+			if (!CharAssets->SkeletalMesh.IsNull())
+				GatheredPaths.Add(CharAssets->SkeletalMesh.ToSoftObjectPath());
+
+			if (!CharAssets->UltimateMontage.IsNull())
+				GatheredPaths.Add(CharAssets->UltimateMontage.ToSoftObjectPath());
+
+			GatherFXDataAssetPaths(CharAssets->CharacterFX.FXData, GatheredPaths);
 		}
 
 		// 1-2. 해당 캐릭터가 "현재 장착 중인" 장비 에셋 긁어오기
@@ -249,8 +263,13 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 					{
 						if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ItemData->ItemID))
 						{
-							if (!WeaponAsset->ItemMesh.IsNull()) OutAssetPaths.AddUnique(WeaponAsset->ItemMesh.ToSoftObjectPath());
-							if (!WeaponAsset->WeaponBasicAttackIcon.IsNull()) OutAssetPaths.AddUnique(WeaponAsset->WeaponBasicAttackIcon.ToSoftObjectPath());
+							if (!WeaponAsset->ItemMesh.IsNull())
+								GatheredPaths.Add(WeaponAsset->ItemMesh.ToSoftObjectPath());
+
+							if (!WeaponAsset->WeaponBasicAttackIcon.IsNull())
+								GatheredPaths.Add(WeaponAsset->WeaponBasicAttackIcon.ToSoftObjectPath());
+
+							GatherFXDataAssetPaths(WeaponAsset->WeaponFX.FXData, GatheredPaths);
 						}
 					}
 					// 방어구일 경우 (착용 메쉬 등)
@@ -258,7 +277,8 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 					{
 						if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ItemData->ItemID))
 						{
-							if (!ArmorAsset->ItemMesh.IsNull()) OutAssetPaths.AddUnique(ArmorAsset->ItemMesh.ToSoftObjectPath());
+							if (!ArmorAsset->ItemMesh.IsNull())
+								GatheredPaths.Add(ArmorAsset->ItemMesh.ToSoftObjectPath());
 						}
 					}
 				}
@@ -276,16 +296,56 @@ void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& 
 		if (FFamiliarAssets* FamAssets = GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, FamiliarID))
 		{
 			// 퍼밀리어의 외형, 기본 공격 몽타주, 비헤이비어 트리 등 필수 데이터 수집
-			if (!FamAssets->SkeletalMesh.IsNull()) OutAssetPaths.AddUnique(FamAssets->SkeletalMesh.ToSoftObjectPath());
-			if (!FamAssets->AttackMontage.IsNull()) OutAssetPaths.AddUnique(FamAssets->AttackMontage.ToSoftObjectPath());
-			if (!FamAssets->BehaviorTree.IsNull()) OutAssetPaths.AddUnique(FamAssets->BehaviorTree.ToSoftObjectPath());
+			if (!FamAssets->SkeletalMesh.IsNull())
+				GatheredPaths.Add(FamAssets->SkeletalMesh.ToSoftObjectPath());
+
+			if (!FamAssets->AttackMontage.IsNull())
+				GatheredPaths.Add(FamAssets->AttackMontage.ToSoftObjectPath());
+
+			if (!FamAssets->BehaviorTree.IsNull())
+				GatheredPaths.Add(FamAssets->BehaviorTree.ToSoftObjectPath());
 
 			// 다중 스킬 몽타주가 있다면 전부 수집
 			for (const auto& SkillMontage : FamAssets->SkillMontages)
 			{
-				if (!SkillMontage.IsNull()) OutAssetPaths.AddUnique(SkillMontage.ToSoftObjectPath());
+				if (!SkillMontage.IsNull())
+					GatheredPaths.Add(SkillMontage.ToSoftObjectPath());
 			}
 		}
+	}
+	/**
+	 * @brief 수집 완료된 TSet을 OutAssetPaths에 병합합니다.
+	 * @details 기존 OutAssetPaths에 이미 들어있는 정적 에셋(ExtraPreloadAssets)과의
+	 *          중복도 이 단계에서 한 번에 처리합니다.
+	 */
+	OutAssetPaths.Reserve(OutAssetPaths.Num() + GatheredPaths.Num());
+	for (const FSoftObjectPath& Path : GatheredPaths)
+	{
+		OutAssetPaths.AddUnique(Path);
+	}
+}
+
+void ULevelLoadingSubsystem::GatherFXDataAssetPaths(const TSoftObjectPtr<UFXDataAsset>& InFXData, TSet<FSoftObjectPath>& OutAssetPaths)
+{
+	if (InFXData.IsNull()) return;
+
+	// 이 DataAsset은 GameplayTag → FFXPayload 맵만 보유한 경량 에셋입니다.
+	UFXDataAsset* FXData = InFXData.LoadSynchronous();
+	if (!FXData) return;
+
+	// FXDataAsset 자체도 비동기 로딩 대상에 포함
+	OutAssetPaths.Add(InFXData.ToSoftObjectPath());
+
+	// EffectMap 순회 → Niagara / Sound 소프트 레퍼런스 수집
+	for (const auto& Pair : FXData->EffectMap)
+	{
+		const FFXPayload& Payload = Pair.Value;
+
+		if (!Payload.VisualEffect.IsNull())
+			OutAssetPaths.Add(Payload.VisualEffect.ToSoftObjectPath());
+
+		if (!Payload.SoundEffect.IsNull())
+			OutAssetPaths.Add(Payload.SoundEffect.ToSoftObjectPath());
 	}
 }
 
