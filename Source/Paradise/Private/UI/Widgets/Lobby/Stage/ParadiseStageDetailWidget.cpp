@@ -333,7 +333,8 @@ void UParadiseStageDetailWidget::ExecuteBattleTransition()
 			PreloadAssets,
 			Assets->LoadingImage,
 			Stats->StageName,
-			Stats->Description
+			Stats->Description,
+			true
 		);
 	}
 }

@@ -28,7 +28,7 @@ void UHomeBaseHPWidget::InitWithHomeBase(AHomeBase* InHomeBase)
     UAbilitySystemComponent* ASC = InHomeBase->GetAbilitySystemComponent();
     if (!ASC)
     {
-        UE_LOG(LogTemp, Error, TEXT("[HomeBaseHP] ASC가 없음!"));
+        //UE_LOG(LogTemp, Error, TEXT("[HomeBaseHP] ASC가 없음!"));
         return;
     }
 
@@ -38,7 +38,7 @@ void UHomeBaseHPWidget::InitWithHomeBase(AHomeBase* InHomeBase)
     CurrentHP = ASC->GetNumericAttribute(UBaseAttributeSet::GetHealthAttribute());
     MaxHP = ASC->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
 
-    UE_LOG(LogTemp, Warning, TEXT("[HomeBaseHP] 초기화 완료 - HP: %.0f / %.0f"), CurrentHP, MaxHP);
+    //UE_LOG(LogTemp, Warning, TEXT("[HomeBaseHP] 초기화 완료 - HP: %.0f / %.0f"), CurrentHP, MaxHP);
 
     UpdateHPBar();
 
@@ -54,7 +54,7 @@ void UHomeBaseHPWidget::InitWithHomeBase(AHomeBase* InHomeBase)
 
 void UHomeBaseHPWidget::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-    UE_LOG(LogTemp, Warning, TEXT("[HomeBaseHP] 체력 변경 감지 - %.0f → %.0f"), Data.OldValue, Data.NewValue);
+    //UE_LOG(LogTemp, Warning, TEXT("[HomeBaseHP] 체력 변경 감지 - %.0f → %.0f"), Data.OldValue, Data.NewValue);
     CurrentHP = Data.NewValue;
     UpdateHPBar();
 }

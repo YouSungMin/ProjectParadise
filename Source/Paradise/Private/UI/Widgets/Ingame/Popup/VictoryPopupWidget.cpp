@@ -199,7 +199,8 @@ void UVictoryPopupWidget::ExecuteNextStage()
 			AssetsToPreload,
 			NextAssets->LoadingImage,
 			(NextStats ? NextStats->StageName : FText::GetEmpty()),
-			(NextStats ? NextStats->Description : FText::GetEmpty())
+			(NextStats ? NextStats->Description : FText::GetEmpty()),
+			true
 		);
 	}
 }
