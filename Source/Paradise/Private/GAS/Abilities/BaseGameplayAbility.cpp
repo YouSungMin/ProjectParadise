@@ -213,10 +213,10 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
 	// 기본 로직 검사 통과 못하면 실패
-	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
-	{
-		return false;
-	}
+	//if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
+	//{
+	//	return false;
+	//}
 
 	FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 

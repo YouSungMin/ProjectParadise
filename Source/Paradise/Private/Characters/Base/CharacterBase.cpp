@@ -51,7 +51,6 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 	float AttackRange = CurrentActiveActionData.Stats.AttackRange;
 	float AttackRadius = CurrentActiveActionData.Stats.AttackRadius;
 
-	UE_LOG(LogTemp, Error, TEXT("ForwardOffset : %.1f , AttackRange : %.1f, AttackRadius : %.1f"), ForwardOffset, AttackRange, AttackRadius);
 	// 🌟 1. 타겟 메쉬 결정 (몸통 vs 무기)
 	USceneComponent* TargetMesh = GetMesh();
 	if (TargetType == ESocketTargetType::EquippedWeapon)
@@ -95,7 +94,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		// 만약 소켓 이름을 적긴 적었는데 못 찾은 거라면 에러 로그 출력 (오타 방지용)
 		if (!SocketName.IsNone())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] '%s' 소켓을 찾을 수 없어 기본 위치에서 공격합니다. (오타 확인 필요!)"), *GetName(), *SocketName.ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] '%s' 소켓을 찾을 수 없어 기본 위치에서 공격합니다. (오타 확인 필요!)"), *GetName(), *SocketName.ToString());
 		}
 	}
 
@@ -168,7 +167,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 			FGameplayTag EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Montage.ApplyEffect"));
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, Payload);
 
-			UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 다중 타격 성공! 대상: %s"), *GetName(), *HitActor->GetName());
+			//UE_LOG(LogTemp, Log, TEXT("⚔️ [%s] 다중 타격 성공! 대상: %s"), *GetName(), *HitActor->GetName());
 		}
 	}
 }
@@ -332,27 +331,27 @@ void ACharacterBase::PlayHitReaction()
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [%s] AnimInstance를 찾을 수 없습니다!"), *GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [%s] AnimInstance를 찾을 수 없습니다!"), *GetName());
 		return;
 	}
 
-	// 1. 슈퍼아머(다른 몽타주 재생 중) 체크
+	// 슈퍼아머(다른 몽타주 재생 중) 체크
 	if (AnimInst->IsAnyMontagePlaying())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("🛡️ [%s] 다른 몽타주 재생 중이라 피격 모션 생략! (슈퍼아머 작동)"), *GetName());
 		return;
 	}
 
-	// 2. 피격 몽타주 데이터 확인
+	// 피격 몽타주 데이터 확인
 	UAnimMontage* HitMontage = GetHitMontage();
 	if (!HitMontage)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [%s] HitMontage가 Null입니다! (데이터 테이블이나 캐싱 코드 확인 필요)"), *GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [%s] HitMontage가 Null입니다! (데이터 테이블이나 캐싱 코드 확인 필요)"), *GetName());
 		return;
 	}
 
-	// 3. 정상 재생 명령
-	UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
+	// 정상 재생 명령
+	//UE_LOG(LogTemp, Log, TEXT("✅ [%s] 피격 몽타주 재생 성공: %s"), *GetName(), *HitMontage->GetName());
 	AnimInst->Montage_Play(HitMontage);
 }
 
