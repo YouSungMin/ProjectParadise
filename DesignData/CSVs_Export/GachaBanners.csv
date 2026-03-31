@@ -1,3 +1,3 @@
----,BannerType,AetherPerPull,RarityProbabilities,TargetPoolTable,PityThreshold
+---,BannerType,RequiredAether,RarityProbabilities,TargetPoolTable,PityThreshold
 Caracters,"Character","100","((Common, 0.350000),(Uncommon, 0.300000),(Rare, 0.200000),(Epic, 0.100000),(Legendary, 0.050000))","/Game/Data/Gacha/DT_Pool_Character.DT_Pool_Character","50"
 Equipments,"Equipment","100","((Common, 0.350000),(Uncommon, 0.300000),(Rare, 0.200000),(Epic, 0.100000),(Legendary, 0.050000))","/Game/Data/Gacha/DT_Pool_Equipment.DT_Pool_Equipment","50"

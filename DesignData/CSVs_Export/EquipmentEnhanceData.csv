@@ -1,6 +1,6 @@
-Name,MaxEnhanceLevel,BaseGoldCost,GoldCostPerLevel,StatBonusPerLevel
-Cost_Common,5,500,200,0.05
-Cost_Uncommon,10,1000,500,0.07
-Cost_Rare,15,3000,1000,0.1
-Cost_Epic,20,10000,3000,0.15
-Cost_Legendary,25,30000,10000,0.2
+---,MaxEnhanceLevel,BaseGoldCost,GoldCostPerLevel,StatBonusPerLevel
+Cost_Common,"5","500","200","0.050000"
+Cost_Uncommon,"10","1000","500","0.070000"
+Cost_Rare,"15","3000","1000","0.100000"
+Cost_Epic,"20","10000","3000","0.150000"
+Cost_Legendary,"25","30000","10000","0.200000"

@@ -1,0 +1,5 @@
+---,ProjectileCount,SpreadAngle,ProjectileSpeed,MaxPierceCount,ExplosionRadius,BurstDelay,RandomSpreadAngle
+Spread_3Way,"3","45.000000","1500.000000","0","0.000000","0.000000","0.000000"
+Spread_5Way,"5","45.000000","1500.000000","0","0.000000","0.000000","0.000000"
+Default_1Way,"1","0.000000","1000.000000","0","0.000000","0.000000","0.000000"
+Explosion_1Way,"1","0.000000","1000.000000","0","50.000000","0.000000","0.000000"
