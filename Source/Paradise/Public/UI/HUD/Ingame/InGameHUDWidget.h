@@ -24,6 +24,7 @@ class UImage;
 class UWidgetAnimation;
 class UAutoCombatComponent;
 class USquadControlComponent;
+class UHomeBaseHPWidget;
 /** @brief 헤더 인클루드 방지 및 캡슐화를 위한 Common UI 열거형 전방 선언 */
 enum class ECommonInputType : uint8;
 #pragma endregion 전방 선언
@@ -172,6 +173,19 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UDefeatPopupWidget> Widget_DefeatPopup = nullptr;
 #pragma endregion 위젯 바인딩
+
+#pragma region 홈베이스 HP 위젯
+private:
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UHomeBaseHPWidget> Widget_AllyBaseHP = nullptr;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UHomeBaseHPWidget> Widget_EnemyBaseHP = nullptr;
+
+	/** @brief 홈베이스 등록 완료 시 호출 */
+	UFUNCTION()
+	void HandleHomeBaseRegistered(bool bIsAlly);
+#pragma endregion 홈베이스 HP 위젯
 
 #pragma region 공통 UI 에셋 설정 (Config)
 protected:

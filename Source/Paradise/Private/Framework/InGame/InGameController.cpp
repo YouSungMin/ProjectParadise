@@ -55,16 +55,8 @@ void AInGameController::BeginPlay()
         if (DefaultMappingContext)
         {
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
-            UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext 등록 완료"));
+           // UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext 등록 완료"));
         }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("[Input] DefaultMappingContext가 null - BP에서 할당했는지 확인"));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("[Input] EnhancedInputSubsystem을 찾을 수 없음"));
     }
 
     CachedGameInstance = Cast<UParadiseGameInstance>(GetGameInstance());
@@ -79,10 +71,6 @@ void AInGameController::BeginPlay()
 void AInGameController::SetupInputComponent()
 {
     Super::SetupInputComponent();
-
-    UE_LOG(LogTemp, Warning, TEXT("[Input] IA_SwitchHero1=%s, IA_Move=%s"),
-        IA_SwitchHero1 ? TEXT("유효") : TEXT("NULL"),
-        IA_Move ? TEXT("유효") : TEXT("NULL"));
 
     // Enhanced Input 바인딩
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
@@ -126,12 +114,12 @@ void AInGameController::OnInputMove(const FInputActionValue& Value)
     APlayerBase* CurrentPawn = Cast<APlayerBase>(GetPawn());
     if (!CurrentPawn)
     {
-        UE_LOG(LogTemp, Error, TEXT("[Move] Pawn이 없음"));
+       // UE_LOG(LogTemp, Error, TEXT("[Move] Pawn이 없음"));
         return;
     }
     if (!CurrentPawn->CanMove())
     {
-        UE_LOG(LogTemp, Error, TEXT("[Move] CanMove() = false"));
+        //UE_LOG(LogTemp, Error, TEXT("[Move] CanMove() = false"));
         return;
     }
 

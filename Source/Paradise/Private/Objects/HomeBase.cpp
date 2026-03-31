@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Framework/InGame/InGameGameMode.h"
+#include "Framework/InGame/InGameGameState.h"
 
 AHomeBase::AHomeBase()
 {
@@ -31,6 +32,19 @@ void AHomeBase::BeginPlay()
 		Capsule->SetEnableGravity(false);
 		Capsule->SetMobility(EComponentMobility::Stationary);
 	}
+
+    if (AInGameGameState* GS = Cast<AInGameGameState>(GetWorld()->GetGameState()))
+    {
+        FGameplayTag MyTag = GetFactionTag();
+        if (MyTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Friendly"))))
+        {
+            GS->RegisterAllyHomeBase(this);
+        }
+        else if (MyTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Unit.Faction.Enemy"))))
+        {
+            GS->RegisterEnemyHomeBase(this);
+        }
+    }
 }
 
 void AHomeBase::Die()

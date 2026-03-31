@@ -424,8 +424,8 @@ void ACharacterBase::AttachWeapon(AActor* NewWeapon, FName SocketName)
 	//소유자 설정 (GAS 데미지 계산 시 Instigator로 활용됨)
 	CurrentWeaponActor->SetOwner(this);
 
-	UE_LOG(LogTemp, Warning, TEXT("⚔️ [CharacterBase] 무기 장착 완료: %s -> 소켓: %s"),
-		*NewWeapon->GetName(), *SocketName.ToString());
+	/*UE_LOG(LogTemp, Warning, TEXT("⚔️ [CharacterBase] 무기 장착 완료: %s -> 소켓: %s"),
+		*NewWeapon->GetName(), *SocketName.ToString());*/
 }
 
 void ACharacterBase::PlayHitFlash()
@@ -489,13 +489,13 @@ FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 			else
 			{
 				// 무기 메쉬는 찾았는데 소켓 이름이 틀렸을 때 에러 출력
-				UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
+				//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
 			}
 		}
 		else
 		{
 			// 최악의 경우: WeaponMesh 컴포넌트 자체를 못 찾았을 때
-			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
+			//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
 		}
 
 		// 소켓을 못 찾았을 때의 안전망 (캐릭터 위치 반환)
@@ -512,7 +512,7 @@ FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 
 		if (!CurrentMuzzleSocketName.IsNone())
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 캐릭터 몸통 메쉬에서 '%s' 소켓을 찾지 못했습니다!"), *CurrentMuzzleSocketName.ToString());
+			//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 캐릭터 몸통 메쉬에서 '%s' 소켓을 찾지 못했습니다!"), *CurrentMuzzleSocketName.ToString());
 		}
 
 		return BodyMesh->GetComponentTransform();
@@ -532,7 +532,7 @@ void ACharacterBase::SpawnDamagePopup(float DamageAmount, bool bIsCritical)
 		if (UObjectPoolSubsystem* PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>())
 		{
 			// 타겟 머리 위 위치 계산 (캐릭터 Z축 위로 80cm 정도 띄움)
-			UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
+			//UE_LOG(LogTemp,Log,TEXT("SpawnDamagePopup"));
 			FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
 
 			ADamageTextActor* DmgText = PoolSubsystem->SpawnPoolActor<ADamageTextActor>(

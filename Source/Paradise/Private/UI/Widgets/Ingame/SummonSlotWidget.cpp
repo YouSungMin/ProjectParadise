@@ -24,10 +24,13 @@ void USummonSlotWidget::NativeConstruct()
 		Btn_SummonAction->OnClicked().AddUObject(this, &USummonSlotWidget::OnSummonButtonClicked);
 	}
 
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
-		Text_Shortcut->SetText(ShortcutKeyText);
-		Text_Shortcut->SetVisibility(ESlateVisibility::Hidden);
+		if (!ShortcutKeyImage.IsNull())
+		{
+			Img_Shortcut->SetBrushFromTexture(ShortcutKeyImage.LoadSynchronous());
+		}
+		Img_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	//StopCooldownTimer();
@@ -140,10 +143,10 @@ void USummonSlotWidget::PlayShiftAnimation()
 
 void USummonSlotWidget::SetShortcutTextVisibility(bool bShow)
 {
-	if (Text_Shortcut)
+	if (Img_Shortcut)
 	{
 		// 키보드 모드면 클릭을 방해하지 않는(HitTestInvisible) 상태로 보여주고, 터치 모드면 숨깁니다.
-		Text_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		Img_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 

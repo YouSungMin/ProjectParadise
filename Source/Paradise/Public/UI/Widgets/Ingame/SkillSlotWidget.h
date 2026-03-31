@@ -73,14 +73,14 @@ public:
 	void SetShortcutTextVisibility(bool bShow);
 
 protected:
-	/** @brief 기획자가 에디터에서 설정할 단축키 텍스트 (예: "K", "L" 등) */
+	/** @brief 기획자가 에디터에서 설정할 단축키 이미지 (예: "K", "L" 등) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
-	FText ShortcutKeyText;
+	TSoftObjectPtr<UTexture2D> ShortcutKeyImage = nullptr;
 
 private:
-	/** @brief 단축키를 화면에 그려줄 텍스트 블록 (선택적 바인딩) */
+	/** @brief 단축키를 화면에 그려줄 이미지  */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> Text_Shortcut = nullptr;
+	TObjectPtr<UImage> Img_Shortcut = nullptr;
 #pragma endregion 단축키 데이터
 
 #pragma region Getter

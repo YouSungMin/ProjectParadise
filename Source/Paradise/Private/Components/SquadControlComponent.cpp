@@ -106,8 +106,8 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
         }
     }
 
-    FString Msg = FString::Printf(TEXT("Switch -> Hero %d"), PlayerIndex + 1);
-    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, Msg);
+    /*FString Msg = FString::Printf(TEXT("Switch -> Hero %d"), PlayerIndex + 1);
+    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, Msg);*/
 
     /*UE_LOG(LogParadiseSquad, Warning, TEXT("🔄 [Controller] 캐릭터 교체 완료 (%s -> %s)"),
         OldPlayer ? *OldPlayer->GetName() : TEXT("None"),

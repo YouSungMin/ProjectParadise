@@ -127,7 +127,7 @@ private:
 
 	/** @brief 단축키를 화면에 그려줄 텍스트 블록 (선택적 바인딩) */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> Text_Shortcut = nullptr;
+	TObjectPtr<UImage> Img_Shortcut = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 데이터
@@ -138,11 +138,11 @@ public:
 
 protected:
 	/**
-	 * @brief 기획자가 에디터에서 설정할 단축키 텍스트 (예: "1", "2" 등)
+	 * @brief 기획자가 에디터에서 설정할 단축키 이미지
 	 * @details 이 필드에 값을 입력하면 PC(키보드) 모드에서 해당 텍스트가 버튼에 뜹니다.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
-	FText ShortcutKeyText;
+	TSoftObjectPtr<UTexture2D> ShortcutKeyImage = nullptr;
 
 private:
 	/** @brief 이 슬롯의 고유 인덱스 (0~4) */
