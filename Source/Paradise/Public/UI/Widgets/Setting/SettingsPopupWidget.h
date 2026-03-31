@@ -52,6 +52,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void CloseSettings();
+
+	/**
+	 * @brief 컨트롤러에서 ESC(향상된 입력)를 눌렀을 때,
+	 * 마우스로 Resume 버튼을 누른 것과 100% 동일한 로직을 실행하도록 public으로 개방합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void OnResumeGameClicked();
 #pragma endregion 외부 인터페이스
 
 #pragma region 내부 로직
@@ -79,13 +86,6 @@ private:
 	 */
 	UFUNCTION()
 	void OnSFXVolumeChanged(float Value);
-
-	/**
-	 * @brief 돌아가기 버튼 클릭 시 호출되어 팝업을 닫습니다.
-	 * @details RemoveFromParent를 호출하면 NativeDestruct가 자동 실행되어 시간이 복구됩니다.
-	 */
-	UFUNCTION()
-	void OnResumeGameClicked();
 
 	/**
 	 * @brief 로비로 가기 버튼 클릭 시 호출되어 씬을 전환합니다.

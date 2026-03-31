@@ -218,7 +218,7 @@ void AInGameController::OnInputOpenSettings(const FInputActionValue& Value)
     {
         // 창을 닫을 때는 커서를 숨겨야(또는 HUD의 감지 로직에 맡겨야) 합니다.
         if (CachedCursorSubsystem.IsValid()) CachedCursorSubsystem->ShowCursor(false);
-        SettingsPopup->CloseSettings();
+        SettingsPopup->OnResumeGameClicked();
     }
     else
     {
@@ -516,8 +516,6 @@ void AInGameController::CheatKillCharacter(int32 PlayerIndex)
             ASC->ApplyGameplayEffectToSelf(CheatKillGE, 1.0f, ASC->MakeEffectContext());
         }
     }
-
-    
 }
 
 void AInGameController::CheatRespawn(int32 PlayerIndex)

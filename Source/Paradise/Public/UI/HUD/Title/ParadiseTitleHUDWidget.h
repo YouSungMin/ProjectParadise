@@ -30,7 +30,16 @@ class PARADISE_API UParadiseTitleHUDWidget : public UCommonActivatableWidget
 protected:
 	virtual void NativeConstruct() override;
 
-#pragma region 설정 데이터 (Data-Driven)
+#pragma region 외부 인터페이스
+public:
+	/**
+	 * @brief 설정 팝업 인스턴스를 반환합니다.
+	 * @details TitleController의 ESC 입력 처리 시 호출합니다.
+	 */
+	FORCEINLINE USettingsPopupWidget* GetSettingsPopupInstance() const { return SettingsPopupInstance; }
+#pragma endregion 외부 인터페이스
+
+#pragma region 설정 데이터
 protected:
 	/** 
 	 * @brief 로비로 이동할 때 미리 로딩할 에셋 목록 (Soft Reference).
@@ -42,7 +51,7 @@ protected:
 	/** @brief 이동할 레벨의 이름 (기본값: L_Lobby/ 일단 테스트용) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Paradise|Config")
 	FName NextLevelName = FName("L_Lobby");
-#pragma endregion 설정 데이터 (Data-Driven)
+#pragma endregion 설정 데이터
 
 #pragma region 위젯 바인딩
 private:

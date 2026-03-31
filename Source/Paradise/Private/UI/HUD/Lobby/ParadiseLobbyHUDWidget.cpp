@@ -8,6 +8,7 @@
 #include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Components/WidgetSwitcher.h"
 
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
@@ -42,6 +43,16 @@ void UParadiseLobbyHUDWidget::NativeConstruct()
 				// 이전 음악(타이틀 등)은 자동으로 페이드아웃되고 로비 음악이 재생됩니다.
 				AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
 			}
+		}
+	}
+
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100); // 팝업이 최상단에 뜨도록 ZOrder 100 부여
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
 		}
 	}
 
