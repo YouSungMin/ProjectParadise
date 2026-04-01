@@ -3,7 +3,6 @@
 
 #include "Framework/Title/TitlePlayerController.h"
 #include "Framework/System/GraphicsSettingsSubsystem.h"
-#include "Framework/System/ParadiseCursorSubsystem.h"
 
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -48,18 +47,11 @@ void ATitlePlayerController::BeginPlay()
 	// 2. 입력 모드 설정 (UI Only)
 	// 캐릭터 이동은 막고, 마우스 커서는 보이게 설정합니다.
 	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 	InputMode.SetHideCursorDuringCapture(false);
 
 	SetInputMode(InputMode);
-	bShowMouseCursor = false;
-	// 마우스 커서 서브시스템 커서 초기화
-	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-	{
-		CachedCursorSubsystem = CursorSys;
-		CursorSys->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, this);
-		CursorSys->ShowCursor(true);
-	}
+	bShowMouseCursor = true;
 }
 
 void ATitlePlayerController::SetupInputComponent()

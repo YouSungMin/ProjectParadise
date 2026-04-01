@@ -25,8 +25,6 @@ class UWidgetAnimation;
 class UAutoCombatComponent;
 class USquadControlComponent;
 class UHomeBaseHPWidget;
-class UParadiseCursorWidget;
-class UParadiseCursorSubsystem;
 /** @brief 헤더 인클루드 방지 및 캡슐화를 위한 Common UI 열거형 전방 선언 */
 enum class ECommonInputType : uint8;
 #pragma endregion 전방 선언
@@ -47,20 +45,6 @@ class PARADISE_API UInGameHUDWidget : public UCommonActivatableWidget
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-
-	/**
-	 * @brief 마우스 움직임 감지 → 커서 표시
-	 * @param InGeometry 위젯 지오메트리
-	 * @param InMouseEvent 마우스 이벤트
-	 */
-	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-
-	/**
-	 * @brief 마우스 클릭 감지 → 커서 표시
-	 * @param InGeometry 위젯 지오메트리
-	 * @param InMouseEvent 마우스 이벤트
-	 */
-	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 #pragma region 초기화
 public:
@@ -115,11 +99,6 @@ public:
 	 * @param bShow true면 커서 표시, false면 숨김
 	 */
 	void ShowMouseCursor(bool bShow);
-
-private:
-	/** @brief 소프트웨어 커서 위젯 인스턴스 */
-	UPROPERTY()
-	TObjectPtr<UParadiseCursorWidget> CursorWidgetInstance = nullptr;
 #pragma endregion 커서 제어
 
 #pragma region 내부 로직
@@ -260,9 +239,6 @@ private:
 
 	/** @brief 현재 자동 전투 활성화 여부 */
 	bool bIsAutoMode = false;
-
-	/** @brief 커서 서브시스템 캐싱 (매번 GetSubsystem 호출 방지) */
-	TWeakObjectPtr<UParadiseCursorSubsystem> CachedCursorSubsystem = nullptr;
 #pragma endregion 내부 데이터
 
 #pragma region 데이터 드리븐 설정
@@ -270,20 +246,6 @@ protected:
 	/** @brief 기획자가 에디터에서 할당할 인게임용 설정 팝업 위젯 클래스 (WBP_Settings_InGame) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI")
 	TSubclassOf<USettingsPopupWidget> SettingsPopupClass;
-
-	/**
-	 * @brief 커스텀 커서 위젯 클래스
-	 * @details 에디터에서 WBP_ParadiseCursor를 할당
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
-	TSubclassOf<UParadiseCursorWidget> CursorWidgetClass;
-
-	/**
-	 * @brief 커스텀 커서 텍스처
-	 * @details 에디터에서 원하는 커서 이미지를 할당
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Cursor")
-	TObjectPtr<UTexture2D> Tex_CustomCursor = nullptr;
 #pragma endregion 데이터 드리븐 설정
 
 #pragma region 런타임 상태
