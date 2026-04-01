@@ -108,29 +108,23 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		ActorsToIgnore.Add(this);
 	}
 
-	//다중 광역 타격을 위한 ForObjects 스캔 적용
-
-	// 찾고자 하는 대상 타입 설정 (Pawn)
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
 	TArray<FHitResult> HitResults;
 
 	
 	bool bHit = UKismetSystemLibrary::SphereTraceMultiForObjects(
 		GetWorld(),
-		TraceStart,      // 장판과 동일한 시작점
-		TraceEnd,        // 장판과 동일한 끝점
-		AttackRadius,    // 장판과 동일한 반경
-		ObjectTypes,     // 🟢 채널 대신 오브젝트 타입 배열 사용 (관통 가능해짐)
+		TraceStart,
+		TraceEnd,
+		AttackRadius,
+		AttackObjectTypes, // 👈 🚨 방금 헤더에 만든 변수를 그대로 여기에 꽂아줍니다!
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration, // 디버그 선을 보고 싶다면 ForDuration으로 변경하세요
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true,
-		FLinearColor::Red,   // 🔴 TraceColor: 기본 스피어 색상
-		FLinearColor::Green, // 🟢 TraceHitColor: 뭔가에 적중했을 때의 색상
-		0.2f                 // ⏱️ DrawTime: 화면에 유지되는 시간 (예: 2.0초)
+		FLinearColor::Red,
+		FLinearColor::Green,
+		2.0f
 	);
 
 	// 결과 처리 (다수 타격 및 아군/적군 필터링)

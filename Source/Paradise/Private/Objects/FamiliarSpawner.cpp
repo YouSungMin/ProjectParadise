@@ -7,6 +7,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "BrainComponent.h"
 #include "Kismet/GameplayStatics.h" 
 #include "NavigationSystem.h"
@@ -66,16 +67,42 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 			{
 				NewUnit->InitializeUnit(StatData, AssetData);
 
-				AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
-				if (!AIC)
+				// 데이터 테이블의 컨트롤러 클래스 세팅
+				if (AssetData->AIController)
+				{
+					NewUnit->AIControllerClass = AssetData->AIController;
+				}
+
+				if (UCapsuleComponent* CapsuleComp = NewUnit->GetCapsuleComponent())
+				{
+					CapsuleComp->SetCollisionProfileName(TEXT("AllyPreset"));
+				}
+
+				// ==========================================================
+				// 🚨 AI 컨트롤러 강제 교체 (수정됨)
+				// ==========================================================
+				AController* CurrentCtrl = NewUnit->GetController();
+
+				if (CurrentCtrl && CurrentCtrl->GetClass() != NewUnit->AIControllerClass)
+				{
+					CurrentCtrl->UnPossess();
+					CurrentCtrl->Destroy();
+				}
+
+				if (!NewUnit->GetController())
 				{
 					NewUnit->SpawnDefaultController();
-					AIC = Cast<AMyAIController>(NewUnit->GetController());
 				}
+
+				AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
 
 				if (AIC)
 				{
-					AIC->Possess(NewUnit);
+					// 안전한 빙의 처리
+					if (AIC->GetPawn() != NewUnit)
+					{
+						AIC->Possess(NewUnit);
+					}
 
 					if (!AssetData->BehaviorTree.IsNull())
 					{
@@ -87,6 +114,19 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 							UBlackboardComponent* BB = AIC->GetBlackboardComponent();
 							if (BB)
 							{
+								// 레인 배정
+								float LanePositions[] = { 400.0f, 100.0f, -300.0f };
+								int32 RandomLaneIndex = FMath::RandRange(0, 2);
+								BB->SetValueAsFloat(FName("AssignedLaneY"), LanePositions[RandomLaneIndex]);
+
+								float MyAttackRange = 100.0f; // 기본값 (안전 장치)
+								if (NewUnit)
+								{
+									MyAttackRange = NewUnit->GetAttackRange();
+								}
+								BB->SetValueAsFloat(FName("AttackRange"), MyAttackRange);
+
+								// 기지 타겟팅
 								TArray<AActor*> FoundBases;
 								UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
