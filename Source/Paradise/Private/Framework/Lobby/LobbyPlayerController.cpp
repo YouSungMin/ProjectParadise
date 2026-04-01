@@ -10,7 +10,6 @@
 #include "Framework/System/EconomySubsystem.h"
 #include "Framework/System/GachaSubsystem.h"
 #include "Framework/System/StageSubsystem.h"
-#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Components/AudioComponent.h"
@@ -80,21 +79,13 @@ void ALobbyPlayerController::BeginPlay()
 	//	UE_LOG(LogTemp, Error, TEXT("❌ [LobbyController] Main Camera가 설정되지 않았습니다!"));
 	//}
 
-	//1. 기존 os 마우스 커서는 끄기
-	bShowMouseCursor = false;
-	// 커서 서브시스템으로 커서 초기화
-	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-	{
-		CachedCursorSubsystem = CursorSys;
-		CursorSys->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, this);
-		CursorSys->ShowCursor(true);
-	}
+	bShowMouseCursor = true;
 	bEnableClickEvents = true; // 이거 없으면 3D 액터 클릭 안 됨!
 	bEnableTouchEvents = true;
 
 	//2. UI 전용 입력 모드 설정
 	FInputModeGameAndUI InputModeData;
-	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 	InputModeData.SetHideCursorDuringCapture(false);
 	SetInputMode(InputModeData);
 

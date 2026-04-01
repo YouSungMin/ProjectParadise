@@ -9,7 +9,6 @@
 #include "Framework/System/AudioSettingsSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/GraphicsSettingsSubsystem.h"
-#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Components/TextBlock.h"
 #include "Data/Assets/ParadiseFXAudioData.h"
 
@@ -92,20 +91,11 @@ void USettingsPopupWidget::ToggleSettings()
 {
 	if (bIsSettingsOpen)
 	{
-		// 열려있을 때 토글: 0.1초 딜레이 닫기로 우아하게 닫음
-		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-		{
-			CursorSys->SetCursorForceVisible(false);
-		}
+		// 닫기 로직 실행 (0.1초 딜레이)
 		OnResumeGameClicked();
 	}
 	else
 	{
-		// 닫혀있을 때 토글: 그냥 염
-		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-		{
-			CursorSys->SetCursorForceVisible(true);
-		}
 		OpenSettings();
 	}
 }
@@ -117,11 +107,6 @@ void USettingsPopupWidget::OpenSettings()
 	/** @section 1. 가시성 켜기 */
 	SetVisibility(ESlateVisibility::Visible);
 
-	if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-	{
-		CursorSys->SetCursorForceVisible(true);
-	}
-
 	/** @section 2. 게임 일시정지 및 조작 권한 탈취 */
 	if (APlayerController* PC = GetOwningPlayer())
 	{
@@ -132,8 +117,10 @@ void USettingsPopupWidget::OpenSettings()
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		PC->SetInputMode(InputMode);
+
+		PC->bShowMouseCursor = true;
 	}
 }
 
@@ -143,16 +130,6 @@ void USettingsPopupWidget::CloseSettings()
 
 	/** @section 1. 가시성 끄기 (파괴하지 않고 숨김 처리) */
 	SetVisibility(ESlateVisibility::Collapsed);
-
-	// 팝업이 닫힐 때 커서 강제 표시 해제 (인게임 원래 로직으로 복귀)
-	// 타이틀과 로비(bPauseGameOnOpen == false)에서는 커서가 유지되도록
-	if (bPauseGameOnOpen)
-	{
-		if (UParadiseCursorSubsystem* CursorSys = GetGameInstance()->GetSubsystem<UParadiseCursorSubsystem>())
-		{
-			CursorSys->SetCursorForceVisible(false);
-		}
-	}
 
 	/** @section 2. 디스크에 1회 저장 (I/O 병목 회피) */
 	if (CachedAudioSettings.IsValid())
@@ -172,7 +149,7 @@ void USettingsPopupWidget::CloseSettings()
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetHideCursorDuringCapture(false);
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 		PC->SetInputMode(InputMode);
 	}
 }

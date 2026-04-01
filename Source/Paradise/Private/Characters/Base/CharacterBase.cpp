@@ -468,27 +468,22 @@ void ACharacterBase::SetCurrentMuzzleSocketInfo(FName InSocketName, ESocketTarge
 
 FTransform ACharacterBase::GetCurrentMuzzleTransform() const
 {
-	// 🌟 1. 무기(Weapon)에서 소켓을 찾는 경우
+	// 무기(Weapon)에서 소켓을 찾는 경우
 	if (CurrentMuzzleSocketTarget == ESocketTargetType::EquippedWeapon)
 	{
-		// 유저님의 구조: GetWeaponMesh()를 통해 캐릭터에 붙어있는 WeaponMesh 컴포넌트를 직접 가져옵니다.
 		if (USceneComponent* WpnMeshComp = GetWeaponMesh())
 		{
-			// 가져온 메쉬에 해당 소켓이 존재하는지 확인!
 			if (WpnMeshComp->DoesSocketExist(CurrentMuzzleSocketName))
 			{
-				// 찾았다면 소켓 위치 반환!
 				return WpnMeshComp->GetSocketTransform(CurrentMuzzleSocketName);
 			}
 			else
 			{
-				// 무기 메쉬는 찾았는데 소켓 이름이 틀렸을 때 에러 출력
 				//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] 무기 메쉬에서 '%s' 소켓을 찾지 못했습니다! 오타를 확인해주세요."), *CurrentMuzzleSocketName.ToString());
 			}
 		}
 		else
 		{
-			// 최악의 경우: WeaponMesh 컴포넌트 자체를 못 찾았을 때
 			//UE_LOG(LogTemp, Error, TEXT("❌ [MuzzleTransform] GetWeaponMesh()가 nullptr를 반환했습니다. 무기 컴포넌트 세팅을 확인해주세요."));
 		}
 

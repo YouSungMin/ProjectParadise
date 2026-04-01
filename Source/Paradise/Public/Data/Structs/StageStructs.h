@@ -64,6 +64,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rule", meta = (ClampMin = "0.0"))
 	float TimeLimit;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rule")
+	float HomeBaseHPMultiplier;
+
 	// =========================================================
 	//  경제/보상 (Economy & Reward)
 	// =========================================================

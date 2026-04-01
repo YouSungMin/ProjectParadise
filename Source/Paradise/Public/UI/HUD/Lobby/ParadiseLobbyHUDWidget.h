@@ -32,7 +32,6 @@ class PARADISE_API UParadiseLobbyHUDWidget : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 #pragma region UI 컴포넌트
 protected:
 	/** @brief 상단 재화 및 설정 바 (WBP_TopBar) */
