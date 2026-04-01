@@ -99,7 +99,7 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 			RandomOffset.Normalize();
 
 			// 100 ~ 500 사이의 무작위 거리만큼 퍼짐
-			float RandomRadius = FMath::RandRange(100.0f, 500.0f);
+			float RandomRadius = FMath::RandRange(500.0f, 1000.0f);
 			FVector FinalTargetLocation = BaseLocation + (RandomOffset * RandomRadius);
 
 			// TargetActor는 없지만, TargetLocation을 분산된 좌표로 설정해 이동을 유도
