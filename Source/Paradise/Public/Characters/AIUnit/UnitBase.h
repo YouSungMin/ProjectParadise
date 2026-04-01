@@ -74,7 +74,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
 	FName UnitID;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unit|Data")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Unit|Data")
 	FAIUnitAssets UnitAssets;
 
 	/** @brief 기본 공격에 필요한 전투 데이터 모음 */

@@ -169,6 +169,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	FGameplayTag FactionTag;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TArray<TEnumAsByte<EObjectTypeQuery>> AttackObjectTypes;
+
 protected:
 	/*
 	 * @brief 사망 여부 체크 플래그
