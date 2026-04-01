@@ -15,13 +15,11 @@
 #include "UI/Widgets/Ingame/Popup/DefeatPopupWidget.h"
 #include "UI/Widgets/Setting/SettingsPopupWidget.h"
 #include "UI/Widgets/Ingame/HomeBaseHPWidget.h"
-#include "UI/Mouse/ParadiseCursorWidget.h"
 
 #include "Framework/InGame/InGameGameState.h"
 #include "Framework/InGame/InGameController.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
-#include "Framework/System/ParadiseCursorSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 
 #include "Camera/CameraComponent.h"
@@ -44,23 +42,6 @@
 void UInGameHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	// 서브시스템 1회 캐싱
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		CachedCursorSubsystem = GI->GetSubsystem<UParadiseCursorSubsystem>();
-	}
-	// OS 기본 커서 숨기고 소프트웨어 커서 생성
-	if (APlayerController* PC = GetOwningPlayer())
-	{
-		PC->bShowMouseCursor = false;
-	}
-
-	if (CachedCursorSubsystem.IsValid())
-	{
-		CachedCursorSubsystem->InitializeCursor(CursorWidgetClass, Tex_CustomCursor, GetOwningPlayer());
-		CachedCursorSubsystem->ShowCursor(true);
-	}
 
 #pragma region 초기화 (Initialization)
 	// 1. 결과 팝업 초기화 (숨김 상태로 시작)
@@ -191,44 +172,18 @@ void UInGameHUDWidget::NativeDestruct()
 			InputSubsystem->OnInputMethodChangedNative.RemoveAll(this);
 		}
 	}
-
-	CachedCursorSubsystem = nullptr;
 	Super::NativeDestruct();
-}
-
-FReply UInGameHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	// 마우스 커서 움직임 감지
-	if (CachedCursorSubsystem.IsValid())
-	{
-		CachedCursorSubsystem->ShowCursor(true);
-	}
-
-	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
-}
-
-FReply UInGameHUDWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	// 마우스 커서 클릭 감지
-	if (CachedCursorSubsystem.IsValid())
-	{
-		CachedCursorSubsystem->ShowCursor(true);
-	}
-
-	if (SettingsPopupInstance &&
-		SettingsPopupInstance->GetVisibility() == ESlateVisibility::Visible)
-	{
-		return FReply::Handled();
-	}
-
-	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
 void UInGameHUDWidget::ShowMouseCursor(bool bShow)
 {
-	if (CachedCursorSubsystem.IsValid())
+	if (APlayerController* PC = GetOwningPlayer())
 	{
-		CachedCursorSubsystem->ShowCursor(bShow);
+		// [핵심] 현재 상태와 다를 때만 윈도우 OS에 명령을 보냄 (과부하 방지)
+		if (PC->bShowMouseCursor != bShow)
+		{
+			PC->bShowMouseCursor = bShow;
+		}
 	}
 }
 

@@ -14,7 +14,6 @@ class UAutoCombatComponent;
 class USquadControlComponent;
 class UUltimateEffectComponent;
 class UParadiseGameInstance;
-class UParadiseCursorSubsystem;
 class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
@@ -37,6 +36,12 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+
+	/**
+	 * @brief 게임의 모든 키보드/마우스 입력을 가장 먼저 가로채는 엔진 코어 함수
+	 * @details 마우스 이동 및 클릭 감지 시 숨겨진 커서를 즉시 복구합니다.
+	 */
+	virtual bool InputKey(const FInputKeyParams& Params) override;
 
 	//  스쿼드 제어 (Squad Control)
 public:
@@ -223,9 +228,6 @@ private:
 	 * @brief 플레이어 스테이트 캐싱
 	 */
 	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
-
-	/** @brief 커서 서브시스템 캐싱 (매번 GetSubsystem 호출 방지) */
-	TWeakObjectPtr<UParadiseCursorSubsystem> CachedCursorSubsystem = nullptr;
 
 	/** @brief 설정창 토글 중복 방지 플래그 */
 	bool bIsTogglingSettings = false;
