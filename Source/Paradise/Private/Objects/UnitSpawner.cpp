@@ -7,6 +7,7 @@
 #include "Framework/InGame/MyAIController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Components/CapsuleComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "NavigationSystem.h"
@@ -248,6 +249,11 @@ void AUnitSpawner::SpawnUnit()
 		NewUnit->SetUnitID(EnemyRowName);
 		NewUnit->InitializeUnit(StatData, AssetData);
 
+		if (UCapsuleComponent* CapsuleComp = NewUnit->GetCapsuleComponent())
+		{
+			CapsuleComp->SetCollisionProfileName(TEXT("EnemyPreset"));
+		}
+
 		// 3. 데이터 테이블에 설정된 전용 AI 컨트롤러 클래스 장착
 		if (AssetData->AIController)
 		{
@@ -255,28 +261,57 @@ void AUnitSpawner::SpawnUnit()
 		}
 
 		// ==========================================================
-		// 🚨 4. AI 컨트롤러 빙의 (스포너의 개입은 여기까지!)
-		// 기존에 있던 BT 실행, BB 세팅, 본진 검색(GetAllActorsOfClass) 로직 삭제 완료.
-		// 이 로직들은 빙의(Possess) 시 AIController의 OnPossess에서 스스로 알아서 처리합니다.
+		// 🚨 4. AI 컨트롤러 강제 교체 및 빙의 (수정됨)
 		// ==========================================================
-		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
+		AController* CurrentCtrl = NewUnit->GetController();
 
-		if (!AIC)
+		// 현재 컨트롤러가 존재하지만, 데이터테이블에 세팅된 클래스와 다르다면 (예: 풀링된 이전 유닛의 뇌) 파괴합니다.
+		if (CurrentCtrl && CurrentCtrl->GetClass() != NewUnit->AIControllerClass)
 		{
-			// 컨트롤러가 없으면 스폰 (SpawnDefaultController 내부에 Possess가 포함되어 있음)
+			CurrentCtrl->UnPossess();
+			CurrentCtrl->Destroy();
+		}
+
+		// 컨트롤러가 없거나 방금 파괴되었다면, AIControllerClass를 기반으로 새로 생성합니다.
+		if (!NewUnit->GetController())
+		{
 			NewUnit->SpawnDefaultController();
 		}
-		else if (AIC->GetPawn() != NewUnit)
+
+		AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
+
+		if (AIC)
 		{
-			// 컨트롤러는 있지만 현재 유닛과 연결이 끊겨 있다면 강제 빙의
-			AIC->Possess(NewUnit);
-		}
-		else
-		{
-			// (오브젝트 풀링용) 이미 완벽하게 빙의된 상태로 풀에서 꺼내졌다면 뇌(Brain)만 재시작
-			if (AIC->GetBrainComponent())
+			// 연결이 안 되어 있다면 강제 빙의
+			if (AIC->GetPawn() != NewUnit)
 			{
-				AIC->GetBrainComponent()->RestartLogic();
+				AIC->Possess(NewUnit);
+			}
+			else
+			{
+				// 이미 정상적으로 빙의된 상태라면 뇌(Brain)만 재시작
+				if (AIC->GetBrainComponent())
+				{
+					AIC->GetBrainComponent()->RestartLogic();
+				}
+			}
+
+			// 레인(Lane) Y축 값 주입
+			UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+			if (BB)
+			{
+				float LanePositions[] = { 400.0f, 100.0f, -300.0f };
+				int32 RandomLaneIndex = FMath::RandRange(0, 2);
+				BB->SetValueAsFloat(FName("AssignedLaneY"), LanePositions[RandomLaneIndex]);
+
+				float MyAttackRange = 100.0f; // 기본값 (안전 장치)
+				if (NewUnit)
+				{
+					// UnitBase에 구현된 사거리 반환 함수를 호출하여 가져옵니다.
+					// (만약 이름이 다르다면 프로젝트에 맞게 GetAttackRange() 부분을 수정해 주세요)
+					MyAttackRange = NewUnit->GetAttackRange();
+				}
+				BB->SetValueAsFloat(FName("AttackRange"), MyAttackRange);
 			}
 		}
 	}
