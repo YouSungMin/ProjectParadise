@@ -38,7 +38,7 @@ AMyAIController::AMyAIController()
     {
         CrowdComp->SetCrowdSeparation(true);
         // 가중치를 50.0f 정도로 다시 올려서 유닛끼리 부드럽게 비켜가도록 둡니다.
-        CrowdComp->SetCrowdSeparationWeight(50.0f);
+        CrowdComp->SetCrowdSeparationWeight(500.0f);
         CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::High);
     }
 
