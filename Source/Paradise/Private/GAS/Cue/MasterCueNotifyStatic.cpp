@@ -70,6 +70,10 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 					{
 						if (USoundBase* LoadedSound = Payload->SoundEffect.LoadSynchronous())
 						{
+							UE_LOG(LogTemp, Warning, TEXT("🔊 [%s] %s가 피격음 재생! 소리 이름: %s"),
+								*ActorRole,
+								*SourceActor->GetName(),
+								*LoadedSound->GetName());
 							UGameplayStatics::PlaySoundAtLocation(MyTarget, LoadedSound, HitLocation);
 							//UE_LOG(LogTemp, Log, TEXT("      🔊 사운드 재생 완료: %s"), *LoadedSound->GetName());
 						}
@@ -141,15 +145,17 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 		}
 	}
 
-	if (TrueAttacker)
-	{
-		//UE_LOG(LogTemp, Log, TEXT("  ✅ 최종 타격자(몸) 확정: %s"), *TrueAttacker->GetName());
-	}
-
 	if (TrueAttacker && TrueAttacker != MyTarget)
 	{
+		// 1. 피격자(맞은 적)는 무조건 'Hit(피격)' 데이터를 꺼내서 비명을 지릅니다.
 		PlayFXForActor(MyTarget, EFXEventType::Hit, TEXT("피격자"));
-		PlayFXForActor(TrueAttacker, TargetEventType, TEXT("타격자"));
+
+		// 2. 타격자(플레이어)는 TargetEventType이 'Hit'가 아닐 때만 이펙트/사운드를 재생합니다.
+		// (현재 타격 성공음은 무기가 알아서 처리하고 있으므로 패스!)
+		if (TargetEventType != EFXEventType::Hit)
+		{
+			PlayFXForActor(TrueAttacker, TargetEventType, TEXT("타격자"));
+		}
 	}
 	else
 	{
