@@ -52,6 +52,8 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 	{
 		ACharacterBase* OtherChar = *It;
 
+		if (OtherChar->IsA<AHomeBase>()) continue;
+
 		// 기본 유효성 검사 (본인 제외, 유효성, 사망 여부)
 		if (!IsValid(OtherChar) || OtherChar == SelfUnit || OtherChar->IsDead()) continue;
 
