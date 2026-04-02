@@ -93,9 +93,21 @@ void AInGameController::SetupInputComponent()
         if (IA_SummonSlot4) EnhancedInputComponent->BindAction(IA_SummonSlot4, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot4);
         if (IA_SummonSlot5) EnhancedInputComponent->BindAction(IA_SummonSlot5, ETriggerEvent::Started, this, &AInGameController::OnInputSummonSlot5);
 
-        if (IA_Attack) EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &AInGameController::OnInputAttack);
-        if (IA_Skill) EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Started, this, &AInGameController::OnInputSkill);
-        if (IA_Ultimate) EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Started, this, &AInGameController::OnInputUltimate);
+        if (IA_Attack)
+        {
+            EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &AInGameController::OnInputAttackStarted);
+            EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Completed, this, &AInGameController::OnInputAttackCompleted);
+        }
+        if (IA_Skill)
+        {
+            EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Started, this, &AInGameController::OnInputSkillStarted);
+            EnhancedInputComponent->BindAction(IA_Skill, ETriggerEvent::Completed, this, &AInGameController::OnInputSkillCompleted);
+        }
+        if (IA_Ultimate)
+        {
+            EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Started, this, &AInGameController::OnInputUltimateStarted);
+            EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Completed, this, &AInGameController::OnInputUltimateCompleted);
+        }
 
         if (IA_OpenSettings) EnhancedInputComponent->BindAction(IA_OpenSettings, ETriggerEvent::Started, this, &AInGameController::OnInputOpenSettings);
     }
@@ -145,50 +157,76 @@ void AInGameController::OnInputSummonSlot3() { RequestFamiliarSummon(2); }
 void AInGameController::OnInputSummonSlot4() { RequestFamiliarSummon(3); }
 void AInGameController::OnInputSummonSlot5() { RequestFamiliarSummon(4); }
 
-void AInGameController::OnInputAttack(const FInputActionValue& Value)
+void AInGameController::OnInputAttackStarted(const FInputActionValue& Value)
 {
-    if (bShowMouseCursor)
-    {
-        bShowMouseCursor = false;
-    }
+    if (bShowMouseCursor) bShowMouseCursor = false;
 
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
         {
-            ActionPanel->KeyboardAttack();
+            // 꾸욱 누르면 사거리 표시
+            ActionPanel->OnAttackButtonPressed();
         }
     }
 }
 
-void AInGameController::OnInputSkill(const FInputActionValue& Value)
+void AInGameController::OnInputAttackCompleted(const FInputActionValue& Value)
 {
-    if (bShowMouseCursor)
-    {
-        bShowMouseCursor = false;
-    }
-
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
         {
-            ActionPanel->KeyboardSkill();
+            // 손 떼면 사거리 숨김 + 어빌리티 발동
+            ActionPanel->OnAttackButtonReleased();
         }
     }
 }
 
-void AInGameController::OnInputUltimate(const FInputActionValue& Value)
+void AInGameController::OnInputSkillStarted(const FInputActionValue& Value)
 {
-    if (bShowMouseCursor)
-    {
-        bShowMouseCursor = false;
-    }
+    if (bShowMouseCursor) bShowMouseCursor = false;
 
     if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
     {
         if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
         {
-            ActionPanel->KeyboardUltimate();
+            ActionPanel->OnActiveSkillPressed();
+        }
+    }
+}
+
+void AInGameController::OnInputSkillCompleted(const FInputActionValue& Value)
+{
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->OnActiveSkillReleased();
+        }
+    }
+}
+
+void AInGameController::OnInputUltimateStarted(const FInputActionValue& Value)
+{
+    if (bShowMouseCursor) bShowMouseCursor = false;
+
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->OnUltimateSkillPressed();
+        }
+    }
+}
+
+void AInGameController::OnInputUltimateCompleted(const FInputActionValue& Value)
+{
+    if (UInGameHUDWidget* HUD = GetOrCreateInGameHUD())
+    {
+        if (UActionControlPanel* ActionPanel = HUD->GetActionControlPanel())
+        {
+            ActionPanel->OnUltimateSkillReleased();
         }
     }
 }

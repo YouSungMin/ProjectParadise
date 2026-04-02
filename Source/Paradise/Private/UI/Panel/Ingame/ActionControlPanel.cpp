@@ -574,24 +574,6 @@ void UActionControlPanel::ToggleShortcutKeys(bool bShow)
 	}
 }
 
-void UActionControlPanel::KeyboardAttack()
-{
-	OnAttackButtonPressed();
-	OnAttackButtonReleased();
-}
-
-void UActionControlPanel::KeyboardSkill()
-{
-	OnActiveSkillPressed();
-	OnActiveSkillReleased();
-}
-
-void UActionControlPanel::KeyboardUltimate()
-{
-	OnUltimateSkillPressed();
-	OnUltimateSkillReleased();
-}
-
 void UActionControlPanel::OnAttackButtonPressed()
 {
 	APlayerBase* CurrentActivePawn = Cast<APlayerBase>(GetOwningPlayerPawn());
