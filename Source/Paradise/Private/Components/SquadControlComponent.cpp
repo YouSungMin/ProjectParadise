@@ -89,6 +89,7 @@ void USquadControlComponent::RequestSwitchPlayer(int32 PlayerIndex)
     //빙의 권한은 컨트롤러에게 있음
     PC->Possess(NewPlayer);
     CurrentControlledIndex = PlayerIndex;
+    PC->SetViewTarget(NewPlayer);
 
     if (OldPlayer && !OldPlayer->IsDead())
     {
@@ -310,7 +311,10 @@ void USquadControlComponent::InitializeSquadPawns()
                 SpawnClass = PlayerBaseClass;
             }
 
-            APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot);
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+            APlayerBase* NewBody = GetWorld()->SpawnActor<APlayerBase>(SpawnClass, SpawnLoc, SpawnRot, SpawnParams);
 
             if (NewBody)
             {
@@ -341,6 +345,7 @@ void USquadControlComponent::InitializeSquadPawns()
         UE_LOG(LogParadiseSquad, Error, TEXT("❌ [Controller] 스폰된 캐릭터가 아무도 없습니다!"));
     }*/
 }
+
 
 void USquadControlComponent::PossessAI(APlayerBase* TargetCharacter)
 {
@@ -406,5 +411,6 @@ bool USquadControlComponent::SwitchToNextSurvivor()
     }
 
     bIsSquadWipedOut = true; // 전멸 처리
+
     return false; // 전멸
 }

@@ -24,6 +24,7 @@
 #include "GAS/Attributes/BaseAttributeSet.h"//디버그치트함수때문에 추가 이후 삭제
 #include "AbilitySystemComponent.h"//데미지 주는 치트함수 때문에 추가 이후 삭제 예정
 #include "GameplayEffect.h" //데미지 주는 치트함수 때문에 추가 이후 삭제 예정
+#include "Framework/System/StageSubsystem.h"//디버그치트함수때문에 추가 이후 삭제
 
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
@@ -43,6 +44,7 @@ AInGameController::AInGameController()
     UltimateEffectComponent = CreateDefaultSubobject<UUltimateEffectComponent>(TEXT("UltimateEffectComponent"));
 
     PlayerCameraManagerClass = AParadiseCameraManager::StaticClass();
+    bAutoManageActiveCameraTarget = false;
 }
 
 void AInGameController::BeginPlay()
@@ -497,4 +499,36 @@ void AInGameController::CheatRespawn(int32 PlayerIndex)
         SquadControlComponent->RespawnSquadPlayer(PlayerIndex);
     }
    
+}
+
+void AInGameController::CheatClearAllStages()
+{
+    UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+    if (!GI) return;
+
+    UStageSubsystem* StageSys = GI->GetSubsystem<UStageSubsystem>();
+    if (!StageSys) return;
+
+    //스테이지 데이터 테이블이 유효한지 확인
+    if (GI->StatgeStatsDataTable)
+    {
+        //데이터 테이블의 모든 행(Row Name = StageID)을 가져옵니다.
+        TArray<FName> AllStageIDs = GI->StatgeStatsDataTable->GetRowNames();
+
+        //반복문을 돌며 모든 스테이지를 해금, 3별로 기록
+        for (const FName& StageID : AllStageIDs)
+        {
+            if (StageID.IsNone()) continue;
+
+            StageSys->UnlockStage(StageID);
+            StageSys->RecordStageClearStar(StageID, 3);
+        }
+
+        //즉시 세이브
+        GI->SaveGameData();
+
+        FString Msg = FString::Printf(TEXT("🏆 [Cheat] 총 %d개의 스테이지가 모두 해금되고 3별로 클리어되었습니다!"), AllStageIDs.Num());
+        UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg);
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Msg);
+    }
 }
