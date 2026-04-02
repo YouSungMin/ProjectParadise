@@ -93,28 +93,35 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 	}
 	else
 	{
-		// [4단계] 주변에 적 유닛이 아무도 없는 경우
-		// 타겟 키를 비우고, 적 기지(HomeBase)를 최종 목적지로 설정
+		// [4단계] 주변에 적 유닛이 없는 경우 (기지 이동 로직)
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, nullptr);
 		BB->ClearValue(FName("DistanceToTarget"));
 
+		FVector CurrentTargetLoc = BB->GetValueAsVector(FName("TargetLocation"));
 		AActor* DestBase = Cast<AActor>(BB->GetValueAsObject(FName("EnemyBaseActor")));
+		
+		if (DestBase && CurrentTargetLoc != FVector::ZeroVector)
+		{
+			// 현재 찍힌 목적지와 기지 사이의 거리를 체크 (800~1000 유닛 이내면 이미 기지 근처임)
+			float DistToBase = FVector::Dist(CurrentTargetLoc, DestBase->GetActorLocation());
+			
+			if (DistToBase < 1000.0f)
+			{
+				return;
+			}
+		}
+
+		// 위 조건에 걸리지 않으면(목적지가 없거나 너무 멀면) 아래에서 새로 목적지를 잡습니다.
 		if (DestBase)
 		{
-			// 🚨 핵심 수정: 기지의 정중앙이 아닌, 기지 주변에 랜덤한 위치를 목표로 줍니다.
 			FVector BaseLocation = DestBase->GetActorLocation();
-
-			// 맵의 '폭(Width)'에 맞춰서 숫자를 조절하세요. (예: 좌우로 400만큼 퍼지게)
-			// 평면 이동이므로 Z축은 건드리지 않기 위해 2D 랜덤을 사용합니다.
 			FVector RandomOffset = FMath::VRand();
-			RandomOffset.Z = 0.0f; // 상하로 튀는 것 방지
+			RandomOffset.Z = 0.0f;
 			RandomOffset.Normalize();
 
-			// 100 ~ 500 사이의 무작위 거리만큼 퍼짐
-			float RandomRadius = FMath::RandRange(500.0f, 1000.0f);
+			float RandomRadius = FMath::RandRange(300.0f, 700.0f);
 			FVector FinalTargetLocation = BaseLocation + (RandomOffset * RandomRadius);
 
-			// TargetActor는 없지만, TargetLocation을 분산된 좌표로 설정해 이동을 유도
 			BB->SetValueAsVector(FName("TargetLocation"), FinalTargetLocation);
 		}
 	}
