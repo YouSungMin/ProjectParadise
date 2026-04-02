@@ -14,6 +14,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Objects/HomeBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AUnitSpawner::AUnitSpawner()
 {
@@ -121,6 +122,25 @@ void AUnitSpawner::SpawnUnit()
 		NewUnit->SetUnitID(EnemyRowName);
 		// 스탯 및 메시 초기화
 		NewUnit->InitializeUnit(StatData, AssetData);
+
+		if (UCharacterMovementComponent* MoveComp = NewUnit->GetCharacterMovement())
+		{
+			// 1. 회피 기능 활성화
+			MoveComp->bUseRVOAvoidance = true;
+
+			// 2. 가중치 설정
+			if (ClassToSpawn == SkillCasterClass)
+			{
+				MoveComp->AvoidanceWeight = 0.9f;
+			}
+			else
+			{
+				MoveComp->AvoidanceWeight = FMath::FRandRange(0.3f, 0.7f);
+			}
+
+			// 3. 회피 시 고려할 반지름
+			MoveComp->AvoidanceConsiderationRadius = 300.0f;
+		}
 
 		if (AssetData->AIController)
 		{
