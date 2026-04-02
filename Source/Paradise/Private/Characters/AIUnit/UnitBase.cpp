@@ -111,6 +111,7 @@ void AUnitBase::OnPoolActivate_Implementation()
 		MoveComp->Velocity = FVector::ZeroVector;
 		MoveComp->SetMovementMode(MOVE_Walking);
 		MoveComp->CurrentFloor.Clear();
+		MoveComp->bUseRVOAvoidance = true;
 	}
 
 	SetActorEnableCollision(true);
