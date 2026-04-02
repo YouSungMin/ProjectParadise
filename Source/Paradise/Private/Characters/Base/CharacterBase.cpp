@@ -13,6 +13,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interfaces/ObjectPoolInterface.h"
 #include "AttributeSet.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 
 ACharacterBase::ACharacterBase()
@@ -570,6 +571,20 @@ void ACharacterBase::Die()
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+		GetCapsuleComponent()->SetCanEverAffectNavigation(false);
+	}
+
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+	}
+
+	if (UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(GetMovementComponent()))
+	{
+		MoveComp->DisableMovement();          // 이동 연산 완전 중지
+		MoveComp->bUseRVOAvoidance = false;   // RVO 회피 시스템에서 제외
 	}
 
 	if (Controller)
