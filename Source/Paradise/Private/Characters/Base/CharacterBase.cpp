@@ -120,7 +120,7 @@ void ACharacterBase::CheckHit(FName SocketName, ESocketTargetType TargetType)
 		AttackObjectTypes, // 👈 🚨 방금 헤더에 만든 변수를 그대로 여기에 꽂아줍니다!
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true,
 		FLinearColor::Red,
