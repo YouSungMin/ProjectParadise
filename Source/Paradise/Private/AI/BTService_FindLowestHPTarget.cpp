@@ -8,6 +8,8 @@
 #include "Objects/HomeBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "EngineUtils.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "AITypes.h"
 
 UBTService_FindLowestHPTarget::UBTService_FindLowestHPTarget()
 {
@@ -50,7 +52,7 @@ void UBTService_FindLowestHPTarget::TickNode(UBehaviorTreeComponent& OwnerComp, 
 		SelfUnit->GetActorLocation(),
 		FQuat::Identity,
 		ObjectQueryParams,
-		FCollisionShape::MakeSphere(AttackRange),
+		FCollisionShape::MakeSphere(SearchRadius),
 		CollisionParams
 	);
 
@@ -110,12 +112,17 @@ void UBTService_FindLowestHPTarget::TickNode(UBehaviorTreeComponent& OwnerComp, 
 
 		if (DistanceToTarget <= AttackRange)
 		{
-			// 이미 사거리 안이라면 내 현재 위치를 목표로 설정하여 이동 중지 유도
+			BB->SetValueAsBool(FName("bIsInRange"), true);
 			BB->SetValueAsVector(FName("TargetLocation"), SelfUnit->GetActorLocation());
+
+			if (AIC->GetPathFollowingComponent())
+			{
+				AIC->GetPathFollowingComponent()->AbortMove(*AIC, FPathFollowingResultFlags::Success);
+			}
 		}
 		else
 		{
-			// 사거리 밖으로 나가면 다시 적을 추적하기 위해 위치 갱신
+			BB->SetValueAsBool(FName("bIsInRange"), false);
 			BB->SetValueAsVector(FName("TargetLocation"), FinalTarget->GetActorLocation());
 		}
 	}
