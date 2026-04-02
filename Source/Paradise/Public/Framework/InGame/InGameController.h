@@ -210,9 +210,12 @@ private:
 
 	void OnInputMove(const FInputActionValue& Value);
 	void OnInputOpenSettings(const FInputActionValue& Value);
-	void OnInputAttack(const FInputActionValue& Value);
-	void OnInputSkill(const FInputActionValue& Value);
-	void OnInputUltimate(const FInputActionValue& Value);
+	void OnInputAttackStarted(const FInputActionValue& Value);
+	void OnInputAttackCompleted(const FInputActionValue& Value);
+	void OnInputSkillStarted(const FInputActionValue& Value);
+	void OnInputSkillCompleted(const FInputActionValue& Value);
+	void OnInputUltimateStarted(const FInputActionValue& Value);
+	void OnInputUltimateCompleted(const FInputActionValue& Value);
 
 	/** @brief 소환 공통 처리 함수 */
 	void RequestFamiliarSummon(int32 SlotIndex);

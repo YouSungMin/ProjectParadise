@@ -102,19 +102,8 @@ public:
 	void ToggleShortcutKeys(bool bShow);
 #pragma endregion 외부 인터페이스
 
+#pragma region 공격/스킬/궁극기 키 입력
 public:
-#pragma region 키보드 입력 연동 (InGameController에서 호출)
-	/** @brief 키보드 공격 입력 */
-	void KeyboardAttack();
-	/** @brief 키보드 스킬 입력 */
-	void KeyboardSkill();
-	/** @brief 키보드 궁극기 입력 */
-	void KeyboardUltimate();
-#pragma endregion 키보드 입력 연동
-
-private:
-#pragma region 내부 로직
-
 	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
 	UFUNCTION()
 	void OnAttackButtonPressed();
@@ -130,7 +119,10 @@ private:
 	void OnUltimateSkillPressed();
 	UFUNCTION()
 	void OnUltimateSkillReleased();
+#pragma region 공격/스킬/궁극기 키 입력
 
+private:
+#pragma region 내부 로직
 	/**
 	 * @brief UI 버튼 입력을 통합하여 플레이어의 ASC로 전달하는 중앙 제어 함수입니다.
 	 * @details 하드코딩된 개별 콜백 함수들을 대체하며, 입력 ID에 따라 적절한 어빌리티 신호를 송신합니다.
