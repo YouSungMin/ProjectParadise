@@ -7,6 +7,7 @@
 #include "Characters/AIUnit/UnitBase.h"
 #include "Objects/HomeBase.h"
 #include "EngineUtils.h"
+#include "Components/CapsuleComponent.h"
 
 UBTService_FindClosestTarget::UBTService_FindClosestTarget()
 {
@@ -60,12 +61,23 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 		// 유닛의 적대 관계 확인 (Faction Tag 기반 등)
 		if (SelfUnit->IsHostile(OtherChar))
 		{
-			float Distance = FVector::Dist(SelfUnit->GetActorLocation(), OtherChar->GetActorLocation());
+			//float Distance = FVector::Dist(SelfUnit->GetActorLocation(), OtherChar->GetActorLocation());
 
-			// 설정된 SearchRadius(1500) 내에서 가장 가까운 적을 찾음
-			if (Distance < MinDistance)
+			// 1. 중심 간 거리 계산
+			float CenterToCenterDistance = FVector::Dist(SelfUnit->GetActorLocation(), OtherChar->GetActorLocation());
+
+			// 2. 각자의 캡슐 반지름 가져오기
+			float MyRadius = SelfUnit->GetCapsuleComponent()->GetScaledCapsuleRadius();
+			float TargetRadius = OtherChar->GetCapsuleComponent()->GetScaledCapsuleRadius();
+
+			// 3. 표면 간 거리 = (중심 거리) - (내 반지름) - (상대 반지름)
+			// FMath::Max를 써서 거리가 마이너스(-)가 되는 것을 방지
+			float SurfaceDistance = FMath::Max(0.0f, CenterToCenterDistance - MyRadius - TargetRadius);
+
+			// 설정된 SearchRadius 내에서 가장 가까운 적을 찾음
+				if (SurfaceDistance < MinDistance)
 			{
-				MinDistance = Distance;
+				MinDistance = SurfaceDistance;
 				ClosestEnemy = OtherChar;
 			}
 		}
