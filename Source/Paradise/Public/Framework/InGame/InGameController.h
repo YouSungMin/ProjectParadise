@@ -71,6 +71,9 @@ public:
 
 	UFUNCTION(Exec)
 	void CheatRespawn(int32 PlayerIndex);
+
+	UFUNCTION(Exec, BlueprintCallable, Category = "Cheat")
+	void CheatClearAllStages();
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
 
