@@ -70,10 +70,10 @@ bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FG
 					{
 						if (USoundBase* LoadedSound = Payload->SoundEffect.LoadSynchronous())
 						{
-							UE_LOG(LogTemp, Warning, TEXT("🔊 [%s] %s가 피격음 재생! 소리 이름: %s"),
-								*ActorRole,
-								*SourceActor->GetName(),
-								*LoadedSound->GetName());
+							//UE_LOG(LogTemp, Warning, TEXT("🔊 [%s] %s가 피격음 재생! 소리 이름: %s"),
+							//	*ActorRole,
+							//	*SourceActor->GetName(),
+							//	*LoadedSound->GetName());
 							UGameplayStatics::PlaySoundAtLocation(MyTarget, LoadedSound, HitLocation);
 							//UE_LOG(LogTemp, Log, TEXT("      🔊 사운드 재생 완료: %s"), *LoadedSound->GetName());
 						}
