@@ -41,13 +41,13 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		float CurrentMana = GetMana();
 
 		// 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한
-		float ClampedNewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
 
 		// 마나가 깎였을 때만 로그를 출력
-		if (ClampedNewValue < CurrentMana)
+		if (NewValue < CurrentMana)
 		{
 			// 사용한(깎인) 마나 계산
-			float UsedMana = CurrentMana - ClampedNewValue;
+			float UsedMana = CurrentMana - NewValue;
 
 			//UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
 		}
