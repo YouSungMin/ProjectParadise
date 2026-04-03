@@ -467,6 +467,7 @@ void UInventorySystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
 	SaveGameObj->SavedOwnedCharacters = OwnedCharacters;
 	SaveGameObj->SavedOwnedFamiliars = OwnedFamiliars;
 	SaveGameObj->SavedOwnedInventoryItems = OwnedItems;
+	SaveGameObj->bIsFirstPlay = bIsFirstPlaySession;
 }
 
 void UInventorySystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
@@ -476,7 +477,7 @@ void UInventorySystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 	OwnedCharacters = SaveGameObj->SavedOwnedCharacters;
 	OwnedFamiliars = SaveGameObj->SavedOwnedFamiliars;
 	OwnedItems = SaveGameObj->SavedOwnedInventoryItems;
-
+	bIsFirstPlaySession = SaveGameObj->bIsFirstPlay;
 
 	if (SaveGameObj->bIsFirstPlay == true)
 	{
@@ -493,6 +494,7 @@ void UInventorySystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 		AddFamiliar(TEXT("CherryBee"));
 
 		//최초 접속 플래그 false
+		bIsFirstPlaySession = false;
 		SaveGameObj->bIsFirstPlay = false;
 	}
 

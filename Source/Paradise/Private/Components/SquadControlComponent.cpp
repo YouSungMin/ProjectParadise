@@ -323,7 +323,7 @@ void USquadControlComponent::InitializeSquadPawns()
 
                 if (FirstValidIndex == -1) FirstValidIndex = i;
 
-                DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
+                //DrawDebugString(GetWorld(), SpawnLoc + FVector(0, 0, 100), FString::Printf(TEXT("Squad_%d"), i), nullptr, FColor::Green, -1.0f);
 
                 // UI 바인딩 지시
                 PC->BindPlayerToUI(i, Soul);

@@ -250,6 +250,6 @@ protected:
 #pragma endregion 인벤토리 보유 변수
 
 private:
-
+	bool bIsFirstPlaySession = true;
 		
 };
