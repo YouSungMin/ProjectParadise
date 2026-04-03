@@ -19,6 +19,14 @@ class UDefeatPopupWidget;
 class UParadiseCommonButton;
 class AInGameGameState;
 class USettingsPopupWidget;
+class UTexture2D;
+class UImage;
+class UWidgetAnimation;
+class UAutoCombatComponent;
+class USquadControlComponent;
+class UHomeBaseHPWidget;
+/** @brief 헤더 인클루드 방지 및 캡슐화를 위한 Common UI 열거형 전방 선언 */
+enum class ECommonInputType : uint8;
 #pragma endregion 전방 선언
 
 /**
@@ -62,7 +70,36 @@ public:
 
 	/** @brief 파티 상태 패널 반환 */
 	FORCEINLINE UPartyStatusPanel* GetPartyStatusPanel() const { return PartyStatusPanel; }
+
+	/**
+	 * @brief 가상 조이스틱 위젯을 반환합니다.
+	 * @details BaseGameplayAbility에서 이동 잠금/해제 시 사용합니다.
+	 */
+	FORCEINLINE UVirtualJoystickWidget* GetVirtualJoystick()     const { return VirtualJoystick; }
+
+	/**
+	 * @brief 컨트롤러의 ESC 입력 또는 화면 설정 버튼 클릭 시 설정 팝업을 토글합니다.
+	 * @details 내부의 USettingsPopupWidget 인스턴스에 접근하여 열림/닫힘(Toggle)을 위임합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettingsPopup();
+
+	/**
+	 * @brief 설정 팝업 인스턴스를 반환합니다.
+	 * @details InGameController의 ESC 입력 처리 시 호출합니다.
+	 */
+	FORCEINLINE USettingsPopupWidget* GetSettingsPopupInstance() const { return SettingsPopupInstance; }
 #pragma endregion 하위 패널 접근 (Getters)
+
+#pragma region 커서 제어
+public:
+	/**
+	 * @brief 마우스 커서 표시 여부를 설정합니다.
+	 * @details 키보드 입력 시 숨김, 마우스 입력/결과창/설정창 시 표시합니다.
+	 * @param bShow true면 커서 표시, false면 숨김
+	 */
+	void ShowMouseCursor(bool bShow);
+#pragma endregion 커서 제어
 
 #pragma region 내부 로직
 private:
@@ -72,6 +109,14 @@ private:
 	 */
 	UFUNCTION()
 	void HandleGamePhaseChanged(EGamePhase NewPhase);
+
+	/**
+	 * @brief 캐릭터 교체 완료 시 조이스틱 이동 잠금을 해제합니다.
+	 * @details SquadControlComponent::OnPlayerSwitched 델리게이트 수신부입니다.
+	 * @param NewCharacterIndex 새로 교체된 캐릭터 인덱스
+	 */
+	UFUNCTION()
+	void HandlePlayerSwitched(int32 NewCharacterIndex);
 
 	/**
 	 * @brief 승리 팝업에 필요한 정산 영수증(최신 데이터)을 구성하여 전달합니다.
@@ -87,12 +132,34 @@ private:
 	UFUNCTION()
 	void OnAutoModeButtonClicked();
 
+	/**
+	 * @brief 자동 전투 상태 변경 델리게이트 수신부 (Pure MVC)
+	 * @details 텍스처 변경 및 1.5초(카메라 이동 시간) 동안의 버튼 잠금 처리를 담당합니다.
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
+
+	/**
+	 * @brief 사용자의 입력 기기(터치/마우스/키보드 등)가 변경되었을 때 Common UI Subsystem으로부터 호출됩니다.
+	 * @details 마우스나 터치 입력일 때는 조이스틱을 유지하고, 오직 키보드 입력일 때만 조이스틱을 숨기며 단축키를 노출합니다.
+	 * @param NewInputType 새로 감지된 입력 타입
+	 */
+	UFUNCTION()
+	void HandleInputMethodChanged(ECommonInputType NewInputType);
+
+	/** @brief 카메라 연출 시간 종료 후 오토 버튼 잠금 해제 */
+	void UnlockAutoModeButton();
+
 	/** @brief 가상 조이스틱 입력 처리 (캐릭터 이동) */
 	UFUNCTION()
 	void OnJoystickInput(FVector2D InputVector);
 
 	/** @brief 주기적으로 호출될 UI 갱신 함수 */
 	void OnUpdateHUD();
+
+	/** @brief 홈베이스 등록 완료 시 호출 */
+	UFUNCTION()
+	void HandleHomeBaseRegistered(bool bIsAlly);
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
@@ -134,10 +201,41 @@ private:
 	TObjectPtr<UDefeatPopupWidget> Widget_DefeatPopup = nullptr;
 #pragma endregion 위젯 바인딩
 
+#pragma region 홈베이스 HP 위젯
+private:
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UHomeBaseHPWidget> Widget_AllyBaseHP = nullptr;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UHomeBaseHPWidget> Widget_EnemyBaseHP = nullptr;
+#pragma endregion 홈베이스 HP 위젯
+
+#pragma region 공통 UI 에셋 설정 (Config)
+protected:
+	/** @brief 카메라 이동(연출) 시간 동안 오토 버튼 입력을 막기 위한 대기 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	float CameraBlendTime = 1.5f;
+
+	/** @brief 오토 모드가 꺼져있을 때 (수동) 보여줄 어두운 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_AutoModeOff = nullptr;
+
+	/** @brief 오토 모드가 켜져있을 때 (자동) 보여줄 빛나는 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_AutoModeOn = nullptr;
+
+	/** @brief 설정 버튼 이미지 (눌림 이미지는 사용하지 않고 틴트로 처리) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config")
+	TObjectPtr<UTexture2D> Tex_SettingNormal = nullptr;
+#pragma endregion 공통 UI 에셋 설정 (Config)
+
 #pragma region 내부 데이터
 private:
 	/** @brief UI 갱신용 타이머 핸들 */
 	FTimerHandle HUDUpdateTimerHandle;
+
+	/** @brief 오토 버튼 연타 방지용 타이머 핸들 */
+	FTimerHandle TimerHandle_AutoModeLock;
 
 	/** @brief 현재 자동 전투 활성화 여부 */
 	bool bIsAutoMode = false;

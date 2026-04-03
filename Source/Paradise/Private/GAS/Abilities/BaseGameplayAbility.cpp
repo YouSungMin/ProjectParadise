@@ -5,9 +5,17 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
+#include "Characters/AIUnit/SkillCasterUnit.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AutoCombatComponent.h"
+#include "Framework/Core/ParadiseCameraManager.h"
+#include "Framework/InGame/InGameController.h"
+#include "UI/HUD/Ingame/InGameHUDWidget.h"
+#include "UI/Widgets/InGame/VirtualJoystickWidget.h"
+#include "UI/Panel/Ingame/ActionControlPanel.h"
 
 UBaseGameplayAbility::UBaseGameplayAbility()
 {
@@ -41,8 +49,131 @@ FGameplayEffectSpecHandle UBaseGameplayAbility::MakeSpecHandle(TSubclassOf<UGame
 	FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
 	Context.AddSourceObject(this); // 이 어빌리티가 원인임을 명시
 
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	Context.AddInstigator(AvatarActor, AvatarActor);
+
 	// Spec 생성
 	return SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
+}
+
+void UBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	//0326 김성현 플레이어 차원에서 이동 방지
+	if (ACharacter* Char = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+	{
+		// 스킬 시작 시 걷고 있던 물리적 관성을 즉시 정지
+		Char->GetCharacterMovement()->StopMovementImmediately();
+	}
+
+	// [추가] 03/23 담당자: 최지원, 어빌리티 시작 시 이동 차단
+	//SetJoystickLocked(ActorInfo, true);
+	// 어빌리티 시작 시 다른 액션 버튼 잠금
+	SetActionButtonsLocked(ActorInfo, true);
+
+	//0326 김성현 궁극기 카메라 연출 추가
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		//AI 일 경우도 있으므로 0번 컨트롤러
+		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
+		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
+		{
+			UAutoCombatComponent* AutoComp = InGamePC->GetAutoCombatComponent();
+			bool bIsAutoBattle = AutoComp ? AutoComp->IsAutoMode() : false;
+
+			if (!bIsAutoBattle)
+			{
+				if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+				{
+					CamMgr->StartUltimateCamera(ActorInfo->AvatarActor.Get());
+				}
+			}
+		}
+	}
+
+
+	if (AbilityActionType == ECombatActionType::AIUnitSkill)
+	{
+		// 이 어빌리티를 실행한 주체가 ASkillCasterUnit(보스/캐스터)인지 확인
+		if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+		{
+			if (FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
+			{
+				Caster->SetCurrentCastingSkillIndex(Spec->InputID);
+			}
+		}
+	}
+}
+
+void UBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// [추가] 03/23 담당자: 최지원, 어빌리티 종료 시 이동 재개
+	//SetJoystickLocked(ActorInfo, false);
+	// 어빌리티 종료 시 다른 액션 버튼 잠금 해제
+	SetActionButtonsLocked(ActorInfo, false);
+
+	//0326 김성현 - 궁극기 카메라 연출 해제 코드
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0);
+		if (AInGameController* InGamePC = Cast<AInGameController>(MainPC))
+		{
+			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(InGamePC->PlayerCameraManager))
+			{
+				CamMgr->StopUltimateCamera(ActorInfo->AvatarActor.Get());
+			}
+		}
+	}
+
+
+	// 스킬 시전이 끝났거나 캔슬되었을 때
+	if (AbilityActionType == ECombatActionType::AIUnitSkill)
+	{
+		if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+		{
+			Caster->SetCurrentCastingSkillIndex(INDEX_NONE);
+		}
+	}
+
+	if (ActorInfo && ActorInfo->AvatarActor.IsValid())
+	{
+		if (ACharacterBase* CharBase = Cast<ACharacterBase>(ActorInfo->AvatarActor.Get()))
+		{
+			//포인터 주소를 초기화
+			CharBase->SetCurrentActionData(FCombatActionData());
+		}
+	}
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+bool UBaseGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	//사용하려는 스킬이 '궁극기'면 검사 
+	if (AbilityActionType == ECombatActionType::UltimateSkill)
+	{
+		if (APlayerController* MainPC = UGameplayStatics::GetPlayerController(ActorInfo->AvatarActor.Get(), 0))
+		{
+			if (AParadiseCameraManager* CamMgr = Cast<AParadiseCameraManager>(MainPC->PlayerCameraManager))
+			{
+				//이미 궁극기 연출을 진행 중이면
+				if (CamMgr->bIsUltimatePlaying)
+				{
+					//UE_LOG(LogTemp, Warning, TEXT("⚠️ [GAS] 다른 캐릭터가 이미 궁극기를 사용 중입니다! 발동 취소."));
+
+					return false; // 발동 불가 처리
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 void UBaseGameplayAbility::ApplySpecHandleToTarget(AActor* TargetActor, const FGameplayEffectSpecHandle& SpecHandle)
@@ -68,45 +199,35 @@ void UBaseGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
-		UE_LOG(LogTemp, Warning, TEXT("⏳ [ApplyCooldown] 적용 시도! 엑셀 쿨타임: %.1f"), CombatData.Cooldown);
-
-		if (CombatData.Cooldown > 0.0f)
+		if (CombatData.Stats.Cooldown > 0.0f)
 		{
 			FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Data.Cooldown"));
-			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Cooldown);
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CooldownTag, CombatData.Stats.Cooldown);
 		}
-
-		// 나 자신에게 쿨타임 이펙트 적용
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCooldown] 어빌리티에 Cooldown GE가 설정되지 않았습니다!"));
 	}
 }
 
 bool UBaseGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// 엑셀에서 읽어둔 내 스킬 데이터 가져오기
-	FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
+	// 기본 로직 검사 통과 못하면 실패
+	//if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
+	//{
+	//	return false;
+	//}
 
-	// 소모 마나가 없으면(0이면) 무조건 패스 (평타 등)
-	if (CombatData.ManaCost <= 0.0f)
-	{
-		return true;
-	}
+	FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
 
-	// 현재 내 마나량과 비교
+	if (CombatData.Stats.ManaCost <= 0.0f) return true;
+
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
 		float CurrentMana = ASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
-
-		if (CurrentMana < CombatData.ManaCost)
+		if (CurrentMana < CombatData.Stats.ManaCost)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("❌ 마나가 부족합니다! (현재: %.1f / 필요: %.1f)"), CurrentMana, CombatData.ManaCost);
-			return false; // 발동 실패!
+			return false; // 마나 부족 실패
 		}
 	}
 	return true;
@@ -118,36 +239,68 @@ void UBaseGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, co
 	if (CostGE)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CostGE->GetClass(), GetAbilityLevel());
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
 
-		if (CombatData.ManaCost > 0.0f)
+		FCombatActionData CombatData = GetCombatDataFromActorInfo(ActorInfo, Handle);
+
+		if (CombatData.Stats.ManaCost > 0.0f)
 		{
-			// SetByCaller를 통해 엑셀의 마나 코스트 수치를 GE로 전송
 			FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(FName("Data.Cost.Mana"));
-
-			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.ManaCost);
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(CostTag, -CombatData.Stats.ManaCost);
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-			UE_LOG(LogTemp,Log,TEXT("ApplyCost %.1f"), -CombatData.ManaCost);
 		}
 	}
-	else
+}
+
+AParadiseCameraManager* UBaseGameplayAbility::GetParadiseCameraManager() const
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetPlayerControllerFromActorInfo()))
 	{
-		// 마나가 드는 스킬인데 블루프린트에서 Cost GE를 빼먹은 경우 에러 로그 출력
-		FCombatActionData CombatData = const_cast<UBaseGameplayAbility*>(this)->GetCombatDataFromActor();
-		if (CombatData.ManaCost > 0.0f)
-		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [ApplyCost] 엑셀에 마나 소모량이 기입되었으나, 블루프린트의 Cost GE Class가 설정되지 않았습니다!"));
-		}
+		return Cast<AParadiseCameraManager>(PC->PlayerCameraManager);
 	}
+	return nullptr;
 }
 
 UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallback(UAnimMontage* MontageToPlay, FName TaskInstanceName)
 {
 	if (!MontageToPlay) return nullptr;
 
+	ACharacter* AvatarChar = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!AvatarChar) return nullptr;
+
+	USkeletalMeshComponent* Mesh = AvatarChar->GetMesh();
+	if (!Mesh || !Mesh->GetAnimInstance())
+	{
+		//UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 AnimBP(AnimInstance)가 없습니다! 몽타주 재생 취소."), *AvatarChar->GetName());
+		return nullptr;
+	}
+
+	float FinalPlayRate = 1.0f;
+
+	// 캐싱된 전투 데이터에서 애니메이션 재생속도 가져오기
+	float AnimSpeed = 1.0f;
+	if (bIsDataCached)
+	{
+		AnimSpeed = CachedCombatData.Stats.AnimPlayRate;
+		if (AnimSpeed <= 0.0f) AnimSpeed = 1.0f; // 방어 코드
+	}
+
+	// 어트리뷰트 셋의 현재 공격속도 가져오기
+	float AttackSpeed = 1.0f;
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		float FoundSpeed = ASC->GetNumericAttribute(UBaseAttributeSet::GetAttackSpeedAttribute());
+		if (FoundSpeed > 0.0f)
+		{
+			AttackSpeed = FoundSpeed;
+		}
+	}
+
+	// 최종 속도 계산
+	FinalPlayRate = AnimSpeed * AttackSpeed;
+
 	// 몽타주 재생 태스크 생성 
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, TaskInstanceName, MontageToPlay, 1.0f, NAME_None, false
+		this, TaskInstanceName, MontageToPlay, FinalPlayRate, NAME_None, false
 	);
 
 	if (MontageTask)
@@ -166,25 +319,34 @@ UAbilityTask_PlayMontageAndWait* UBaseGameplayAbility::PlayMontageAndWaitCallbac
 
 const FCombatActionData& UBaseGameplayAbility::GetCombatDataFromActor()
 {
+	if (bIsDataCached && !IsValid(CachedCombatData.MontageToPlay))
+	{
+		//UE_LOG(LogTemp, Error, TEXT("⚠️ [BaseGA] 몽타주 메모리가 유실되었습니다! 다시 안전하게 로드합니다."));
+		bIsDataCached = false; // 플래그를 꺼서 강제로 다시 엑셀에서 가져오게 함
+	}
+	// 이미 캐싱되었다면 그대로 반환
 	if (bIsDataCached)
 	{
 		return CachedCombatData;
 	}
-
-	// 처음 호출된 경우 -> 인터페이스를 통해 데이터 가져오기
-	AActor* AvatarActor = GetAvatarActorFromActorInfo();
-
-	if (ICombatInterface* CombatInt = Cast<ICombatInterface>(AvatarActor))
+	
+	if (CurrentActorInfo)
 	{
-		// 데이터 요청 및 저장
-		CachedCombatData = CombatInt->GetCombatActionData(AbilityActionType);
+		CachedCombatData = GetCombatDataFromActorInfo(CurrentActorInfo, CurrentSpecHandle);
+	}
 
-		// 몽타주가 정상적으로 들어왔다면 캐싱 완료 처리
-		if (CachedCombatData.MontageToPlay)
-		{
-			bIsDataCached = true;
-			UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
-		}
+	// 몽타주가 정상적으로 들어왔다면 캐싱 완료 처리
+	if (CachedCombatData.MontageToPlay)
+	{
+		bIsDataCached = true;
+		//UE_LOG(LogTemp, Log, TEXT("✅ [BaseGA] 전투 데이터 캐싱 완료 (Type: %d)"), (int32)AbilityActionType);
+	}
+	else
+	{
+		// 데이터가 없거나 몽타주가 비어있으면 에러 로그 출력
+	/*	UE_LOG(LogTemp, Error, TEXT("❌ [BaseGA] %s 의 전투 데이터 또는 몽타주를 가져오지 못했습니다! (Type: %d)"),
+			CurrentActorInfo && CurrentActorInfo->AvatarActor.IsValid() ? *CurrentActorInfo->AvatarActor->GetName() : TEXT("Unknown"),
+			(int32)AbilityActionType);*/
 	}
 
 	return CachedCombatData;
@@ -197,4 +359,97 @@ void UBaseGameplayAbility::OnMontageCompleted()
 
 	// 몽타주가 끝나면 어빌리티 종료
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+FCombatActionData UBaseGameplayAbility::GetCombatDataFromActorInfo(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const
+{
+	FCombatActionData Data; // 빈 데이터 준비
+
+	if (ActorInfo && ActorInfo->AvatarActor.IsValid())
+	{
+		// 몬스터(보스)의 스킬일 경우 -> Handle의 InputID로 인덱스를 알아내서 가져옴
+		if (AbilityActionType == ECombatActionType::AIUnitSkill)
+		{
+			if (ASkillCasterUnit* Caster = Cast<ASkillCasterUnit>(ActorInfo->AvatarActor.Get()))
+			{
+				if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+				{
+					if (FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromHandle(Handle))
+					{
+						Data = Caster->GetSkillActionData(Spec->InputID);
+					}
+				}
+			}
+		}
+		// 플레이어 평타, 무기 스킬, 일반 몹 평타
+		else
+		{
+			if (ICombatInterface* CombatInt = Cast<ICombatInterface>(ActorInfo->AvatarActor.Get()))
+			{
+				Data = CombatInt->GetCombatActionData(AbilityActionType);
+			}
+		}
+	}
+
+	return Data;
+}
+
+//void UBaseGameplayAbility::SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
+//{
+//	if (!ActorInfo) return;
+//
+//	// ✅ PlayerController 대신 AvatarActor → GetController()로 접근
+//	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+//	if (!AvatarActor)
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 null입니다."));
+//		return;
+//	}
+//
+//	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
+//	if (!AvatarPawn)
+//	{
+//		UE_LOG(LogTemp, Error, TEXT("[JoystickLock] AvatarActor가 Pawn이 아닙니다."));
+//		return;
+//	}
+//
+//	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
+//	if (!InGamePC)
+//	{
+//		// AI가 조종 중이면 정상적으로 null — 조용히 리턴
+//		return;
+//	}
+//
+//	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
+//	if (!HUD) return;
+//
+//	UVirtualJoystickWidget* Joystick = HUD->GetVirtualJoystick();
+//	if (!Joystick) return;
+//
+//	Joystick->SetMovementLocked(bLocked);
+//	UE_LOG(LogTemp, Warning, TEXT("[JoystickLock] 조이스틱 %s 완료"), bLocked ? TEXT("잠금") : TEXT("해제"));
+//}
+
+void UBaseGameplayAbility::SetActionButtonsLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked)
+{
+	if (!ActorInfo) return;
+
+	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+	if (!AvatarActor) return;
+
+	APawn* AvatarPawn = Cast<APawn>(AvatarActor);
+	if (!AvatarPawn) return;
+
+	AInGameController* InGamePC = Cast<AInGameController>(AvatarPawn->GetController());
+	if (!InGamePC) return;
+
+	UInGameHUDWidget* HUD = InGamePC->GetOrCreateInGameHUD();
+	if (!HUD) return;
+
+	// ⭐ HUD에서 ActionControlPanel을 가져온다고 가정합니다. (GetVirtualJoystick 처럼 뚫려있어야 합니다!)
+	UActionControlPanel* ActionPanel = HUD->GetActionControlPanel();
+	if (!ActionPanel) return;
+
+	// 내 어빌리티 타입(AbilityActionType)을 같이 넘겨서, '내 버튼'은 잠금에서 제외하도록 지시합니다.
+	ActionPanel->LockOtherActionButtons(bLocked, AbilityActionType);
 }

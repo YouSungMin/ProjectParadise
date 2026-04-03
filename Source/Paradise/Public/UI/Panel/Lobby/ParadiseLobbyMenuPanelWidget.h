@@ -9,6 +9,7 @@
 
 #pragma region 전방 선언
 class UButton;
+class UParadiseFXAudioData;
 class ALobbyPlayerController;
 #pragma endregion 전방 선언
 

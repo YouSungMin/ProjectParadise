@@ -73,14 +73,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Animation")
 	void PlayShiftAnimation();
 
-	///**
-	// * @brief 쿨타임 상태를 갱신합니다. (GAS로부터 호출 권장)
-	// * @param CurrentTime 남은 시간
-	// * @param MaxTime 전체 쿨타임 (재설정 필요 시)
-	// * @note 26/02/12, 지금은 안쓰는 코드
-	// */
-	//UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	//void RefreshCooldown(float CurrentTime, float MaxTime);
+	/**
+	 * @brief 키보드/마우스 모드일 때 단축키 텍스트의 가시성을 변경합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetShortcutTextVisibility(bool bShow);
 #pragma endregion 외부 인터페이스
 
 #pragma region 내부 로직
@@ -93,24 +91,8 @@ private:
 	UFUNCTION()
 	void OnRevealTimerFinished();
 
-	///**
-	// * @brief 타이머에 의해 주기적으로 호출되어 쿨타임 UI를 갱신합니다.
-	// * @note 26/02/12, 지금은 안쓰는 코드
-	// */
-	//UFUNCTION()
-	//void UpdateCooldownVisual();
-
-	///** @brief 쿨타임 UI를 숨기고 상태를 리셋합니다. */
-	//UFUNCTION()
-	//void StopCooldownTimer();
 #pragma endregion 내부 로직
 
-//#pragma region 쿨타임 설정
-//private:
-//	/** @brief 쿨타임 UI 업데이트 주기 (초)입니다. */
-//	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI", meta = (AllowPrivateAccess = "true", ClampMin = "0.01"))
-//	float UpdateInterval = 0.05f;
-//#pragma endregion 쿨타임 설정
 
 #pragma region 위젯 바인딩
 private:
@@ -122,15 +104,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> Img_SummonIcon = nullptr;
 
-	///** @brief 쿨타임 진행바 */
-	///  * @note 26/02/12, 지금은 안쓰는 코드
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UProgressBar> PB_Cooldown = nullptr;
-
-	///** @brief 남은 시간을 표시할 텍스트 */
-	///  * @note 26/02/12, 지금은 안쓰는 코드
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UTextBlock> Text_CooldownTime = nullptr;
+	/** @brief 소환수 테두리 이미지 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> Img_Outline = nullptr;
 
 	/** @brief 유닛의 코스트를 표시할 텍스트 */
 	UPROPERTY(meta = (BindWidget))
@@ -148,6 +124,10 @@ private:
 	 */
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> Anim_Shift = nullptr;
+
+	/** @brief 단축키를 화면에 그려줄 텍스트 블록 (선택적 바인딩) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Shortcut = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 데이터
@@ -155,6 +135,14 @@ public:
 	/** @brief 슬롯 클릭 알림 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = "Paradise|Event")
 	FOnSummonSlotClicked OnSlotClicked;
+
+protected:
+	/**
+	 * @brief 기획자가 에디터에서 설정할 단축키 이미지
+	 * @details 이 필드에 값을 입력하면 PC(키보드) 모드에서 해당 텍스트가 버튼에 뜹니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
+	TSoftObjectPtr<UTexture2D> ShortcutKeyImage = nullptr;
 
 private:
 	/** @brief 이 슬롯의 고유 인덱스 (0~4) */
@@ -169,17 +157,5 @@ private:
 
 	/** @brief 지연 등장을 제어하는 엔진 타이머 핸들 */
 	FTimerHandle RevealTimerHandle;
-
-	///** @brief 최대 쿨타임 변수 */
-	//UPROPERTY()
-	//float MaxCooldownTime = 0.0f;
-
-	///** @brief 현재 쿨타임 변수 */
-	//UPROPERTY()
-	//float CurrentCooldownTime = 0.0f;
-
-	///** @brief 쿨타임  */
-	//UPROPERTY()
-	//FTimerHandle CooldownTimerHandle;
 #pragma endregion 데이터
 };

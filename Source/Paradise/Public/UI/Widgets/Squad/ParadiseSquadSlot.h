@@ -102,6 +102,9 @@ private:
 
 	/** @brief 현재 데이터가 비어있는지 여부 */
 	bool bIsEmpty = true;
+
+	/** @brief 슬롯에 렌더링 된 현재 데이터를 캐싱 (드래그 시 페이로드에 담기 위함) */
+	FSquadItemUIData CachedData;
 #pragma endregion 내부 상태
 
 #pragma region 델리게이트

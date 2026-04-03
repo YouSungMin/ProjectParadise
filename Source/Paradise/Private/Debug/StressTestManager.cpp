@@ -37,7 +37,7 @@ void AStressTestManager::BeginPlay()
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("🔥 [Stress] %d 유닛 스폰 완료!"), SpawnedUnits.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("🔥 [Stress] %d 유닛 스폰 완료!"), SpawnedUnits.Num());
 }
 
 void AStressTestManager::Tick(float DeltaTime)

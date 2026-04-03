@@ -5,6 +5,7 @@
 #include "Data/Enums/GameEnums.h"
 #include "GameplayEffect.h"
 #include "Data/Structs/FXStructs.h"
+#include "Data/Structs/CombatTypes.h"
 #include "ItemStructs.generated.h"
 
 class USkeletalMesh;
@@ -62,6 +63,10 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Upgrade")
 	FName LevelUpCostId;
+
+	/** @brief 장비/아이템 판매 시 획득할 골드량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 SellPrice = 50;
 };
 
 /**
@@ -111,19 +116,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "1.0"))
 	float CritDamage;
 
-	/**
-	 * @brief 평타 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName BasicAttackActionID; // 예: "Sword_BasicCombo"
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle BasicAttackActionHandle;
 
-	/**
-	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName SkillActionID;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle SkillActionHandle;
 };
 
 /**
@@ -165,6 +162,20 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival Stats")
 	float MaxMana;
+
+	/**
+	 * @brief HP 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 HP 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float HealthRegen;
+
+	/**
+	 * @brief 마나 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 마나 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float ManaRegen;
 };
 
 /**
@@ -211,11 +222,22 @@ struct FWeaponAssets : public FItemBaseAssets
 	GENERATED_BODY()
 
 public:
+	/**
+	 * @brief 인게임 무기 평타 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WeaponBasicAttackIcon;
 
 	/**
-	* @brief 무기 분류 태그
-	* @details 예: Item.Type.Weapon.Melee.Sword, Item.Type.Weapon.Range.Staff
-	*/
+	 * @brief 인게임 무기 스킬 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WeaponSkillIcon;
+
+	/**
+	 * @brief 무기 분류 태그
+	 * @details 예: Item.Type.Weapon.Melee.Sword, Item.Type.Weapon.Range.Staff
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Type", meta = (Categories = "Item.Type.Weapon"))
 	FGameplayTag WeaponTag;
 
@@ -234,46 +256,23 @@ public:
 	// [GAS & Logic] 로직 연결
 	// -----------------------------------------------------------------
 
-	/**
-	 * @brief 이 무기의 데미지 공식 GE
-	 * @details 기본적으로 GE_DamageStandard를 할당합니다.
-	 * 독단검, 화염검 등 특수 연산이 필요할 때만 다른 GE를 넣습니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	/** @brief 무기 기본 평타 세트 (어빌리티, 이펙트, 투사체 묶음) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Basic Attack")
+	FCombatAbilitySetup BasicAttackSetup;
 
-	/**
-	 * @brief 기본 공격 어빌리티 (Basic Attack / LMB)
-	 * @details 무기 장착 시 부여되는 '평타' 로직입니다. (예: 검 휘두르기, 활 쏘기)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayAbility> BasicAttackAbility;
-
-	/**
-	 * @brief 무기 전용 스킬 (Weapon Skill / RMB or Q)
-	 * @details 이 무기를 들었을 때만 쓸 수 있는 고유 기술입니다. (예: 올려치기, 멀티샷)
-	 * 특정 키(Special Input)에 매핑됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayAbility> WeaponSkillAbility;
-
-	/**
-	 * @brief 투사체 클래스 (Projectile Class)
-	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
-	 * @note 근거리 무기일 경우 비워둡니다 (None).
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<AActor> ProjectileClass;
+	/** @brief 무기 전용 스킬 세트 (우클릭/Q 스킬 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Skill")
+	FCombatAbilitySetup WeaponSkillSetup;
 
 	// -----------------------------------------------------------------
 	// [FX & Sound] 연출
 	// -----------------------------------------------------------------
 
 	/**
-	 * @brief 공격 행동 전용, FX, Tags
+	 * @brief 무기 전용, FX, Tags
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|FX")
-	FActionFXSettings ActionFX;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FWeaponFXSettings WeaponFX;
 };
 
 /**

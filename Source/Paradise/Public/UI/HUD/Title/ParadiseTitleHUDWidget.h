@@ -10,6 +10,7 @@
 class UButton;
 class UWidgetAnimation;
 class USettingsPopupWidget;
+class UParadiseFXAudioData;
 #pragma endregion 전방 선언
 
 /**
@@ -29,7 +30,23 @@ class PARADISE_API UParadiseTitleHUDWidget : public UCommonActivatableWidget
 protected:
 	virtual void NativeConstruct() override;
 
-#pragma region 설정 데이터 (Data-Driven)
+#pragma region 외부 인터페이스
+public:
+	/**
+	 * @brief 컨트롤러의 ESC 입력 또는 화면 설정 버튼 클릭 시 설정 팝업을 토글합니다.
+	 * @details 내부의 USettingsPopupWidget 인스턴스에 접근하여 열림/닫힘(Toggle)을 위임합니다. (캡슐화 및 SRP 준수)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettingsPopup();
+
+	/**
+	 * @brief 설정 팝업 인스턴스를 반환합니다.
+	 * @details TitleController의 ESC 입력 처리 시 호출합니다.
+	 */
+	FORCEINLINE USettingsPopupWidget* GetSettingsPopupInstance() const { return SettingsPopupInstance; }
+#pragma endregion 외부 인터페이스
+
+#pragma region 설정 데이터
 protected:
 	/** 
 	 * @brief 로비로 이동할 때 미리 로딩할 에셋 목록 (Soft Reference).
@@ -41,7 +58,7 @@ protected:
 	/** @brief 이동할 레벨의 이름 (기본값: L_Lobby/ 일단 테스트용) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Paradise|Config")
 	FName NextLevelName = FName("L_Lobby");
-#pragma endregion 설정 데이터 (Data-Driven)
+#pragma endregion 설정 데이터
 
 #pragma region 위젯 바인딩
 private:
@@ -75,6 +92,12 @@ private:
 	/** @brief 설정 버튼 클릭 시 호출되는 핸들러 */
 	UFUNCTION()
 	void OnSettingsButtonClicked();
+
+	/**
+	 * @brief 터치 연출(효과음, 페이드아웃)이 끝난 후 실제 로딩을 지시하는 헬퍼 함수
+	 * @details OnScreenTouched에서 타이머를 통해 지연 호출됩니다.
+	 */
+	void ExecuteLevelTransition();
 
 	/** @brief 중복 로딩 방지용 플래그 */
 	bool bIsLoadingStarted = false;

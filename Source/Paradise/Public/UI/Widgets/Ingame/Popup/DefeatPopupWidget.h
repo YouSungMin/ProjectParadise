@@ -18,4 +18,18 @@ class PARADISE_API UDefeatPopupWidget : public UGameResultWidgetBase
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void NativeConstruct() override;
+
+public:
+	/** @brief 패배 팝업이 화면에 나타날 때 HUD에서 호출하여 연출을 재생합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void PlayIntroAnimation();
+
+protected:
+#pragma region 위젯 애니메이션 바인딩
+	/** @brief 패배 화면 등장 연출 애니메이션 */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<class UWidgetAnimation> Anim_Intro = nullptr;
+#pragma endregion 위젯 애니메이션 바인딩
 };

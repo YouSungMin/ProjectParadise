@@ -13,14 +13,18 @@ void UParadiseCharacterSlot::UpdateSlot(const FSquadItemUIData& InData)
 	// 2. 캐릭터 고유 로직: 레벨 텍스트 처리 (단일 책임)
 	if (Text_Level)
 	{
-		if (InData.Level > 0)
+		// 레벨이 0 이하이거나, 미보유 상태면 텍스트를 아예 꺼버립니다.
+		// (도감 메인 위젯에서 데이터를 넘길 때 Level을 0으로 주면 자연스럽게 안 보이게 됨)
+		if (InData.Level <= 0 || !InData.bIsOwned)
 		{
-			Text_Level->SetText(FText::Format(FText::FromString(TEXT("Lv.{0}")), InData.Level));
-			Text_Level->SetVisibility(ESlateVisibility::HitTestInvisible);
+			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		else
 		{
-			Text_Level->SetVisibility(ESlateVisibility::Collapsed);
+			// 가장 안전한 포맷팅 방식 사용
+			FString LevelString = FString::Printf(TEXT("Lv.%d"), InData.Level);
+			Text_Level->SetText(FText::FromString(LevelString));
+			Text_Level->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 	}
 }

@@ -10,8 +10,15 @@
 #pragma region 전방 선언
 class UParadiseCommonButton;
 class USkillSlotWidget;
+class UTextBlock;
+class UProgressBar;
 class APlayerBase;
 class AInGameController;
+class UTexture2D;
+class AInGamePlayerState;
+class APlayerData;
+class UAutoCombatComponent;
+struct FOnAttributeChangeData;
 #pragma endregion 전방 선언
 
 /**
@@ -26,15 +33,25 @@ class PARADISE_API UActionControlPanel : public UUserWidget
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
 public:
 #pragma region 외부 인터페이스
 	/**
-	 * @brief 데이터 테이블(Data-Driven)을 기반으로 스킬/궁극기 UI를 초기화합니다.
-	 * @param WeaponActionID 무기 데이터의 SkillActionID (액티브 스킬)
-	 * @param UltimateActionID 캐릭터 데이터의 SkillActionID (궁극기)
+	 * @brief 특정 플레이어 인덱스의 데이터를 기반으로 액션 패널 전체를 스스로 갱신합니다.
+	 * @details 컨트롤러에 있던 UpdateActionPanelUI 로직을 이관하여 SRP를 준수합니다.
+	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	void InitActionPanel(FName WeaponActionID, FName UltimateActionID);
+	void RefreshActionPanel(int32 PlayerIndex);
+
+	/**
+	 * @brief 데이터 테이블을 기반으로 패널 전체를 초기화합니다.
+	 * @param WeaponActionID 무기 스킬 ID
+	 * @param UltimateActionID 궁극기 ID
+	 * @param AttackIcon 무기별 기본 공격 아이콘 (추가)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void InitActionPanel(FDataTableRowHandle WeaponAttackHandle,FDataTableRowHandle WeaponSkillHandle, FDataTableRowHandle UltimateActionHandle, UTexture2D* AttackIcon = nullptr);
 
 	/**
 	 * @brief 로비 편성 데이터(SquadSubsystem)를 읽어와 태그 버튼의 얼굴 이미지를 세팅합니다.
@@ -62,22 +79,50 @@ public:
 	/** @brief 외부(컨트롤러나 HUD)에서 플레이어를 직접 꽂아주는 함수 */ 
 	void SetOwningPlayerBase(APlayerBase* InPlayer);
 
+	/**
+	 * @brief 특정 어빌리티 실행 시, 다른 액션 버튼들의 터치를 차단하거나 해제합니다.
+	 * @param bLocked 잠금 여부 (true면 차단)
+	 * @param ExecutingActionType 현재 실행 중인 어빌리티 타입 (이 버튼은 차단 제외)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void LockOtherActionButtons(bool bLocked, ECombatActionType ExecutingActionType);
 
+	/**
+	 * @brief 궁극기 연출 중 태그 버튼 조작을 막거나 풉니다.
+	 * @param bIsEnabled true면 교체 가능, false면 터치 무시
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetTagButtonsEnabled(bool bShouldEnable);
+
+	/**
+	 * @brief 키보드 모드 진입 시 공격/스킬 버튼들의 단축키 텍스트 노출 여부를 일괄 제어합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleShortcutKeys(bool bShow);
 #pragma endregion 외부 인터페이스
+
+#pragma region 공격/스킬/궁극기 키 입력
+public:
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+	UFUNCTION()
+	void OnAttackButtonPressed();
+	UFUNCTION()
+	void OnAttackButtonReleased();
+
+	UFUNCTION()
+	void OnActiveSkillPressed();
+	UFUNCTION()
+	void OnActiveSkillReleased();
+
+	UFUNCTION()
+	void OnUltimateSkillPressed();
+	UFUNCTION()
+	void OnUltimateSkillReleased();
+#pragma region 공격/스킬/궁극기 키 입력
+
 private:
 #pragma region 내부 로직
-	/** @brief 공격 버튼 클릭 시 발생할 이벤트 핸들러 */
-	UFUNCTION()
-	void OnAttackButtonClicked();
-
-	/** 액티브 스킬 델리게이트 수신용 래퍼 함수 */
-	UFUNCTION() 
-	void OnActiveSkillRequested();
-
-	/** 궁극기 델리게이트 수신용 래퍼 함수 */
-	UFUNCTION() 
-	void OnUltimateSkillRequested();
-
 	/**
 	 * @brief UI 버튼 입력을 통합하여 플레이어의 ASC로 전달하는 중앙 제어 함수입니다.
 	 * @details 하드코딩된 개별 콜백 함수들을 대체하며, 입력 ID에 따라 적절한 어빌리티 신호를 송신합니다.
@@ -92,6 +137,19 @@ private:
 	 * @param CharacterIndex 교체할 대상 캐릭터의 스쿼드 인덱스 (0, 1, 2)
 	 */
 	void OnTagButtonClicked(int32 CharacterIndex);
+
+	/**
+	 * @brief 오토 모드 변경 방송을 수신하여 UI 상호작용을 제어합니다.
+	 * @param bIsAuto 오토 전투 켜짐 여부
+	 */
+	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
+
+	/** @brief 태그 버튼 쿨타임 애니메이션 갱신 콜백 */
+	void UpdateTagCooldownVisual();
+
+	/** @brief 태그 버튼 쿨타임 리셋 및 숨김 처리 */
+	void ClearTagCooldownVisual();
 #pragma endregion 내부 로직
 
 private:
@@ -117,6 +175,26 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseCommonButton> TagBtn_C = nullptr;
+
+	/** @brief 궁극기 버튼 누를시에 나올 태그 쿨타임 PB */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_A = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_B = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> PB_TagCooldown_C = nullptr;
+
+	/** @brief 쿨타임 숫자를 표시할 텍스트 3개 추가 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_A = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_B = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_TagCooldown_C = nullptr;
 #pragma endregion 위젯 바인딩
 
 #pragma region 내부 데이터
@@ -124,7 +202,96 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UParadiseCommonButton>> TagButtons;
 
+	/** @brief 궁극기 연출 후 태그 잠금을 풀기 위한 타이머 핸들 */
+	FTimerHandle TimerHandle_TagLock;
+
+	/**
+	 * @brief 게이지 갱신 타이머 핸들
+	 * @details 지역 변수 대신 멤버 변수로 선언해야 ClearTimer로 멈출 수 있습니다!
+	 */
+	FTimerHandle TimerHandle_TagVisual;
+
 	/** @brief 캐싱된 플레이어 참조 (가비지 컬렉션 및 안전성을 위해 TWeakObjectPtr 사용) */
-	TWeakObjectPtr<APlayerBase> CachedPlayer;
+	TWeakObjectPtr<APlayerBase> CachedPlayer = nullptr;
+
+	/** @brief 현재 조작 중인 캐릭터 인덱스 (중복 클릭 방지용) */
+	int32 CurrentActiveTagIndex = 0;
+
+	/**
+	 * @brief 공격 버튼 기본 아이콘 (폴백 이미지)
+	 * @details CharacterAssets에 WeaponIcon이 없거나 로드 실패 시 표시됩니다.
+	 *          에디터의 WBP_ActionControlPanel 디테일 패널에서 할당해주세요.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|ActionPanel")
+	TObjectPtr<UTexture2D> Tex_DefaultAttackIcon = nullptr;
+
+	/** @brief 캐릭터별 무기 스킬 쿨타임 종료 시각을 기록 (교체 복구용) */
+	UPROPERTY()
+	TMap<FName, float> ActiveSkillEndTimes;
+
+	/** @brief 캐릭터별 궁극기 쿨타임 종료 시각을 기록 (교체 복구용) */
+	UPROPERTY()
+	TMap<FName, float> UltimateEndTimes;
+
+	/** @brief 프로그레스 바 일괄 처리를 위한 캐싱 배열 */
+	UPROPERTY()
+	TArray<TObjectPtr<UProgressBar>> TagCooldownBars;
+
+	/** @brief 텍스트 일괄 제어를 위한 캐싱 배열 */
+	UPROPERTY()
+	TArray<TObjectPtr<UTextBlock>> TagCooldownTexts;
+
+	/** @brief 현재 태그 쿨타임 */
+	float CurrentTagCooldown = 0.0f;
+	/** @brief 최대 태그 쿨타임 */
+	float MaxTagCooldown = 0.0f;
 #pragma endregion 내부 데이터
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 버튼 눌렸을 때 아이콘 틴트 (어둡게) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Button")
+	FLinearColor PressedTintColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+	/** @brief 버튼 기본 상태 아이콘 틴트 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Button")
+	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+#pragma endregion 데이터 드리븐 설정
+
+#pragma region 코스트 연동 로직
+private:
+	/** @brief 스킬 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedActiveManaCost = 0.0f;
+
+	/** @brief 궁극기 사용 시 필요한 마나량 (데이터 테이블 캐싱) */
+	float CachedUltimateManaCost = 0.0f;
+
+	/** @brief 현재 조작 중인 캐릭터의 ASC (델리게이트 안전 해제용) */
+	TWeakObjectPtr<class UAbilitySystemComponent> CachedASC = nullptr;
+
+	/** @brief 마나 속성이 변경될 때 호출되는 콜백 함수 */
+	void OnManaChanged(const FOnAttributeChangeData& Data);
+
+	/**
+	 * @brief 현재 마나량과 스킬의 요구 마나량을 비교하여 UI를 갱신합니다.
+	 * @param CurrentMana 현재 마나
+	 */
+	void UpdateSkillUsabilityByMana(float CurrentMana);
+#pragma endregion 코스트 연동 로직
+
+#pragma region 사거리 표시용 데이터
+
+	/** @brief 현재 활성화된 무기 기본 공격 핸들 캐싱 (인디케이터 표시용) */
+	UPROPERTY()
+	FDataTableRowHandle CachedWeaponAttackActionHandle;
+
+	/** @brief 현재 활성화된 무기 스킬 핸들 캐싱 (인디케이터 표시용) */
+	UPROPERTY()
+	FDataTableRowHandle CachedWeaponSkillActionHandle;
+
+	/** @brief 현재 활성화된 궁극기 스킬 핸들 캐싱 (인디케이터 표시용) */
+	UPROPERTY()
+	FDataTableRowHandle CachedUltimateActionHandle;
+
+#pragma region 사거리 표시용 데이터
 };

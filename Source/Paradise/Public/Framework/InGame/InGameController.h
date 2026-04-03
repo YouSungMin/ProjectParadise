@@ -6,16 +6,21 @@
 #include "GameFramework/PlayerController.h"
 #include "InGameController.generated.h"
 
-
+#pragma region 전방 선언
 class APlayerBase;
 class APlayerData;
 class AAIController;
+class UAutoCombatComponent;
+class USquadControlComponent;
+class UUltimateEffectComponent;
 class UParadiseGameInstance;
 class AInGamePlayerState;
 class UInputMappingContext;
 class UInputAction;
-struct FInputActionValue;
 class UInGameHUDWidget; //[추가] 26/02/04, 담당자 : 최지원 
+class UTexture2D;
+struct FInputActionValue;
+#pragma endregion 전방 선언
 
 /**
  * @brief 인게임 플레이어 컨트롤러
@@ -27,11 +32,31 @@ class PARADISE_API AInGameController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	AInGameController();
+
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
+	/**
+	 * @brief 게임의 모든 키보드/마우스 입력을 가장 먼저 가로채는 엔진 코어 함수
+	 * @details 마우스 이동 및 클릭 감지 시 숨겨진 커서를 즉시 복구합니다.
+	 */
+	virtual bool InputKey(const FInputKeyParams& Params) override;
+
 	//  스쿼드 제어 (Squad Control)
 public:
+#pragma region Getter 함수
+	/** @brief 자동 전투 관리 컴포넌트를 반환합니다. */
+	class UAutoCombatComponent* GetAutoCombatComponent() { return AutoCombatComponent; }
+	/** @brief 스쿼드 관리 컴포넌트를 반환합니다. */
+	class USquadControlComponent* GetSquadControlComponent() { return SquadControlComponent; }
+
+	/** @brief 궁극기 화면 연출 컴포넌트를 반환합니다. */
+	UFUNCTION(BlueprintPure, Category = "Paradise|Effect")
+	class UUltimateEffectComponent* GetUltimateEffectComponent() const { return UltimateEffectComponent; }
+#pragma endregion Getter 함수
+
+
 
 #pragma region 0226 김성현 - 디버그 치트 함수 추가
 
@@ -41,67 +66,39 @@ public:
 	UFUNCTION(Exec)
 	void CheatStageFail();
 
+	UFUNCTION(Exec)
+	void CheatKillCharacter(int32 PlayerIndex);
+
+	UFUNCTION(Exec)
+	void CheatRespawn(int32 PlayerIndex);
+
+	UFUNCTION(Exec, BlueprintCallable, Category = "Cheat")
+	void CheatClearAllStages();
 #pragma endregion 0226 김성현 - 디버그 치트 함수 추가
 
-public:
-
-	/**
-	 * @brief OverViewCamera를 찾아서 초기화해두는 함수
-	 */
-	void InitializeOverviewCamera();
-
-	/**
-	 * @brief 자동 전투 모드를 활성화하거나 비활성화합니다.
-	 * @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직을 강화합니다.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Squad|Control")
-	void SetAutoBattleMode(bool bEnable);
-
-	/*
-	 * @brief 요청된 인덱스의 영웅으로 직접 조작 대상을 변경(빙의)하는 함수
-	 * @details 기존 영웅에는 AI를 다시 심어주고, 새 영웅의 제어권을 가져옵니다.
-	 * @param PlayerIndex 교체할 스쿼드 인덱스 (0 ~ 2)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Squad")
-	void RequestSwitchPlayer(int32 PlayerIndex);
-
-	/** * @brief 특정 인덱스의 스쿼드 멤버를 부활(재소환) 시킵니다.
-	 * @param MemberIndex : 부활시킬 멤버의 인덱스 (0~2)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Squad|Command")
-	void RespawnSquadPlayer(int32 MemberIndex);
 
 	/** @brief 캐릭터 사망 시 호출되어 다음 생존 캐릭터로 자동 교체합니다. */
 	void OnPlayerDied(APlayerBase* DeadPlayer);
 
-	/**
-	 * @brief 카메라 시점을 현재 상태(전멸 여부, 자동 모드 여부)에 따라 갱신합니다.
-	 * @details SetViewTargetWithBlend를 사용하여 부드러운 시점 전환을 처리합니다.
-	 */
-	void UpdateCameraSystem();
+#pragma region 화면 연출 컴포넌트
+protected:
+	/** @brief 궁극기 사용 시 포스트 프로세스 연출을 담당하는 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Paradise|Components")
+	TObjectPtr<class UUltimateEffectComponent> UltimateEffectComponent = nullptr;
+#pragma endregion 화면 연출 컴포넌트
 
-	/*
-	 * @brief 게임 시작 시 스쿼드 3명을 월드에 스폰하고 초기화하는 함수
-	 * @details PlayerState의 데이터를 기반으로 실제 육체(Pawn)를 생성합니다.
-	 */
-	void InitializeSquadPawns();
-
-
-private:
+#pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
+public:
 	
-	/*
-	 * @brief 현재 조종하지 않는 캐릭터에게 AI 컨트롤러를 빙의시키는 함수
-	 */
-	void PossessAI(APlayerBase* TargetCharacter);
 
 	/**
-	 * @brief [단일 책임 원칙(SRP) 핵심] 생성된 캐릭터(데이터)를 UI와 연동합니다.
+	 * @brief 생성된 캐릭터(데이터)를 UI와 연동합니다.
 	 * @param PlayerIndex 파티 내 인덱스 (0~2)
 	 * @param InPlayerData 연동할 데이터(영혼) 객체
 	 */
 	void BindPlayerToUI(int32 PlayerIndex, APlayerData* InPlayerData);
 
-#pragma region UI 제어 (추가, 26/02/04, 담당자 : 최지원)
+
 public:
 	/**
 	 * @brief 생성된 HUD 위젯 인스턴스를 반환합니다.
@@ -110,6 +107,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	UInGameHUDWidget* GetOrCreateInGameHUD();
+
+	/** @brief 액션 패널의 활성화 여부를 설정합니다. */
+	void SetActionPanelEnabled(bool bEnabled);
 
 protected:
 	/** 
@@ -131,36 +131,34 @@ private:
 	void OnInputSwitchHero2(const FInputActionValue& Value);
 	void OnInputSwitchHero3(const FInputActionValue& Value);
 
-#pragma region 내부 헬퍼 함수
-private:
+#pragma region 자동 모드 관련
+
+public:
 	/**
-	 * @brief 캐릭터 교체 후 스킬 및 궁극기 UI를 갱신합니다.
-	 * @details 준수를 위해 RequestSwitchPlayer에서 UI 데이터 추출 및 갱신 로직
-	 * @param PlayerIndex 갱신할 캐릭터의 스쿼드 인덱스
-	 */
-	void UpdateActionPanelUI(int32 PlayerIndex);
-#pragma endregion 내부 헬퍼 함수
+	* @brief 자동 전투 모드를 활성화하거나 비활성화합니다.
+	* @param bEnable true일 경우 전체 뷰 시점으로 전환하고 AI 로직 실행합니다.
+	*/
+	UFUNCTION(Exec,BlueprintCallable, Category = "Squad|Control")
+	void ToggleAutoBattleMode(bool bEnable);
 
 protected:
-	//  데이터 및 설정 (Data & Config)
-	/*
-	 * @brief 현재 필드에 나와 있는 내 영웅들의 육체(Pawn) 캐싱
-	 * @details Index 0: 1번 영웅, Index 1: 2번 영웅 ...
-	 */
-	UPROPERTY(BlueprintReadOnly, Category = "Squad")
-	TArray<TObjectPtr<APlayerBase>> ActiveSquadPawns;
 
-	/*
-	 * @brief 현재 내가 직접 조종 중인 영웅의 인덱스
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad")
-	int32 CurrentControlledIndex = 0;
+	/** @brief 자동 전투 관리 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UAutoCombatComponent> AutoCombatComponent= nullptr;
 
-	/*
-	 * @brief 동료(AI) 영웅에게 할당할 AI 컨트롤러 클래스
-	 */
-	UPROPERTY(                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        EditDefaultsOnly, Category = "Squad")
-	TSubclassOf<AAIController> SquadAIControllerClass = nullptr;
+
+#pragma endregion 자동 모드 관련
+
+#pragma region 스쿼드 관리 컴포넌트 
+
+	/** @brief 스쿼드 관리 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class USquadControlComponent> SquadControlComponent = nullptr;
+
+#pragma endregion 스쿼드 관리 컴포넌트 
+
+protected:
 
 	//  입력 에셋 (Input Assets)
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -176,36 +174,54 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_SwitchHero3 = nullptr;
 
-	/* * @brief 테스트용 캐릭터 클래스 (BP_PlayerBase 할당용)
-	 * @details 여기에 에디터에서 만든 캐릭터 블루프린트를 넣어주세요.
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Test")
-	TSubclassOf<APlayerBase> TestPlayerClass = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Move = nullptr;
 
-	/** @brief 전장을 조망하는 전체 뷰 전용 카메라 액터 (에디터에서 할당) */
-	UPROPERTY(EditAnywhere, Category = "Squad|Camera")
-	TObjectPtr<AActor> OverviewCameraActor = nullptr;
+	/** @brief 설정 창 열기 액션 (ESC) */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Input")
+	TObjectPtr<UInputAction> IA_OpenSettings = nullptr;
 
-	/** @brief 전체 뷰 카메라를 찾기 위한 태그 (기본값: "Camera.Overview") */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
-	FName OverviewCameraTag = TEXT("Camera.Overview");
+	/** @brief 퍼밀리어 소환 액션 키 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot1 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot2 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot3 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction> IA_SummonSlot4 = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Summon")
+	TObjectPtr<UInputAction>IA_SummonSlot5 = nullptr;
 
-	/** @brief 현재 자동 전투 모드 활성화 여부 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad|Status")
-	bool bIsAutoMode = false;
+	/** @brief 공격, 스킬, 궁극기 액션 키 */
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Attack = nullptr;
 
-	/** @brief 모든 영웅이 사망했는지 여부 */
-	bool bIsSquadWipedOut = false;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Skill = nullptr;
 
-	/** @brief 카메라 전환 시 걸리는 블렌딩 시간 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Camera")
-	float CameraBlendTime = 1.5f;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Ultimate = nullptr;
 
-	/** @brief  전멸 직전 마지막 시점 위치 기억용 */
-	FVector LastDeathLocation = FVector::ZeroVector;
+private:
+	/** @brief 퍼밀리어 소환 액션 키와 매칭될 실행 함수 */
+	void OnInputSummonSlot1();
+	void OnInputSummonSlot2();
+	void OnInputSummonSlot3();
+	void OnInputSummonSlot4();
+	void OnInputSummonSlot5();
 
-	/** @brief  전멸 직전 마지막 시점 회전 기억용 */
-	FRotator LastDeathRotation = FRotator::ZeroRotator;
+	void OnInputMove(const FInputActionValue& Value);
+	void OnInputOpenSettings(const FInputActionValue& Value);
+	void OnInputAttackStarted(const FInputActionValue& Value);
+	void OnInputAttackCompleted(const FInputActionValue& Value);
+	void OnInputSkillStarted(const FInputActionValue& Value);
+	void OnInputSkillCompleted(const FInputActionValue& Value);
+	void OnInputUltimateStarted(const FInputActionValue& Value);
+	void OnInputUltimateCompleted(const FInputActionValue& Value);
+
+	/** @brief 소환 공통 처리 함수 */
+	void RequestFamiliarSummon(int32 SlotIndex);
 
 private:
 	/**
@@ -218,4 +234,7 @@ private:
 	 * @brief 플레이어 스테이트 캐싱
 	 */
 	TWeakObjectPtr<AInGamePlayerState> CachedPlayerState = nullptr;
+
+	/** @brief 설정창 토글 중복 방지 플래그 */
+	bool bIsTogglingSettings = false;
 };

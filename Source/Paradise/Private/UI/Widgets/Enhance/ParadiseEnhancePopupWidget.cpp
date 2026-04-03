@@ -3,28 +3,18 @@
 
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
 #include "UI/Panel/Enhance/ParadiseEnhanceDetailWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 #include "UI/Widgets/Squad/Inventory/ParadiseSquadInventoryWidget.h"
 #include "Components/Button.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
 #include "Framework/System/GrowthSubsystem.h"
+#include "Framework/System/EconomySubsystem.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
-
-//#pragma region 헬퍼 함수
-///** @brief EItemRarity를 UI 표시용 테두리 태그로 변환합니다. */
-//static FGameplayTag ConvertRarityToTag(EItemRarity Rarity)
-//{
-//	switch (Rarity)
-//	{
-//	case EItemRarity::Legendary: return FGameplayTag::RequestGameplayTag("Unit.Rank.S");
-//	case EItemRarity::Epic:      return FGameplayTag::RequestGameplayTag("Unit.Rank.A");
-//	case EItemRarity::Rare:      return FGameplayTag::RequestGameplayTag("Unit.Rank.B");
-//	default:                     return FGameplayTag::RequestGameplayTag("Unit.Rank.C");
-//	}
-//}
-//#pragma endregion 헬퍼 함수
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UParadiseEnhancePopupWidget::NativeConstruct()
@@ -53,6 +43,7 @@ void UParadiseEnhancePopupWidget::NativeConstruct()
 	{
 		Panel_Detail->OnEnhanceClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::RequestEnhance);
 		Panel_Detail->OnBreakthroughClicked.AddDynamic(this, &UParadiseEnhancePopupWidget::RequestBreakthrough);
+		Panel_Detail->OnEnhanceAnimFinished.AddDynamic(this, &UParadiseEnhancePopupWidget::RefreshAfterEnhancement);
 	}
 
 	SwitchTab(SquadTabs::Weapon); // 기본 탭을 무기로 시작
@@ -72,6 +63,7 @@ void UParadiseEnhancePopupWidget::NativeDestruct()
 	{
 		Panel_Detail->OnEnhanceClicked.RemoveAll(this);
 		Panel_Detail->OnBreakthroughClicked.RemoveAll(this);
+		Panel_Detail->OnEnhanceAnimFinished.RemoveAll(this);
 	}
 
 	// 인벤토리 델리게이트 해제
@@ -90,6 +82,14 @@ void UParadiseEnhancePopupWidget::NativeDestruct()
 #pragma region 중재 로직
 void UParadiseEnhancePopupWidget::SwitchTab(int32 NewTab)
 {
+	if (CurrentTabIndex == NewTab) return; // 동일 탭 클릭 방지 (방어코드)
+
+	// 탭 변경 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonTabClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonTabClick);
+	}
+
 	CurrentTabIndex = NewTab;
 	SelectedItem = FSquadItemUIData(); // 탭 이동 시 선택 초기화
 
@@ -159,7 +159,7 @@ void UParadiseEnhancePopupWidget::RefreshInventory()
 void UParadiseEnhancePopupWidget::RefreshAfterEnhancement()
 {
 	RefreshInventory(); // 리스트 갱신
-	if (SelectedItem.InstanceUID.IsValid())
+	if (SelectedItem.InstanceUID.IsValid() || !SelectedItem.ID.IsNone())
 	{
 		HandleInventoryItemClicked(SelectedItem); // 디테일 패널 갱신
 	}
@@ -170,17 +170,27 @@ FSquadItemUIData UParadiseEnhancePopupWidget::MakeUIData(FName ID, int32 InLevel
 	FSquadItemUIData Result;
 	Result.ID = ID;
 	Result.Level = InLevel;
-	Result.Name = FText::FromName(ID);
+	//Result.Name = FText::FromName(ID);
 
 	if (!CachedGI.IsValid()) return Result;
 
 	if (TabType == SquadTabs::Character)
 	{
+		if (auto* Stat = CachedGI->GetDataTableRow<FCharacterStats>(CachedGI->CharacterStatsDataTable, ID))
+		{
+			Result.Name = Stat->DisplayName;
+		}
+		else
+		{
+			Result.Name = FText::FromName(ID); // 테이블에 데이터가 없을 때의 방어 코드
+		}
+
+		// 2. 기존 Assets 테이블 아이콘 가져오기 로직 유지
 		if (auto* Asset = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, ID))
 		{
-			// 강화 인벤토리에서도 전신(Body)을 보여주려면 bUseBodyIcon을 활용
 			TSoftObjectPtr<UTexture2D> TargetIcon = bUseBodyIcon ? Asset->BodyIcon : Asset->FaceIcon;
 			Result.Icon = TargetIcon.LoadSynchronous();
+			Result.Rarity = Asset->Rarity;
 		}
 	}
 	else if (TabType == SquadTabs::Weapon)
@@ -356,6 +366,8 @@ void UParadiseEnhancePopupWidget::HandleInventoryItemClicked(FSquadItemUIData It
 		}
 	}
 
+	CurrentRequiredCost = RequiredCost;
+
 	// 2. 가공이 끝난 깔끔한 데이터를 디테일 뷰에 한 번에 렌더링 지시!
 	Panel_Detail->RefreshDetail(ItemData, CurrentTabIndex, RequiredCost, CurrentStatStr, NextStatStr);
 }
@@ -364,20 +376,63 @@ void UParadiseEnhancePopupWidget::RequestEnhance()
 {
 	if (!CachedGI.IsValid() || !SelectedItem.InstanceUID.IsValid()) return;
 
+	// 재화 검증
+	UEconomySubsystem* EconomySys = CachedGI->GetSubsystem<UEconomySubsystem>();
+	if (EconomySys)
+	{
+		int32 CurrentGold = EconomySys->GetCurrency(ECurrencyType::Gold);
+		if (CurrentGold < CurrentRequiredCost)
+		{
+			// 재화 부족 시 View(경고 팝업) 호출 후 중단!
+			if (Widget_ResourceWarning)
+			{
+				Widget_ResourceWarning->ShowWarning(FText::FromString(TEXT("골드")), Icon_Gold.LoadSynchronous());
+			}
+			return;
+		}
+	}
+
+	// 기존 강화 실행
 	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
 	if (GrowthSys)
 	{
 		bool bSuccess = GrowthSys->EnhanceEquipment(SelectedItem.InstanceUID);
 
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
-		if (bSuccess) RefreshAfterEnhancement();
 	}
+
+	CachedGI->SaveGameData();
 }
 
 void UParadiseEnhancePopupWidget::RequestBreakthrough()
 {
-	if (!CachedGI.IsValid() || SelectedItem.ID.IsNone()) return;
+	if(!CachedGI.IsValid() || SelectedItem.ID.IsNone() || !CachedInventorySys.IsValid()) return;
 
+	// 재화 검증
+	const FOwnedCharacterData* OwnedChar = CachedInventorySys->GetCharacterDataByID(SelectedItem.ID);
+	if (OwnedChar && OwnedChar->AwakeningPieces < CurrentRequiredCost)
+	{
+		if (Widget_ResourceWarning)
+		{
+			UTexture2D* DynamicPieceIcon = nullptr;
+			FString WarningText = TEXT("캐릭터 조각"); // 기본 텍스트
+
+			if (FCharacterAssets* AssetData = CachedGI->GetDataTableRow<FCharacterAssets>(CachedGI->CharacterAssetsDataTable, SelectedItem.ID))
+			{
+				// 해당 캐릭터 전용 조각 아이콘 로드!
+				DynamicPieceIcon = AssetData->AwakeningPieceIcon.LoadSynchronous();
+
+				// 텍스트도 디테일하게 "아누비스 조각" 이런 식으로 조합해 줍니다!
+				WarningText = FString::Printf(TEXT("%s 조각"), *SelectedItem.Name.ToString());
+			}
+
+			// 완성된 동적 데이터(이름, 아이콘)를 경고창에 쇽! 던져줍니다.
+			Widget_ResourceWarning->ShowWarning(FText::FromString(WarningText), DynamicPieceIcon);
+		}
+		return;
+	}
+
+	// 기존 돌파 실행
 	UGrowthSubsystem* GrowthSys = CachedGI->GetSubsystem<UGrowthSubsystem>();
 	if (GrowthSys)
 	{
@@ -385,8 +440,9 @@ void UParadiseEnhancePopupWidget::RequestBreakthrough()
 		bool bSuccess = GrowthSys->AwakenCharacter(SelectedItem.ID);
 
 		if (Panel_Detail) Panel_Detail->PlayEnhancementFX(bSuccess);
-		if (bSuccess) RefreshAfterEnhancement();
 	}
+
+	CachedGI->SaveGameData();
 }
 void UParadiseEnhancePopupWidget::OnClickCharTab() { SwitchTab(SquadTabs::Character); }
 void UParadiseEnhancePopupWidget::OnClickWpnTab() { SwitchTab(SquadTabs::Weapon); }
@@ -394,13 +450,22 @@ void UParadiseEnhancePopupWidget::OnClickArmTab() { SwitchTab(SquadTabs::Armor);
 //void UParadiseEnhancePopupWidget::OnClickUnitTab() { SwitchTab(SquadTabs::Unit); }
 void UParadiseEnhancePopupWidget::HandleClose()
 {
-	// 1. 내부 상태 초기화 (다음에 열릴 때를 대비해 빈 화면으로 만들어둠)
+	// 1. 뒤로가기 공통 효과음 재생
+	if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_CommonBack)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_CommonBack);
+	}
+
+	// 2. 내부 상태 초기화 (다음에 열릴 때를 대비해 빈 화면으로 만들어둠)
 	if (Panel_Detail)
 	{
 		Panel_Detail->ClearDetail();
 	}
 
-	// 2. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
+	// 3. 뒤로가기 하면 저장
+	CachedGI->SaveGameData();
+
+	// 4. HUD에게 뒤로가기 요청만 순수하게 전달 (SRP 준수)
 	if (OnBackRequested.IsBound())
 	{
 		OnBackRequested.Broadcast();

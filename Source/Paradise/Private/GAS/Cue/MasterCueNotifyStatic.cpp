@@ -2,6 +2,9 @@
 
 
 #include "GAS/Cue/MasterCueNotifyStatic.h"
+#include "Abilities/GameplayAbility.h" 
+#include "AbilitySystemInterface.h"
+#include "AbilitySystemComponent.h"
 #include "Interfaces/CombatInterface.h" 
 #include "Data/Assets/FXDataAsset.h"
 #include "Data/Structs/FXStructs.h"
@@ -10,6 +13,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Camera/CameraShakeBase.h"
+#include "Characters/AIUnit/SkillCasterUnit.h"
 
 UMasterCueNotifyStatic::UMasterCueNotifyStatic()
 {
@@ -18,66 +22,147 @@ UMasterCueNotifyStatic::UMasterCueNotifyStatic()
 
 bool UMasterCueNotifyStatic::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("🔥🔥🔥 큐 클래스 내부 OnExecute 진입 성공! 대상: %s"), MyTarget ? *MyTarget->GetName() : TEXT("None"));
-	// 방어 코드
-	if (!MyTarget) return false;
-
-	UE_LOG(LogTemp, Log, TEXT("🎯 GameplayCue UnitHit 실행됨: 대상 %s"), *MyTarget->GetName());
-
-	// 맞은 대상에게 ICombatInterface를 구현했는지 물어봄
-	if (ICombatInterface* CombatInterface = Cast<ICombatInterface>(MyTarget))
+	if (!MyTarget)
 	{
-		if (FFXPayload* Payload = CombatInterface->GetFXPayload(TargetEventType))
+		//UE_LOG(LogTemp, Error, TEXT("❌ [MasterCue] MyTarget이 Null이라 실행 취소됨."));
+		return false;
+	}
+
+	//UE_LOG(LogTemp, Warning, TEXT("=================================================="));
+
+	FVector HitLocation = Parameters.Location.IsZero() ? MyTarget->GetActorLocation() : FVector(Parameters.Location);
+	FRotator HitRotation = Parameters.Normal.IsZero() ? MyTarget->GetActorRotation() : Parameters.Normal.Rotation();
+
+	// 이펙트 재생 공용 로직 (람다)
+	auto PlayFXForActor = [&](AActor* SourceActor, EFXEventType EventType, const FString& ActorRole)
 		{
-			// 위치값 계산 (파라미터가 비어있으면 타겟의 현재 위치 사용)
-			FVector HitLocation = Parameters.Location.IsZero() ? MyTarget->GetActorLocation() : FVector(Parameters.Location);
+			if (!SourceActor) return;
+			//UE_LOG(LogTemp, Warning, TEXT("🎯 [마스터 큐] 요청받은 EventType: %d / 현재 캐스팅 인덱스: %d"), (int32)EventType, Cast<ASkillCasterUnit>(SourceActor)->GetCurrentCastingSkillIndex());
 
-			// 회전값 계산 (Normal 값이 비어있을 경우 타겟의 기본 회전값 사용)
-			FRotator HitRotation = Parameters.Normal.IsZero() ? MyTarget->GetActorRotation() : Parameters.Normal.Rotation();
+			//UE_LOG(LogTemp, Log, TEXT("  -> [%s] %s에게서 데이터 조회 시도 중..."), *ActorRole, *SourceActor->GetName());
 
-			// =========================================================
-			//  연출 실행 파트 (Visual, Audio, Camera Shake)
-			// =========================================================
-
-			// 1. 나이아가라 파티클 재생
-			if (!Payload->VisualEffect.IsNull())
+			if (SourceActor->Implements<UCombatInterface>())
 			{
-				if (UNiagaraSystem* LoadedNiagara = Payload->VisualEffect.LoadSynchronous())
+				ICombatInterface* CombatInterface = Cast<ICombatInterface>(SourceActor);
+				TArray<FFXPayload*> Payloads = CombatInterface->GetFXPayloads(EventType);
+
+				//UE_LOG(LogTemp, Log, TEXT("    -> 인터페이스 확인됨. 가져온 Payload 개수: %d"), Payloads.Num());
+
+				for (FFXPayload* Payload : Payloads)
 				{
-					UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-						MyTarget,
-						LoadedNiagara,
-						HitLocation + Payload->LocationOffset, // 오프셋 적용
-						HitRotation,
-						Payload->Scale                         // 스케일 적용
-					);
+					if (!Payload) continue;
+
+					if (!Payload->VisualEffect.IsNull())
+					{
+						if (UNiagaraSystem* LoadedNiagara = Payload->VisualEffect.LoadSynchronous())
+						{
+							FVector RotatedOffset = HitRotation.RotateVector(Payload->LocationOffset);
+							FRotator FinalRotation = HitRotation + Payload->RotationOffset;
+
+							UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+								MyTarget, LoadedNiagara, HitLocation + RotatedOffset, FinalRotation, Payload->Scale
+							);
+							//UE_LOG(LogTemp, Log, TEXT("      🎇 나이아가라 스폰 완료: %s"), *LoadedNiagara->GetName());
+						}
+					}
+
+					if (!Payload->SoundEffect.IsNull())
+					{
+						if (USoundBase* LoadedSound = Payload->SoundEffect.LoadSynchronous())
+						{
+							//UE_LOG(LogTemp, Warning, TEXT("🔊 [%s] %s가 피격음 재생! 소리 이름: %s"),
+							//	*ActorRole,
+							//	*SourceActor->GetName(),
+							//	*LoadedSound->GetName());
+							UGameplayStatics::PlaySoundAtLocation(MyTarget, LoadedSound, HitLocation);
+							//UE_LOG(LogTemp, Log, TEXT("      🔊 사운드 재생 완료: %s"), *LoadedSound->GetName());
+						}
+					}
 				}
 			}
-
-			// 2. 사운드 재생
-			if (!Payload->SoundEffect.IsNull())
+			else
 			{
-				if (USoundBase* LoadedSound = Payload->SoundEffect.LoadSynchronous())
-				{
-					UGameplayStatics::PlaySoundAtLocation(MyTarget, LoadedSound, HitLocation);
-				}
+				//UE_LOG(LogTemp, Warning, TEXT("    ⚠️ [%s] %s는 CombatInterface를 상속받지 않았습니다."), *ActorRole, *SourceActor->GetName());
 			}
+		};
 
-			// 3. 카메라 쉐이크
-			//if (Payload->CameraShake)
-			//{
-			//	if (APlayerController* PC = UGameplayStatics::GetPlayerController(MyTarget, 0))
-			//	{
-			//		PC->ClientStartCameraShake(Payload->CameraShake);
-			//	}
-			//}
-		}
-		else
+	//UE_LOG(LogTemp, Warning, TEXT("🗡️ [MasterCue] 타격자(AttackerActor) 탐색 시작..."));
+	AActor* AttackerActor = Parameters.EffectCauser.Get();
+
+	if (!AttackerActor) AttackerActor = Parameters.Instigator.Get();
+
+	// 파라미터 껍데기에 없으면, 핵심 원본인 EffectContext 내부를 탐색
+	if (!AttackerActor)
+	{
+		AttackerActor = Parameters.EffectContext.GetEffectCauser();
+		if (!AttackerActor) AttackerActor = Parameters.EffectContext.GetInstigator();
+	}
+
+	// SourceObject 탐색
+	if (!AttackerActor)
+	{
+		if (UObject* SourceObj = const_cast<UObject*>(Parameters.SourceObject.Get()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] GetFXPayload가 nullptr을 반환했습니다! 태그나 에셋을 확인하세요."), *MyTarget->GetName());
+			if (UGameplayAbility* SourceAbility = Cast<UGameplayAbility>(SourceObj))
+			{
+				AttackerActor = SourceAbility->GetAvatarActorFromActorInfo();
+				//UE_LOG(LogTemp, Log, TEXT("  -> SourceObject(Ability)에서 타격자 추출 성공!"));
+			}
+			else if (AActor* SourceActorObj = Cast<AActor>(SourceObj))
+			{
+				AttackerActor = SourceActorObj;
+				//UE_LOG(LogTemp, Log, TEXT("  -> SourceObject(Actor)에서 타격자 추출 성공!"));
+			}
 		}
 	}
 
-	// 부모 클래스 로직 정상 실행
+	// 최종 인터페이스 검증 및 Instigator 폴백
+	if (AttackerActor && !AttackerActor->Implements<UCombatInterface>())
+	{
+		AActor* FallbackActor = Parameters.EffectContext.GetInstigator();
+		if (FallbackActor && FallbackActor->Implements<UCombatInterface>())
+		{
+			//UE_LOG(LogTemp, Log, TEXT("  -> EffectCauser(%s)가 인터페이스가 없어 Instigator(%s)로 교체합니다."), *AttackerActor->GetName(), *FallbackActor->GetName());
+			AttackerActor = FallbackActor;
+		}
+	}
+
+	if (AttackerActor)
+	{
+		//UE_LOG(LogTemp, Log, TEXT("  -> 1차 타격자 탐색 결과: %s"), *AttackerActor->GetName());
+	}
+
+	AActor* TrueAttacker = AttackerActor;
+
+	if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(AttackerActor))
+	{
+		if (UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent())
+		{
+			if (AActor* Avatar = ASC->GetAvatarActor())
+			{
+				TrueAttacker = Avatar;
+			}
+		}
+	}
+
+	if (TrueAttacker && TrueAttacker != MyTarget)
+	{
+		// 1. 피격자(맞은 적)는 무조건 'Hit(피격)' 데이터를 꺼내서 비명을 지릅니다.
+		PlayFXForActor(MyTarget, EFXEventType::Hit, TEXT("피격자"));
+
+		// 2. 타격자(플레이어)는 TargetEventType이 'Hit'가 아닐 때만 이펙트/사운드를 재생합니다.
+		// (현재 타격 성공음은 무기가 알아서 처리하고 있으므로 패스!)
+		if (TargetEventType != EFXEventType::Hit)
+		{
+			PlayFXForActor(TrueAttacker, TargetEventType, TEXT("타격자"));
+		}
+	}
+	else
+	{
+		PlayFXForActor(MyTarget, TargetEventType, TEXT("시전자"));
+	}
+
+	//UE_LOG(LogTemp, Warning, TEXT("=================================================="));
+
 	return Super::OnExecute_Implementation(MyTarget, Parameters);
 }

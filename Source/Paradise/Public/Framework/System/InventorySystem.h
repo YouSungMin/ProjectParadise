@@ -7,6 +7,7 @@
 #include "Data/Structs/GrowthStruct.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/InventoryStruct.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "InventorySystem.generated.h"
 
@@ -35,7 +36,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEquipmentUpdated);
  * - 획득(Add) 및 소모(Remove) 시 데이터 테이블을 통해 ID 유효성을 검증합니다.
  */
 UCLASS()
-class PARADISE_API UInventorySystem : public UGameInstanceSubsystem
+class PARADISE_API UInventorySystem : public UGameInstanceSubsystem , public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 
@@ -118,6 +119,18 @@ public:
 
 	#pragma endregion 인벤토리 관련 함수 선언
 
+#pragma region 인벤토리 장비 아이템 판매 함수
+
+	/** * @brief 장비/아이템을 판매합니다.
+	 * @param ItemUID 팔고자 하는 아이템의 고유 번호
+	 * @param QuantityToSell 팔 개수 (장비는 보통 1개씩 팔지만 겹치는 아이템을 위해 추가)
+	 * @return 판매 성공 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Sell")
+	bool SellItem(FGuid ItemUID, int32 QuantityToSell, FString& OutErrorMsg);
+
+	#pragma endregion 인벤토리 장비 아이템 판매 함수
+
 	#pragma region 헬퍼 함수 선언
 
 	/** @return 현재 보유 중인 모든 영웅 목록 (const 참조) */
@@ -181,6 +194,20 @@ public:
 
 	#pragma endregion 헬퍼 함수 선언
 
+	#pragma region 저장 및 로드
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Save")
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Save")
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj)override;
+
+	#pragma endregion 저장 및 로드
+
+
+
+
 
 
 
@@ -223,6 +250,6 @@ protected:
 #pragma endregion 인벤토리 보유 변수
 
 private:
-
+	bool bIsFirstPlaySession = true;
 		
 };

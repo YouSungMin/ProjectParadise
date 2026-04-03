@@ -2,11 +2,13 @@
 
 
 #include "UI/Panel/Enhance/ParadiseEnhanceDetailWidget.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
-#include "NiagaraFunctionLibrary.h"
+#include "Animation/WidgetAnimation.h"
 
 #pragma region 생명주기 구현
 void UParadiseEnhanceDetailWidget::NativeConstruct()
@@ -15,6 +17,14 @@ void UParadiseEnhanceDetailWidget::NativeConstruct()
 
 	if (Btn_Enhance) Btn_Enhance->OnClicked.AddDynamic(this, &UParadiseEnhanceDetailWidget::HandleEnhanceBtn);
 	if (Btn_Breakthrough) Btn_Breakthrough->OnClicked.AddDynamic(this, &UParadiseEnhanceDetailWidget::HandleBreakthroughBtn);
+
+	// 애니메이션 종료 델리게이트 바인딩 (성공 연출용)
+	if (Anim_SuccessFX)
+	{
+		FWidgetAnimationDynamicEvent EndDelegate;
+		EndDelegate.BindDynamic(this, &UParadiseEnhanceDetailWidget::HandleAnimationFinished);
+		BindToAnimationFinished(Anim_SuccessFX, EndDelegate);
+	}
 
 	ClearDetail(); // 초기화
 }
@@ -68,7 +78,11 @@ void UParadiseEnhanceDetailWidget::RefreshDetail(const FSquadItemUIData& ItemDat
 	{
 		// 캐릭터일 경우: 돌파 버튼 ON, 강화 버튼 OFF
 		if (Btn_Enhance) Btn_Enhance->SetVisibility(ESlateVisibility::Collapsed);
-		if (Btn_Breakthrough) Btn_Breakthrough->SetVisibility(ESlateVisibility::Visible);
+		if (Btn_Breakthrough)
+		{
+			Btn_Breakthrough->SetVisibility(ESlateVisibility::Visible);
+			Btn_Breakthrough->SetIsEnabled(true);
+		}
 	}
 }
 
@@ -89,25 +103,67 @@ void UParadiseEnhanceDetailWidget::ClearDetail()
 }
 void UParadiseEnhanceDetailWidget::PlayEnhancementFX(bool bSuccess)
 {
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+
 	if (bSuccess)
 	{
-		if (Sound_EnhanceSuccess)
+		if (GI && GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceSuccess)
 		{
-			UGameplayStatics::PlaySound2D(this, Sound_EnhanceSuccess);
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceSuccess);
 		}
-		// 파티클 재생 로직 필요시 추가
-	}
-	else
-	{
-		if (Sound_EnhanceFail)
+
+		// 버튼 연타 방지 잠금
+		if (Btn_Enhance) Btn_Enhance->SetIsEnabled(false);
+		if (Btn_Breakthrough) Btn_Breakthrough->SetIsEnabled(false);
+
+		// 머티리얼을 제어하는 UMG 애니메이션 실행
+		if (Anim_SuccessFX)
 		{
-			UGameplayStatics::PlaySound2D(this, Sound_EnhanceFail);
+			PlayAnimation(Anim_SuccessFX);
+		}
+		else
+		{
+			HandleAnimationFinished(); // 애니메이션이 없으면 즉시 종료 처리
 		}
 	}
 }
 #pragma endregion 렌더링 로직
 
 #pragma region 이벤트 브로드캐스트
-void UParadiseEnhanceDetailWidget::HandleEnhanceBtn() { OnEnhanceClicked.Broadcast(); }
-void UParadiseEnhanceDetailWidget::HandleBreakthroughBtn() { OnBreakthroughClicked.Broadcast(); }
+void UParadiseEnhanceDetailWidget::HandleEnhanceBtn()
+{
+	// [추가] 강화 버튼 클릭 효과음
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceActionExecute)
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceActionExecute);
+	}
+	OnEnhanceClicked.Broadcast();
+}
+void UParadiseEnhanceDetailWidget::HandleBreakthroughBtn()
+{
+	// [추가] 돌파 버튼 클릭 효과음 (강화와 동일한 액션음 사용)
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_EnhanceActionExecute)
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_EnhanceActionExecute);
+	}
+	OnBreakthroughClicked.Broadcast();
+}
+void UParadiseEnhanceDetailWidget::HandleAnimationFinished()
+{
+	// 연출 끝난 후 버튼 노멀 상태로 복귀
+	if (Btn_Enhance)
+	{
+		Btn_Enhance->SetIsEnabled(false);
+		Btn_Enhance->SetIsEnabled(true);
+	}
+	if (Btn_Breakthrough)
+	{
+		Btn_Breakthrough->SetIsEnabled(false);
+		Btn_Breakthrough->SetIsEnabled(true);
+	}
+
+	OnEnhanceAnimFinished.Broadcast();
+}
 #pragma endregion 이벤트 브로드캐스트

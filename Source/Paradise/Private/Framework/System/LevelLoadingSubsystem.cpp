@@ -2,10 +2,17 @@
 
 
 #include "Framework/System/LevelLoadingSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/SquadSubsystem.h"
+#include "Framework/System/InventorySystem.h"
 #include "UI/Widgets/Loading/LoadingWidget.h" // 경로 확인 필요 (없으면 전방선언으로 대체하고 Cast)
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/Assets/FXDataAsset.h"
+#include "Data/Structs/UnitStructs.h"
+#include "Data/Structs/ItemStructs.h"
+#include "Data/Structs/InventoryStruct.h"
 
 ULevelLoadingSubsystem::ULevelLoadingSubsystem()
 {
@@ -51,7 +58,8 @@ void ULevelLoadingSubsystem::StartLevelTransition(
 	const TArray<TSoftObjectPtr<UObject>>& InAssetsToPreload, 
 	TSoftObjectPtr<UTexture2D> InLoadingImage, 
 	FText InStageName, 
-	FText InStageDesc)
+	FText InStageDesc,
+	bool bInGatherDynamicAssets)
 {
 	if (InTargetLevelName.IsNone()) return;
 
@@ -73,8 +81,28 @@ void ULevelLoadingSubsystem::StartLevelTransition(
 	PendingStageDesc = InStageDesc; 
 
 	bIsLoadingInProgress = true;
+	bShouldGatherDynamicAssets = bInGatherDynamicAssets;
 	// 이미지는 위젯 내부의 InitLoadingImage에서 스스로 판단합니다.
 
+	CurrentPhase = ELoadingPhase::Appearing;
+
+	if (UWorld* World = GetWorld())
+	{
+		CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
+		if (CurrentLoadingWidget)
+		{
+			CurrentLoadingWidget->AddToViewport(99999);
+
+			// ✅ Anim_Appear 재생(다음 프레임) 전에 배경 먼저 세팅
+			CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+			CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
+		}
+	}
+}
+void ULevelLoadingSubsystem::NotifyAppearFinished()
+{
+	// Anim_Appear 완료 → L_Loading으로 이동
+	CurrentLoadingWidget = nullptr;
 	UGameplayStatics::OpenLevel(this, LoadingMapName);
 }
 
@@ -96,13 +124,41 @@ void ULevelLoadingSubsystem::OnMapLoadComplete(UWorld* World)
 	// PIE(에디터) 환경에서는 UEDPIE_0_ 같은 접두사가 붙을 수 있으므로 Contains로 확인하거나 RemovePrefix 처리
 	CurrentMapName.RemoveFromStart(World->StreamingLevelsPrefix);
 
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 맵 로드 감지: %s"), *CurrentMapName);
-
 	// 로딩 맵에 도착했는지 확인
 	if (CurrentMapName.Contains(LoadingMapName.ToString()))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 로딩 맵 진입 성공. 비동기 로딩을 시작합니다."));
+		CurrentPhase = ELoadingPhase::Loading;
 		BeginAsyncLoading();
+	}
+	else if (CurrentMapName.Contains(TargetLevelName.ToString()))
+	{
+		CurrentPhase = ELoadingPhase::Disappearing;
+
+		if (LoadingWidgetClass)
+		{
+			CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
+			if (CurrentLoadingWidget)
+			{
+				CurrentLoadingWidget->AddToViewport(9999);
+				CurrentLoadingWidget->InitAsCovered();
+
+				// ✅ 배경 이미지/텍스트 세팅 추가
+				CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+				CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
+
+				CurrentLoadingWidget->SetLoadingPercent(1.0f);
+
+				World->GetTimerManager().SetTimerForNextTick(
+					FTimerDelegate::CreateWeakLambda(CurrentLoadingWidget.Get(), [this]()
+						{
+							if (CurrentLoadingWidget)
+							{
+								CurrentLoadingWidget->PlayDisappearAnim();
+							}
+						})
+				);
+			}
+		}
 	}
 }
 
@@ -111,7 +167,11 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	UWorld* World = GetWorld();
 	if (!World || !LoadingWidgetClass) return;
 
+	// ✅ 이전 타이머 명시적 정리 후 초기화
+	World->GetTimerManager().ClearTimer(ProgressTimerHandle);
 	TotalElapsedTime = 0.0f;
+
+	//UE_LOG(LogTemp, Warning, TEXT("[Loading] BeginAsyncLoading 시작 - TotalElapsedTime 초기화: %.2f"), TotalElapsedTime);
 
 	// 1. 위젯 생성 및 부착
 	CurrentLoadingWidget = CreateWidget<ULoadingWidget>(World, LoadingWidgetClass);
@@ -119,23 +179,174 @@ void ULevelLoadingSubsystem::BeginAsyncLoading()
 	{
 		CurrentLoadingWidget->AddToViewport(9999);
 
-		CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
+		// ✅ Progress=1 유지 → 로딩 컨텐츠 완전히 표시
+		CurrentLoadingWidget->InitAsCovered();
 
+		// ✅ 배경/텍스트 세팅
+		CurrentLoadingWidget->InitLoadingImage(OriginLevelName, TargetLevelName, PendingLoadingImage);
 		CurrentLoadingWidget->SetLoadingText(PendingStageName, PendingStageDesc);
 	}
 
-	// 비동기 로딩 요청
-	if (PendingAssetsToLoad.Num() > 0)
+	// 2. 로드할 에셋 경로를 모두 모을 거대한 배열 생성 (정적 + 동적 통합)
+	TArray<FSoftObjectPath> AssetPaths;
+
+	// 2-1. [정적 데이터] 기획자가 스테이지 데이터(ExtraPreloadAssets)에 넣은 고유 에셋 수집
+	for (const auto& AssetPtr : PendingAssetsToLoad)
 	{
-		TArray<FSoftObjectPath> AssetPaths;
-		for (const auto& AssetPtr : PendingAssetsToLoad)
-		{
-			if (!AssetPtr.IsNull()) AssetPaths.Add(AssetPtr.ToSoftObjectPath());
-		}
-		if (AssetPaths.Num() > 0) CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
+		if (!AssetPtr.IsNull()) AssetPaths.AddUnique(AssetPtr.ToSoftObjectPath());
 	}
 
-	World->GetTimerManager().SetTimer(ProgressTimerHandle, this, &ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
+	// 2-2. [동적 데이터] 편대 서브시스템과 인벤토리를 뒤져서 현재 출전 멤버 에셋 수집!
+	if (bShouldGatherDynamicAssets)
+	{
+		GatherDynamicAssetsToLoad(AssetPaths);
+	}
+
+	// 3. 비동기 로딩 요청 (한 방에 비동기로 RAM에 올리기!)
+	if (AssetPaths.Num() > 0)
+	{
+		CurrentLoadHandle = StreamableManager.RequestAsyncLoad(AssetPaths);
+	}
+
+	// 4. 타이머 세팅
+	World->GetTimerManager().SetTimerForNextTick([this, World]()
+		{
+			World->GetTimerManager().SetTimer(
+				ProgressTimerHandle, this,
+				&ULevelLoadingSubsystem::UpdateLoadingProgress, 0.05f, true);
+		});
+}
+
+void ULevelLoadingSubsystem::GatherDynamicAssetsToLoad(TArray<FSoftObjectPath>& OutAssetPaths)
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetOuter());
+	if (!GI) return;
+
+	USquadSubsystem* SquadSys = GI->GetSubsystem<USquadSubsystem>();
+	UInventorySystem* InvSys = GI->GetSubsystem<UInventorySystem>();
+
+	if (!SquadSys || !InvSys) return;
+
+	// TSet은 해시 기반으로 O(1) 삽입/중복 체크가 가능합니다.
+	TSet<FSoftObjectPath> GatheredPaths;
+	GatheredPaths.Reserve(64);
+
+	// =========================================================
+	// 1. 플레이어 캐릭터 및 장착된 장비(무기/방어구) 수집
+	// =========================================================
+	for (const FName& CharID : SquadSys->GetPlayerSquad())
+	{
+		if (CharID.IsNone()) continue;
+
+		// 1-1. 캐릭터 본체의 기본 에셋 수집 (외형, 몽타주 등)
+		if (FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharID))
+		{
+			if (!CharAssets->SkeletalMesh.IsNull())
+				GatheredPaths.Add(CharAssets->SkeletalMesh.ToSoftObjectPath());
+
+			if (!CharAssets->UltimateMontage.IsNull())
+				GatheredPaths.Add(CharAssets->UltimateMontage.ToSoftObjectPath());
+
+			GatherFXDataAssetPaths(CharAssets->CharacterFX.FXData, GatheredPaths);
+		}
+
+		// 1-2. 해당 캐릭터가 "현재 장착 중인" 장비 에셋 긁어오기
+		if (const FOwnedCharacterData* CharData = InvSys->GetCharacterDataByID(CharID))
+		{
+			for (const auto& EquipPair : CharData->EquipmentMap)
+			{
+				FGuid ItemUID = EquipPair.Value;
+				if (FOwnedItemData* ItemData = InvSys->GetItemByGUID(ItemUID))
+				{
+					// 무기일 경우 (무기 메쉬, 스킬 이펙트 등)
+					if (EquipPair.Key == EEquipmentSlot::Weapon)
+					{
+						if (FWeaponAssets* WeaponAsset = GI->GetDataTableRow<FWeaponAssets>(GI->WeaponAssetsDataTable, ItemData->ItemID))
+						{
+							if (!WeaponAsset->ItemMesh.IsNull())
+								GatheredPaths.Add(WeaponAsset->ItemMesh.ToSoftObjectPath());
+
+							if (!WeaponAsset->WeaponBasicAttackIcon.IsNull())
+								GatheredPaths.Add(WeaponAsset->WeaponBasicAttackIcon.ToSoftObjectPath());
+
+							GatherFXDataAssetPaths(WeaponAsset->WeaponFX.FXData, GatheredPaths);
+						}
+					}
+					// 방어구일 경우 (착용 메쉬 등)
+					else
+					{
+						if (FArmorAssets* ArmorAsset = GI->GetDataTableRow<FArmorAssets>(GI->ArmorAssetsDataTable, ItemData->ItemID))
+						{
+							if (!ArmorAsset->ItemMesh.IsNull())
+								GatheredPaths.Add(ArmorAsset->ItemMesh.ToSoftObjectPath());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// =========================================================
+	// 2. 퍼밀리어(소환수) 스쿼드 에셋 수집
+	// =========================================================
+	for (const FName& FamiliarID : SquadSys->GetFamiliarSquad())
+	{
+		if (FamiliarID.IsNone()) continue;
+
+		if (FFamiliarAssets* FamAssets = GI->GetDataTableRow<FFamiliarAssets>(GI->FamiliarAssetsDataTable, FamiliarID))
+		{
+			// 퍼밀리어의 외형, 기본 공격 몽타주, 비헤이비어 트리 등 필수 데이터 수집
+			if (!FamAssets->SkeletalMesh.IsNull())
+				GatheredPaths.Add(FamAssets->SkeletalMesh.ToSoftObjectPath());
+
+			if (!FamAssets->AttackMontage.IsNull())
+				GatheredPaths.Add(FamAssets->AttackMontage.ToSoftObjectPath());
+
+			if (!FamAssets->BehaviorTree.IsNull())
+				GatheredPaths.Add(FamAssets->BehaviorTree.ToSoftObjectPath());
+
+			// 다중 스킬 몽타주가 있다면 전부 수집
+			for (const auto& SkillMontage : FamAssets->SkillMontages)
+			{
+				if (!SkillMontage.IsNull())
+					GatheredPaths.Add(SkillMontage.ToSoftObjectPath());
+			}
+		}
+	}
+	/**
+	 * @brief 수집 완료된 TSet을 OutAssetPaths에 병합합니다.
+	 * @details 기존 OutAssetPaths에 이미 들어있는 정적 에셋(ExtraPreloadAssets)과의
+	 *          중복도 이 단계에서 한 번에 처리합니다.
+	 */
+	OutAssetPaths.Reserve(OutAssetPaths.Num() + GatheredPaths.Num());
+	for (const FSoftObjectPath& Path : GatheredPaths)
+	{
+		OutAssetPaths.AddUnique(Path);
+	}
+}
+
+void ULevelLoadingSubsystem::GatherFXDataAssetPaths(const TSoftObjectPtr<UFXDataAsset>& InFXData, TSet<FSoftObjectPath>& OutAssetPaths)
+{
+	if (InFXData.IsNull()) return;
+
+	// 이 DataAsset은 GameplayTag → FFXPayload 맵만 보유한 경량 에셋입니다.
+	UFXDataAsset* FXData = InFXData.LoadSynchronous();
+	if (!FXData) return;
+
+	// FXDataAsset 자체도 비동기 로딩 대상에 포함
+	OutAssetPaths.Add(InFXData.ToSoftObjectPath());
+
+	// EffectMap 순회 → Niagara / Sound 소프트 레퍼런스 수집
+	for (const auto& Pair : FXData->EffectMap)
+	{
+		const FFXPayload& Payload = Pair.Value;
+
+		if (!Payload.VisualEffect.IsNull())
+			OutAssetPaths.Add(Payload.VisualEffect.ToSoftObjectPath());
+
+		if (!Payload.SoundEffect.IsNull())
+			OutAssetPaths.Add(Payload.SoundEffect.ToSoftObjectPath());
+	}
 }
 
 void ULevelLoadingSubsystem::UpdateLoadingProgress()
@@ -147,32 +358,40 @@ void ULevelLoadingSubsystem::UpdateLoadingProgress()
 	// 2. 가짜 진행률 (0~70%)
 	const float FakeProgress = TimeRatio * MaxFakePercent;
 
-	// 3. 실제 로딩 비율
-	float RealProgress = 1.0f;
-	if (CurrentLoadHandle.IsValid()) RealProgress = CurrentLoadHandle->GetProgress();
+	float FinalDisplayPercent = FakeProgress;
 
-	// 4. 최종 퍼센트: Fake(0~0.7) + (Real(0~1) * 0.3)
-	float FinalDisplayPercent = FakeProgress + (RealProgress * (1.0f - MaxFakePercent));
-
-	const bool bIsRealLoadingFinished = (!CurrentLoadHandle.IsValid() || CurrentLoadHandle->HasLoadCompleted());
 	const bool bIsTimeFinished = (TimeRatio >= 1.0f);
 
-	if (bIsRealLoadingFinished && bIsTimeFinished)
+	if (bIsTimeFinished)
 	{
-		FinalDisplayPercent = 1.0f;
-		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
-		FinishLoading();
+		// 2. 2초 경과 후
+		if (CurrentLoadHandle.IsValid())
+		{
+			// 에셋 있으면 70%~100% 사이를 실제 로딩 비율로 채움
+			float RealProgress = CurrentLoadHandle->GetProgress();
+			FinalDisplayPercent = MaxFakePercent + (RealProgress * (1.0f - MaxFakePercent));
+
+			if (CurrentLoadHandle->HasLoadCompleted())
+			{
+				// 에셋 로딩 완료 → 100%
+				if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
+				FinishLoading();
+				return;
+			}
+		}
+		else
+		{
+			// 에셋 없으면 즉시 100%
+			if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(1.0f);
+			FinishLoading();
+			return;
+		}
 	}
-	else
-	{
-		if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
-	}
+	if (CurrentLoadingWidget) CurrentLoadingWidget->SetLoadingPercent(FinalDisplayPercent);
 }
 
 void ULevelLoadingSubsystem::FinishLoading()
 {
-	UE_LOG(LogTemp, Log, TEXT("[LoadingSystem] 로딩 및 최소 대기 시간 종료. 최종 레벨로 이동합니다."));
-
 	// 타이머 정지
 	if (UWorld* World = GetWorld())
 	{
@@ -186,15 +405,26 @@ void ULevelLoadingSubsystem::FinishLoading()
 	}
 
 	// 상태 플래그 해제
-	bIsLoadingInProgress = false;
-
-	// [중요] 위젯을 수동으로 지우지 않음!
-	// OpenLevel이 호출되는 찰나에 배경이 비치는 것을 방지하기 위함.
-	// 레벨이 바뀌면 위젯은 자동으로 파괴(GC)됩니다.
 	CurrentLoadingWidget = nullptr;
 
-	// 최종 레벨로 이동
 	UGameplayStatics::OpenLevel(this, TargetLevelName);
+}
 
+void ULevelLoadingSubsystem::NotifyDisappearFinished()
+{
+	// Anim_Disappear 완료 → 위젯 제거, 끝
+	if (CurrentLoadingWidget)
+	{
+		CurrentLoadingWidget->RemoveFromParent();
+		CurrentLoadingWidget = nullptr;
+	}
+	bIsLoadingInProgress = false;
+	CurrentPhase = ELoadingPhase::None;
 }
 #pragma endregion 내부 로직
+
+void ULevelLoadingSubsystem::ExecuteFinalTransition()
+{
+	CurrentLoadingWidget = nullptr;
+	UGameplayStatics::OpenLevel(this, TargetLevelName);
+}

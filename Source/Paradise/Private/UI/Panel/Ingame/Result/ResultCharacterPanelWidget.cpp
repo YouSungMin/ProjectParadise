@@ -16,13 +16,13 @@ void UResultCharacterPanelWidget::UpdateCharacterSlots(const TArray<FResultChara
 {
 	if (!Container_Slots)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ResultPanel] Container_Slots가 바인딩되지 않았습니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [ResultPanel] Container_Slots가 바인딩되지 않았습니다!"));
 		return;
 	}
 
 	if (!SlotWidgetClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [ResultPanel] SlotWidgetClass가 설정되지 않았습니다!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [ResultPanel] SlotWidgetClass가 설정되지 않았습니다!"));
 		return;
 	}
 
@@ -55,6 +55,6 @@ void UResultCharacterPanelWidget::UpdateCharacterSlots(const TArray<FResultChara
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[ResultPanel] %d개의 캐릭터 슬롯 갱신 완료."), InCharacterDataList.Num());
+	//UE_LOG(LogTemp, Log, TEXT("[ResultPanel] %d개의 캐릭터 슬롯 갱신 완료."), InCharacterDataList.Num());
 }
 #pragma endregion 로직 구현

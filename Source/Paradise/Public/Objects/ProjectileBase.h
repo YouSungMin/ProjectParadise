@@ -6,11 +6,12 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/ObjectPoolInterface.h"
 #include "GameplayEffectTypes.h"
+#include "Data/Structs/CombatTypes.h"
 #include "ProjectileBase.generated.h"
 
 
 class USphereComponent;
-class UStaticMeshComponent;
+class UNiagaraComponent;
 class UProjectileMovementComponent;
 
 
@@ -36,9 +37,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SetDamageSpecHandle(const FGameplayEffectSpecHandle & InSpecHandle);
 
-	/** 사거리(비행 거리)와 반경(판정 크기)을 적용합니다. */
+	/** @brief 투사체의 정보를 적용하는 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed);
+	void ApplyCombatData(float InAttackRange, float InAttackRadius, const FProjectileStats& InProjStats);
+
+	/** @brief 내부 데미지 적용 헬퍼 함수 */
+	void ApplyDamageToTarget(AActor* TargetActor);
 
 protected:
 	// =========================================================================
@@ -46,11 +50,13 @@ protected:
 	// =========================================================================
 	/** @brief 적과 겹쳤을 때(Overlap) 데미지를 주고 풀로 돌아가는 함수 */
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	/** @brief 타이머 만료 또는 충돌 시 스스로 풀로 돌아가는 헬퍼 함수 */
 	void ReturnSelfToPool();
 
+	/** @brief 적합한 타겟인지 검사하는 함수 */
+	bool IsValidTarget(AActor* OtherActor);
 protected:
 	// =========================================================================
 	// 컴포넌트
@@ -60,9 +66,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> SphereComp;
 
-	/** @brief 투사체의 외형 (화살, 파이어볼 등) */
+	// @brief 투사체의 뼈대 외형을 보여줄 스태틱 메시 (구, 화살 등)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> MeshComp;
+	TObjectPtr<class UStaticMeshComponent> StaticMeshComp;
+
+	/** @brief 투사체의 외형 (나이아가라 이펙트) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UNiagaraComponent> NiagaraComp;
 
 	/** @brief 투사체의 이동 로직을 담당 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -76,7 +86,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float LifeTime = 3.0f;
 
-private:
+	UPROPERTY()
+	FProjectileStats CachedProjStats;
+
+	int32 CurrentPierceCount = 0;
+
+	/** @brief 중복 타격 방지용 명단 */
+	UPROPERTY()
+	TSet<AActor*> HitActors;
+
 	/** @brief 배달해야 할 데미지 택배 상자 */
 	FGameplayEffectSpecHandle DamageSpecHandle;
 

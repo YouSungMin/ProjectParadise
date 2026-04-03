@@ -14,7 +14,9 @@ class UParadiseSquadFormationWidget;
 class UParadiseGameInstance;
 class UParadiseEnemyIconWidget;
 class ALobbyPlayerController;
+class UParadiseResourceWarningWidget;
 #pragma endregion 전방 선언
+
 
 /** @brief 상세 팝업이 닫힐 때(Close 또는 Formation 이동 등) 부모에게 알림 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageDetailClosed);
@@ -63,10 +65,18 @@ private:
 
 	/** @brief 현재 편성된 스쿼드 데이터를 서브시스템에서 가져와 프리뷰 UI에 세팅합니다. */
 	void SetupSquadPreview();
+
+	/** @brief 효과음 재생 후 실제 레벨 전환을 실행합니다. */
+	void ExecuteBattleTransition();
 #pragma endregion 내부 로직
 
 #pragma region UI 컴포넌트
 protected:
+	//0324 김성현 스테이지 진입 불가 경고 팝업 추가
+ 	/** @brief 진입 불가 시 띄워줄 통합 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseResourceWarningWidget> Widget_ResourceWarning = nullptr;
+
 	/** @brief 기존 편성창 위젯 재활용 (장비 탭 숨김 처리용 플래그 필요) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSquadFormationWidget> UI_SquadPreview = nullptr;
@@ -95,6 +105,7 @@ protected:
 	TSubclassOf<UParadiseEnemyIconWidget> EnemyIconClass = nullptr;
 #pragma endregion UI 컴포넌트
 
+#pragma region 내부 데이터
 private:
 	/** @brief 현재 선택된 스테이지 ID 캐싱 */
 	FName CachedStageID = NAME_None;
@@ -104,4 +115,8 @@ private:
 
 	/** @brief 메뉴 전환을 위한 로비 컨트롤러 캐싱 (O(1) 속도 보장) */
 	TWeakObjectPtr<ALobbyPlayerController> CachedLobbyPC = nullptr;
+
+	/** @brief 효과음 재생 후 레벨 전환 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_BattleTransition;
+#pragma endregion 내부 데이터
 };

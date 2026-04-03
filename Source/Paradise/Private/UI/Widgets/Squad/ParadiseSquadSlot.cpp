@@ -68,6 +68,9 @@ void UParadiseSquadSlot::InitSlot(int32 InSlotIndex)
 
 void UParadiseSquadSlot::UpdateSlot(const FSquadItemUIData& InData)
 {
+	// 드래그 앤 드롭을 위해 들어온 데이터를 캐싱한다
+	CachedData = InData;
+
 	// ID가 없으면 비어있는 슬롯으로 간주
 	bIsEmpty = InData.ID.IsNone();
 

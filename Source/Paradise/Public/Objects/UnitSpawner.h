@@ -46,6 +46,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TSubclassOf<class AUnitBase> UnitClass;
 
+	// 보스/캐스터 몬스터용
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	TSubclassOf<class ASkillCasterUnit> SkillCasterClass;
+
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	FVector SpawnExtent = FVector(500.f, 500.f, 0.f);
 
@@ -62,6 +66,7 @@ protected:
 	int32 CurrentWaveIndex = 0;
 	int32 CurrentSpawnCountInWave = 0;
 	FName EnemyRowName;
+
 
 	void SpawnUnit();
 	FVector GetRandomSpawnLocation();

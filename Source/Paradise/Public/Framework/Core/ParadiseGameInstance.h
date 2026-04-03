@@ -30,6 +30,18 @@ public:
 
 	virtual void Shutdown() override;
 
+#pragma region 디버그 함수 
+
+#if WITH_EDITOR
+	// 특정 폴더의 모든 스켈레탈 메쉬를 검사하여 스케일 0인 뼈(지뢰)를 찾아내는 디버그 함수
+	// 게임 중 콘솔 창(~ 키)에 'CheckMeshScale' 이라고 치면 실행됩니다.
+	UFUNCTION(Exec)
+	void CheckMeshScale(FString FolderPath = TEXT("/Game/External_Assets/ScaledPlayerMesh"));
+#endif
+
+#pragma endregion 디버그 함수 
+
+
 #pragma region 게임 데이터 저장 및 로드
 
 public:
@@ -46,6 +58,10 @@ public:
 
 	// 기본 슬롯 이름
 	const FString DefaultSaveSlot = TEXT("SaveSlot_01");
+
+private:
+	/** @brief 로드 성공 체크용 변수 */
+	bool bIsGameDataLoaded = false;
 
 #pragma endregion 게임 데이터 저장 및 로드
 
@@ -165,10 +181,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.WeaponStats"))
 	TObjectPtr<class UDataTable> WeaponStatsDataTable = nullptr;
 
-	/*스킬 데미지 적용에 사용할 스탯 데이터 테이블 */
-	UPROPERTY(EditDefaultsOnly, Category = "Squad|Equipment", meta = (RowType = "WeaponStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.ActionStats"))
-	TObjectPtr<class UDataTable> ActionStatsDataTable = nullptr;
-
 	//스테이지 데이터 테이블
 	UPROPERTY(EditDefaultsOnly, Category = "Squad|Stage", meta = (RowType = "StatgeStats", RequiredAssetDataTags = "RowStructure=/Script/Paradise.StatgeStats"))
 	TObjectPtr<class UDataTable> StatgeStatsDataTable = nullptr;
@@ -193,6 +205,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Growth", meta = (RowType = "CharacterAwakenData", RequiredAssetDataTags = "RowStructure=/Script/Paradise.CharacterAwakenData"))
 	TObjectPtr<class UDataTable> CharacterAwakenDataTable = nullptr;
 
+	//가챠시스템 데이터 테이블
+
+	/** @brief 기획자가 설정한 뽑기(가챠) 풀 데이터 테이블 */
+	UPROPERTY(EditDefaultsOnly, Category = "Squad|Gacha", meta = (RowType = "GachaPoolRow", RequiredAssetDataTags = "RowStructure=/Script/Paradise.GachaPoolRow"))
+	TObjectPtr<class UDataTable> GachaPoolDataTable = nullptr;
+
+	/** @brief 전체적인 UI 효과음들 데이터 에셋 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Audio")
+	TObjectPtr<class UParadiseFXAudioData> GlobalAudioData;
+
+	/** @brief 오디오 볼륨 제어 설정 데이터 에셋 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|Audio")
+	TObjectPtr<class UParadiseAudioConfigData> AudioConfigData = nullptr;
 public:
 
 #pragma region 인벤토리 

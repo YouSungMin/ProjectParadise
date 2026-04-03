@@ -1,0 +1,11 @@
+---,ActionName,ActionDescription,DamageMultiplier,AttackRange,AttackRadius,ForwardOffset,Cooldown,ManaCost,TargetFilter,BuffDuration,AnimPlayRate,ProjectileDataHandle
+Balrog_Pat1,,,1,900,40,0,10,0,Enemy,0,1,"(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/DT_ProjectileStats.DT_ProjectileStats'"",RowName=""Spread_3Way"")"
+Balrog_Pat2,,,1,900,40,0,20,0,Enemy,0,1,"(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/DT_ProjectileStats.DT_ProjectileStats'"",RowName=""Spread_5Way"")"
+Bearking_Pat1,,,1,50,100,0,20,0,Enemy,0,1,"(DataTable=None,RowName="""")"
+Bearking_Pat2,,,1,100,200,0,10,0,Enemy,0,1,"(DataTable=None,RowName="""")"
+GuardianTreant_Pat1,,,1,100,40,50,15,0,Enemy,0,1,"(DataTable=None,RowName="""")"
+GuardianTreant_Pat2,,,1,100,40,50,20,0,Friendly,0,1,"(DataTable=None,RowName="""")"
+Megaron_Pat1,,,1,100,40,50,10,0,Enemy,0,1,"(DataTable=None,RowName="""")"
+Megaron_Pat2,,,1,600,40,50,20,0,Enemy,0,1,"(DataTable=None,RowName="""")"
+Foxhound_Pat1,,,1,600,40,50,20,0,Friendly,0,1,"(DataTable=None,RowName="""")"
+Foxhound_Pat2,,,1,600,40,50,20,0,Enemy,0,1,"(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/DT_ProjectileStats.DT_ProjectileStats'"",RowName=""Spread_3Way"")"

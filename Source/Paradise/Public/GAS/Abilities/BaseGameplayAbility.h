@@ -57,8 +57,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Effect")
 	FGameplayEffectSpecHandle MakeSpecHandle(TSubclassOf<UGameplayEffect> EffectClass, float Level = 1.0f);
 
+	/** @brief 어빌리티 시작 시 캐릭터에게 현재 사용 중인 스킬 인덱스를 알립니다. */
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+
+	/** @brief 어빌리티 종료 시 캐릭터의 스킬 시전 상태를 초기화(-1)합니다. */
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+	/** @brief 어빌리티 발동 조건을 검사합니다. (마나, 쿨타임 및 궁극기 중복 사용 방지) */
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const override;
+
 	/**
-	 * @brief 생성된 스펙 핸들을 타겟 액터에게 적용합니다. (택배 배송)
+	 * @brief 생성된 스펙 핸들을 타겟 액터에게 적용합니다.
 	 * * @param TargetActor 이펙트를 맞을 대상 액터.
 	 * @param SpecHandle MakeSpecHandle로 생성한 핸들.
 	 */
@@ -74,6 +83,10 @@ public:
 	/** @brief 코스트(마나)를 실제로 깎는 함수 */
 	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 protected:
+
+	/** @brief 현재 어빌리티 실행자의 카메라 매니저를 캐싱/반환하는 헬퍼 함수 */
+	class AParadiseCameraManager* GetParadiseCameraManager() const;
+
 	/**
 	 * @brief 몽타주를 재생하고 종료 콜백(OnMontageCompleted)을 자동으로 연결해주는 헬퍼 함수
 	 * @param MontageToPlay 재생할 몽타주
@@ -105,10 +118,34 @@ protected:
 	 */
 	UFUNCTION()
 	virtual void OnMontageCompleted();
+
+	/**
+	 * @brief (안전용) CheckCost, ApplyCooldown 등 CDO에서 호출될 때 사용하는 함수입니다.
+	 * 멤버 변수를 절대 수정하지 않고, 즉석에서 인터페이스를 통해 데이터를 가져옵니다.
+	 */
+	FCombatActionData GetCombatDataFromActorInfo(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle Handle) const;
 private:
 	/** @brief 데이터를 이미 가져왔는지 확인하는 플래그 */
 	bool bIsDataCached = false;
 
 	/** @brief 한 번 가져온 데이터를 저장해두는 변수 */
+	UPROPERTY()
 	FCombatActionData CachedCombatData;
+
+	// [추가] 03/23 담당자: 최지원, 공격/스킬/궁극기 입력시 조이스틱 이동 토글 추가 
+	//0326 - 플레이어 차원에서 이동 막기 구현 완료
+
+	/**
+	 * @brief 어빌리티 시작/종료 시 조이스틱 이동을 잠그거나 해제합니다. (SRP: 이동 차단 책임)
+	 * @param ActorInfo 어빌리티 액터 정보 (PlayerController 접근용)
+	 * @param bLocked true면 이동 차단, false면 이동 재개
+	 */
+	//void SetJoystickLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked);
+
+	/**
+	 * @brief 어빌리티 시작/종료 시 다른 액션 버튼들의 조작을 차단/해제합니다. (SRP: 입력 차단 책임)
+	 * @param ActorInfo 어빌리티 액터 정보
+	 * @param bLocked true면 타 버튼 잠금, false면 잠금 해제
+	 */
+	void SetActionButtonsLocked(const FGameplayAbilityActorInfo* ActorInfo, bool bLocked);
 };

@@ -41,6 +41,7 @@ namespace SquadTabs
 	const int32 Weapon = 1;
 	const int32 Armor = 2;
 	const int32 Unit = 3;
+	const int32 Misc = 4;
 }
 #pragma endregion 열거형 정의
 
@@ -92,5 +93,9 @@ struct FSquadItemUIData
 	/** @brief 교체를 위해 선택된 상태인지 여부 (인벤토리 하이라이트용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsSelected = false;
+
+	/** @brief 도감용: 유저가 이 항목을 획득(보유)했는지 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsOwned = true; // 기본값은 true (인벤토리에서는 다 보유한 것만 넘기니까)
 };
 #pragma endregion UI 데이터 구조체

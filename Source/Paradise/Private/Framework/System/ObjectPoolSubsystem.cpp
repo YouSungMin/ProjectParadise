@@ -3,6 +3,7 @@
 
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Interfaces/ObjectPoolInterface.h"
+#include "Paradise/Paradise.h"
 
 AActor* UObjectPoolSubsystem::SpawnPooledActor(UClass* Class, FVector location,
 	FRotator rotation, AActor* Owner, APawn* Instigator)
@@ -20,8 +21,8 @@ AActor* UObjectPoolSubsystem::SpawnPooledActor(UClass* Class, FVector location,
 		if (IsValid(Candidate))
 		{
 			PooledActor = Candidate;
-			UE_LOG(LogTemp, Warning, TEXT("♻️ [ObjectPool] 재사용 성공 (Reuse): %s (남은 개수: %d)"),
-				*PooledActor->GetName(), PoolQueue.Pool.Num());
+			/*UE_LOG(LogParadiseObjectPool, Warning, TEXT("♻️ [ObjectPool] 재사용 성공 (Reuse): %s (남은 개수: %d)"),
+				*PooledActor->GetName(), PoolQueue.Pool.Num());*/
 			break;
 		}
 	}
@@ -37,8 +38,8 @@ AActor* UObjectPoolSubsystem::SpawnPooledActor(UClass* Class, FVector location,
 
 		if (PooledActor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("✨ [ObjectPool] 신규 생성 (New Spawn): %s"),
-				*PooledActor->GetName());
+			/*UE_LOG(LogParadiseObjectPool, Warning, TEXT("✨ [ObjectPool] 신규 생성 (New Spawn): %s"),
+				*PooledActor->GetName());*/
 		}
 	}
 	else
@@ -93,8 +94,8 @@ void UObjectPoolSubsystem::PreSpawnPool(UClass* Class, UWorld* World, int32 Coun
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[ObjectPool] %s 클래스 %d개 사전 스폰(Pre-spawn) 완료!"), *Class->GetName(), Count);
-}
+	UE_LOG(LogParadiseObjectPool, Log, TEXT("[ObjectPool] %s 클래스 %d개 사전 스폰(Pre-spawn) 완료!"), *Class->GetName(), Count);
+}//
 #pragma endregion 풀 초기화 구현
 
 void UObjectPoolSubsystem::ReturnToPool(AActor* InActor)
@@ -105,15 +106,15 @@ void UObjectPoolSubsystem::ReturnToPool(AActor* InActor)
 		}
 		else {
 			InActor->Destroy();
-			UE_LOG(LogTemp, Error, TEXT("IObjectPoolInterface : 인터페이스 구현안되있음"));
+			//UE_LOG(LogParadiseObjectPool, Error, TEXT("IObjectPoolInterface : 인터페이스 구현안되있음"));
 			return;
 		}
 
 		FObjectPoolQueue& poolQueue = PoolMap.FindOrAdd(InActor->GetClass());
 		poolQueue.Pool.Push(InActor);
 
-		UE_LOG(LogTemp, Warning, TEXT("📥 [ObjectPool] 반납 완료 (Return): %s (현재 보유량: %d)"),
-			*InActor->GetName(), poolQueue.Pool.Num());
+		/*UE_LOG(LogParadiseObjectPool, Warning, TEXT("📥 [ObjectPool] 반납 완료 (Return): %s (현재 보유량: %d)"),
+			*InActor->GetName(), poolQueue.Pool.Num());*/
 	}
 
 }

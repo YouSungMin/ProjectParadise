@@ -15,7 +15,11 @@ class UTexture2D;
 #pragma endregion 전방 선언
 
 // 쿨타임이 없을 때 스킬 사용을 부모에게 요청하는 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillActionRequested);
+
+//0317 - //0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillPressed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillReleased);
 
 /**
  * @class USkillSlotWidget
@@ -34,7 +38,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 public:
-#pragma region 데이터 업데이트
+#pragma region 외부 인터페이스
 	/**
 	 * @brief 스킬 슬롯의 정보를 갱신합니다.
 	 * @param InIconTexture 교체할 스킬 아이콘 텍스처입니다.
@@ -50,7 +54,34 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void RefreshCooldown(float CurrentTime, float MaxTime);
-#pragma endregion 데이터 업데이트
+
+	/**
+	 * @brief 마나 상태에 따라 스킬 사용 가능 여부와 시각적 효과를 갱신합니다.
+	 * @param bAffordable 마나가 충분한지 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetManaAffordable(bool bAffordable);
+#pragma endregion 외부 인터페이스
+
+#pragma region 단축키 데이터
+public:
+	/**
+	 * @brief 키보드/마우스 모드일 때 단축키 텍스트의 가시성을 변경합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void SetShortcutTextVisibility(bool bShow);
+
+protected:
+	/** @brief 기획자가 에디터에서 설정할 단축키 이미지 (예: "K", "L" 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI|Shortcut")
+	TSoftObjectPtr<UTexture2D> ShortcutKeyImage = nullptr;
+
+private:
+	/** @brief 단축키를 화면에 그려줄 이미지  */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Img_Shortcut = nullptr;
+#pragma endregion 단축키 데이터
 
 #pragma region Getter
 	/**
@@ -64,19 +95,33 @@ public:
 private:
 #pragma region 내부 로직 (최적화)
 	/** @brief 버튼 클릭 시 호출될 델리게이트 바인딩 함수입니다. */
-	void OnSkillButtonClicked();
+	//void OnSkillButtonClicked();
 
 	/** @brief 타이머에 의해 주기적으로 호출되어 쿨타임 UI를 갱신합니다. */
 	void UpdateCooldownVisual();
 
 	/** @brief 쿨타임 UI를 비활성화하고 초기 상태로 되돌립니다. */
 	void ClearCooldownVisual();
+
+	/** @brief 버튼 눌림/뗌 처리 */
+	UFUNCTION()
+	void OnSkillButtonPressed();
+
+	UFUNCTION()
+	void OnSkillButtonReleased();
 #pragma endregion 내부 로직 (최적화)
 
 public:
 	/** @brief 스킬 사용 조건이 충족되었을 때 발생 */
-	UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
-	FOnSkillActionRequested OnSkillActionRequested;
+	/*UPROPERTY(BlueprintAssignable, Category = "Paradise|Events")
+	FOnSkillActionRequested OnSkillActionRequested;*/
+
+	//0317 김성현 - 어빌리티 사거리 및 사용 취소등의 기능 구현을 위한 로직 변경
+	UPROPERTY(BlueprintAssignable, Category = "Skill Events")
+	FOnSkillPressed OnSkillPressed;
+
+	UPROPERTY(BlueprintAssignable, Category = "Skill Events")
+	FOnSkillReleased OnSkillReleased;
 
 private:
 #pragma region 쿨타임 설정
@@ -106,14 +151,36 @@ private:
 	TObjectPtr<UTextBlock> Text_CooldownTime = nullptr;
 #pragma endregion 위젯 바인딩
 
-#pragma region 캡슐화 데이터
+#pragma region 내부 상태
 	/** @brief 현재 스킬의 최대 쿨타임 (비율 계산용) */
 	float MaxCooldown = 0.f;
 
 	/** @brief 현재 남은 쿨타임 시간 */
 	float CurrentCooldown = 0.f;
 
+	/** @brief 마나 등 코스트 지불 가능 여부 */
+	bool bIsManaAffordable = true;
+
 	/** @brief 쿨타임 갱신용 타이머 핸들 */
 	FTimerHandle CooldownTimerHandle;
 #pragma endregion 캡슐화 데이터
+
+#pragma region 내부 상태
+protected:
+	/**
+	 * @brief 스킬 버튼 기본 아이콘 (폴백 이미지)
+	 * @details 데이터 테이블에 스킬 아이콘이 연동되기 전까지 표시됩니다.
+	 *          WBP_SkillSlotWidget 디테일 패널 Paradise|UI|Skill 카테고리에서 할당해주세요.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	TObjectPtr<UTexture2D> Tex_DefaultSkillIcon = nullptr;
+
+	/** @brief 버튼 눌렸을 때 아이콘 틴트 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	FLinearColor PressedTintColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+	/** @brief 버튼 기본 상태 아이콘 틴트 */
+	UPROPERTY(EditAnywhere, Category = "Paradise|UI|Skill")
+	FLinearColor NormalTintColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+#pragma endregion 데이터 드리븐 설정
 };

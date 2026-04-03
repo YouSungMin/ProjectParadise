@@ -14,10 +14,25 @@ class AFamiliarSpawner;
 class USquadSubsystem;	// [추가] 02/25 담당자:최지원
 class UTexture2D;
 
+//0305 김성현 - 캐릭터 리스폰 로직 추가
+/** 소환 타입 Enum */
+UENUM(BlueprintType)
+enum class ESummonCardType : uint8
+{
+	Familiar           UMETA(DisplayName = "일반 퍼밀리어 소환"),
+	CharacterRespawn   UMETA(DisplayName = "캐릭터 부활")
+};
+
+
 USTRUCT(BlueprintType)
 struct FSummonSlotInfo
 {
 	GENERATED_BODY()
+
+	//0305 김성현 - 캐릭터 리스폰 로직 추가
+	// 이 카드가 일반 소환인지 부활인지 판별
+	UPROPERTY(BlueprintReadOnly, Category = "Summon")
+	ESummonCardType CardType = ESummonCardType::Familiar;
 
 	/** @brief 데이터 테이블 행 이름 (유닛 ID) */
 	UPROPERTY(BlueprintReadOnly, Category = "Summon")
@@ -25,11 +40,16 @@ struct FSummonSlotInfo
 
 	/** @brief 소환에 책정된 가격 */
 	UPROPERTY(BlueprintReadOnly, Category = "Summon")
-	int32 FamiliarCost = 0;
+	int32 CardCost = 0;
 
 	/** @brief UI 아이콘 (Assets 테이블에서 로드해서 UI에 전달) */
 	UPROPERTY(BlueprintReadOnly, Category = "Summon")
-	TSoftObjectPtr<UTexture2D> FamiliarIcon = nullptr; // FUnitBaseAssets에 Icon이 있다고 가정하거나 추가 필요
+	TSoftObjectPtr<UTexture2D> CardIcon = nullptr; // FUnitBaseAssets에 Icon이 있다고 가정하거나 추가 필요
+
+	//0305 김성현 - 캐릭터 리스폰 로직 추가
+	//캐릭터 부활 카드일 경우, 부활시킬 캐릭터의 스쿼드 인덱스 저장
+	UPROPERTY(BlueprintReadOnly, Category = "Summon")
+	int32 CharacterIndex = -1;
 
 	/** @brief 빈 슬롯인지 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = "Summon")
@@ -39,6 +59,8 @@ struct FSummonSlotInfo
 /** @brief 슬롯 정보가 갱신되었을 때 UI에 알리는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotsUpdated, const TArray<FSummonSlotInfo>&, Slots);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotConsumed, int32, ConsumedIndex);
+
 /**
  * @class UFamiliarSummonComponent
  * @brief 유닛 소환 시스템을 관리하는 컴포넌트
@@ -46,18 +68,33 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSummonSlotsUpdated, const TArray<
  * - 5개의 랜덤 유닛 슬롯을 관리.
  * - CostManageComponent와 연동하여 유닛 소환 시 코스트 차감 및 잔액 확인.
  */
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PARADISE_API UFamiliarSummonComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
+	// 🚨 2. 기존 델리게이트들 밑에 '소모 방송용 델리게이트'를 추가합니다.
+	/** @brief 특정 슬롯이 소모되었을 때 UI 애니메이션을 위해 인덱스를 방송합니다. */
+	UPROPERTY(BlueprintAssignable, Category = "Summon")
+	FOnSummonSlotConsumed OnSummonSlotConsumed;
+
+public:
 	UFamiliarSummonComponent();
 
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
+	//0305 김성현 - 캐릭터 리스폰 로직 함수 추가
+	/**
+	 * @brief 캐릭터가 사망했을 때, 소환 대기열 맨 앞에 '부활 카드'를 강제 삽입합니다.
+	 * @param TargetCharacterIndex 부활시킬 캐릭터의 스쿼드 배열 인덱스
+	 * @param RespawnCost 부활에 필요한 코스트 비용
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Summon")
+	void InjectCharacterRespawnCard(int32 TargetCharacterIndex, int32 RespawnCost, TSoftObjectPtr<UTexture2D> InCardIcon);
+
 	/**
 	* @brief 슬롯 데이터를 초기화하고 5개를 랜덤으로 채우는 함수(게임 시작 시)
 	*/
@@ -76,6 +113,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Summon")
 	FOnSummonSlotsUpdated OnSummonSlotsUpdated;
 
+
 public:
 	//스포너 등록 함수
 	void RegisterSpawner(AFamiliarSpawner* NewSpawner);
@@ -86,11 +124,6 @@ protected:
 	 */
 	UFUNCTION()
 	void ConsumeSpecificSlot(int32 SlotIndex);
-
-	///** @brief 랜덤 유닛을 하나 생성하여 슬롯 정보를 반환함 
-	//* @return 생성된 슬롯 정보 구조체 -> RefreshAllSlots함수에서 반복문으로 배열 생성
-	//*/
-	//FSummonSlotInfo GenerateRandomSlot(UDataTable* StatsTable, UDataTable* AssetsTable);
 
 	/** * @brief SquadSubsystem에서 편성 정보를 가져와 데이터 테이블 조회를 선행하여 캐싱합니다.
 	 * @details 인게임 프레임 드랍을 막기 위한 필수 최적화 과정입니다.

@@ -1,10 +1,39 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/Enums/GameEnums.h"
 #include "CombatTypes.generated.h"
 
 class UAnimMontage;
 class UGameplayEffect;
+class UGameplayAbility;
+
+/**
+ * @struct FCombatAbilitySetup
+ * @brief 하나의 전투 행동(평타, 스킬 등)에 필요한 필수 GAS 로직 세트
+ * @details 어빌리티(로직), 이펙트(결과), 투사체(수단)를 하나로 묶어 관리합니다.
+ */
+USTRUCT(BlueprintType)
+struct FCombatAbilitySetup
+{
+	GENERATED_BODY()
+
+public:
+	/** @brief 실행할 게임플레이 어빌리티 (GA) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	/** @brief 적중 시 적에게 적용할 데미지/상태이상 이펙트 (GE) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<UGameplayEffect> EffectClass;
+
+	/** * @brief 발사할 투사체 액터 클래스
+	 * @note 근거리 공격이나 즉발형 스킬일 경우 비워둡니다 (None).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Logic")
+	TSubclassOf<AActor> ProjectileClass;
+};
+
 
 /**
  * @struct FActionStatRow
@@ -14,6 +43,15 @@ USTRUCT(BlueprintType)
 struct FActionStats : public FTableRowBase
 {
 	GENERATED_BODY()
+
+
+	/** @brief UI에 표시될 스킬 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|UI")
+	FText ActionName;
+
+	/** @brief UI에 표시될 스킬 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|UI")
+	FText ActionDescription;
 
 	/** @brief 데미지 배율 (기본 1.0) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
@@ -50,11 +88,58 @@ struct FActionStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
 	float ManaCost = 0.0f;
 
-	/** * @brief 투사체 비행 속도
-	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
-	float ProjectileSpeed;
+	/** @brief 스킬의 적용 대상 (적군인지 아군인지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	ETargetFilter TargetFilter = ETargetFilter::Enemy;
+
+	/** @brief 버프/디버프 지속 시간 (0이면 즉발형) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	float BuffDuration = 0.0f;
+
+	/** @brief 애니메이션 기본 재생 속도 배율, 기본값은 1.0입니다.*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action")
+	float AnimPlayRate = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|Extra")
+	FDataTableRowHandle ProjectileDataHandle;
+};
+
+/**
+ * @struct FProjectileStats
+ * @brief 원거리 스킬(투사체)에만 사용되는 전용 전투 수치 데이터 (별도의 엑셀 테이블로 관리)
+ */
+USTRUCT(BlueprintType)
+struct FProjectileStats : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** @brief 한 번에 발사할 투사체 개수 (기본 1발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	int32 ProjectileCount = 1;
+
+	/** @brief 다중 발사 시 퍼지는 총 각도 (예: 부채꼴 45도) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float SpreadAngle = 0.0f;
+
+	/** @brief 투사체 비행 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileSpeed = 1500.0f;
+
+	/** @brief 투사체 관통 수 (0이면 단일 타겟, 1 이상이면 관통) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	int32 MaxPierceCount = 0; // 0이면 단일 타겟, 1 이상이면 관통
+
+	/** @brief 충돌 시 폭발 범위 (0이면 폭발 없음, 0보다 크면 광역 폭발) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Hit")
+	float ExplosionRadius = 0.0f;
+
+	/** @brief 발사 시 딜레이 (0이면 동시 발사(샷건), 0.1 등 값이 있으면 연사(머신건) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float BurstDelay = 0.0f;
+
+	/** @brief 랜덤 탄퍼짐 오차 (예: 5.0f면 위아래좌우 5도 오차 발생) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile|Pattern")
+	float RandomSpreadAngle = 0.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -65,81 +150,52 @@ struct FCombatActionData
 public:
 	FCombatActionData()
 		: MontageToPlay(nullptr)
-		, DamageEffectClass(nullptr)
-		, DamageMultiplier(1.0f)
+		, EffectClass(nullptr)
 		, ProjectileClass(nullptr)
 	{
 	}
 
-	/** * @brief 재생할 공격 몽타주
+	/* @brief 재생할 공격 몽타주
 	 * @details 플레이어: 무기 에셋의 AttackMontage / 몬스터: 본인의 AttackMontage
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TObjectPtr<UAnimMontage> MontageToPlay;
+	TObjectPtr<UAnimMontage> MontageToPlay = nullptr;
 
-	/** * @brief 적용할 데미지 GE 클래스
+	/* @brief 적용할 데미지 GE 클래스
 	 * @details 데미지 계산 공식(ExecutionCalculation)이 연결된 GE입니다.
 	 * (예: GE_DamageStandard, GE_FireDamage)
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
-
-	/** * @brief 데미지 계수 (Damage Multiplier)
-	 * @details 기본값 1.0.
-	 * 평타는 1.0, 스킬은 1.5, 궁극기는 3.0 등으로 설정하여 데미지 공식을 조절합니다.
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat")
-	float DamageMultiplier;
-
-	// =====================================
-	//  타격 판정 공용 스탯 (Hit Check)
-	// =====================================
-
-	/** * @brief 공격 사거리 (길이/Reach)
-	 * @details
-	 * - 근거리: 전방으로 무기가 닿는 최대 거리 (검=100, 창=300)
-	 * - 원거리: AI의 타겟팅 인식 거리 또는 투사체의 최대 비행 거리
-	 * - 제자리 광역기(Slam): 0으로 설정
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
-	float AttackRange = 150.0f;
-
-	/** * @brief 공격 반경 (두께/넓이)
-	 * @details
-	 * - 근거리: 무기의 두께 (보통 20~50)
-	 * - 제자리 광역기: 폭발 반경 (보통 300~500)
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
-	float AttackRadius = 40.0f;
-
-	/** * @brief 전방 오프셋 (판정 시작점)
-	 * @details 캐릭터 중심에서 앞쪽으로 얼마나 떨어진 곳에서 타격을 시작/폭발시킬 것인가
-	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|HitCheck")
-	float ForwardOffset = 0.0f;
-
-	/** @brief 엑셀에서 읽어온 스킬 쿨타임 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
-	float Cooldown = 0.0f;
-
-	/** @brief 엑셀에서 읽어온 소모되는 마나량 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Stats", meta = (ClampMin = "0.0"))
-	float ManaCost = 0.0f;
+	TSubclassOf<UGameplayEffect> EffectClass = nullptr;
 
 	// =====================================
 	//  원거리 전용 (Ranged)
 	// =====================================
-	/** * @brief 발사할 투사체 클래스
+	/* @brief 발사할 투사체 클래스
 	 * @details 이 값이 비어있으면(None) '근거리(Melee)'로 간주하고, 값이 있으면 '원거리(Ranged)'로 간주합니다.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Ranged")
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<AActor> ProjectileClass =nullptr;
 
-	/** * @brief 투사체 비행 속도 
-	 * @details 이 값이 비어있으면(None) '근거리(Melee), 값이 있으면 '원거리(Ranged)'로 간주합니다.
-	 */
+	// =====================================
+	// 전투 수치 데이터
+	// =====================================
+
+	/** @brief 엑셀(데이터 테이블)에서 개별 액션(평타1, 스킬1, 몬스터공격 등)의 수치를 정의하는 구조체*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
-	float ProjectileSpeed = 0.0f;
+	FActionStats Stats;
+
+	// ==========================================================
+	// 투사체 전용 데이터 캐싱 공간
+	// ==========================================================
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Combat|Stats")
+	FProjectileStats ProjectileStats;
+
+	/** @brief 이 액션이 투사체 데이터를 가지고 있는지(원거리인지) 확인하는 헬퍼 함수 */
+	bool HasProjectileStats() const
+	{
+		return !Stats.ProjectileDataHandle.IsNull();
+	}
 };
 
 

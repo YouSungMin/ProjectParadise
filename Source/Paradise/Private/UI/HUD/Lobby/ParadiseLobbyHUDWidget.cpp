@@ -4,12 +4,19 @@
 #include "UI/HUD/Lobby/ParadiseLobbyHUDWidget.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
 #include "Framework/Core/ParadiseGameInstance.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 #include "Components/WidgetSwitcher.h"
 
+#include "UI/Widgets/Setting/SettingsPopupWidget.h"
+#include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Lobby/ParadiseLobbyTopBarWidget.h"
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
-#include "UI/Widgets/Squad/ParadiseSquadMainWidget.h"
 #include "UI/Widgets/Enhance/ParadiseEnhancePopupWidget.h"
+#include "UI/Widgets/Codex/ParadiseCodexMainWidget.h"
+
+#include "Kismet/GameplayStatics.h"
+
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyHUDWidget::NativeConstruct()
 {
@@ -26,6 +33,30 @@ void UParadiseLobbyHUDWidget::NativeConstruct()
 	// 게임 인스턴스 캐싱 (최적화)
 	CachedGI = Cast<UParadiseGameInstance>(GetGameInstance());
 
+	/** @section 로비 BGM 재생 요청 */
+	if (CachedGI.IsValid())
+	{
+		if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// GameInstance가 미리 들고 있는 전역 오디오 데이터셋에서 로비 BGM을 꺼냅니다 (Data-Driven)
+			if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->BGM_Lobby)
+			{
+				// 이전 음악(타이틀 등)은 자동으로 페이드아웃되고 로비 음악이 재생됩니다.
+				AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
+			}
+		}
+	}
+
+	if (SettingsPopupClass && !SettingsPopupInstance)
+	{
+		SettingsPopupInstance = CreateWidget<USettingsPopupWidget>(GetOwningPlayer(), SettingsPopupClass);
+		if (SettingsPopupInstance)
+		{
+			SettingsPopupInstance->AddToViewport(100); // 팝업이 최상단에 뜨도록 ZOrder 100 부여
+			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
+		}
+	}
+
 	// 초기화 시 None(메인 로비) 상태로 시작
 	UpdateMenuStats(EParadiseLobbyMenu::None);
 }
@@ -40,7 +71,30 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 	// -------------------------------------------------------------------------
 	const bool bIsMainLobby = (InCurrentMenu == EParadiseLobbyMenu::None);
 
-	// TopBar를 숨겨야 하는 메뉴인지 확인 (Squad 포함 필수)
+	if (CachedGI.IsValid())
+	{
+		if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			// 메인 로비로 복귀 시 로비 BGM 재생
+			if (bIsMainLobby)
+			{
+				if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->BGM_Lobby)
+				{
+					AudioMag->PlayBGM(CachedGI->GlobalAudioData->BGM_Lobby);
+				}
+			}
+		}
+	}
+
+	// StageSelect 위젯은 카메라 이동 후 LobbyPlayerController가 뷰포트에 직접 띄웁니다.
+	if (InCurrentMenu == EParadiseLobbyMenu::StageMap)
+	{
+		WBP_TopBar->SetVisibility(ESlateVisibility::Collapsed);
+		WBP_MenuPanel->SetVisibility(ESlateVisibility::Collapsed);
+		Switcher_Content->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
 	const bool bHideTopBar = (
 		InCurrentMenu == EParadiseLobbyMenu::Battle ||
 		InCurrentMenu == EParadiseLobbyMenu::Summon ||
@@ -127,12 +181,28 @@ void UParadiseLobbyHUDWidget::UpdateMenuStats(EParadiseLobbyMenu InCurrentMenu)
 			}
 			EnhanceWidget->RefreshInventory();
 		}
-
+		// [도감창 특수 처리]
+		else if (UParadiseCodexMainWidget* CodexWidget = Cast<UParadiseCodexMainWidget>(TargetWidget))
+		{
+			if (!CodexWidget->OnBackRequested.IsAlreadyBound(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby))
+			{
+				CodexWidget->OnBackRequested.AddDynamic(this, &UParadiseLobbyHUDWidget::HandleBackToMainLobby);
+			}
+		}
 		Switcher_Content->SetActiveWidget(TargetWidget);
 	}
-	else
+	if (InCurrentMenu == EParadiseLobbyMenu::Squad)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[HUD] 위젯 생성 실패! 메뉴: %d"), (int32)InCurrentMenu);
+		// 1. TMap에서 이미 생성/캐싱된 Squad 위젯 포인터를 찾습니다.
+		if (auto* FoundWidget = CreatedMenuWidgets.Find(EParadiseLobbyMenu::Squad))
+		{
+			// 2. 찾아낸 UserWidget을 SquadMainWidget으로 캐스팅합니다.
+			if (UParadiseSquadMainWidget* SquadWidget = Cast<UParadiseSquadMainWidget>(*FoundWidget))
+			{
+				// 3. 카메라 전환 및 3D 모델링 갱신 함수 실행!
+				SquadWidget->OnEnterSquadUI();
+			}
+		}
 	}
 }
 
@@ -144,6 +214,27 @@ void UParadiseLobbyHUDWidget::OnStartCameraMove()
 	if (Switcher_Content) Switcher_Content->SetVisibility(ESlateVisibility::Collapsed);
 
 	// 팁: 애니메이션(Fade Out)을 재생하면 더 고급스럽습니다.
+}
+
+void UParadiseLobbyHUDWidget::ToggleSettingsPopup()
+{
+	// 방어 코드
+	if (!SettingsPopupInstance)
+	{
+		return;
+	}
+
+	// 팝업이 닫혀있는 상태에서 열릴 때만 효과음 재생 (디테일한 UX)
+	if (SettingsPopupInstance->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		if (CachedGI.IsValid() && CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_SettingsOpen)
+		{
+			UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_SettingsOpen);
+		}
+	}
+
+	// 내부 팝업 인스턴스에 토글 역할 위임 (단일 책임 원칙)
+	SettingsPopupInstance->ToggleSettings();
 }
 
 void UParadiseLobbyHUDWidget::HandleBackToMainLobby()

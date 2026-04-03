@@ -3,6 +3,7 @@
 
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/System/ParadiseSaveGame.h"
+#include "Paradise/Paradise.h"
 
 void UStageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -10,7 +11,7 @@ void UStageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	UnlockStage(FName("Stage1_1"));
 
-	UE_LOG(LogTemp, Log, TEXT("🗺️ [StageSubsystem] 초기화 완료 및 기본 스테이지(1-1) 해금 적용"));
+	//UE_LOG(LogParadiseStage, Log, TEXT("🗺️ [StageSubsystem] 초기화 완료 및 기본 스테이지(1-1) 해금 적용"));
 }
 
 bool UStageSubsystem::IsStageUnlocked(FName StageID) const
@@ -27,7 +28,7 @@ void UStageSubsystem::UnlockStage(FName StageID)
 	if (!UnlockedStages.Contains(StageID))
 	{
 		UnlockedStages.Add(StageID);
-		UE_LOG(LogTemp, Warning, TEXT("🗺️ [Stage] 새로운 스테이지 해금: %s"), *StageID.ToString());
+		//UE_LOG(LogParadiseStage, Warning, TEXT("🗺️ [Stage] 새로운 스테이지 해금: %s"), *StageID.ToString());
 	}
 }
 
@@ -51,7 +52,7 @@ void UStageSubsystem::RecordStageClearStar(FName StageID, int32 StarCount)
 	if (StarCount > CurrentStar)
 	{
 		StageClearStars.Add(StageID, StarCount); 
-		UE_LOG(LogTemp, Log, TEXT("⭐ [Stage] %s 스테이지 %d별 기록 달성!"), *StageID.ToString(), StarCount);
+		//UE_LOG(LogParadiseStage, Log, TEXT("⭐ [Stage] %s 스테이지 %d별 기록 달성!"), *StageID.ToString(), StarCount);
 	}
 }
 
@@ -68,7 +69,7 @@ void UStageSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 	if (!UnlockedStages.Contains(FName("Stage1_1")))
 	{
 		UnlockStage(FName("Stage1_1"));
-		UE_LOG(LogTemp, Warning, TEXT("🛠️ [Stage] 세이브 파일에 기본 스테이지가 없어 강제로 복구(해금)합니다."));
+		//UE_LOG(LogParadiseStage, Warning, TEXT("🛠️ [Stage] 세이브 파일에 기본 스테이지가 없어 강제로 복구(해금)합니다."));
 	}
 }
 
@@ -81,3 +82,4 @@ void UStageSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj)const
 	SaveGameObj->SavedStageClearStars = StageClearStars;
 	SaveGameObj->SavedMaxClearedStageIndex = MaxClearedStageIndex;
 }
+

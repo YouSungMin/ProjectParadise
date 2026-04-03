@@ -4,6 +4,7 @@
 #include "UI/Widgets/Ingame/CharacterStatusWidget.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayEffectTypes.h"
@@ -22,7 +23,7 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 {
 	if (!InASC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[CharacterStatusWidget] 유효하지 않은 ASC가 전달되어 바인딩을 취소합니다."));
+		//UE_LOG(LogTemp, Warning, TEXT("[CharacterStatusWidget] 유효하지 않은 ASC가 전달되어 바인딩을 취소합니다."));
 		return;
 	}
 
@@ -51,6 +52,11 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 	{
 		PB_HealthBar->SetPercent(CurrentHP / MaxHP);
 	}
+	if (Text_Health)
+	{
+		FString HPString = FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(CurrentHP), FMath::RoundToInt(MaxHP));
+		Text_Health->SetText(FText::FromString(HPString));
+	}
 
 	const float CurrentMP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetManaAttribute());
 	const float MaxMP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
@@ -58,8 +64,13 @@ void UCharacterStatusWidget::BindToASC(UAbilitySystemComponent* InASC)
 	{
 		PB_ManaBar->SetPercent(CurrentMP / MaxMP);
 	}
+	if (Text_Mana)
+	{
+		FString MPString = FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(CurrentMP), FMath::RoundToInt(MaxMP));
+		Text_Mana->SetText(FText::FromString(MPString));
+	}
 
-	UE_LOG(LogTemp, Log, TEXT("[CharacterStatusWidget] ASC 바인딩 및 UI 동기화 완료"));
+	//UE_LOG(LogTemp, Log, TEXT("[CharacterStatusWidget] ASC 바인딩 및 UI 동기화 완료"));
 }
 #pragma endregion 외부 인터페이스 구현
 
@@ -87,29 +98,40 @@ void UCharacterStatusWidget::NativeDestruct()
 #pragma region 어트리뷰트 콜백
 void UCharacterStatusWidget::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-	/** 
-	 * @brief 체력바 업데이트 로직
-	 * @details MaxHealth 값은 고정되어 있다고 가정하거나, 별도의 델리게이트로 감시할 수 있습니다.
-	 */
-	if (PB_HealthBar && CachedASC.IsValid())
+	if (CachedASC.IsValid())
 	{
 		const float MaxHP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
 		if (MaxHP > 0.f)
 		{
-			PB_HealthBar->SetPercent(Data.NewValue / MaxHP);
+			// 프로그레스 바 갱신
+			if (PB_HealthBar) PB_HealthBar->SetPercent(Data.NewValue / MaxHP);
+
+			// ⭐ 체력 텍스트 갱신
+			if (Text_Health)
+			{
+				FString HPString = FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(Data.NewValue), FMath::RoundToInt(MaxHP));
+				Text_Health->SetText(FText::FromString(HPString));
+			}
 		}
 	}
 }
 
 void UCharacterStatusWidget::OnManaChanged(const FOnAttributeChangeData& Data)
 {
-	/** @brief 마나바 업데이트 로직 */
-	if (PB_ManaBar && CachedASC.IsValid())
+	if (CachedASC.IsValid())
 	{
 		const float MaxMP = CachedASC->GetNumericAttribute(UBaseAttributeSet::GetMaxManaAttribute());
 		if (MaxMP > 0.f)
 		{
-			PB_ManaBar->SetPercent(Data.NewValue / MaxMP);
+			// 프로그레스 바 갱신
+			if (PB_ManaBar) PB_ManaBar->SetPercent(Data.NewValue / MaxMP);
+
+			// ⭐ 마나 텍스트 갱신
+			if (Text_Mana)
+			{
+				FString MPString = FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(Data.NewValue), FMath::RoundToInt(MaxMP));
+				Text_Mana->SetText(FText::FromString(MPString));
+			}
 		}
 	}
 }

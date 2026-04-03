@@ -1,46 +1,38 @@
-Name,SummonCost,AttackTypeTag,RoleTypeTag,AttackSpeed,AttackRange,Cooldown,BaseMaxHP,BaseMaxMP,BaseAttackPower,BaseDefense,BaseMoveSpeed,BaseCritRate
-BardFollower,25,Unit.Attack.Melee,Unit.Role.Tanker,0.94,150,1.4,720,0,28.8,30,600,0.05
-CherryBee,15,Unit.Attack.Range,Unit.Role.Dealer,1.25,750,2.3,384,100,48,14,450,0.15
-CupFelice,15,Unit.Attack.Melee,Unit.Role.Dealer,1.05,150,1.4,480,0,48,20,600,0.1
-Dandelion,15,Unit.Attack.Melee,Unit.Role.Dealer,0.83,150,2,480,0,48,20,450,0.1
-DarumaNeko,10,Unit.Attack.Range,Unit.Role.Tanker,1.07,900,1.5,576,100,28.8,21,500,0.05
-Felice,10,Unit.Attack.Range,Unit.Role.Support,0.87,750,1.1,345.6,100,33.6,14,450,0.05
-Firefly,25,Unit.Attack.Melee,Unit.Role.Support,0.88,150,1.9,720,100,42,24,500,0.05
-ForestMacaron,15,Unit.Attack.Melee,Unit.Role.Dealer,1.01,150,1.9,480,0,48,20,450,0.1
-ForestSpirit,15,Unit.Attack.Melee,Unit.Role.Dealer,1.06,150,1.4,480,0,48,20,550,0.1
-Foxhound,10,Unit.Attack.Melee,Unit.Role.Support,1.1,150,2,432,100,33.6,20,600,0.05
-GoldMacaron,25,Unit.Attack.Melee,Unit.Role.Dealer,1.13,150,1.2,800,0,60,24,550,0.15
-Macaron,15,Unit.Attack.Melee,Unit.Role.Dealer,1.28,150,2.5,480,0,48,20,600,0.1
-MageMacaron,10,Unit.Attack.Melee,Unit.Role.Support,1.27,150,1.1,432,100,33.6,20,550,0.05
-MagicPot,15,Unit.Attack.Melee,Unit.Role.Dealer,1.18,150,1.3,480,0,48,20,600,0.1
-MinimiNeko,15,Unit.Attack.Melee,Unit.Role.Dealer,0.91,150,1.9,480,0,48,20,550,0.1
-Mushroom,15,Unit.Attack.Melee,Unit.Role.Dealer,1.13,150,1,480,0,48,20,450,0.1
-Oowl,15,Unit.Attack.Melee,Unit.Role.Dealer,1.21,150,1.5,480,0,48,20,550,0.1
-ShieldMacaron,15,Unit.Attack.Range,Unit.Role.Dealer,1.16,900,1.8,384,100,48,14,450,0.15
-Trumduck,15,Unit.Attack.Range,Unit.Role.Dealer,1.09,900,1.5,384,100,48,14,450,0.15
-TunerFollower,10,Unit.Attack.Range,Unit.Role.Support,1.22,750,1,345.6,100,33.6,14,600,0.05
-Usami,25,Unit.Attack.Melee,Unit.Role.Tanker,1.02,150,2.3,720,0,28.8,30,450,0.05
-Messenger,25,Unit.Attack.Melee,Unit.Role.Tanker,1.22,150,1.2,720,0,28.8,30,450,0.05
-Cannon,10,Unit.Attack.Range,Unit.Role.Support,1.17,750,1.5,345.6,100,33.6,14,550,0.05
-Fly,10,Unit.Attack.Range,Unit.Role.Tanker,1.17,900,1.9,576,100,28.8,21,600,0.05
-Golem,15,Unit.Attack.Range,Unit.Role.Dealer,1.12,900,2.3,384,100,48,14,500,0.15
-FelicisGuard,15,Unit.Attack.Melee,Unit.Role.Dealer,1.11,150,1.5,480,0,48,20,600,0.1
-Clownfish,10,Unit.Attack.Melee,Unit.Role.Support,1.21,150,1.2,432,100,33.6,20,600,0.05
-FanOfDeath,15,Unit.Attack.Range,Unit.Role.Dealer,0.84,750,2.3,384,100,48,14,450,0.15
-CowardTurtle,10,Unit.Attack.Range,Unit.Role.Tanker,1.12,600,2.1,576,100,28.8,21,450,0.05
-Imp,10,Unit.Attack.Melee,Unit.Role.Support,0.97,150,1.6,432,100,33.6,20,600,0.05
-Gemini_Book,25,Unit.Attack.Melee,Unit.Role.Tanker,0.94,150,2.1,720,0,28.8,30,400,0.05
-Turret,10,Unit.Attack.Melee,Unit.Role.Support,1.01,150,1.1,432,100,33.6,20,550,0.05
-Felicis,25,Unit.Attack.Melee,Unit.Role.Tanker,0.95,150,2.4,720,0,28.8,30,500,0.05
-Tacodora,15,Unit.Attack.Melee,Unit.Role.Dealer,1.3,150,2.3,480,0,48,20,450,0.1
-KnightWolfron,25,Unit.Attack.Melee,Unit.Role.Tanker,1.22,150,1.2,720,0,28.8,30,400,0.05
-Leech,15,Unit.Attack.Range,Unit.Role.Dealer,0.95,900,1.8,384,100,48,14,550,0.15
-NetherConnector,10,Unit.Attack.Melee,Unit.Role.Support,1.1,150,2,432,100,33.6,20,500,0.05
-SmashingShrimp,15,Unit.Attack.Melee,Unit.Role.Dealer,1.2,150,1.5,480,0,48,20,450,0.1
-ForestWolfron,25,Unit.Attack.Melee,Unit.Role.Tanker,0.86,150,1.1,720,0,28.8,30,550,0.05
-Anemone,25,Unit.Attack.Melee,Unit.Role.Tanker,1.27,150,2.2,720,0,28.8,30,600,0.05
-MummyMacaron,25,Unit.Attack.Melee,Unit.Role.Tanker,1.05,150,1.7,720,0,28.8,30,450,0.05
-Turtlog,10,Unit.Attack.Melee,Unit.Role.Support,1.21,150,2.2,432,100,33.6,20,500,0.05
-Bat,25,Unit.Attack.Melee,Unit.Role.Dealer,0.84,150,1.2,800,0,60,24,600,0.15
-Mask,25,Unit.Attack.Range,Unit.Role.Tanker,1.21,900,2.4,960,100,36,25.2,400,0.05
-GuardianTreantMini,25,Unit.Attack.Melee,Unit.Role.Tanker,1.23,150,1.9,720,0,28.8,30,400,0.05
+---,AttackTypeTag,RoleTypeTag,RankTypeTag,BasicAttackActionHandle,PatternActionHandles,DisplayName,SummonCost,BaseMaxHP,BaseMaxMP,BaseAttackPower,BaseDefense,BaseMoveSpeed,BaseCritRate
+Anemone,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Anemone"")",,아네모네,25,350,0,35,25,250,0.05
+BardFollower,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""BardFollower"")",,바드의 팬클럽,25,620,0,71,30,250,0.05
+Bat,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Bat"")",,꼬마 박쥐,25,560,0,50,30,300,0.15
+Cannon,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Cannon"")",,캐논,10,450,100,53,18,250,0.05
+CherryBee,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""CherryBee"")",,체리 꿀벌,15,288,100,28,10,300,0.15
+Clownfish,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Clownfish"")",,흰동가리,10,288,100,25,12,250,0.05
+CowardTurtle,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""CowardTurtle"")",,겁쟁이 거북,10,320,100,32,23,200,0.05
+CupFelice,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""CupFelice"")",,컵 속의 펠리체,15,550,0,45,25,250,0.1
+DarumaNeko,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""DarumaNeko"")",,달마 고양이,10,576,100,51,38,200,0.05
+FanOfDeath,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""FanOfDeath"")",,죽음의 회전,15,384,100,48,23,300,0.15
+Felice,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Felice"")",,펠리체,10,523,100,45,21,250,0.05
+Felicis,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Felicis"")",,펠리시스,25,550,0,53,22,250,0.05
+FelicisGuard,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""FelicisGuard"")",,펠리시스 수호병,15,600,0,48,50,200,0.1
+Firefly,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Firefly"")",,반딧불이,25,320,100,30,21,250,0.05
+Fly,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Fly"")",,플라이,10,420,100,48,21,250,0.05
+ForestMacaron,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""ForestMacaron"")",,숲의 마카론,15,480,0,48,20,300,0.1
+ForestSpirit,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""ForestSpirit"")",,숲의 정령,15,350,0,38,21,250,0.1
+GoldMacaron,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""GoldMacaron"")",,황금 마카론,25,550,0,35,37,300,0.15
+Golem,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Golem"")",,골렘,15,520,100,38,40,200,0.15
+GuardianTreantMini,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""GuardianTreantMini"")",,미니 가디언 트렌트,25,670,0,63,38,250,0.05
+Imp,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Imp"")",,임프,10,700,100,71,40,250,0.05
+Leech,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Leech"")",,흡혈 거머리,15,300,100,35,14,250,0.15
+Macaron,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Macaron"")",,마카론,15,550,0,53,28,250,0.1
+MageMacaron,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""MageMacaron"")",,마법사 마카론,10,480,100,63,23,200,0.05
+MagicPot,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""MagicPot"")",,마법 단지,15,550,0,45,40,200,0.1
+Messenger,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Messenger"")",,하늘의 전령,25,570,0,51,32,200,0.05
+MinimiNeko,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""MinimiNeko"")",,미니미 야옹이,15,520,0,48,35,200,0.1
+MummyMacaron,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""MummyMacaron"")",,미라 마카론,25,620,0,49,38,200,0.05
+Mushroom,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Mushroom"")",,머쉬룸,15,320,0,23,17,250,0.1
+NetherConnector,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""NetherConnector"")",,지옥포탈,10,540,100,65,32,250,0.05
+Oowl,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Oowl"")",,부엉이,15,320,0,38,18,250,0.1
+SmashingShrimp,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""SmashingShrimp"")",,펀치 새우,15,420,0,43,25,250,0.1
+Tacodora,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Tacodora"")",,타코도라,15,350,0,35,25,250,0.1
+Trumduck,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Dealer"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Trumduck"")",,트럼펫 오리,15,365,100,45,14,250,0.15
+Turret,"(TagName=""Unit.Attack.Range"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Turret"")",,터렛,10,470,100,52,27,200,0.05
+Turtlog,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Support"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Turtlog"")",,거북개구리,10,450,100,33,28,250,0.05
+Usami,"(TagName=""Unit.Attack.Melee"")","(TagName=""Unit.Role.Tanker"")","(TagName=""Unit.Rank.Normal"")","(DataTable=""/Script/Engine.DataTable'/Game/Data/Action/Familiar/DT_FamiliarBasicAttackStats.DT_FamiliarBasicAttackStats'"",RowName=""Usami"")",,우사미,25,300,0,28,15,250,0.05

@@ -4,6 +4,7 @@
 #include "UI/Widgets/Lobby/Stage/ParadiseStageDetailWidget.h"
 #include "UI/Widgets/Squad/ParadiseSquadFormationWidget.h" 
 #include "UI/Widgets/Lobby/Stage/ParadiseEnemyIconWidget.h"
+#include "UI/Widgets/Common/ParadiseResourceWarningWidget.h"
 
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -15,11 +16,16 @@
 #include "Framework/System/StageSubsystem.h"
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/System/InventorySystem.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Structs/InventoryStruct.h"
 #include "Data/Structs/StageStructs.h" 
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
+
+#include "Actors/Squad/ParadiseSquadSceneManager.h" 
+#include "Kismet/GameplayStatics.h"
 
 void UParadiseStageDetailWidget::NativeConstruct()
 {
@@ -42,6 +48,12 @@ void UParadiseStageDetailWidget::NativeConstruct()
 
 void UParadiseStageDetailWidget::NativeDestruct()
 {
+	// 타이머 해제
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_BattleTransition);
+	}
+
 	// 메모리 누수 방지를 위해 해제는 필수!
 	if (auto* SquadSys = GetGameInstance()->GetSubsystem<USquadSubsystem>())
 	{
@@ -64,7 +76,25 @@ void UParadiseStageDetailWidget::InitDetailPopup(FName InStageID)
 	CachedStageID = InStageID;
 
 	// 1. 타이틀 설정
-	if (Text_StageTitle) Text_StageTitle->SetText(FText::FromName(CachedStageID));
+	if (Text_StageTitle)
+	{
+		// 기본값은 ID로 두되, 테이블에서 찾으면 기획자가 적어둔 이름으로 덮어씌웁니다.
+		FText FinalStageName = FText::FromName(CachedStageID);
+
+		if (CachedGI.IsValid() && CachedGI->StatgeStatsDataTable)
+		{
+			if (FStageStats* StageStats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID))
+			{
+				// 테이블에 StageName이 비어있지 않다면 적용!
+				if (!StageStats->StageName.IsEmpty())
+				{
+					FinalStageName = StageStats->StageName;
+				}
+			}
+		}
+
+		Text_StageTitle->SetText(FinalStageName);
+	}
 
 	// 2. 내 스쿼드 UI 초기화 (기존 위젯 재활용)
 	if (UI_SquadPreview)
@@ -88,7 +118,7 @@ void UParadiseStageDetailWidget::SetupEnemyList(FName InStageID)
 
 	if (!EnemyIconClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] EnemyIconClass가 누락되었습니다. BP 설정을 확인하세요."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] EnemyIconClass가 누락되었습니다. BP 설정을 확인하세요."));
 		return;
 	}
 
@@ -187,6 +217,14 @@ void UParadiseStageDetailWidget::SetupSquadPreview()
 
 void UParadiseStageDetailWidget::OnClickClose()
 {
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_CommonBack)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_CommonBack);
+		}
+	}
+
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	if (OnDetailClosed.IsBound()) OnDetailClosed.Broadcast();
@@ -199,19 +237,76 @@ void UParadiseStageDetailWidget::OnClickFormation()
 	{
 		CachedLobbyPC->SetLobbyMenu(EParadiseLobbyMenu::Squad);
 	}
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		// 월드에 배치된 스튜디오 매니저를 찾아옵니다.
+		AActor* SceneManager = UGameplayStatics::GetActorOfClass(GetWorld(), AParadiseSquadSceneManager::StaticClass());
+
+		if (SceneManager)
+		{
+			// 블렌딩 없이 즉시 카메라 시점을 스튜디오로 이동!
+			PC->SetViewTarget(SceneManager);
+		}
+		else
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("⚠️ [StageDetail] 맵에 배치된 AParadiseSquadSceneManager를 찾을 수 없어 카메라 전환을 스킵합니다."));
+		}
+	}
 }
 
 void UParadiseStageDetailWidget::OnClickEnterBattle()
 {
+	//방어코드
 	if (CachedStageID.IsNone() || !CachedGI.IsValid()) return;
 
-	// 1. 스테이지 데이터 조회 (Stats & Assets)
+	//0324 김성현 - 스쿼드 편성 상태 검증 
+	if (USquadSubsystem* SquadSys = CachedGI->GetSubsystem<USquadSubsystem>())
+	{
+		FString ErrorMsg;
+		if (!SquadSys->IsSquadValidForBattle(ErrorMsg))
+		{
+			//팝업 위젯이 있다면 경고 메시지를 띄워줍니다.
+			if (Widget_ResourceWarning)
+			{
+				Widget_ResourceWarning->ShowWarning(FText::FromString(ErrorMsg), nullptr, true);
+			}
+			else
+			{
+				//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 경고 위젯이 없어 화면에 띄울 수 없음! 사유: %s"), *ErrorMsg);
+			}
+			return;
+		}
+	}
+
+	if (CachedGI->GlobalAudioData && CachedGI->GlobalAudioData->SFX_StageActionClick)
+	{
+		UGameplayStatics::PlaySound2D(this, CachedGI->GlobalAudioData->SFX_StageActionClick);
+	}
+
+	// 효과음이 살짝 들린 후 레벨 전환 (0.3초 딜레이)
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_BattleTransition,
+			this,
+			&UParadiseStageDetailWidget::ExecuteBattleTransition,
+			0.3f,
+			false
+		);
+	}
+}
+
+void UParadiseStageDetailWidget::ExecuteBattleTransition()
+{
+	if (CachedStageID.IsNone() || !CachedGI.IsValid()) return;
+
+	// 1. 스테이지 데이터 조회
 	FStageStats* Stats = CachedGI->GetDataTableRow<FStageStats>(CachedGI->StatgeStatsDataTable, CachedStageID);
 	FStageAssets* Assets = CachedGI->GetDataTableRow<FStageAssets>(CachedGI->StageAssetsDataTable, CachedStageID);
 
 	if (!Stats || !Assets || Assets->MapAsset.IsNull())
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 스테이지 데이터 누락: %s"), *CachedStageID.ToString());
+		//UE_LOG(LogTemp, Error, TEXT("❌ [StageDetail] 스테이지 데이터 누락: %s"), *CachedStageID.ToString());
 		return;
 	}
 
@@ -221,20 +316,25 @@ void UParadiseStageDetailWidget::OnClickEnterBattle()
 		StageSys->SetSelectedStageID(CachedStageID);
 	}
 
-	// 3. 로딩 서브시스템을 통한 전이 시작
+	if (UAudioManagementSubsystem* AudioMag = CachedGI->GetSubsystem<UAudioManagementSubsystem>())
+	{
+		AudioMag->StopBGM(1.0f);
+	}
+
+	// 3. 레벨 전환
 	if (ULevelLoadingSubsystem* LoadingSys = CachedGI->GetSubsystem<ULevelLoadingSubsystem>())
 	{
 		FName LevelToOpen = FName(*Assets->MapAsset.GetAssetName());
-		TArray<TSoftObjectPtr<UObject>> EmptyPreloadAssets;
+		TArray<TSoftObjectPtr<UObject>> PreloadAssets = Assets->ExtraPreloadAssets;
 
-		// 테이지 이름(Stats->StageName)과 설명(Stats->Description)을 로딩 시스템으로 전파
 		LoadingSys->StartLevelTransition(
 			LevelToOpen,
 			FName("L_Loading"),
-			EmptyPreloadAssets,
+			PreloadAssets,
 			Assets->LoadingImage,
 			Stats->StageName,
-			Stats->Description
+			Stats->Description,
+			true
 		);
 	}
 }

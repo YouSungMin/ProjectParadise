@@ -4,6 +4,10 @@
 #include "UI/Panel/Lobby/ParadiseLobbyMenuPanelWidget.h"
 #include "Components/Button.h"
 #include "Framework/Lobby/LobbyPlayerController.h"
+#include "Framework/System/AudioManagementSubsystem.h"
+#include "Framework/Core/ParadiseGameInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 
 void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 {
@@ -11,10 +15,10 @@ void UParadiseLobbyMenuPanelWidget::NativeConstruct()
 
 	// 1. 컨트롤러 캐싱 (매번 GetOwningPlayer를 호출하는 비용 절약)
 	CachedController = GetOwningPlayer<ALobbyPlayerController>();
-	if (!CachedController)
+	/*if (!CachedController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[MenuPanel] Owning Player Controller is NOT ALobbyPlayerController!"));
-	}
+	}*/
 
 	// 2. 버튼 델리게이트 바인딩 (안전하게 nullptr 체크 후 연결)
 	if (Btn_Battle) Btn_Battle->OnClicked.AddDynamic(this, &UParadiseLobbyMenuPanelWidget::OnClickBattle);
@@ -40,11 +44,28 @@ void UParadiseLobbyMenuPanelWidget::NativeDestruct()
 
 void UParadiseLobbyMenuPanelWidget::RequestMenuChange(EParadiseLobbyMenu InMenu)
 {
+	// 메뉴로 진입하면 로비 BGM을 1초 정도 있다가 끈다.
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		// 소환(Summon) 메뉴 진입 시에만 로비 BGM을 끕니다.
+		if (InMenu == EParadiseLobbyMenu::Summon)
+		{
+			if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+			{
+				AudioMag->StopBGM(1.0f);
+			}
+		}
+
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_LobbyMenuClick)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_LobbyMenuClick);
+		}
+	}
 	if (CachedController)
 	{
 		// [변경] 바로 SetLobbyMenu 하지 않고, 카메라 이동 요청!
 		// (단, Battle처럼 카메라 이동이 필요한 메뉴만. 나머진 바로 띄워도 됨)
-		if (InMenu == EParadiseLobbyMenu::Battle || InMenu == EParadiseLobbyMenu::Summon)
+		if (InMenu == EParadiseLobbyMenu::Summon)
 		{
 			CachedController->MoveCameraToMenu(InMenu);
 		}

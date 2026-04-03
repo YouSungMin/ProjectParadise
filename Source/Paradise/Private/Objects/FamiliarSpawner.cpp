@@ -7,6 +7,7 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "BrainComponent.h"
 #include "Kismet/GameplayStatics.h" 
 #include "NavigationSystem.h"
@@ -31,7 +32,7 @@ void AFamiliarSpawner::BeginPlay()
 			if (TempUnit) PoolSubsystem->ReturnToPool(TempUnit);
 		}
 	}
-	UE_LOG(LogTemp, Log, TEXT("🛡️ FamiliarSpawner: 초기화 및 오브젝트 풀링 완료."));
+	//UE_LOG(LogTemp, Log, TEXT("🛡️ FamiliarSpawner: 초기화 및 오브젝트 풀링 완료."));
 }
 
 void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
@@ -43,17 +44,20 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 
 	if (!PoolSubsystem || !UnitClass || !GI) return;
 
-	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 100.0f);
+	// 전장 스폰 위치 계산
+	FVector SpawnLocation = GetRandomSpawnLocation() + FVector(0.f, 0.f, 20.0f);
 	FRotator SpawnRotation = GetActorRotation();
 
+	// 풀에서 유닛 확보
 	AUnitBase* NewUnit = PoolSubsystem->SpawnPoolActor<AUnitBase>(UnitClass, SpawnLocation, SpawnRotation, this, nullptr);
 
 	if (NewUnit)
 	{
+		// 전장으로 강제 워프 및 물리 상태 초기화
 		NewUnit->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::ResetPhysics);
+
 		NewUnit->SetUnitID(UnitID);
 
-		// 퍼밀리어 전용 데이터 테이블 참조
 		if (GI->FamiliarStatsDataTable && GI->FamiliarAssetsDataTable)
 		{
 			FFamiliarStats* StatData = GI->GetDataTableRow<FFamiliarStats>(GI->FamiliarStatsDataTable, UnitID);
@@ -63,16 +67,42 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 			{
 				NewUnit->InitializeUnit(StatData, AssetData);
 
-				AMyAIController* AIC = Cast<AMyAIController>(NewUnit->GetController());
-				if (!AIC)
+				// 데이터 테이블의 컨트롤러 클래스 세팅
+				if (AssetData->AIController)
+				{
+					NewUnit->AIControllerClass = AssetData->AIController;
+				}
+
+				if (UCapsuleComponent* CapsuleComp = NewUnit->GetCapsuleComponent())
+				{
+					CapsuleComp->SetCollisionProfileName(TEXT("AllyPreset"));
+				}
+
+				// ==========================================================
+				// 🚨 AI 컨트롤러 강제 교체 (수정됨)
+				// ==========================================================
+				AController* CurrentCtrl = NewUnit->GetController();
+
+				if (CurrentCtrl && CurrentCtrl->GetClass() != NewUnit->AIControllerClass)
+				{
+					CurrentCtrl->UnPossess();
+					CurrentCtrl->Destroy();
+				}
+
+				if (!NewUnit->GetController())
 				{
 					NewUnit->SpawnDefaultController();
-					AIC = Cast<AMyAIController>(NewUnit->GetController());
 				}
+
+				AAIController* AIC = Cast<AAIController>(NewUnit->GetController());
 
 				if (AIC)
 				{
-					AIC->Possess(NewUnit);
+					// 안전한 빙의 처리
+					if (AIC->GetPawn() != NewUnit)
+					{
+						AIC->Possess(NewUnit);
+					}
 
 					if (!AssetData->BehaviorTree.IsNull())
 					{
@@ -81,10 +111,22 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 						{
 							AIC->RunBehaviorTree(BT);
 
-							// 블랙보드 타겟 기지 설정
 							UBlackboardComponent* BB = AIC->GetBlackboardComponent();
 							if (BB)
 							{
+								// 레인 배정
+								float LanePositions[] = { 400.0f, 100.0f, -300.0f };
+								int32 RandomLaneIndex = FMath::RandRange(0, 2);
+								BB->SetValueAsFloat(FName("AssignedLaneY"), LanePositions[RandomLaneIndex]);
+
+								float MyAttackRange = 100.0f; // 기본값 (안전 장치)
+								if (NewUnit)
+								{
+									MyAttackRange = NewUnit->GetAttackRange();
+								}
+								BB->SetValueAsFloat(FName("AttackRange"), MyAttackRange);
+
+								// 기지 타겟팅
 								TArray<AActor*> FoundBases;
 								UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
 
@@ -112,7 +154,7 @@ void AFamiliarSpawner::SpawnFamiliarByID(FName UnitID)
 						}
 					}
 				}
-				UE_LOG(LogTemp, Log, TEXT("✅ Familiar Spawned: %s"), *UnitID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("✅ Familiar Spawned: %s"), *UnitID.ToString());
 			}
 		}
 	}

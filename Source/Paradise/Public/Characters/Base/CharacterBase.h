@@ -42,13 +42,17 @@ public:
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override { return FCombatActionData();}
 
 	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override { return nullptr; }
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override { return {}; }
 
 	/*
 	 * @brief 죽은후 Destroy() 하는 함수
 	 * @details 적은 일단 Destory() 변경예정 , 혹은 상위 클래스에서 오버라이드
 	 */
 	virtual void Die();
+
+	/** @brief 현재 캐릭터가 이동 가능한 상태인지 (태그 기반) 검사합니다. */
+	UFUNCTION(BlueprintPure, Category = "Status")
+	virtual bool CanMove() const;
 
 	/* @brief 현재 캐릭터의 사망여부 체크 함수 */
 	bool IsDead() const { return bIsDead; } // Getter 추가
@@ -74,7 +78,7 @@ public:
 	 * @param ForwardOffset : 타격 시작점을 앞으로 얼마나 밀어낼 것인가
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHit(FName SocketName, float AttackRange, float AttackRadius, float ForwardOffset, ESocketTargetType TargetType);
+	void CheckHit(FName SocketName,ESocketTargetType TargetType);
 
 	/*
 	 * @brief 새로운 공격이 시작될 때 타격 목록 초기화
@@ -106,10 +110,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	FCombatActionData GetCurrentActionData() const { return CurrentActiveActionData; }
 
-	/** @brief 무기 또는 몸통에서 소켓 위치를 찾아 반환합니다. */
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	FVector GetMuzzleLocation(FName SocketName) const;
-
 	/** @brief 자식 클래스들이 무기 메쉬를 던져줄 수 있도록 가상 함수 선언 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual USceneComponent* GetWeaponMesh() const;
@@ -118,13 +118,33 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual UAnimMontage* GetDeathMontage() const { return nullptr; }
 
-	/** @brief 애니메이션 종료 후 래그돌 상태로 전환하는 함수 */
+	/** @brief 피격 몽타주를 반환하는 가상 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void ActivateRagdoll();
+	virtual UAnimMontage* GetHitMontage() const { return nullptr; }
+
+	/** @brief 데미지를 받았을 때 호출되는 피격 연출 통합 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void PlayHitReaction();
 
 	/** @brief 애니메이션이 끝나거나 노티파이에서 호출될 가상 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnDeathAnimationFinished();
+
+	/** @brief 노티파이에서 발사 소켓 정보(타겟+이름)를 캐릭터에 저장(캐싱)해주는 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetCurrentMuzzleSocketInfo(FName InSocketName, ESocketTargetType InSocketTarget);
+
+	/** @brief 캐싱된 타겟(무기 or 몸체)을 기준으로 최종 발사 트랜스폼(위치+회전) 반환 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	FTransform GetCurrentMuzzleTransform() const;
+
+	/**
+	 * @brief 애니메이션 노티파이에서 호출하는 통합 공격 사령탑
+	 * @param bIsTick : false면 일반 Notify에서, true면 State(Tick)에서 호출됨을 의미
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ExecuteAttackFromNotify(FName SocketName, ESocketTargetType TargetType, bool bIsTick);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -141,10 +161,6 @@ protected:
 	*/
 	UFUNCTION(BlueprintCallable)
 	void ResetHitFlash();
-
-
-
-
 public:
 	/** * @brief 소속 진영 태그
 		 * @details 데이터 테이블에서 로드되어 부여되며, 피아식별(IsHostile) 및 GAS 타겟팅에 사용됩니다.
@@ -152,6 +168,9 @@ public:
 		 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	FGameplayTag FactionTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TArray<TEnumAsByte<EObjectTypeQuery>> AttackObjectTypes;
 
 protected:
 	/*
@@ -200,6 +219,15 @@ protected:
 	// 에디터에서 할당할 데미지 텍스트 블루프린트 클래스 (BP_DamageTextActor)
 	UPROPERTY(EditAnywhere, Category = "Combat|UI")
 	TSubclassOf<class ADamageTextActor> DamageTextClass;
+
+	/** @brief 투사체를 발사할 최신 소켓 이름 (노티파이에서 세팅됨) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	FName CurrentMuzzleSocketName = NAME_None;
+
+	/** @brief 투사체 발사 소켓을 찾을 메쉬 대상 (몸체 vs 무기) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	ESocketTargetType CurrentMuzzleSocketTarget = ESocketTargetType::CharacterBody;
+
 private:
 		
 	/*
@@ -212,6 +240,4 @@ private:
 	 * @brief 피격 이펙트 리셋 시간 ex) 3초후 리셋
 	*/
 	float HitResetTime = 0.3f;
-
-
 };

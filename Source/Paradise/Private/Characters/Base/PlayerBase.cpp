@@ -4,27 +4,23 @@
 #include "Characters/Base/PlayerBase.h"
 #include "Characters/Player/PlayerData.h"
 #include "Components/EquipmentComponent.h"
+#include "Components/SkillIndicatorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Framework/System/ParadiseSaveGame.h"
-#include "Framework/System/InventorySystem.h"
 #include "Framework/InGame/InGameController.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemBlueprintLibrary.h"
-#include "GAS/Attributes/BaseAttributeSet.h"
 #include "Camera/CameraComponent.h"
+#include "GAS/Attributes/BaseAttributeSet.h"
 #include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "Data/Structs/ItemStructs.h"
 #include "Data/Structs/InputStructs.h"
 #include "Data/Assets/ParadiseInputConfig.h" 
-#include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "Data/Assets/FXDataAsset.h"
 
 APlayerBase::APlayerBase()
 {
+
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
 
@@ -42,6 +38,7 @@ APlayerBase::APlayerBase()
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+    GetMesh()->AddRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }
 
 void APlayerBase::InitializeComponents()
@@ -54,6 +51,8 @@ void APlayerBase::InitializeComponents()
     WeaponMesh->SetupAttachment(GetMesh(), TEXT("hand_r")); // 기본 소켓
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 무기 자체 충돌은 끔
     WeaponMesh->SetComponentTickEnabled(false); // 무기 자체 틱은 불필요하므로 끔 (최적화)
+
+    SkillIndicatorComp2 = CreateDefaultSubobject<USkillIndicatorComponent>(TEXT("SkillIndicatorComp"));
 }
 
 void APlayerBase::PossessedBy(AController* NewController)
@@ -138,15 +137,19 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
     if (AbilitySystemComponent)
     {
         AbilitySystemComponent->InitAbilityActorInfo(InPlayerData, this);
-        UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] GAS 초기화 완료!"));
+        //UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] GAS 초기화 완료!"));
     }
 
     // 캐릭터 에셋 외형 업데이트
     // APlayerData의 장비 외형 데이터 테이블의 한줄을 읽어서 외형 업데이트
     if (USkeletalMeshComponent* Mymesh = GetMesh())
     {
-        Mymesh->SetSkeletalMesh(LinkedPlayerData->CachedMesh);
+        Mymesh->SetAnimInstanceClass(nullptr);
+
+        Mymesh->SetSkeletalMeshAsset(LinkedPlayerData->CachedMesh);
         Mymesh->SetAnimInstanceClass(LinkedPlayerData->CachedAnimBP);
+        Mymesh->InitAnim(true);
+
     }
 
      // 데이터 동기화(장비 동기화)
@@ -158,7 +161,7 @@ void APlayerBase::InitializePlayer(APlayerData* InPlayerData)
     // 소속 태그 적용
     this->FactionTag = InPlayerData->FactionTag;
 
-    UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 육체 초기화 완료!"));
+    //UE_LOG(LogTemp, Log, TEXT("💪 [PlayerBase] 육체 초기화 완료!"));
 }
 
 void APlayerBase::BeginPlay()
@@ -176,20 +179,29 @@ USkeletalMeshComponent* APlayerBase::GetArmorComponent(EEquipmentSlot Slot) cons
     }
 }
 
+USkillIndicatorComponent* APlayerBase::GetSkillIndicatorComponent() const
+{
+    if (SkillIndicatorComp2)
+    {
+        return SkillIndicatorComp2;
+    }
+    return nullptr;
+}
+
 FCombatActionData APlayerBase::GetCombatActionData(ECombatActionType ActionType) const
 {
     if (!LinkedPlayerData.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerBase] LinkedPlayerData가 유효하지 않음!"));
+        //UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerBase] LinkedPlayerData가 유효하지 않음!"));
         return FCombatActionData();
     }
 
     return LinkedPlayerData->GetCombatActionData(ActionType);
 }
 
-FFXPayload* APlayerBase::GetFXPayload(EFXEventType EventType) const
+TArray<FFXPayload*> APlayerBase::GetFXPayloads(EFXEventType EventType) const
 {
-    return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetFXPayload(EventType) : nullptr;
+    return LinkedPlayerData.IsValid() ? LinkedPlayerData->GetFXPayloads(EventType) : TArray<FFXPayload*>{};
 }
 
 void APlayerBase::SetCamera_Default()
@@ -204,7 +216,7 @@ void APlayerBase::SetCamera_Default()
     //카메라 설정
     FollowCamera->FieldOfView = 30.0f; // 시야각 좁게
 
-    UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Default"));
+    //UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Default"));
 }
 
 void APlayerBase::SetCamera_Classic()
@@ -219,7 +231,7 @@ void APlayerBase::SetCamera_Classic()
     //카메라 설정
     FollowCamera->FieldOfView = 45.0f;
 
-    UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Classic"));
+    //UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Classic"));
 }
 
 void APlayerBase::SetCamera_Dynamic()
@@ -234,7 +246,7 @@ void APlayerBase::SetCamera_Dynamic()
     //카메라 설정
     FollowCamera->FieldOfView = 85.0f; 
 
-    UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Dynamic"));
+    //UE_LOG(LogTemp, Log, TEXT("📷 Camera Set: Dynamic"));
 }
 
 void APlayerBase::SwitchCameraMode()
@@ -266,9 +278,9 @@ void APlayerBase::Die()
     //이미 죽었으면 중복 실행 방지
     if (bIsDead) return;
 
-    UE_LOG(LogTemp, Warning, TEXT("[PlayerBase] 육체가 사망했습니다."));
+    //UE_LOG(LogTemp, Warning, TEXT("[PlayerBase] 육체가 사망했습니다."));
 
-    //부모의 Die 호출 -> 래그돌(Ragdoll) 실행
+    //부모의 Die 호출
     Super::Die();
 
     //영혼(PlayerData)에게 사망 사실 통보 -> 부활 타이머 가동
@@ -282,6 +294,27 @@ void APlayerBase::Die()
         PC->OnPlayerDied(this);
     }
 
+    float DeathDelay = 2.0f; // 기본값
+
+    if (UAnimMontage* DeathMontage = GetDeathMontage())
+    {
+        // 몽타주의 총 재생 시간을 가져옵니다.
+        //UE_LOG(LogTemp, Warning, TEXT("[PlayerBase] DeathMontage의 재생시간을 가져옴"));
+        DeathDelay = DeathMontage->GetPlayLength();
+
+        //몽타주가 끝나서 기본 자세로 돌아가기 직전에 애니메이션을 아예 정지시킵니다.
+        FTimerHandle DeathAnimTimer;
+        GetWorldTimerManager().SetTimer(
+            DeathAnimTimer,
+            this,
+            &ACharacterBase::OnDeathAnimationFinished,
+            DeathDelay - 0.225f,
+            false
+        );
+    }
+    SetLifeSpan(DeathDelay+0.15f);
+    
+
 }
 
 void APlayerBase::OnMoveInput(const FInputActionValue& InValue)
@@ -290,6 +323,7 @@ void APlayerBase::OnMoveInput(const FInputActionValue& InValue)
     FVector2D MovementVector = InValue.Get<FVector2D>();
 
     if (!FollowCamera) return;
+    if (!CanMove()) return;
 
     FRotator CameraRotation = FollowCamera->GetComponentRotation();
     FRotator YawRotation(0, CameraRotation.Yaw, 0);
@@ -331,5 +365,15 @@ UAnimMontage* APlayerBase::GetDeathMontage() const
         return LinkedPlayerData->GetDeathMontage();
     }
     return nullptr; // 데이터가 없으면 예외처리
+}
+
+UAnimMontage* APlayerBase::GetHitMontage() const
+{
+    if (LinkedPlayerData.IsValid())
+    {
+        return LinkedPlayerData->GetHitMontage();
+    }
+
+    return nullptr;
 }
 

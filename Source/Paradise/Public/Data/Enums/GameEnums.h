@@ -99,9 +99,10 @@ enum class EAIUnitType : uint8
 UENUM(BlueprintType)
 enum class ECombatActionType : uint8
 {
-	BasicAttack,  // 기본 공격 (평타, LMB) - 계수 1.0
-	WeaponSkill,  // 무기 스킬 (RMB, Q 등) - 계수 1.5 (WeaponStats 참조)
-	UltimateSkill // 궁극기 (R) - 계수 3.0 (CharacterStats 참조)
+	BasicAttack,  // 기본 공격
+	WeaponSkill,  // 무기 스킬
+	AIUnitSkill,
+	UltimateSkill // 궁극기
 };
 
 /**
@@ -152,7 +153,7 @@ enum class EWeaponType : uint8
 	Base	UMETA(DisplayName = "Base (맨손/기본)"),
 	Melee	UMETA(DisplayName = "Melee (근접)"),
 	Gun		UMETA(DisplayName = "Gun (총)"),
-	Book	UMETA(DisplayName = "Book (마법책/지팡이)")
+	Magic	UMETA(DisplayName = "Magic(책/스태프)")
 };
 
 /**
@@ -162,11 +163,14 @@ enum class EWeaponType : uint8
 UENUM(BlueprintType)
 enum class EFXEventType : uint8
 {
-	Hit			UMETA(DisplayName = "Hit (피격)"),
-	Death		UMETA(DisplayName = "Death (사망)"),
-	BasicAttack	UMETA(DisplayName = "Basic Attack (기본 공격)"),
-	Skill		UMETA(DisplayName = "Weapon Skill (스킬)"),
-	Ultimate	UMETA(DisplayName = "Ultimate (궁극기)")
+	Hit					UMETA(DisplayName = "Hit (피격)"),
+	Death				UMETA(DisplayName = "Death (사망)"),
+	BasicAttack			UMETA(DisplayName = "Basic Attack (기본 공격)"),
+	BasicAttackHit		UMETA(DisplayName = "Basic Attack Hit (기본 공격 적중)"),
+	Skill				UMETA(DisplayName = "Skill (스킬)"),
+	SkillHit			UMETA(DisplayName = "Skill Hit (스킬 적중)"),
+	Ultimate			UMETA(DisplayName = "Ultimate (궁극기)"),
+	UltimateHit			UMETA(DisplayName = "Ultimate Hit (궁극기 적중)")
 };
 
 /**
@@ -178,4 +182,56 @@ enum class ESocketTargetType : uint8
 {
 	CharacterBody UMETA(DisplayName = "캐릭터 본체 (Character Body)"),
 	EquippedWeapon UMETA(DisplayName = "장착된 무기 (Equipped Weapon)")
+};
+
+/**
+ * @enum EGachaItemState
+ * @brief가챠 연출에서 개별 아이템(구슬/박스)의 현재 연출 상태를 정의합니다.
+ * @details 이 상태에 따라 Tick 연산 활성화 및 터치 이벤트(Reveal) 허용 여부가 결정됩니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaItemState : uint8
+{
+	/** @brief [비행 중] 상자에서 튀어나와 바닥으로 날아가는 궤적 이동 상태 (터치 불가) */
+	Flying		UMETA(DisplayName = "Flying (비행 중)"),
+
+	/** @brief [대기 중] 바닥에 꽂힌 후 아우라를 뿜으며 유저의 터치를 기다리는 상태 (터치 가능) */
+	Landed		UMETA(DisplayName = "Landed (안착 완료)"),
+
+	/** @brief [리빌 완료] 터치되어 폭발 이펙트와 함께 원본(캐릭터 등)이 드러난 상태 */
+	Revealed	UMETA(DisplayName = "Revealed (리빌 완료)")
+};
+
+/**
+ * @enum EGachaSequenceStep
+ * @brief 현재 재생 중인 시퀀스 단계를 나타냅니다.
+ * @details OnSequenceFinished 에서 다음 단계를 결정하는 데 사용합니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaSequenceStep : uint8
+{
+	None    UMETA(DisplayName = "없음"),
+	Intro   UMETA(DisplayName = "낙하+착지"),
+	Idle    UMETA(DisplayName = "흔들흔들 대기"),
+	Open    UMETA(DisplayName = "격렬+열림"),
+};
+
+/**
+ * @enum EGachaBannerType
+ * @brief 가챠 배너의 종류를 구분하는 열거형
+ * @details UI 필터링 및 인벤토리 지급 로직 분기용으로 사용됩니다.
+ */
+UENUM(BlueprintType)
+enum class EGachaBannerType : uint8
+{
+	Character	UMETA(DisplayName = "캐릭터 소환"),
+	Equipment	UMETA(DisplayName = "장비 소환")
+};
+
+UENUM(BlueprintType)
+enum class ETargetFilter : uint8
+{
+	Enemy    UMETA(DisplayName = "적군 전용 (공격)"),
+	Friendly UMETA(DisplayName = "아군 전용 (힐/버프)"),
+	All      UMETA(DisplayName = "피아 구분 없음 (광역기)")
 };

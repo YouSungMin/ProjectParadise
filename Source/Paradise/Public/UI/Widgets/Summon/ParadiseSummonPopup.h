@@ -11,6 +11,10 @@ class UButton;
 class UWidgetSwitcher;
 class UParadiseSummonPanel;
 class UTextBlock;
+class UParadiseGameInstance;
+class UEconomySubsystem;
+class ALobbyPlayerController;
+class UParadiseResourceWarningWidget;
 #pragma endregion 전방선언
 
 /**
@@ -29,7 +33,15 @@ protected:
 	virtual void NativeDestruct() override;
 #pragma endregion 생명주기
 
-#pragma region 내부 변수
+#pragma region 외부 인터페이스
+public:
+	/** * @brief 서브시스템의 재화 변동 이벤트를 받아 UI를 갱신합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI|Summon")
+	void RefreshCurrencyUI();
+#pragma endregion 외부 인터페이스
+
+#pragma region UI 컴포넌트
 protected:
 	// --- 좌측 패널 (탭 버튼) ---
 
@@ -57,8 +69,6 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> Switcher_Content = nullptr;
 
-	// --- 캐싱된 하위 위젯들 (최적화) ---
-
 	/** @brief 캐릭터 소환 패널 (WBP_SummonPanel_Character) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSummonPanel> Panel_Character = nullptr;
@@ -67,21 +77,43 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UParadiseSummonPanel> Panel_Equipment = nullptr;
 
+	/** @brief 에테르 부족 시 화면 전체를 덮을 경고 위젯 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UParadiseResourceWarningWidget> Widget_ResourceWarning = nullptr;
+#pragma endregion UI 컴포넌트
+
+#pragma region 데이터 드리븐 설정
+protected:
+	/** @brief 경고 팝업에 넘겨줄 에테르 아이콘 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Paradise|Summon|Icons")
+	TSoftObjectPtr<UTexture2D> Icon_Aether = nullptr;
+#pragma endregion 데이터 드리븐 설정
+
+#pragma region 내부 상태 및 캐싱
 private:
 	/** @brief 가독성을 위한 인덱스 상수 (하드코딩 방지) */
-	const int32 INDEX_CHARACTER = 0;
-	const int32 INDEX_EQUIPMENT = 1;
-#pragma endregion 내부 변수
+	static constexpr int32 INDEX_CHARACTER = 0;
+	static constexpr int32 INDEX_EQUIPMENT = 1;
+
+	/** @brief 데이터 접근용 서브시스템 약참조 (순환 참조 및 메모리 릭 방지) */
+	TWeakObjectPtr<UEconomySubsystem> CachedEconomySubsystem = nullptr;
+
+	/** @brief 화면 전환(뒤로가기) 제어용 컨트롤러 약참조 */
+	TWeakObjectPtr<ALobbyPlayerController> CachedPlayerController = nullptr;
+
+	/** @brief 게임 저장(SaveData) 호출용 게임 인스턴스 약참조 */
+	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+
+	/** @brief 초기화 완료 여부 (최초 탭 세팅 시 효과음 스킵용) */
+	bool bIsInitialized = false;
+#pragma endregion 내부 상태 및 캐싱
 
 #pragma region 내부 로직
-public:
-	/** 
-	 * @brief 현재 보유한 에테르 양을 UI에 갱신합니다. 
-	 * @param InEther 표시할 에테르 값
-	 */
-	UFUNCTION(BlueprintCallable, Category = "UI|Currency")
-	void UpdateAetherUI(int32 InEther);
 private:
+	//EconomySubsystem의 재화 변경 방송을 수신할 전용 핸들러
+	UFUNCTION()
+	void HandleCurrencyChanged(ECurrencyType CurrencyType, int32 OldAmount, int32 NewAmount);
+
 	/** @brief 캐릭터 탭 클릭 핸들러 */
 	UFUNCTION()
 	void OnCharacterTabClicked();
@@ -98,5 +130,10 @@ private:
 	 * @param NewIndex 전환할 스위처 인덱스
 	 */
 	void SwitchTab(int32 NewIndex);
+
+	/** @brief 자식 패널에서 에테르 부족 이벤트가 오면 경고창을 띄우는 핸들러 */
+	UFUNCTION()
+	void HandleNotEnoughAether();
 #pragma endregion 내부 로직
+
 };

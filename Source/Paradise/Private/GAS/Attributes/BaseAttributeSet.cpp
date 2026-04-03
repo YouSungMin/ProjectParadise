@@ -10,8 +10,10 @@ UBaseAttributeSet::UBaseAttributeSet()
 	// 생성자: 안전을 위해 기본값 초기화 (데이터 테이블 로딩 전 임시값)
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
+	InitHealthRegen(2.0f);
 	InitMana(0.0f);
 	InitMaxMana(20.0f);
+	InitManaRegen(2.0f);
 
 	InitAttackPower(10.0f);
 	InitDefense(0.0f);
@@ -21,7 +23,6 @@ UBaseAttributeSet::UBaseAttributeSet()
 
 	InitMoveSpeed(400.0f);
 	InitAttackSpeed(1.0f);
-	InitCooldown(0.0f);
 	InitAttackRange(100.0f);
 }
 
@@ -39,16 +40,16 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	{
 		float CurrentMana = GetMana();
 
-		// 2. 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한합니다.
+		// 최대 마나를 넘지 않게, 0 밑으로 떨어지지 않게 제한
 		float ClampedNewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
 
-		// 3. 💡 마나가 깎였을 때만(ClampedNewValue가 CurrentMana보다 작을 때만) 로그를 출력합니다.
+		// 마나가 깎였을 때만 로그를 출력
 		if (ClampedNewValue < CurrentMana)
 		{
 			// 사용한(깎인) 마나 계산
 			float UsedMana = CurrentMana - ClampedNewValue;
 
-			UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
+			//UE_LOG(LogTemp, Log, TEXT("💧 [마나 차감] 사용한 마나: %.1f / 남은 마나: %.1f"), UsedMana, ClampedNewValue);
 		}
 	}
 	// 치명타 확률 (CritRate)
@@ -70,10 +71,22 @@ void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		NewValue = FMath::Max(NewValue, 0.1f);
 	}
 	// 사거리, 이속, 쿨타임, 공격력, 방어력 등
+	else if (Attribute == GetAttackPowerAttribute())
+	{
+		float CurrentAttackPower = GetAttackPower(); // 변하기 전의 현재 공격력
+		NewValue = FMath::Max(NewValue, 0.0f);       // 음수 방지
+
+		// 값이 실제로 변했을 때만 로그를 찍도록 설정 (소수점 오차 무시)
+		if (!FMath::IsNearlyEqual(CurrentAttackPower, NewValue))
+		{
+			float Difference = NewValue - CurrentAttackPower;
+			/*UE_LOG(LogTemp, Warning, TEXT("⚔️ [버프/디버프] 공격력 변경! 이전: %.1f ➡️ 현재: %.1f (변화량: %+.1f)"),
+				CurrentAttackPower, NewValue, Difference);*/
+		}
+	}
+	// 사거리, 이속, 쿨타임, 방어력 등
 	else if (Attribute == GetAttackRangeAttribute() ||
 		Attribute == GetMoveSpeedAttribute() ||
-		Attribute == GetCooldownAttribute() ||
-		Attribute == GetAttackPowerAttribute() ||
 		Attribute == GetDefenseAttribute())
 	{
 		// 음수 방지
@@ -95,26 +108,46 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			const float NewHealth = GetHealth() - LocalDamage;
 			SetHealth(NewHealth);
 
-			// 로그 출력
-			AActor* MyOwner = GetOwningActor();
-			FString OwnerName = MyOwner ? MyOwner->GetName() : TEXT("Unknown");
-			UE_LOG(LogTemp, Log, TEXT("[%s] HP 변경 : %.2f"), *OwnerName, NewHealth);
+			// 타겟 액터가 누구인지 확인
+			AActor* TargetActor = Data.Target.GetAvatarActor();
+			/*UE_LOG(LogTemp, Warning, TEXT("===================================="));
+			UE_LOG(LogTemp, Warning, TEXT("🩸 [데미지 판정] 타겟 액터: %s, 남은 HP: %.2f"), TargetActor ? *TargetActor->GetName() : TEXT("Null"), NewHealth);*/
 
-			if (NewHealth <= 0.0f)
+			// 캐릭터 베이스로 캐스팅 시도
+			if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
 			{
-				// 데이터(Effect)의 대상(Target) 액터를 가져옴
-				AActor* TargetActor = Data.Target.GetAvatarActor();
-
-				// 캐릭터 베이스로 캐스팅해서 Die() 호출
-				if (ACharacterBase* Character = Cast<ACharacterBase>(TargetActor))
+				if (NewHealth <= 0.0f)
 				{
-					// 이미 죽어있지 않을 때만 죽음 처리 (중복 사망 방지)
+					//UE_LOG(LogTemp, Warning, TEXT("💀 [데미지 판정] 타겟 사망! -> Die() 호출"));
 					if (!Character->IsDead())
 					{
 						Character->Die();
 					}
 				}
+				else
+				{
+					//UE_LOG(LogTemp, Warning, TEXT("🎯 [데미지 판정] 타겟 생존! -> PlayHitReaction() 호출 시도!"));
+					Character->PlayHitReaction();
+				}
 			}
+			/*else
+			{
+				UE_LOG(LogTemp, Error, TEXT("❌ [데미지 판정] 타겟 액터를 ACharacterBase로 캐스팅 실패!"));
+			}*/
+			//UE_LOG(LogTemp, Warning, TEXT("===================================="));
 		}
 	}
+}
+
+void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	// 값이 실제로 변했을 때만 디버그 로그 출력
+	//if (OldValue != NewValue)
+	//{
+	//	// 어떤 스탯인지, 몇에서 몇으로 변했는지, 증감량은 얼마인지 출력!
+	//	UE_LOG(LogTemp, Warning, TEXT("📈 [스탯 변경] %s : %.1f ➡️ %.1f (%+.1f)"),
+	//		*Attribute.GetName(), OldValue, NewValue, NewValue - OldValue);
+	//}
 }

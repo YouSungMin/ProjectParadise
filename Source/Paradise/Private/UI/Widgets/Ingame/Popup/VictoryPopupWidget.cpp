@@ -3,13 +3,17 @@
 
 #include "UI/Widgets/Ingame/Popup/VictoryPopupWidget.h"
 #include "UI/Panel/Ingame/Result/ResultCharacterPanelWidget.h"
+#include "UI/Panel/Ingame/Result/FamiliarRewardPopupWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/StageSubsystem.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
 #include "Data/Structs/StageStructs.h"
+#include "Data/Structs/UnitStructs.h"
+#include "Kismet/GameplayStatics.h"
 
 #pragma region 생명주기
 void UVictoryPopupWidget::NativeConstruct()
@@ -39,10 +43,11 @@ void UVictoryPopupWidget::SetVictoryData(
 	int32 InEarnedGold,
 	int32 InEarnedAether,
 	const TArray<FResultCharacterData>& InCharacterResults,
-	FName InNextStageID)
+	FName InNextStageID,
+	FName InAcquiredFamiliar)
 {
-	UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
-		InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("[VictoryPopup] 데이터 갱신 - 별:%d, 골드:%d, 에테르:%d, 다음 스테이지:%s"),
+		//InStarCount, InEarnedGold, InEarnedAether, *InNextStageID.ToString());
 
 	// 1. 내부 상태 캐싱
 	CachedNextStageID = InNextStageID;
@@ -52,13 +57,10 @@ void UVictoryPopupWidget::SetVictoryData(
 	if (Text_GoldValue)  Text_GoldValue->SetText(FText::AsNumber(InEarnedGold));
 	if (Text_AetherValue)Text_AetherValue->SetText(FText::AsNumber(InEarnedAether));
 
-	// 3. 별 이미지 갱신 (최적화: 분기문을 삼항 연산자로 깔끔하게 처리)
-	if (StarOnTexture && StarOffTexture)
-	{
-		if (Img_Star1) Img_Star1->SetBrushFromTexture(InStarCount >= 1 ? StarOnTexture : StarOffTexture);
-		if (Img_Star2) Img_Star2->SetBrushFromTexture(InStarCount >= 2 ? StarOnTexture : StarOffTexture);
-		if (Img_Star3) Img_Star3->SetBrushFromTexture(InStarCount >= 3 ? StarOnTexture : StarOffTexture);
-	}
+	// 3. 별 이미지 갱신
+	SetStarImage(Img_Star1, 1, InStarCount);
+	SetStarImage(Img_Star2, 2, InStarCount);
+	SetStarImage(Img_Star3, 3, InStarCount);
 
 	// 4. 캐릭터 슬롯 렌더링을 자식 패널에게 위임 (SRP 준수)
 	if (WBP_CharacterResultPanel)
@@ -67,7 +69,7 @@ void UVictoryPopupWidget::SetVictoryData(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel 바인딩 누락."));
+		//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] WBP_CharacterResultPanel 바인딩 누락."));
 	}
 
 	// 5. 다음 스테이지가 없다면(마지막 스테이지) 다음 버튼을 숨기거나 비활성화 처리
@@ -75,14 +77,89 @@ void UVictoryPopupWidget::SetVictoryData(
 	{
 		Btn_NextStage->SetVisibility(CachedNextStageID.IsNone() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	}
+
+	// 퍼밀리어 보상 이미지 처리 (초회 3별 클리어 시에만 표시)
+	if (WBP_FamiliarRewardPopup)
+	{
+		if (InAcquiredFamiliar.IsNone())
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar가 None — 퍼밀리어 위젯 숨김"));
+			WBP_FamiliarRewardPopup->HideReward();
+		}
+		else
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("[VictoryPopup] AcquiredFamiliar: %s — ShowFamiliarReward 호출"), *InAcquiredFamiliar.ToString());
+			WBP_FamiliarRewardPopup->ShowFamiliarReward(InAcquiredFamiliar);
+		}
+	}
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_ResultVictory)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_ResultVictory);
+		}
+	}
+	if (Anim_PopupAppear)
+	{
+		PlayAnimation(Anim_PopupAppear);
+	}
 }
 #pragma endregion 데이터 설정 로직 (View Rendering)
 
 #pragma region 내부 로직
+void UVictoryPopupWidget::SetStarImage(UImage* StarImage, int32 StarIndex, int32 InStarCount)
+{
+	if (!StarImage) return;
+
+	// StarIndex 가 InStarCount 이하면 금색(On), 초과면 흑색(Off)
+	const bool bIsOn = (StarIndex <= InStarCount);
+	UTexture2D* TargetTexture = bIsOn ? StarOnTexture.Get() : StarOffTexture.Get();
+
+	if (TargetTexture)
+	{
+		StarImage->SetBrushFromTexture(TargetTexture);
+	}
+	/*else
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("⚠️ [VictoryPopup] Star%d 텍스처가 비어있습니다!"
+				" WBP_VictoryPopup 디테일 패널에서 StarOnTexture / StarOffTexture 를 할당하세요."),
+			StarIndex);
+	}*/
+}
+
 void UVictoryPopupWidget::OnNextStageClicked()
 {
 	// 방어 코드: 다음 스테이지가 비어있으면 무시 (버튼이 숨겨지겠지만 혹시 모를 클릭 방지)
 	if (CachedNextStageID.IsNone()) return;
+
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->SetPause(false);
+	}
+
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_IngameNext)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_IngameNext);
+		}
+	}
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_NextStage,
+			this,
+			&UVictoryPopupWidget::ExecuteNextStage,
+			0.3f,
+			false
+		);
+	}
+}
+
+void UVictoryPopupWidget::ExecuteNextStage()
+{
 
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI) return;
@@ -122,7 +199,8 @@ void UVictoryPopupWidget::OnNextStageClicked()
 			AssetsToPreload,
 			NextAssets->LoadingImage,
 			(NextStats ? NextStats->StageName : FText::GetEmpty()),
-			(NextStats ? NextStats->Description : FText::GetEmpty())
+			(NextStats ? NextStats->Description : FText::GetEmpty()),
+			true
 		);
 	}
 }

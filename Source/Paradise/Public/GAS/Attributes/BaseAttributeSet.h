@@ -43,6 +43,10 @@ public:
 	*/
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
+	/**
+	 * @brief 스탯(Attribute)의 최종 값이 변경된 직후에 자동으로 호출되는 함수
+	 */
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 public:
 	// =====================================================
 	//  기본 스탯 (Base Stats)
@@ -57,101 +61,109 @@ public:
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Health)
 
 	/**
-	* @brief 최대 체력 (Max Health)
-	* @details 체력의 상한선입니다. 버프/장비로 증가할 수 있습니다.
-	*/
+	 * @brief 최대 체력 (Max Health)
+	 * @details 체력의 상한선입니다. 버프/장비로 증가할 수 있습니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Health")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxHealth)
 
 	/**
-	* @brief 현재 마나 (Current Mana)
-	* @details 스킬 사용 시 소모되는 자원입니다.
-	*/
+	 * @brief 현재 마나 (Current Mana)
+	 * @details 스킬 사용 시 소모되는 자원입니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Mana")
 	FGameplayAttributeData Mana;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Mana)
 
 	/**
-	* @brief 최대 마나 (Max Mana)
-	* @details 마나의 상한선입니다.
-	*/
+	 * @brief 최대 마나 (Max Mana)
+	 * @details 마나의 상한선입니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Mana")
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxMana)
 
 	/**
-	* @brief 공격력 (Attack Power)
-	* @details 데미지 계산 공식의 기본 계수가 됩니다.
-	*/
+	 * @brief 공격력 (Attack Power)
+	 * @details 데미지 계산 공식의 기본 계수가 됩니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData AttackPower;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackPower)
 
 	/**
-	* @brief 방어력 (Defense)
-	* @details 들어오는 데미지를 차감하는 수치입니다.
-	*/
+	 * @brief 방어력 (Defense)
+	 * @details 들어오는 데미지를 차감하는 수치입니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData Defense;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Defense)
 
 	/**
-	* @brief 크리티컬 확률 (CritRate)
-	공격 적중 시 치명타가 발생할 확률입니다.
-	* - 단위: 비율 (Ratio) (예: 0.1 = 10%, 1.0 = 100%)
-	* - 범위: 0.0 ~ 1.0 (음수 불가)
-	*/
+	 * @brief 크리티컬 확률 (CritRate)
+	 * 공격 적중 시 치명타가 발생할 확률입니다.
+	 * - 단위: 비율 (Ratio) (예: 0.1 = 10%, 1.0 = 100%)
+	 * - 범위: 0.0 ~ 1.0 (음수 불가)
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData CritRate;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CritRate)
 
 	/**
-	* @brief 치명타 피해량 배율 (Critical Damage) - [추가됨]
-	* @details 치명타 발생 시 기본 데미지에 곱해지는 배율입니다.
-	* - 기본값: 1.5 (150% 데미지)
-	* - 범위: 1.0 이상
-	*/
+	 * @brief 치명타 피해량 배율 (Critical Damage)
+	 * @details 치명타 발생 시 기본 데미지에 곱해지는 배율입니다.
+	 * - 기본값: 1.5 (150% 데미지)
+	 * - 범위: 1.0 이상
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData CritDamage;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CritDamage)
 
 	/**
-	* @brief 이동 속도 (Movement Speed)
-	* @details 캐릭터의 걷기/달리기 속도에 영향을 줍니다.
-	* @note 값이 변경되면 CharacterMovementComponent의 MaxWalkSpeed에 동기화해주어야 합니다.
+	 * @brief 이동 속도 (Movement Speed)
+	 * @details 캐릭터의 걷기/달리기 속도에 영향을 줍니다.
+	 * @note 값이 변경되면 CharacterMovementComponent의 MaxWalkSpeed에 동기화해주어야 합니다.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MoveSpeed)
 
 	/**
-	* @brief 사거리 (Attack Range) - [추가됨]
-	* @details 공격 가능한 최대 거리입니다.
-	* - 플레이어: 무기 사거리
-	* - 몬스터: AI가 공격을 시도하는 거리
-	*/
+	 * @brief 사거리 (Attack Range) - [추가됨]
+	 * @details 공격 가능한 최대 거리입니다.
+	 * - 플레이어: 무기 사거리
+	 * - 몬스터: AI가 공격을 시도하는 거리
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData AttackRange;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackRange)
 
 	/**
-	* @brief 공격 속도 (Attack Speed)
-	* @details 애니메이션 재생 속도(PlayRate) 배율입니다.
-	* - 1.0 = 기본 속도
-	* - 1.5 = 1.5배 빠르게 재생 (모션이 빨리 끝남)
-	*/
+	 * @brief 공격 속도 (Attack Speed)
+	 * @details 애니메이션 재생 속도(PlayRate) 배율입니다.
+	 * - 1.0 = 기본 속도
+	 * - 1.5 = 1.5배 빠르게 재생 (모션이 빨리 끝남)
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	FGameplayAttributeData AttackSpeed;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackSpeed)
 
 	/**
-	* @brief 재사용 대기시간 / 공격 주기 (Cooldown)
-	* @details 기술 사용 후 다음 사용까지 걸리는 시간(초)입니다.
-	*/
+	 * @brief 체력 재생량 (Mana Regen)
+	 * @details 1초 마다 회복되는 체력의 양입니다.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
-	FGameplayAttributeData Cooldown;
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Cooldown)
+	FGameplayAttributeData HealthRegen;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, HealthRegen)
+
+	/**
+	 * @brief 마나 재생량 (Mana Regen)
+	 * @details 1초 마다 회복되는 마나의 양입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	FGameplayAttributeData ManaRegen;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, ManaRegen)
 
 	// =====================================================
 	//  메타 어트리뷰트 (Meta Attributes)

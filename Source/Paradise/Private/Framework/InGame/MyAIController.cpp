@@ -7,6 +7,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Characters/AIUnit/UnitBase.h"
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Objects/HomeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Framework/Core/ParadiseGameInstance.h"
@@ -32,6 +33,15 @@ AMyAIController::AMyAIController()
 		}
 	}
 
+
+    if (UCrowdFollowingComponent* CrowdComp = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()))
+    {
+        CrowdComp->SetCrowdSeparation(true);
+        // 가중치를 50.0f 정도로 다시 올려서 유닛끼리 부드럽게 비켜가도록 둡니다.
+        CrowdComp->SetCrowdSeparationWeight(500.0f);
+        CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::High);
+    }
+
 	if (AIPerception)
 	{
 		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AMyAIController::OnTargetDetected);
@@ -43,51 +53,41 @@ void AMyAIController::OnPossess(APawn* InPawn)
     Super::OnPossess(InPawn);
 
     UBlackboardComponent* BBComp = Blackboard.Get();
-    if (BTAsset && BBAsset && UseBlackboard(BBAsset, BBComp))
+    AUnitBase* SelfUnit = Cast<AUnitBase>(InPawn);
+
+    if (SelfUnit && BBAsset)
     {
-        Blackboard = BBComp;
-        AUnitBase* SelfUnit = Cast<AUnitBase>(InPawn);
-        if (SelfUnit)
+        UBehaviorTree* BTToRun = SelfUnit->GetUnitAssets().BehaviorTree.LoadSynchronous();
+
+        if (BTToRun == nullptr)
         {
-            // 1. 사거리 데이터 로드 (기존 동일)
+            BTToRun = BTAsset;
+        }
+
+        // 블랙보드 사용 및 결정된 비헤이비어 트리 실행
+        if (BTToRun && UseBlackboard(BBAsset, BBComp))
+        {
+            Blackboard = BBComp;
+
+            // 1. 사거리 데이터 로드
             Blackboard->SetValueAsFloat(TEXT("TargetAttackRange"), SelfUnit->GetAttackRange());
 
-            // 2. 적대적인 기지 찾기 (로그 강화)
+            // 2. 적대적인 기지 찾기
             TArray<AActor*> FoundBases;
             UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHomeBase::StaticClass(), FoundBases);
-
-            UE_LOG(LogTemp, Log, TEXT("🔍 [%s] 주변 기지 검색 시작 (총 %d개 발견)"), *SelfUnit->GetName(), FoundBases.Num());
 
             for (AActor* Actor : FoundBases)
             {
                 AHomeBase* HomeBase = Cast<AHomeBase>(Actor);
-                if (HomeBase)
+                if (HomeBase && SelfUnit->IsEnemy(HomeBase))
                 {
-                    // [디버그] 태그 및 적대 관계 확인 로그
-                    // GetFactionTag() 함수가 없다면 FactionTag 변수를 직접 사용하세요.
-                    FGameplayTag MyTag = SelfUnit->GetFactionTag();
-                    FGameplayTag BaseTag = HomeBase->GetFactionTag();
-                    bool bIsEnemyResult = SelfUnit->IsEnemy(HomeBase);
-
-                    UE_LOG(LogTemp, Warning, TEXT("   👉 [Check] 나: %s(%s) vs 기지: %s(%s) | 적대판정: %s"),
-                        *SelfUnit->GetName(),
-                        *MyTag.ToString(),
-                        *HomeBase->GetName(),
-                        *BaseTag.ToString(),
-                        bIsEnemyResult ? TEXT("TRUE (공격대상)") : TEXT("FALSE (아군/중립)")
-                    );
-
-                    if (bIsEnemyResult)
-                    {
-                        Blackboard->SetValueAsObject(TEXT("HomeBaseActor"), HomeBase);
-                        UE_LOG(LogTemp, Error, TEXT("🚀 [%s] 타겟 확정! 공격하러 갑니다 -> %s"), *SelfUnit->GetName(), *HomeBase->GetName());
-                        break; // 타겟을 찾았으니 루프 종료
-                    }
+                    Blackboard->SetValueAsObject(TEXT("EnemyBaseActor"), HomeBase);
+                    break;
                 }
             }
-        }
 
-        RunBehaviorTree(BTAsset);
+            RunBehaviorTree(BTToRun);
+        }
     }
 }
 
@@ -112,12 +112,17 @@ void AMyAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 
         if (TargetUnit && SelfUnit && SelfUnit->IsEnemy(TargetUnit))
         {
-            Blackboard->SetValueAsObject(BB_KEYS::TargetActor, Actor);
+            // 현재 타겟이 이미 있다면, 시야에 새로운 적이 들어와도 무시
+            AActor* ExistingTarget = Cast<AActor>(Blackboard->GetValueAsObject(BB_KEYS::TargetActor));
+            if (!IsValid(ExistingTarget) || (Cast<ACharacterBase>(ExistingTarget) && Cast<ACharacterBase>(ExistingTarget)->IsDead()))
+            {
+                Blackboard->SetValueAsObject(BB_KEYS::TargetActor, Actor);
+            }
         }
     }
     else
     {
-        // 시야에서 사라졌을 때 타겟 클리어
+        // 시야에서 완전히 사라졌을 때만 타겟 해제
         AActor* CurrentTarget = Cast<AActor>(Blackboard->GetValueAsObject(BB_KEYS::TargetActor));
         if (CurrentTarget == Actor)
         {

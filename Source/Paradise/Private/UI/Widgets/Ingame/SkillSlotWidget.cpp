@@ -23,7 +23,28 @@ void USkillSlotWidget::NativeConstruct()
 	// 입력 처리는 버튼에게 위임하고, 위젯은 그 결과만 받아 처리합니다.
 	if (Btn_SkillAction)
 	{
-		Btn_SkillAction->OnClicked().AddUObject(this, &USkillSlotWidget::OnSkillButtonClicked);
+		//Btn_SkillAction->OnClicked().AddUObject(this, &USkillSlotWidget::OnSkillButtonClicked);
+
+		Btn_SkillAction->OnPressed().AddUObject(this, &USkillSlotWidget::OnSkillButtonPressed);
+		Btn_SkillAction->OnReleased().AddUObject(this, &USkillSlotWidget::OnSkillButtonReleased);
+	}
+
+	// 기본 아이콘이 할당되어 있으면 즉시 세팅
+	if (Tex_DefaultSkillIcon && Img_SkillIcon)
+	{
+		if (UMaterialInstanceDynamic* DynamicMat = Img_SkillIcon->GetDynamicMaterial())
+		{
+			DynamicMat->SetTextureParameterValue(FName("SpriteTexture"), Tex_DefaultSkillIcon);
+		}
+	}
+
+	if (Img_Shortcut)
+	{
+		if (!ShortcutKeyImage.IsNull())
+		{
+			Img_Shortcut->SetBrushFromTexture(ShortcutKeyImage.LoadSynchronous());
+		}
+		Img_Shortcut->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	// 초기 상태 설정
@@ -37,6 +58,11 @@ void USkillSlotWidget::NativeDestruct()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
 	}
+	if (Btn_SkillAction)
+	{
+		Btn_SkillAction->OnPressed().RemoveAll(this);
+		Btn_SkillAction->OnReleased().RemoveAll(this);
+	}
 
 	Super::NativeDestruct();
 }
@@ -47,7 +73,10 @@ void USkillSlotWidget::UpdateSlotInfo(UTexture2D* InIconTexture, float InMaxCool
 {
 	if (InIconTexture && Img_SkillIcon)
 	{
-		Img_SkillIcon->SetBrushFromTexture(InIconTexture);
+		if (UMaterialInstanceDynamic* DynamicMat = Img_SkillIcon->GetDynamicMaterial())
+		{
+			DynamicMat->SetTextureParameterValue(FName("SpriteTexture"), InIconTexture);
+		}
 	}
 
 	MaxCooldown = InMaxCooldownTime;
@@ -95,20 +124,62 @@ void USkillSlotWidget::RefreshCooldown(float CurrentTime, float MaxTime)
 		ClearCooldownVisual();
 	}
 }
+void USkillSlotWidget::SetManaAffordable(bool bAffordable)
+{
+	bIsManaAffordable = bAffordable;
+
+	// 1. 쿨타임이 돌고 있지 않을 때만 버튼 활성화 여부 결정 (쿨타임 중이면 어차피 꺼져있어야 함)
+	if (CurrentCooldown <= 0.0f && Btn_SkillAction)
+	{
+		Btn_SkillAction->SetIsEnabled(bIsManaAffordable);
+	}
+
+	// 2. 마나가 부족하면 아이콘을 어둡게 처리하여 직관적인 UX 제공
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(bIsManaAffordable ? NormalTintColor : FLinearColor(0.2f, 0.2f, 0.2f, 1.0f));
+	}
+}
 #pragma endregion 외부 인터페이스 구현
 
 #pragma region 내부 로직 구현
-void USkillSlotWidget::OnSkillButtonClicked()
+void USkillSlotWidget::OnSkillButtonPressed()
 {
-	UE_LOG(LogTemp, Log, TEXT("키 입력 들어옴"));
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(PressedTintColor);
+	}
 
-	// 쿨타임 중이 아닐 때만 로직 수행 (이중 검증)
 	if (CurrentCooldown <= 0.0f)
 	{
-		if (OnSkillActionRequested.IsBound())
+		if (OnSkillPressed.IsBound())
 		{
-			OnSkillActionRequested.Broadcast();
+			OnSkillPressed.Broadcast();
 		}
+	}
+}
+
+void USkillSlotWidget::OnSkillButtonReleased()
+{
+	if (Img_SkillIcon)
+	{
+		Img_SkillIcon->SetColorAndOpacity(NormalTintColor);
+	}
+
+	if (CurrentCooldown <= 0.0f)
+	{
+		if (OnSkillReleased.IsBound())
+		{
+			OnSkillReleased.Broadcast();
+		}
+	}
+}
+
+void USkillSlotWidget::SetShortcutTextVisibility(bool bShow)
+{
+	if (Img_Shortcut)
+	{
+		Img_Shortcut->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }
 
@@ -160,7 +231,7 @@ void USkillSlotWidget::ClearCooldownVisual()
 	// 쿨타임 종료 시 버튼 재활성화
 	if (Btn_SkillAction)
 	{
-		Btn_SkillAction->SetIsEnabled(true);
+		Btn_SkillAction->SetIsEnabled(bIsManaAffordable);
 	}
 }
 #pragma endregion 내부 로직 구현

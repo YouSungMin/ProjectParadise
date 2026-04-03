@@ -12,6 +12,7 @@ class USummonCostWidget;
 class UTexture2D;
 class UCostManageComponent;
 class UFamiliarSummonComponent;
+class UAutoCombatComponent;
 struct FSummonSlotInfo;
 #pragma endregion 전방 선언
 
@@ -31,29 +32,35 @@ protected:
 
 #pragma region 시스템 초기화
 private:
-	/** @brief PlayerState및 필요 컴포넌트 연결 시도 */
+	/** @brief PlayerState 및 필요 컴포넌트 연결 시도 (지연 초기화 지원) */
 	void InitComponents();
-	/**
-	 * @brief 코스트 변경 델리게이트 핸들러 (직접 바인딩)
-	 * @details UFUNCTION 필수
-	 */
+#pragma endregion 시스템 초기화
+
+#pragma region 이벤트 핸들러 (View <- Model)
+private:
+	/** @brief 코스트 갱신 수신기 */
 	UFUNCTION()
 	void HandleCostUpdate(float CurrentCost, float MaxCost);
 
-	/** @brief 슬롯 정보 변경 시 UI 업데이트 핸들러*/
+	/** @brief 슬롯 소모 애니메이션 수신기 (Pure MVC 핵심) */
+	UFUNCTION()
+	void HandleSummonSlotConsumed(int32 ConsumedIndex);
+
+	/** @brief 슬롯 데이터 갱신 및 큐 딜레이 처리 수신기 */
 	UFUNCTION()
 	void HandleSummonSlotsUpdate(const TArray<FSummonSlotInfo>& Slots);
-#pragma endregion 시스템 초기화
 
-#pragma region 입력 처리
-private:
 	/**
-	 * @brief 하위 슬롯 위젯이 클릭되었을 때 호출되는 함수
-	 * @param SlotIndex 클릭된 슬롯의 인덱스
+	 * @brief 오토 전투 상태 변경 알림 수신기
+	 * @details 오토 모드 시 수동 소환 터치를 방지합니다.
 	 */
 	UFUNCTION()
+	void HandleAutoBattleStateChanged(bool bIsAuto);
+public:
+	/** @brief UI 버튼 클릭 또는 외부 요청 시 모델에 구매를 요청합니다. */
+	UFUNCTION()
 	void HandleSlotClickRequest(int32 SlotIndex);
-#pragma endregion 입력 처리
+#pragma endregion 이벤트 핸들러
 
 #pragma region 외부 인터페이스
 public:
@@ -65,19 +72,19 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void SetSummonSlotData(int32 SlotIndex, UTexture2D* Icon, int32 InCost);
-
-	///**
-	// * @brief 특정 슬롯의 쿨타임 상태를 업데이트합니다.
-	// */
-	//UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
-	//void UpdateSummonCooldown(int32 SlotIndex, float CurrentTime, float MaxTime);
-
-	/** 
+	/**
 	 * @brief 현재 코스트 상태를 패널 내의 코스트 위젯에 전달합니다.
 	 * @details Controller나 PlayerState에서 (성능상 Tick보다는 Timer가 나음) 호출하여 부드럽게 갱신할 것을 권장합니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void UpdateCostDisplay(float CurrentCost, float MaxCost);
+
+	/**
+	 * @brief 키보드 모드 진입 시 각 소환 슬롯의 단축키 텍스트 노출 여부를 일괄 제어합니다.
+	 * @param bShow true면 텍스트 노출, false면 숨김
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleShortcutKeys(bool bShow);
 #pragma endregion 외부 인터페이스
 
 #pragma region 위젯 바인딩
@@ -113,26 +120,24 @@ protected:
 	float SlotRefillDelay = 1.0f;
 
 private:
-	/** @brief 다음 리필이 허용되는 절대 시간 (앞 슬롯의 리필이 끝나야 다음 리필 시작) */
+	/** @brief 게임 시작 최초 1회를 판별하는 플래그 (4+1 방지용) */
+	bool bIsFirstLoad = true;
+
+	/** @brief 다음 리필이 허용되는 절대 시간 */
 	float NextAvailableRefillTime = 0.0f;
 
-	/** @brief 각 슬롯이 화면에 등장해도 되는 '절대 시간'을 기억하는 배열 */
+	/** @brief 각 슬롯이 화면에 등장할 절대 시간 큐 */
 	TArray<float> SlotRevealTimes;
 
-	/** @brief 슬롯 위젯의 빠른 접근을 위한 캐싱 배열 */
+	/** @brief 슬롯 위젯 일괄 제어용 배열 */
 	UPROPERTY()
 	TArray<TObjectPtr<USummonSlotWidget>> SummonSlots;
 
-	/** @brief 델리게이트 해제를 위한 컴포넌트 약참조 */
+	/** @brief 메모리 누수 방지용 약참조 (Weak Ptr) */
 	TWeakObjectPtr<UCostManageComponent> CachedCostComponent = nullptr;
-
-	/** @brief 소환 컴포넌트 약참조 */
 	TWeakObjectPtr<UFamiliarSummonComponent> CachedSummonComponent = nullptr;
 
-	/** @brief 재시도용 타이머 핸들 */
+	/** @brief 초기화 재시도 타이머 */
 	FTimerHandle TimerHandle_InitCost;
-
-	/** @brief 애니메이션 재생을 위해 마지막으로 클릭한 슬롯 인덱스를 기억합니다. */
-	int32 LastClickedSlotIndex = -1;
 #pragma endregion 내부 데이터
 };

@@ -11,7 +11,9 @@
 
 
 class UInputAction;
+class USkillIndicatorComponent;
 struct FInputActionValue;
+
 /**
  * 
  */
@@ -43,6 +45,12 @@ public:
 	USkeletalMeshComponent* GetArmorComponent(EEquipmentSlot Slot) const;
 
 	/**
+	 * @brief 스킬 사거리 컴포넌트 Getter함수
+	 */
+	UFUNCTION(BlueprintPure, Category = "Getter")
+	USkillIndicatorComponent* GetSkillIndicatorComponent() const;
+
+	/**
 	 * @brief 현재 장착된 무기를 기반으로 특정 행동(평타/스킬)에 필요한 전투 데이터를 반환합니다.
 	 * * @details ICombatInterface의 구현부입니다.
 	 * 1. PlayerData와 EquipmentComponent를 통해 현재 무기 ID를 조회합니다.
@@ -54,7 +62,7 @@ public:
 	virtual FCombatActionData GetCombatActionData(ECombatActionType ActionType) const override;
 
 	/** @brief 특정 상황(EventType)에 맞는 최종 연출 데이터(Payload)를 반환합니다. (기본값: nullptr) */
-	virtual struct FFXPayload* GetFXPayload(EFXEventType EventType) const override;
+	virtual TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const override;
 
 	UFUNCTION(BlueprintCallable)
 	class APlayerData* GetPlayerData() const { return LinkedPlayerData.Get(); }
@@ -114,6 +122,8 @@ public:
 	/** @brief 사망 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
 	virtual UAnimMontage* GetDeathMontage() const override;
 
+	/** @brief 피격 몽타주를 반환하는 부모의 가상 함수 오버라이드*/
+	virtual UAnimMontage* GetHitMontage() const override;
 protected:
 
 	/*
@@ -164,6 +174,10 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<class UCameraComponent> FollowCamera = nullptr;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USkillIndicatorComponent> SkillIndicatorComp2 =nullptr;
 
 	
 	/*

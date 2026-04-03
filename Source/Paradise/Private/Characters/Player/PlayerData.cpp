@@ -2,12 +2,12 @@
 
 
 #include "Characters/Player/PlayerData.h"
-#include "Characters/Base/CharacterBase.h"
 #include "GAS/Attributes/BaseAttributeSet.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/InventorySystem.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/GrowthStruct.h"
+#include "Data/Structs/CombatTypes.h"
 #include "Data/Assets/FXDataAsset.h"
 #include "AbilitySystemComponent.h"
 #include "Components/EquipmentComponent.h"
@@ -33,7 +33,7 @@ APlayerData::APlayerData()
 void APlayerData::InitCombatAttributes()
 {
 	if (!CombatAttributeSet2) {
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] CombatAttributeSet가 없습니다."));
+		//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] CombatAttributeSet가 없습니다."));
 		return;
 	} 
 
@@ -74,6 +74,8 @@ void APlayerData::InitCombatAttributes()
 	float CharDefense = (Stats->BaseDefense + BonusLevelDefense) * AwakenMultiplier;
 	float CharCritRate = Stats->BaseCritRate;
 	float CharMoveSpeed = Stats->BaseMoveSpeed;
+	float CharHPRegen = Stats->BaseHealthRegen;
+	float CharManaRegen = Stats->BaseManaRegen;
 
 
 	// 장비 스탯 합산 (강화 수치 연동)
@@ -82,6 +84,8 @@ void APlayerData::InitCombatAttributes()
 	float EquipAttack = 0.0f;
 	float EquipDefense = 0.0f;
 	float EquipCritRate = 0.0f;
+	float EquipHPRegen = 0.0f;
+	float EquipManaRegen = 0.0f;
 
 	// 추가 스탯들
 	float EquipCritDamage = 0.0f;
@@ -141,9 +145,9 @@ void APlayerData::InitCombatAttributes()
 					EquipAttackSpeed += WeaponStats->AttackSpeed;
 
 					// 사거리 스탯 추출
-					if (!WeaponStats->BasicAttackActionID.IsNone())
+					if (!WeaponStats->BasicAttackActionHandle.IsNull())
 					{
-						if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, WeaponStats->BasicAttackActionID))
+						if (FActionStats* ActionRow = WeaponStats->BasicAttackActionHandle.GetRow<FActionStats>(TEXT("BasicAttackLookup")))
 						{
 							FinalAttackRange = ActionRow->AttackRange;
 						}
@@ -156,6 +160,8 @@ void APlayerData::InitCombatAttributes()
 					EquipMaxHP += (ArmorStats->MaxHP * EnhanceMult);
 					EquipMaxMP += (ArmorStats->MaxMana * EnhanceMult);
 					EquipDefense += (ArmorStats->DefensePower * EnhanceMult);
+					EquipHPRegen += (ArmorStats->HealthRegen * EnhanceMult);
+					EquipManaRegen += (ArmorStats->ManaRegen * EnhanceMult);
 				}
 			}
 		}
@@ -167,15 +173,19 @@ void APlayerData::InitCombatAttributes()
 	float FinalAttack = CharAttack + EquipAttack;
 	float FinalDefense = CharDefense + EquipDefense;
 	float FinalCritRate = CharCritRate + EquipCritRate;
+	float FinalHPRegen = CharHPRegen + EquipHPRegen;
+	float FinalManaRegen = CharManaRegen + EquipManaRegen;
 
 	CombatAttributeSet2->InitMaxHealth(FinalMaxHP);
 	CombatAttributeSet2->InitHealth(FinalMaxHP); // 현재 체력도 최대로 갱신
 	CombatAttributeSet2->InitMaxMana(FinalMaxMP);
-	CombatAttributeSet2->InitMana(FinalMaxMP);   // 현재 마나도 최대로 갱신
+	CombatAttributeSet2->InitMana(0.0f);   // 현재 마나도 최대로 갱신
 	CombatAttributeSet2->InitAttackPower(FinalAttack);
 	CombatAttributeSet2->InitDefense(FinalDefense);
 	CombatAttributeSet2->InitCritRate(FinalCritRate);
 	CombatAttributeSet2->InitMoveSpeed(CharMoveSpeed);
+	CombatAttributeSet2->InitHealthRegen(FinalHPRegen);
+	CombatAttributeSet2->InitManaRegen(FinalManaRegen);
 
 	CombatAttributeSet2->InitCritDamage(EquipCritDamage); // 캐릭터 기본 크뎀이 있다면 CharCritDamage + EquipCritDamage로 합산 필요
 	CombatAttributeSet2->InitAttackSpeed(EquipAttackSpeed);
@@ -185,8 +195,36 @@ void APlayerData::InitCombatAttributes()
 		CombatAttributeSet2->InitAttackRange(FinalAttackRange);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 스탯 초기화 완료 (Level: %d, HP: %.1f, Attack: %.1f)"), CurrentLevel, FinalMaxHP, FinalAttack);
 
+	if (AbilitySystemComponent)
+	{
+		// 이펙트 발생자(Instigator)를 영혼(this)으로 세팅
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddInstigator(this, this);
+
+		// 마나 리젠 가동
+		if (ManaRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle ManaSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(ManaRegenEffectClass, 1.0f, Context);
+			if (ManaSpecHandle.IsValid())
+			{
+				ManaRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*ManaSpecHandle.Data.Get());
+				//UE_LOG(LogTemp, Log, TEXT("💧 [PlayerData] 마나 리젠 가동 시작!"));
+			}
+		}
+
+		// 체력 리젠 가동
+		if (HealthRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle HealthSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(HealthRegenEffectClass, 1.0f, Context);
+			if (HealthSpecHandle.IsValid())
+			{
+				HealthRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*HealthSpecHandle.Data.Get());
+				//UE_LOG(LogTemp, Log, TEXT("💖 [PlayerData] 체력 리젠 가동 시작!"));
+			}
+		}
+	}
 }
 
 void APlayerData::InitPlayerAssets()
@@ -200,10 +238,16 @@ void APlayerData::InitPlayerAssets()
 
 	this->CachedMesh = Assets->SkeletalMesh.LoadSynchronous();
 	this->CachedDeathMontage = Assets->DeathMontage.LoadSynchronous();
+	this->CachedHitMontage = Assets->HitMontage.LoadSynchronous();
 	this->CachedAnimBP = Assets->AnimBlueprint;
 	this->FactionTag = Assets->FactionTag;
-	this->CachedReactionFX = Assets->ReactionFX;
+	this->CachedCharacterFX = Assets->CharacterFX;
 	this->CachedUltimateFXTag = Assets->UltimateEffectTag;
+
+	if (!CachedCharacterFX.FXData.IsNull())
+	{
+		CachedCharacterFX.FXData.LoadSynchronous();
+	}
 
 	//ASC 세팅
 	if (AbilitySystemComponent)
@@ -216,14 +260,14 @@ void APlayerData::InitPlayerAssets()
 		}
 
 		// 새 궁극기 부여
-		if (Assets->UltimateAbility)
+		if (Assets->UltimateAttackSetup.AbilityClass)
 		{
 			// InputID는 프로젝트 설정에 맞게 변경 (예: Skill_Ultimate or 3, 4번 등)
-			FGameplayAbilitySpec Spec(Assets->UltimateAbility, 1, static_cast<int32>(EInputID::Ultimate));
+			FGameplayAbilitySpec Spec(Assets->UltimateAttackSetup.AbilityClass, 1, static_cast<int32>(EInputID::Ultimate));
 
 			UltimateSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
+			//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 궁극기(Ultimate) 어빌리티 부여 완료"));
 		}
 	}
 
@@ -240,7 +284,7 @@ void APlayerData::InitPlayerAssets()
 			{
 				// 스킬 및 애니메이션 부여
 				this->InitializeWeaponAbilities(WeaponAssets);
-				UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기(%s) 어빌리티가 성공적으로 부여되었습니다."), *WeaponID.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기(%s) 어빌리티가 성공적으로 부여되었습니다."), *WeaponID.ToString());
 			}
 		}
 	}
@@ -256,7 +300,7 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance 없음!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance 없음!"));
 		return Result;
 	}
 
@@ -272,17 +316,20 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 		if (CharAssets)
 		{
 			Result.MontageToPlay = CharAssets->UltimateMontage.LoadSynchronous(); // 구조체에 이 필드가 있다고 가정
-			if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, CharStats->SkillActionID))
+			if (FActionStats* ActionRow = CharStats->UltimateActionHandle.GetRow<FActionStats>(TEXT("UltimateSkillLookup")))
 			{
-				Result.DamageMultiplier = ActionRow->DamageMultiplier;
-				Result.AttackRange = ActionRow->AttackRange;
-				Result.AttackRadius = ActionRow->AttackRadius;
-				Result.ForwardOffset = ActionRow->ForwardOffset;
-				Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
+				Result.Stats = *ActionRow;
+				if (!ActionRow->ProjectileDataHandle.IsNull())
+				{
+					if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("PlayerUltimateProjectileLookup")))
+					{
+						Result.ProjectileStats = *ProjRow;
+					}
+				}
 			}
 
 			// 이펙트 클래스 (캐릭터 고유 이펙트가 있다면 설정)
-			Result.DamageEffectClass = CharAssets->UltimateDamageEffect;
+			Result.EffectClass = CharAssets->UltimateAttackSetup.EffectClass;
 		}
 
 		return Result; // 궁극기 데이터 반환 후 종료
@@ -306,10 +353,18 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 	// 4. 데이터 패키징
 	if (WeaponAssets && WeaponStats)
 	{
-		// 공통: 무기 전용 데미지 이펙트 (독, 화염 등)
-		Result.DamageEffectClass = WeaponAssets->DamageEffectClass;
-		Result.ProjectileClass = WeaponAssets->ProjectileClass;
-		FName TargetActionID = NAME_None;
+		if (ActionType == ECombatActionType::BasicAttack)
+		{
+			Result.EffectClass = WeaponAssets->BasicAttackSetup.EffectClass;
+			Result.ProjectileClass = WeaponAssets->BasicAttackSetup.ProjectileClass;
+		}
+		else if (ActionType == ECombatActionType::WeaponSkill)
+		{
+			Result.EffectClass = WeaponAssets->WeaponSkillSetup.EffectClass;
+			Result.ProjectileClass = WeaponAssets->WeaponSkillSetup.ProjectileClass;
+		}
+
+		FDataTableRowHandle TargetActionHandle;
 
 		FCharacterAssets* CharAssets = GI->GetDataTableRow<FCharacterAssets>(GI->CharacterAssetsDataTable, CharacterID);
 
@@ -320,31 +375,34 @@ FCombatActionData APlayerData::GetCombatActionData(ECombatActionType ActionType)
 			{
 			case ECombatActionType::BasicAttack:
 				Result.MontageToPlay = MyAnimSet.BasicAttackMontage.LoadSynchronous();
-				TargetActionID = WeaponStats->BasicAttackActionID;
+				TargetActionHandle = WeaponStats->BasicAttackActionHandle;
 				break;
 
 			case ECombatActionType::WeaponSkill:
 				Result.MontageToPlay = MyAnimSet.SkillMontage.LoadSynchronous();
-				TargetActionID = WeaponStats->SkillActionID;
+				TargetActionHandle = WeaponStats->SkillActionHandle;
 				break;
 			}
 
-			if (!TargetActionID.IsNone())
+			if (!TargetActionHandle.IsNull())
 			{
-				if (FActionStats* ActionRow = GI->GetDataTableRow<FActionStats>(GI->ActionStatsDataTable, TargetActionID))
+				if (FActionStats* ActionRow = TargetActionHandle.GetRow<FActionStats>(TEXT("WeaponActionLookup")))
 				{
-					Result.DamageMultiplier = ActionRow->DamageMultiplier;
-					Result.AttackRange = ActionRow->AttackRange;
-					Result.AttackRadius = ActionRow->AttackRadius;
-					Result.ForwardOffset = ActionRow->ForwardOffset;
-					Result.Cooldown = ActionRow->Cooldown;
-					Result.ProjectileSpeed = ActionRow->ProjectileSpeed;
-					Result.ManaCost = ActionRow->ManaCost;
+					Result.Stats = *ActionRow;
+
+					if (!ActionRow->ProjectileDataHandle.IsNull())
+					{
+						if (FProjectileStats* ProjRow = ActionRow->ProjectileDataHandle.GetRow<FProjectileStats>(TEXT("PlayerWeaponProjectileLookup")))
+						{
+							Result.ProjectileStats = *ProjRow;
+							//UE_LOG(LogTemp, Log, TEXT("🏹 [%s] 투사체 세팅 완료! (발사 수: %d)"), *GetName(), ProjRow->ProjectileCount);
+						}
+					}
 				}
-				else
+				/*else
 				{
-					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 ActionID(%s)를 찾을 수 없습니다!"), *TargetActionID.ToString());
-				}
+					UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] 엑셀에서 Action 데이터를 찾을 수 없습니다!"));
+				}*/
 			}
 		}
 	}
@@ -356,7 +414,7 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 {
 	if (!AbilitySystemComponent || !WeaponData) return;
 
-	UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기 어빌리티 교체 시작..."));
+	//UE_LOG(LogTemp, Log, TEXT("⚔️ [PlayerData] 무기 어빌리티 교체 시작..."));
 
 	// ---------------------------------------------------------
 	// 기존 무기 어빌리티 제거 (Clean Up)
@@ -378,33 +436,37 @@ void APlayerData::InitializeWeaponAbilities(const FWeaponAssets* WeaponData)
 	// ---------------------------------------------------------
 
 	// 평타 (Basic Attack)
-	if (WeaponData->BasicAttackAbility)
+	if (WeaponData->BasicAttackSetup.AbilityClass)
 	{
-		FGameplayAbilitySpec Spec(WeaponData->BasicAttackAbility, 1, static_cast<int32>(EInputID::Attack));
+		FGameplayAbilitySpec Spec(WeaponData->BasicAttackSetup.AbilityClass, 1, static_cast<int32>(EInputID::Attack));
 		BasicAttackHandle = AbilitySystemComponent->GiveAbility(Spec);
 	}
 
 	// 무기 스킬 (Weapon Skill)
-	if (WeaponData->WeaponSkillAbility)
+	if (WeaponData->WeaponSkillSetup.AbilityClass)
 	{
-		FGameplayAbilitySpec Spec(WeaponData->WeaponSkillAbility, 1, static_cast<int32>(EInputID::Skill));
+		FGameplayAbilitySpec Spec(WeaponData->WeaponSkillSetup.AbilityClass, 1, static_cast<int32>(EInputID::Skill));
 		WeaponSkillHandle = AbilitySystemComponent->GiveAbility(Spec);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 어빌리티 부여 완료 (평타/스킬)"));
 
 	// ---------------------------------------------------------
 	// 무기 FX 데이터 캐싱
 	// ---------------------------------------------------------
 	if (WeaponData)
 	{
-		CachedActionFX = WeaponData->ActionFX;
-		UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
+		CachedWeaponFX = WeaponData->WeaponFX;
+		//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 무기 FX 데이터 캐싱 완료"));
+		if (!CachedWeaponFX.FXData.IsNull())
+		{
+			CachedWeaponFX.FXData.LoadSynchronous();
+		}
 	}
 	else
 	{
 		// 무기를 해제했을 경우 비워줌
-		CachedActionFX = FActionFXSettings();
+		CachedWeaponFX = FWeaponFXSettings();
 	}
 }
 
@@ -416,18 +478,18 @@ void APlayerData::InitPlayerData(FName HeroID)
 	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance를 찾을 수 없습니다."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [PlayerData] GameInstance를 찾을 수 없습니다."));
 		return;
 	}
 	this->CharacterID = HeroID;
-	UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("🔄 [PlayerData] 영웅 초기화 시작: %s"), *HeroID.ToString());
 
 	UInventorySystem* InvSys = GI->GetMainInventory();
 	if (InvSys)
 	{
 		const FOwnedCharacterData* MyData;
 		bool bFound = false;
-		MyData = InvSys->GetCharacterDataByID(HeroID);// 함수명은 실제 구현에 맞게 변경하세요.
+		MyData = InvSys->GetCharacterDataByID(HeroID);
 
 		if (MyData) {
 			bFound = true;
@@ -444,12 +506,15 @@ void APlayerData::InitPlayerData(FName HeroID)
 			{
 				EquipmentComponent->InitializeEquipment(MyData->EquipmentMap);
 			}
-			UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
+
+			ApplySetBonuses();
+
+			//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 인벤토리 데이터 연동 완료 (Lv.%d)"), CurrentLevel);
 		}
-		else
+		/*else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("⚠️ [PlayerData] 인벤토리에서 %s 데이터를 못 찾음. 1레벨 기본값 적용."), *HeroID.ToString());
-		}
+		}*/
 	}
 
 	//전투 스탯 초기화 (내부에서 스스로 테이블 조회)
@@ -458,7 +523,7 @@ void APlayerData::InitPlayerData(FName HeroID)
 	//시각적 에셋 초기화 (내부에서 스스로 테이블 조회)
 	InitPlayerAssets();
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
+	//UE_LOG(LogTemp, Log, TEXT("✅ [PlayerData] 데이터 로드 및 초기화 완료"));
 	
 }
 
@@ -467,8 +532,14 @@ void APlayerData::OnDeath()
 	if (bIsDead) return;
 	bIsDead = true;
 
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffect(HealthRegenHandle);
+		AbilitySystemComponent->RemoveActiveGameplayEffect(ManaRegenHandle);
+	}
+
 	// 부활 타이머 시작 (예: 5초 뒤 부활)
-    UE_LOG(LogTemp, Error, TEXT("👻 [PlayerData] 영혼 사망 확인. 5초 뒤 리스폰 가능합니다"));
+   // UE_LOG(LogTemp, Error, TEXT("👻 [PlayerData] 영혼 사망 확인. 5초 뒤 리스폰 가능합니다"));
 	GetWorld()->GetTimerManager().SetTimer(
 		RespawnTimerHandle, 
 		this, 
@@ -476,7 +547,7 @@ void APlayerData::OnDeath()
 		RespawnTimer, 
 		false);
 
-	UE_LOG(LogTemp, Warning, TEXT("5초 뒤 부활 예정."));
+	//UE_LOG(LogTemp, Warning, TEXT("5초 뒤 부활 예정."));
     // TODO: 여기서 GameMode나 PlayerController에게 "새 몸 줘!"라고 요청하는 코드 필요
     // 예: GetWorld()->GetAuthGameMode<AMyGameMode>()->RespawnHero(this);
 }
@@ -484,44 +555,227 @@ void APlayerData::OnDeath()
 void APlayerData::OnRespawnFinished()
 {
 	bIsDead = false;
-	UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
+	//UE_LOG(LogTemp, Warning, TEXT("부활 완료! 재생성 가능."));
 }
 
-FFXPayload* APlayerData::GetFXPayload(EFXEventType EventType) const
+void APlayerData::ResetStateForRespawn()
 {
-	UFXDataAsset* TargetAsset = nullptr;
-	FGameplayTag TargetTag;
+	//사망 플래그 초기화
+	bIsDead = false;
 
-	// 요청 타입(Enum)에 따라 알맞은 에셋과 태그를 매핑 (라우팅)
+	if (AbilitySystemComponent)
+	{
+		//체력 완전 회복
+		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UBaseAttributeSet::GetMaxHealthAttribute());
+		AbilitySystemComponent->ApplyModToAttribute(UBaseAttributeSet::GetHealthAttribute(), EGameplayModOp::Override, MaxHP);
+
+		//쿨타임(Cooldown) 및 디버프(Debuff) 타이머 싹 지우기
+		FGameplayTagContainer TagsToRemove;
+		TagsToRemove.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Cooldown")));
+		TagsToRemove.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Debuff")));
+
+		AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TagsToRemove);
+
+		//UE_LOG(LogTemp, Log, TEXT("✨ [PlayerData] %s의 영혼 상태(체력/마나/디버프)가 완벽히 정화되었습니다!"), *GetName());
+	}
+
+	if (AbilitySystemComponent)
+	{
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddInstigator(this, this);
+
+		if (ManaRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle ManaSpec = AbilitySystemComponent->MakeOutgoingSpec(ManaRegenEffectClass, 1.0f, Context);
+			ManaRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*ManaSpec.Data.Get());
+		}
+
+		if (HealthRegenEffectClass)
+		{
+			FGameplayEffectSpecHandle HealthSpec = AbilitySystemComponent->MakeOutgoingSpec(HealthRegenEffectClass, 1.0f, Context);
+			HealthRegenHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*HealthSpec.Data.Get());
+		}
+	}
+}
+
+TArray<FFXPayload*> APlayerData::GetFXPayloads(EFXEventType EventType) const
+{
+	TArray<FFXPayload*> ResultPayloads;
 	switch (EventType)
 	{
 	case EFXEventType::Hit:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.HitTag;
-		break;
-	case EFXEventType::Death:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedReactionFX.DeathTag;
-		break;
-	case EFXEventType::BasicAttack:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.BasicAttackTag;
-		break;
-	case EFXEventType::Skill:
-		TargetAsset = CachedActionFX.ActionFXData.LoadSynchronous();
-		TargetTag = CachedActionFX.SkillTag;
-		break;
-	case EFXEventType::Ultimate:
-		TargetAsset = CachedReactionFX.ReactionFXData.LoadSynchronous();
-		TargetTag = CachedUltimateFXTag;
-		break;
-	}
-
-	// 에셋이 있고, 태그가 유효하다면 직접 검색해서 보따리(Payload) 반환
-	if (TargetAsset && TargetTag.IsValid())
 	{
-		return TargetAsset->FindEffect(TargetTag);
+		if (UFXDataAsset* ReactionAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedCharacterFX.HitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
 	}
 
-	return nullptr;
+	case EFXEventType::Death:
+	{
+		if (UFXDataAsset* ReactionAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = ReactionAsset->FindEffect(CachedCharacterFX.DeathTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::BasicAttack:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.BasicAttackTag))
+				ResultPayloads.Add(Payload);
+		}
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.BasicAttackTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::Skill:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.SkillTag))
+				ResultPayloads.Add(Payload);
+		}
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.SkillTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::Ultimate:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedUltimateFXTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	case EFXEventType::BasicAttackHit:
+	{
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.BasicAttackHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+
+	case EFXEventType::SkillHit:
+	{
+		if (UFXDataAsset* WpnAsset = CachedWeaponFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = WpnAsset->FindEffect(CachedWeaponFX.SkillHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	case EFXEventType::UltimateHit:
+	{
+		if (UFXDataAsset* CharAsset = CachedCharacterFX.FXData.LoadSynchronous())
+		{
+			if (FFXPayload* Payload = CharAsset->FindEffect(CachedCharacterFX.UltimateHitTag))
+				ResultPayloads.Add(Payload);
+		}
+		break;
+	}
+	}
+	return ResultPayloads;
+}
+
+void APlayerData::ApplySetBonuses()
+{
+	UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance());
+	if (!GI || !AbilitySystemComponent || !EquipmentComponent) return;
+
+	// 기존에 적용되어 있던 세트 효과 초기화
+	for (const FActiveGameplayEffectHandle& Handle : AppliedSetEffectHandles)
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffect(Handle);
+	}
+	AppliedSetEffectHandles.Empty();
+
+	for (const FGameplayAbilitySpecHandle& Handle : AppliedSetAbilityHandles)
+	{
+		AbilitySystemComponent->ClearAbility(Handle);
+	}
+	AppliedSetAbilityHandles.Empty();
+
+	// 현재 활성화된 세트 개수 가져오기
+	TMap<FName, int32> ActiveSets = EquipmentComponent->CalculateActiveSetBonuses();
+
+	// 각 세트마다 조건 검사 후 효과 적용
+	for (const auto& Pair : ActiveSets)
+	{
+		FName SetID = Pair.Key;
+		int32 EquipCount = Pair.Value;
+
+		FSetBonusStats* SetStat = GI->SetBonusStatsDataTable ? GI->SetBonusStatsDataTable->FindRow<FSetBonusStats>(SetID, TEXT("")) : nullptr;
+		FSetBonusAssets* SetAsset = GI->SetBonusAssetsDataTable ? GI->SetBonusAssetsDataTable->FindRow<FSetBonusAssets>(SetID, TEXT("")) : nullptr;
+
+		if (!SetStat || !SetAsset) continue;
+
+		// 1단계 수치형 버프 적용
+		if (EquipCount >= SetStat->Slot1_Count && !SetAsset->Slot1_Effect.IsNull())
+		{
+			TSubclassOf<UGameplayEffect> EffectClass = SetAsset->Slot1_Effect.LoadSynchronous();
+			if (EffectClass)
+			{
+				FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.0f, Context);
+
+				// 엑셀에 적힌 태그와 수치를 SetByCaller로 주입
+				SpecHandle.Data.Get()->SetSetByCallerMagnitude(SetStat->Slot1_AttributeTag, SetStat->Slot1_Value);
+
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				AppliedSetEffectHandles.Add(ActiveHandle); // 나중에 지우기 위해 저장
+
+				//UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 1단계 적용 완료!"), *SetID.ToString());
+			}
+		}
+
+		// 2단계 수치형 버프 적용
+		if (EquipCount >= SetStat->Slot2_Count && !SetAsset->Slot2_Effect.IsNull())
+		{
+			TSubclassOf<UGameplayEffect> EffectClass = SetAsset->Slot2_Effect.LoadSynchronous();
+			if (EffectClass)
+			{
+				FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.0f, Context);
+
+				SpecHandle.Data.Get()->SetSetByCallerMagnitude(SetStat->Slot2_AttributeTag, SetStat->Slot2_Value);
+
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				AppliedSetEffectHandles.Add(ActiveHandle);
+
+				//UE_LOG(LogTemp, Log, TEXT("🌟 [SetBonus] %s 2단계 적용 완료!"), *SetID.ToString());
+			}
+		}
+
+		// 3단계 특수 기능(Ability) 부여
+		if (EquipCount >= SetStat->Slot3_Count && !SetAsset->Slot3_Ability.IsNull())
+		{
+			TSubclassOf<UGameplayAbility> AbilityClass = SetAsset->Slot3_Ability.LoadSynchronous();
+			if (AbilityClass)
+			{
+				FGameplayAbilitySpec Spec(AbilityClass, 1, INDEX_NONE);
+				FGameplayAbilitySpecHandle ActiveHandle = AbilitySystemComponent->GiveAbility(Spec);
+
+				AppliedSetAbilityHandles.Add(ActiveHandle);
+
+				//UE_LOG(LogTemp, Log, TEXT("⚡ [SetBonus] %s 3단계 어빌리티 부여 완료!"), *SetID.ToString());
+			}
+		}
+	}
 }

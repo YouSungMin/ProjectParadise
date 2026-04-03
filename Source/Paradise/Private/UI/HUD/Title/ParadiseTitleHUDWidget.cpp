@@ -7,9 +7,12 @@
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/LevelLoadingSubsystem.h"
 
+#include "TimerManager.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Data/Assets/ParadiseFXAudioData.h"
+#include "Framework/System/AudioManagementSubsystem.h"
 
 void UParadiseTitleHUDWidget::NativeConstruct()
 {
@@ -48,6 +51,41 @@ void UParadiseTitleHUDWidget::NativeConstruct()
 			SettingsPopupInstance->SetVisibility(ESlateVisibility::Collapsed); // 처음엔 숨겨둠
 		}
 	}
+	/** @section BGM 재생 요청 */
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->BGM_Title)
+		{
+			if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+			{
+				AudioMag->PlayBGM(GI->GlobalAudioData->BGM_Title);
+			}
+		}
+	}
+}
+
+void UParadiseTitleHUDWidget::ToggleSettingsPopup()
+{
+	// 방어 코드
+	if (!SettingsPopupInstance)
+	{
+		return;
+	}
+
+	// 팝업이 닫혀있는 상태에서 열릴 때만 효과음 재생 (디테일한 UX)
+	if (SettingsPopupInstance->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+		{
+			if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_SettingsOpen)
+			{
+				UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_SettingsOpen);
+			}
+		}
+	}
+
+	// 내부 팝업 인스턴스에 토글 역할 위임 (단일 책임 원칙)
+	SettingsPopupInstance->ToggleSettings();
 }
 
 void UParadiseTitleHUDWidget::OnScreenTouched()
@@ -59,8 +97,56 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 	// 터치 시 애니메이션 멈춤 or 속도 증가 등의 피드백 연출 가능
 	// StopAnimation(Anim_BlinkText);
 
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
+	// 스크린 터치 진입 효과음 재생
+	if (UParadiseGameInstance* GI = Cast<UParadiseGameInstance>(GetGameInstance()))
+	{
+		if (GI->GlobalAudioData && GI->GlobalAudioData->SFX_TouchToStart)
+		{
+			UGameplayStatics::PlaySound2D(this, GI->GlobalAudioData->SFX_TouchToStart);
+		}
 
+		if (UAudioManagementSubsystem* AudioMag = GI->GetSubsystem<UAudioManagementSubsystem>())
+		{
+			AudioMag->StopBGM(1.0f);
+		}
+	}
+
+	//// BGM 정지 요청
+	//if (UAudioManagementSubsystem* AudioMag = GetGameInstance()->GetSubsystem<UAudioManagementSubsystem>())
+	//{
+	//	AudioMag->StopBGM(1.0f);
+	//}
+
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 스크린 터치 및 클릭 -> Request Lobby Load"));
+
+	// 2. 타이머를 설정하여 1초(페이드 아웃 및 효과음 재생 시간) 뒤에 로딩 맵으로 넘깁니다.
+	FTimerHandle TransitionTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		TransitionTimerHandle,
+		this,
+		&UParadiseTitleHUDWidget::ExecuteLevelTransition,
+		0.5f, // 1.0초 대기 (기획에 따라 0.5f 등으로 조절 가능)
+		false
+	);
+}
+
+void UParadiseTitleHUDWidget::OnQuitButtonClicked()
+{
+	// PC 빌드 등에서 게임을 완전히 종료합니다.
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 게임 종료 요청"));
+	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+}
+
+void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
+{
+	//UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
+
+	// 공통 설정 팝업 버튼 클릭음 재생
+	ToggleSettingsPopup();
+}
+
+void UParadiseTitleHUDWidget::ExecuteLevelTransition()
+{
 	// 1. 서브시스템을 찾는다
 	if (ULevelLoadingSubsystem* LoadingSystem = GetGameInstance()->GetSubsystem<ULevelLoadingSubsystem>())
 	{
@@ -70,24 +156,7 @@ void UParadiseTitleHUDWidget::OnScreenTouched()
 	else
 	{
 		// Fallback: GI 캐스팅 실패 시 일반 로딩
-		UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
+		//UE_LOG(LogTemp, Warning, TEXT("[타이틀] ParadiseGameInstance Not Found! Using OpenLevel directly."));
 		UGameplayStatics::OpenLevel(this, NextLevelName);
-	}
-}
-
-void UParadiseTitleHUDWidget::OnQuitButtonClicked()
-{
-	// PC 빌드 등에서 게임을 완전히 종료합니다.
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 게임 종료 요청"));
-	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
-}
-
-void UParadiseTitleHUDWidget::OnSettingsButtonClicked()
-{
-	UE_LOG(LogTemp, Log, TEXT("[타이틀] 설정 버튼 클릭"));
-
-	if (SettingsPopupInstance)
-	{
-		SettingsPopupInstance->OpenSettings();
 	}
 }

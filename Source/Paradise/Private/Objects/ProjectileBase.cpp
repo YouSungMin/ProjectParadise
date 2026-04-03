@@ -4,11 +4,13 @@
 #include "Objects/ProjectileBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "NiagaraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
 #include "Framework/System/ObjectPoolSubsystem.h"
 #include "Characters/Base/CharacterBase.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values
 AProjectileBase::AProjectileBase()
@@ -22,9 +24,13 @@ AProjectileBase::AProjectileBase()
 	SphereComp->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnSphereOverlap);
 
-	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	MeshComp->SetupAttachment(SphereComp);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
+	StaticMeshComp->SetupAttachment(SphereComp);
+	StaticMeshComp->SetCollisionProfileName(TEXT("NoCollision"));
+	StaticMeshComp->SetGenerateOverlapEvents(false);
+
+	NiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComp"));
+	NiagaraComp->SetupAttachment(SphereComp);
 
 	ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComp"));
 	ProjectileMovementComp->InitialSpeed = 1000.0f;
@@ -36,15 +42,33 @@ AProjectileBase::AProjectileBase()
 
 void AProjectileBase::OnPoolActivate_Implementation()
 {
+	// 풀에서 꺼내 질때 타격 명탄 및 관통 횟수 초기화
+	HitActors.Empty();
+	CurrentPierceCount = 0;
+
+	// 액터 보이기 & 충돌 켜기
 	SetActorHiddenInGame(false);
+	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	// 이동 재시작
-	ProjectileMovementComp->SetComponentTickEnabled(true);
-	ProjectileMovementComp->Activate(true);
-	ProjectileMovementComp->Velocity = GetActorForwardVector() * ProjectileMovementComp->InitialSpeed;
+	if (StaticMeshComp) StaticMeshComp->SetVisibility(true);
 
-	// LifeTime 이후에 풀로 돌아가는 타이머 시작
-	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	// 나이아가라 파티클 재생 
+	if (NiagaraComp) NiagaraComp->Activate(true);
+
+	// 이동 컴포넌트 재시작 및 발사 방향 리셋
+	if (ProjectileMovementComp)
+	{
+		ProjectileMovementComp->SetComponentTickEnabled(true);
+		ProjectileMovementComp->Activate(true);
+		// 현재 바라보는 방향으로 속도 재설정
+		ProjectileMovementComp->Velocity = GetActorForwardVector() * ProjectileMovementComp->InitialSpeed;
+	}
+
+	// 수명 타이머 세팅
+	if (LifeTime > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AProjectileBase::ReturnSelfToPool, LifeTime, false);
+	}
 }
 
 void AProjectileBase::OnPoolDeactivate_Implementation()
@@ -53,14 +77,21 @@ void AProjectileBase::OnPoolDeactivate_Implementation()
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
 
 	// 물리/이동 정지 및 숨김
-	ProjectileMovementComp->Deactivate();
-	ProjectileMovementComp->SetComponentTickEnabled(false);
-	ProjectileMovementComp->Velocity = FVector::ZeroVector;
+	if (ProjectileMovementComp)
+	{
+		ProjectileMovementComp->Deactivate();
+		ProjectileMovementComp->SetComponentTickEnabled(false);
+		ProjectileMovementComp->Velocity = FVector::ZeroVector;
+	}
 
-	SphereComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (SphereComp) SphereComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetActorHiddenInGame(true);
 
-	// 갖고 있던 데미지 정보(택배) 파기
+	if (StaticMeshComp) StaticMeshComp->SetVisibility(false);
+
+	if (NiagaraComp) NiagaraComp->Deactivate();
+
+	// 갖고 있던 데미지 정보 파기
 	DamageSpecHandle = FGameplayEffectSpecHandle();
 }
 
@@ -69,25 +100,20 @@ void AProjectileBase::SetDamageSpecHandle(const FGameplayEffectSpecHandle& InSpe
 	DamageSpecHandle = InSpecHandle;
 }
 
-void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius, float InSpeed)
+void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius, const FProjectileStats& InProjStats)
 {
-	// 투사체 판정 크기(두께) 변경
-	if (SphereComp)
+	CachedProjStats = InProjStats; // 스탯 캐싱
+
+	if (SphereComp && InAttackRadius > 0.0f)
 	{
 		SphereComp->SetSphereRadius(InAttackRadius);
 	}
 
-	// 시각적 메쉬 크기 조절
-	float ScaleRatio = InAttackRadius / 15.0f;
-	SetActorScale3D(FVector(ScaleRatio));
-
-	if (InSpeed > 0.0f)
+	// 속도 적용
+	if (ProjectileMovementComp)
 	{
-		ProjectileMovementComp->InitialSpeed = InSpeed;
-		ProjectileMovementComp->MaxSpeed = InSpeed;
-
-		// [중요] 풀링에서 꺼내진 상태이므로 Velocity를 직접 갱신해 줘야 바로 적용됩니다!
-		ProjectileMovementComp->Velocity = GetActorForwardVector() * InSpeed;
+		ProjectileMovementComp->InitialSpeed = CachedProjStats.ProjectileSpeed;
+		ProjectileMovementComp->MaxSpeed = CachedProjStats.ProjectileSpeed;
 	}
 
 	// 사거리(거리)를 기반으로 생존 시간(LifeTime) 계산 (시간 = 거리 / 속력)
@@ -96,10 +122,9 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 	{
 		LifeTime = InAttackRange / CurrentSpeed;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
+	//UE_LOG(LogTemp, Warning, TEXT("⏱️ [Projectile] 사거리: %.1f -> 계산된 수명: %.3f초"), InAttackRange, LifeTime);
+	
 	// 타이머 재설정
-	// 이미 OnPoolActivate에서 기본 LifeTime으로 타이머가 돌고 있으므로,
-	// 기존 타이머를 취소하고 계산된 정확한 생존 시간으로 다시 타이머를 가동합니다.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(LifeTimerHandle);
@@ -112,39 +137,89 @@ void AProjectileBase::ApplyCombatData(float InAttackRange, float InAttackRadius,
 	}
 }
 
-void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AProjectileBase::ApplyDamageToTarget(AActor* TargetActor)
 {
-	// 자기 자신이나, 나를 쏜 주인(Instigator)은 무시
-	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator()) return;
-
-	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
-	{
-		if (ACharacterBase* TargetChar = Cast<ACharacterBase>(OtherActor))
-		{
-			if (!Shooter->IsHostile(TargetChar))
-			{
-				return;
-			}
-		}
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("🎯 [Projectile] 투사체 적중! 대상: %s"), *OtherActor->GetName());
-
 	if (DamageSpecHandle.IsValid())
 	{
-		// Target의 ASC를 찾아서 GE 스펙 적용
-		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OtherActor);
-		if (TargetASC)
+		if (UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor))
 		{
-			// 이펙트 배달 완료! (ExecCalcCombat이 이어서 데미지 계산 및 텍스트 출력을 수행합니다)
 			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
 		}
 	}
+}
 
-	// (선택) 여기에 파티클(폭발)이나 사운드 스폰 로직 추가 가능
+void AProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!IsValidTarget(OtherActor)) return;
 
-	// 적을 맞췄으니 스스로 풀로 돌아감
-	ReturnSelfToPool();
+	// 이미 맞은 적 무시
+	if (HitActors.Contains(OtherActor)) return;
+
+	//UE_LOG(LogTemp, Warning, TEXT("💥 [진짜 명중!] 투사체가 적(%s)을 맞췄습니다!"), *OtherActor->GetName());
+
+	// 타격 명단 등록 및 데미지 적용
+	HitActors.Add(OtherActor);
+
+	// ==========================================================
+	// 폭발 기믹 검사 (스플래시 데미지)
+	// ==========================================================
+	if (CachedProjStats.ExplosionRadius > 0.0f)
+	{
+		// 폭발 범위에 있는 대상들을 모을 배열
+		TArray<AActor*> OverlappedActors;
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+		// 나와 내 주인만 무시 (주 타겟 OtherActor는 무시하지 않음!)
+		TArray<AActor*> IgnoredActors;
+		IgnoredActors.Add(this);
+		IgnoredActors.Add(GetInstigator());
+
+		UKismetSystemLibrary::SphereOverlapActors(
+			this,
+			GetActorLocation(),
+			CachedProjStats.ExplosionRadius,
+			ObjectTypes,
+			nullptr,
+			IgnoredActors,
+			OverlappedActors
+		);
+
+		// 범위 안의 모든 적에게 데미지 적용
+		for (AActor* HitActor : OverlappedActors)
+		{
+			if (IsValidTarget(HitActor))
+			{
+				ApplyDamageToTarget(HitActor);
+			}
+		}
+
+		// (디버그) 폭발 범위 시각화 - 확인 후 주석 처리하세요
+		// DrawDebugSphere(GetWorld(), GetActorLocation(), CachedProjStats.ExplosionRadius, 32, FColor::Orange, false, 1.0f);
+
+		// 폭발했으면 무조건 소멸
+		ReturnSelfToPool();
+		return;
+	}
+	else
+	{
+		// 폭발 기믹이 없을 때만 방금 닿은 OtherActor에게 단일 데미지 적용
+		ApplyDamageToTarget(OtherActor);
+	}
+
+	// ==========================================================
+	// 관통 기믹 검사
+	// ==========================================================
+	if (CurrentPierceCount < CachedProjStats.MaxPierceCount)
+	{
+		// 뚫고 지나가므로 카운트만 올리고 소멸시키지 않음
+		CurrentPierceCount++;
+	}
+	else
+	{
+		// 관통 횟수를 다 썼거나 단일 타겟(MaxPierce=0)이면 소멸
+		ReturnSelfToPool();
+	}
 }
 
 void AProjectileBase::ReturnSelfToPool()
@@ -160,4 +235,29 @@ void AProjectileBase::ReturnSelfToPool()
 			Destroy();
 		}
 	}
+}
+
+bool AProjectileBase::IsValidTarget(AActor* OtherActor)
+{
+	// 예외 대상 무시
+	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
+		return false;
+
+	if (OtherActor->IsA<AProjectileBase>())
+	{
+		return false;
+	}
+
+	if (ACharacterBase* Shooter = Cast<ACharacterBase>(GetInstigator()))
+	{
+		if (ACharacterBase* TargetChar = Cast<ACharacterBase>(OtherActor))
+		{
+			if (!Shooter->IsHostile(TargetChar))
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
 }

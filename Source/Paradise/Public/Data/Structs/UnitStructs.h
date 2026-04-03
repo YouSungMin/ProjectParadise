@@ -5,6 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
 #include "Data/Structs/FXStructs.h"
+#include "Data/Structs/CombatTypes.h"
 #include "UnitStructs.generated.h"
 
 class USkeletalMesh;
@@ -27,6 +28,17 @@ USTRUCT(BlueprintType)
 struct FUnitBaseStats : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	/**
+	 * @brief 인게임 UI에 표시될 아이템의 이름
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Info")
+	FText DisplayName;
+
+	/** @brief 소환 코스트 (재화) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	int32 SummonCost;
+
 	// =========================================================
 	//  전투 스탯 (Combat Stats)
 	// =========================================================
@@ -121,16 +133,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Growth", meta = (ClampMin = "0.0"))
 	float GrowthDefensePerLevel;
 
+	/**
+	 * @brief HP 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 HP 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float BaseHealthRegen;
+
+	/**
+	 * @brief 마나 리젠율 (Defense)
+	 * @details 캐릭터의 1초당 마나 회복 비율 입니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats", meta = (ClampMin = "0.0"))
+	float BaseManaRegen;
+
 	// =========================================================
 	//  스킬 스탯 (Skill Stats)
 	// =========================================================
 
 	/**
-	 * @brief 스킬 - FActionStats 테이블의 ID로 사용
-	 * @details 개별 액션의 수치를 정의 해둔 구조체의 RowName
+	 * @brief 스킬 - FUltimateStats 테이블의 ID로 사용
+	 * @details 개별 액션의 수치를 정의 해둔 구조체를 직접 참조합니다.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName SkillActionID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle UltimateActionHandle;
 };
 
 /**
@@ -176,26 +203,18 @@ struct FAIUnitStats : public FUnitBaseStats
 	// =========================================================
 
 	/**
-	 * @brief 공격 속도 배율 (Attack Speed Multiplier)
-	 * @details 기본값 1.0을 기준으로, 높을수록 공격 속도가 빨라집니다.
-	 * 예: 1.2 = 20% 더 빠름. 애니메이션 재생 속도(PlayRate)에 곱해집니다.
+	 * @brief AI 기본 공격 액션 데이터 핸들
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Combat", meta = (ClampMin = "0.1", UIMin = "0.1"))
-	float AttackSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	FDataTableRowHandle BasicAttackActionHandle;
 
 	/**
-	 * @brief AI 기본 공격 액션 ID
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	FName BasicAttackActionID;
-
-	/**
-	 * @brief AI 스킬 액션 ID 목록
+	 * @brief AI 스킬 액션 데이터 핸들 목록
 	 * @details FAIUnitAssets의 SkillAbilities 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
 	 * 예: 인덱스 0 = 돌진 스킬, 인덱스 1 = 브레스 스킬
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink")
-	TArray<FName> SkillActionIDs;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionLink", meta = (RowType = "ActionStats"))
+	TArray<FDataTableRowHandle> PatternActionHandles;
 };
 
 /**
@@ -221,9 +240,10 @@ struct FFamiliarStats : public FAIUnitStats
 	GENERATED_BODY()
 
 public:
-	/** @brief 소환 코스트 (재화) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
-	int32 SummonCost;
+	//0305 김성현 - 캐릭터 리스폰 기능 을 위해 베이스로 변수이동
+	///** @brief 소환 코스트 (재화) */
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	//int32 SummonCost;
 };
 
 /**
@@ -260,6 +280,12 @@ public:
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
 
 	/**
+	 * @brief 인게임 HUD용 얼굴 아이콘.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> FaceIcon;
+
+	/**
 	 * @brief 애니메이션 블루프린트
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|Common")
@@ -280,16 +306,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Common")
 	TSoftObjectPtr<UAnimMontage> DeathMontage;
-
-	// =========================================================
-	//  Audio & FX (Physical Reaction)
-	// =========================================================
-	/**
-	 * @brief 피격 및 생존 반응 전용 FX, Tag 구조체
-	 * @details 맞았을 때 나는 피격음/피 효과, 사망 시 비명 소리
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
-	FReactionFXSettings ReactionFX;
 };
 
 /**
@@ -330,32 +346,48 @@ public:
 	// =========================================================
 
 	/**
-	 * @brief 인게임 HUD용 얼굴 아이콘.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> FaceIcon;
-
-	/**
 	 * @brief 캐릭터 선택/가챠 화면용 전신 일러스트.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> BodyIcon;
 
+	/**
+	 * @brief 캐릭터 전용 돌파 재화(조각) 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> AwakeningPieceIcon;
+
+	/**
+	 * @brief 로비레벨에서 캐릭터 연출용 Idle 
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UAnimSequence> IdleAnim;
+
+	/** @brief 로비레벨에서 캐릭터 연출용 Run */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UAnimSequence> RunAnim = nullptr;
+
+	/** * @brief 캐릭터 최초 획득 시 지급될 기본 무기의 ItemID
+	 * @details WeaponAssets 테이블에 존재하는 ID여야 합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	FName DefaultWeaponID;
+
+	/**
+	 * @brief 인게임 궁극기 UI 아이콘
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> UltimateIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	EItemRarity Rarity = EItemRarity::Common;
 	// =========================================================
 	//  GAS & Montage (Player Only)
 	// =========================================================
 
-	/**
-	 * @brief 궁극기 어빌리티 클래스 (Ultimate Ability)
-	 */
+	/** @brief 캐릭터 궁극기 세트 (어빌리티, 이펙트, 투사체 묶음) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<UGameplayAbility> UltimateAbility;
-
-	/**
-	 * @brief 궁극기 사용 시 적용할 GameplayEffect
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<class UGameplayEffect> UltimateDamageEffect;
+	FCombatAbilitySetup UltimateAttackSetup;
 
 	/**
 	 * @brief 궁극기 연출 몽타주 (Ultimate Montage)
@@ -367,8 +399,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Weapon")
 	TMap<EWeaponType, FWeaponAnimSet> WeaponAnimMap;
 
-	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
+	/**
+	 * @brief 캐릭터 전용, FX, Tags
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
+	FCharacterFXSettings CharacterFX;
+
+	/** @brief 궁극기 사용 시 재생할 이펙트/사운드 키값 (예: Effect.Ultimate.Meteor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX", meta = (Categories = "FX"))
 	FGameplayTag UltimateEffectTag;
 };
 
@@ -383,12 +421,6 @@ struct FAIUnitAssets : public FUnitBaseAssets
 
 public:
 
-	/**
-	 * @brief UI 표현을 위한 아이콘
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> FaceIcon;
-
 	// =========================================================
 	//  Visual (AI Specific)
 	// =========================================================
@@ -401,6 +433,12 @@ public:
 	float Scale = 1.0f; // 초기화 필수
 
 	/**
+	 * @brief AI 유닛 전용, FX, Tags
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	FAIUnitFXSettings AIUnitFX;
+
+	/**
 	 * @brief 기본 공격 몽타주
 	 * @details 가장 기초적인 공격 모션입니다. (플레이어는 콤보의 시작, AI는 기본 평타)
 	 */
@@ -410,6 +448,14 @@ public:
 	// =========================================================
 	//  인공지능 (AI)
 	// =========================================================
+
+	/**
+	 * @brief 스킬 연출 몽타주 목록
+	 * @details SkillAbilities, SkillActionIDs 배열과 인덱스가 1:1로 매칭되도록 구성합니다.
+	 * 예: 인덱스 0 = 돌진 몽타주, 인덱스 1 = 브레스 몽타주
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Skill")
+	TArray<TSoftObjectPtr<UAnimMontage>> SkillMontages;
 
 	/**
 	 * @brief 사용할 AI 컨트롤러 클래스
@@ -436,42 +482,13 @@ public:
 	//  GAS 어빌리티 (Abilities)
 	// =========================================================
 
-	/**
-	 * @brief 이 유닛의 기본 공격 데미지 GE
-	 * @details 늑대는 GE_DamageStandard(물리), 화염정령은 GE_FireDamage(화염) 등을 할당합니다.
-	 */
+	/** @brief 몬스터 기본 평타 세트 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Common")
-	TSubclassOf<UGameplayEffect> BasicAttackEffect;
+	FCombatAbilitySetup BasicAttackSetup;
 
-	/**
-	 * @brief 평타 어빌리티 (Basic Attack)
-	 * @details 쿨타임이 없거나 매우 짧은 기본 공격입니다. AI의 경우 스킬 쿨타임일 때 사용하는 '패시브성' 공격입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Common")
-	TSubclassOf<UGameplayAbility> BasicAbility;
-
-	/**
-	 * @brief 스폰 시 부여할 기본 어빌리티 목록
-	 * @details 몬스터가 태어날 때 ASC(AbilitySystemComponent)에 등록될 스킬들입니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
-
-	/**
-	 * @brief 투사체 클래스 (Projectile Class)
-	 * @details 활이나 지팡이 등 원거리 무기가 발사할 액터 클래스입니다.
-	 * @note 근거리 무기일 경우 비워둡니다 (None).
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	TSubclassOf<AActor> ProjectileClass;
-
-	/**
-	 * @brief 공격 행동 전용, FX, Tags
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual|FX")
-	FActionFXSettings ActionFX;
-
-
+	/** @brief 몬스터가 사용하는 다중 스킬 목록 (1번 스킬, 2번 스킬...) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Skill")
+	TArray<FCombatAbilitySetup> SkillSetups;
 };
 
 /**
@@ -497,8 +514,16 @@ public:
 	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
 	 * * 인덱스 0: 스킬1, 인덱스 1: 스킬2 ... 순서대로 매핑
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX|Skill", meta = (Categories = "Effect.Skill"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "FX"))
 	TArray<FGameplayTag> SkillEffectTags;
+
+	/**
+	 * @brief 스킬 타격 연출 태그 목록
+	 * @details 보스가 사용하는 스킬들의 연출 태그 리스트
+	 * * 인덱스 0: 스킬1, 인덱스 1: 스킬2 ... 순서대로 매핑
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (Categories = "FX"))
+	TArray<FGameplayTag> SkillHitEffectTags;
 };
 
 /**

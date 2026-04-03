@@ -7,7 +7,6 @@
 #include "Engine/DataTable.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayAbilitySpecHandle.h"
-#include "Data/Structs/CombatTypes.h"
 #include "Data/Enums/GameEnums.h"
 #include "Data/Structs/UnitStructs.h"
 #include "GameplayTagContainer.h"
@@ -50,6 +49,13 @@ public:
 	UEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
 	/*
+	 * @brief 피격 몽타주 Getter함수
+	 * @return 캐싱된 피격 몽타주
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	UAnimMontage* GetHitMontage() const { return CachedHitMontage; }
+
+	/*
 	 * @brief 사망 몽타주 Getter함수
 	 * @return 캐싱된 사망 몽타주 
 	 */
@@ -83,13 +89,23 @@ public:
 	void OnRespawnFinished();
 
 	/**
+	 * @brief 부활 시 체력, 마나, 쿨타임, 디버프 상태를 완전히 초기화(세탁)합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void ResetStateForRespawn();
+
+	/**
 	 * @brief 실제 전투 데이터를 조회하는 함수
 	 * @details PlayerBase가 호출하면, GameInstance와 EquipmentComponent를 탐색하여 결과 리턴.
 	 */
 	FCombatActionData GetCombatActionData(ECombatActionType ActionType) const;
 
 	/** @brief 상황에 맞는 최종 연출 데이터를 캐싱된 에셋에서 찾아 반환합니다. */
-	struct FFXPayload* GetFXPayload(EFXEventType EventType) const;
+	TArray<struct FFXPayload*> GetFXPayloads(EFXEventType EventType) const;
+
+	/** @brief 현재 계산된 장비 세트 효과를 ASC에 적용합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Equipment|SetBonus")
+	void ApplySetBonuses();
 
 protected:
 	/** @brief Combat어트리뷰트셋 초기화 (GI 데이터 조회) */
@@ -109,13 +125,17 @@ public:
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
 	TSubclassOf<UAnimInstance> CachedAnimBP = nullptr;
 
+	/** @brief 미리 로드된 피격 몽타주 포인터 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
+	TObjectPtr<UAnimMontage> CachedHitMontage = nullptr;
+
 	/** @brief 미리 로드된 사망 몽타주 포인터 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Cached")
 	TObjectPtr<UAnimMontage> CachedDeathMontage = nullptr;
 
 	/** @brief 미리 로드된 피격/사망 등 생존 반응 연출 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FReactionFXSettings CachedReactionFX;
+	FCharacterFXSettings CachedCharacterFX;
 
 	/** @brief 미리 로드된 캐릭터 고유 궁극기 연출 태그 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
@@ -123,7 +143,7 @@ public:
 
 	/** @brief 장착 중인 무기의 공격/스킬 연출 데이터 캐싱 */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Cached")
-	FActionFXSettings CachedActionFX;
+	FWeaponFXSettings CachedWeaponFX;
 
 	/* * 현재 빙의 중인 육체 (약한 참조)
 	 * @details PlayerBase는 언제든 파괴될 수 있으므로 WeakPtr로 참조합니다.
@@ -188,6 +208,29 @@ protected:
 	/** @brief 캐릭터 궁극기 어빌리티 핸들 */
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|Handle")
 	FGameplayAbilitySpecHandle UltimateSkillHandle;
+
+	/** @brief 이전에 적용했던 세트 효과(GE) 핸들을 기억해두는 배열 */
+	UPROPERTY(Transient)
+	TArray<FActiveGameplayEffectHandle> AppliedSetEffectHandles;
+
+	/** @brief 이전에 적용했던 어빌리티(GA) 핸들을 기억해두는 배열 */
+	UPROPERTY(Transient)
+	TArray<FGameplayAbilitySpecHandle> AppliedSetAbilityHandles;
+
+	/** @brief 패시브 Health 리젠 이펙트 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Regen")
+	TSubclassOf<class UGameplayEffect> HealthRegenEffectClass;
+
+	/** @brief Health 리젠 이펙트의 핸들  */
+	FActiveGameplayEffectHandle HealthRegenHandle;
+
+	/** @brief 패시브 Mana 리젠 이펙트 클래스 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Regen")
+	TSubclassOf<class UGameplayEffect> ManaRegenEffectClass;
+
+	/** @brief Mana 리젠 이펙트의 핸들  */
+	FActiveGameplayEffectHandle ManaRegenHandle;
+
 
 	/*
 	 * @brief 리스폰 대기시간

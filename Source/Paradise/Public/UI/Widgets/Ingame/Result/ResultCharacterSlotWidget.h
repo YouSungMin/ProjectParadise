@@ -23,7 +23,7 @@ struct FResultCharacterData
 	GENERATED_BODY()
 
 	/** @brief 캐릭터 이름 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (RowType = "CharacterStats"))
 	FText CharacterName;
 
 	/** @brief 캐릭터 초상화 */

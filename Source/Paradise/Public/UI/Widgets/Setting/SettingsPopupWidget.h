@@ -9,10 +9,11 @@
 #pragma region 전방 선언
 class USlider;
 class UParadiseCommonButton;
-class USoundMix;
-class USoundClass;
 class ULevelLoadingSubsystem;
 class UAudioSettingsSubsystem;
+class UParadiseFXAudioData;
+class UGraphicsSettingsSubsystem;
+class UTextBlock;
 #pragma endregion 전방 선언
 
 /**
@@ -39,6 +40,13 @@ protected:
 #pragma region 외부 인터페이스
 public:
 	/**
+	 * @brief 설정창을 열고 닫는 토글 함수입니다.
+	 * @details ESC 키 입력 시 컨트롤러에서 이 함수만 호출하면 내부 상태(bool)에 따라 알아서 작동합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettings();
+
+	/**
 	 * @brief 팝업을 화면에 표시하고 게임을 일시정지합니다.
 	 * @details 인게임 HUD나 컨트롤러에서 설정 버튼을 눌렀을 때 호출해야 합니다.
 	 */
@@ -51,6 +59,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
 	void CloseSettings();
+
+	/**
+	 * @brief 컨트롤러에서 ESC(향상된 입력)를 눌렀을 때,
+	 * 마우스로 Resume 버튼을 누른 것과 100% 동일한 로직을 실행하도록 public으로 개방합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void OnResumeGameClicked();
 #pragma endregion 외부 인터페이스
 
 #pragma region 내부 로직
@@ -80,28 +95,47 @@ private:
 	void OnSFXVolumeChanged(float Value);
 
 	/**
-	 * @brief 돌아가기 버튼 클릭 시 호출되어 팝업을 닫습니다.
-	 * @details RemoveFromParent를 호출하면 NativeDestruct가 자동 실행되어 시간이 복구됩니다.
-	 */
-	UFUNCTION()
-	void OnResumeGameClicked();
-
-	/**
 	 * @brief 로비로 가기 버튼 클릭 시 호출되어 씬을 전환합니다.
 	 * @details LevelLoadingSubsystem을 통해 로딩 화면을 거쳐 로비 레벨로 이동합니다.
 	 */
 	UFUNCTION()
 	void OnReturnToLobbyClicked();
+
+	/**
+	 * @brief 현재 스테이지를 재시작합니다.
+	 * @details 현재 레벨 이름을 가져와 동일한 레벨을 다시 로드합니다.
+	 */
+	UFUNCTION()
+	void OnRetryClicked();
+
+	/** @brief 화면 변화 없이 게임 일시정지만 해제합니다. (타이머 활성화용) */
+	void ResumeTimeOnly();
+
+	/** @brief 딜레이 후 로비로 전환 실행 */
+	void ExecuteReturnToLobby();
+
+	/** @brief 딜레이 후 레벨 재시작 실행 */
+	void ExecuteRetry();
+
+	/**
+	 * @brief 그래픽 슬라이더 값 변경 시 호출됩니다.
+	 * @param Value 0.0 ~ 1.0 범위 → 내부에서 0~3으로 변환
+	 */
+	UFUNCTION()
+	void OnGraphicsQualityChanged(float Value);
+
+	/** @brief 퀄리티 단계(0~3)를 텍스트로 변환합니다. */
+	FText GetQualityText(int32 Quality) const;
 #pragma endregion 내부 로직
 
 #pragma region 위젯 바인딩
 protected:
 	/** @brief BGM 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_BGM = nullptr;
 
 	/** @brief SFX 볼륨 조절 슬라이더 */
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<USlider> Slider_SFX = nullptr;
 
 	/**
@@ -117,31 +151,40 @@ protected:
 	 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UParadiseCommonButton> Btn_ReturnToLobby = nullptr;
+
+	/** @brief 현재 스테이지 재시작 버튼 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UParadiseCommonButton> Btn_Retry = nullptr;
+
+	/** @brief 그래픽 퀄리티 슬라이더 (0~3 스냅) */
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<USlider> Slider_Graphics = nullptr;
+
+	/** @brief 현재 그래픽 단계 텍스트 (낮음/보통/높음/최상) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_GraphicsQuality = nullptr;
 #pragma endregion 위젯 바인딩
+
+#pragma region 공통 UI 에셋 설정 (Config)
+protected:
+	/** * @brief 게임으로 돌아가기 버튼의 기본 이미지
+	 * @details 눌림 효과는 UParadiseCommonButton의 틴트(bEnablePressedTint) 기능을 사용하므로 1장만 필요합니다.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "돌아가기 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_ResumeGame = nullptr;
+
+	/** * @brief 로비로 돌아가기 버튼의 기본 이미지
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "로비 귀환 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_ReturnToLobby = nullptr;
+
+	/** @brief 다시하기 버튼 이미지 */
+	UPROPERTY(EditDefaultsOnly, Category = "Paradise|UI|Config", meta = (DisplayName = "다시하기 버튼 이미지"))
+	TObjectPtr<UTexture2D> Tex_Retry = nullptr;
+#pragma endregion 공통 UI 에셋 설정 (Config)
 
 #pragma region 데이터 드리븐 설정
 protected:
-	/**
-	 * @brief 오디오 마스터 믹스.
-	 * @details 기획자가 BP 디테일 패널에서 할당해야 볼륨 제어가 작동합니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "마스터 사운드 믹스"))
-	TObjectPtr<USoundMix> MasterSoundMix = nullptr;
-
-	/**
-	 * @brief 배경음악(BGM) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "BGM 사운드 클래스"))
-	TObjectPtr<USoundClass> BGMSoundClass = nullptr;
-
-	/**
-	 * @brief 효과음(SFX) 사운드 클래스.
-	 * @details 이 클래스에 속한 모든 사운드의 볼륨이 일괄 제어됩니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio", meta = (DisplayName = "SFX 사운드 클래스"))
-	TObjectPtr<USoundClass> SFXSoundClass = nullptr;
-
 	/**
 	 * @brief 로비 레벨 이름.
 	 * @details 로비로 돌아가기 버튼 클릭 시 이동할 레벨을 기획자가 설정합니다.
@@ -166,10 +209,24 @@ protected:
 
 #pragma region 런타임 상태
 private:
+	/** @brief 설정창이 현재 열려있는지 상태를 추적하는 토글 변수 */
+	bool bIsSettingsOpen = false;
+
 	/**
 	 * @brief 캐싱된 AudioSettingsSubsystem.
 	 * @details NativeConstruct에서 캐싱하여 매번 GetSubsystem 비용을 절약합니다.
 	 */
 	TWeakObjectPtr<UAudioSettingsSubsystem> CachedAudioSettings = nullptr;
+
+	/** @brief 효과음 재생 후 레벨 전환 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_ReturnToLobby;
+
+	/** @brief 효과음 재생 후 레벨 재시작 딜레이용 타이머 핸들 */
+	FTimerHandle TimerHandle_Retry;
+
+	/** @brief 버튼 상태 꼬임 방지를 위한 닫기 지연 타이머 핸들 */
+	FTimerHandle TimerHandle_Resume;
+
+	TWeakObjectPtr<UGraphicsSettingsSubsystem> CachedGraphicsSettings = nullptr;
 #pragma endregion 런타임 상태
 };

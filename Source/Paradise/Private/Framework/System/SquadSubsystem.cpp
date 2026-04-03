@@ -4,6 +4,9 @@
 #include "Framework/System/SquadSubsystem.h"
 #include "Framework/Core/ParadiseGameInstance.h"
 #include "Framework/System/ParadiseSaveGame.h"
+#include "Framework/System/InventorySystem.h"
+#include "Data/Structs/InventoryStruct.h"
+#include "Paradise/Paradise.h"
 #include "Data/Structs/UnitStructs.h"
 #include "Data/Structs/ItemStructs.h"
 
@@ -16,11 +19,9 @@ void USquadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SelectedPlayerSquadIDs.Init(NAME_None, 3);
 	// 5인 퍼밀리어 스쿼드 배열을 NAME_None으로 초기화 (크기 5 고정)
 	SelectedFamiliarSquadIDs.Init(NAME_None, 5);
-	/*SetPlayerToSlot(0, "test1");
-	SetPlayerToSlot(1, "test2");
-	SetPlayerToSlot(2, "test3");*/
 
-	UE_LOG(LogTemp, Warning, TEXT("❌ [SquadSubsystem] Initialize 실행"));
+
+	//UE_LOG(LogParadiseSquad, Warning, TEXT("❌ [SquadSubsystem] Initialize 실행"));
 	// TODO: 게임 시작 시 저장된 스쿼드 정보가 있다면 여기서 불러옵니다.
 	// LoadSquadData();
 }
@@ -35,7 +36,7 @@ void USquadSubsystem::SetFamiliarToSlot(int32 SlotIndex, FName NewFamiliarID)
 	//유효한 슬롯인지 확인 
 	if (!SelectedFamiliarSquadIDs.IsValidIndex(SlotIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [SquadSubsystem] 유효하지 않은 퍼밀리어 슬롯 인덱스입니다: %d (0~4만 가능)"), SlotIndex);
+		//UE_LOG(LogParadiseSquad, Warning, TEXT("❌ [SquadSubsystem] 유효하지 않은 퍼밀리어 슬롯 인덱스입니다: %d (0~4만 가능)"), SlotIndex);
 		return;
 	}
 
@@ -54,7 +55,7 @@ void USquadSubsystem::SetFamiliarToSlot(int32 SlotIndex, FName NewFamiliarID)
 		// A. 게임에 존재하는 진짜 퍼밀리어 ID인지 확인
 		if (!GI->IsValidFamiliarID(NewFamiliarID))
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [SquadSubsystem] 편성 실패! '%s'는 유효하지 않은 퍼밀리어 ID입니다."), *NewFamiliarID.ToString());
+			//UE_LOG(LogParadiseSquad, Error, TEXT("❌ [SquadSubsystem] 편성 실패! '%s'는 유효하지 않은 퍼밀리어 ID입니다."), *NewFamiliarID.ToString());
 			return;
 		}
 	}
@@ -78,7 +79,7 @@ void USquadSubsystem::SetFamiliarToSlot(int32 SlotIndex, FName NewFamiliarID)
 	//슬롯에 새 퍼밀리어 배치
 	SelectedFamiliarSquadIDs[SlotIndex] = NewFamiliarID;
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [SquadSubsystem] 슬롯 %d에 퍼밀리어 %s 편성 완료"), SlotIndex, *NewFamiliarID.ToString());
+	//UE_LOG(LogParadiseSquad, Log, TEXT("✅ [SquadSubsystem] 슬롯 %d에 퍼밀리어 %s 편성 완료"), SlotIndex, *NewFamiliarID.ToString());
 
 	//UI에 Set 정보 발송
 	OnFamiliarSlotChanged.Broadcast(SlotIndex, NewFamiliarID);
@@ -113,7 +114,7 @@ void USquadSubsystem::SetPlayerToSlot(int32 SlotIndex, FName NewPlayerID)
 	//유효한 슬롯(0, 1, 2)인지 확인
 	if (!SelectedPlayerSquadIDs.IsValidIndex(SlotIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("❌ [SquadSubsystem] 유효하지 않은 슬롯 인덱스입니다: %d"), SlotIndex);
+		//UE_LOG(LogParadiseSquad, Warning, TEXT("❌ [SquadSubsystem] 유효하지 않은 슬롯 인덱스입니다: %d"), SlotIndex);
 		return;
 	}
 
@@ -131,7 +132,7 @@ void USquadSubsystem::SetPlayerToSlot(int32 SlotIndex, FName NewPlayerID)
 		//GI 에서 데이터 유효성 검사 
 		if (!GI->IsValidPlayerID(NewPlayerID))
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ [SquadSubsystem] 편성 실패! '%s'는 유효하지 않은 캐릭터 ID입니다."), *NewPlayerID.ToString());
+			//UE_LOG(LogParadiseSquad, Error, TEXT("❌ [SquadSubsystem] 편성 실패! '%s'는 유효하지 않은 캐릭터 ID입니다."), *NewPlayerID.ToString());
 			return;
 		}
 	}
@@ -157,7 +158,7 @@ void USquadSubsystem::SetPlayerToSlot(int32 SlotIndex, FName NewPlayerID)
 	//슬롯에 새 플레이어 배치
 	SelectedPlayerSquadIDs[SlotIndex] = NewPlayerID;
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [SquadSubsystem] 슬롯 %d에 플레이어 %s 편성 완료"), SlotIndex, *NewPlayerID.ToString());
+	//UE_LOG(LogParadiseSquad, Log, TEXT("✅ [SquadSubsystem] 슬롯 %d에 플레이어 %s 편성 완료"), SlotIndex, *NewPlayerID.ToString());
 
 	//UI에 Set 정보 발송
 	OnPlayerSlotChanged.Broadcast(SlotIndex, NewPlayerID);
@@ -187,6 +188,71 @@ bool USquadSubsystem::IsPlayerAlreadyAssigned(FName PlayerID) const
 	return SelectedPlayerSquadIDs.Contains(PlayerID);
 }
 
+bool USquadSubsystem::IsSquadValidForBattle(FString& OutErrorMessage) const
+{
+	//UE_LOG(LogTemp, Warning, TEXT("================ [스쿼드 진입 검증 시작] ================"));
+
+	// 인벤토리 서브시스템 가져오기
+	UInventorySystem* InventorySys = GetGameInstance()->GetSubsystem<UInventorySystem>();
+
+	// 1. 캐릭터 편성 검사
+	bool bHasPlayer = false;
+	for (int32 i = 0; i < SelectedPlayerSquadIDs.Num(); i++)
+	{
+		FName PlayerID = SelectedPlayerSquadIDs[i];
+		//UE_LOG(LogTemp, Log, TEXT("  -> Player Slot %d: [%s]"), i, *PlayerID.ToString());
+
+		// 1️⃣ 빈 칸(None)이면 아래 로직을 무시하고 다음 슬롯으로 넘어감 (들여쓰기 방지)
+		if (PlayerID.IsNone()) continue;
+
+		bHasPlayer = true;
+
+		// 인벤토리 시스템이나 캐릭터 데이터가 유효하지 않으면 무기 검사 건너뜀
+		if (!InventorySys) continue;
+		const FOwnedCharacterData* CharData = InventorySys->GetCharacterDataByID(PlayerID);
+		if (!CharData) continue;
+
+		//Find()를 사용하여 키(무기) 검색과 값 반환을 한 번에 처리 (최적화)
+		const FGuid* WeaponGUID = CharData->EquipmentMap.Find(EEquipmentSlot::Weapon);
+
+		// 무기 슬롯이 아예 없거나, 들어있는 무기 GUID가 비어있다면 거부!
+		if (!WeaponGUID || !WeaponGUID->IsValid())
+		{
+			OutErrorMessage = TEXT("무기를 장착하지 않은 캐릭터가 있습니다.");
+			//UE_LOG(LogTemp, Error, TEXT("❌ 검증 실패: [%s] 캐릭터가 무기를 장착하지 않았습니다."), *PlayerID.ToString());
+			return false;
+		}
+	}
+
+	if (!bHasPlayer)
+	{
+		OutErrorMessage = TEXT("편성된 캐릭터가 없습니다.");
+		//UE_LOG(LogTemp, Error, TEXT("❌ 검증 실패: 편성된 캐릭터가 0명입니다."));
+		return false;
+	}
+
+	// 2. 퍼밀리어 편성 검사 (5마리 필수 기준)
+	int32 ValidFamiliarCount = 0;
+	for (int32 i = 0; i < SelectedFamiliarSquadIDs.Num(); i++)
+	{
+		//UE_LOG(LogTemp, Log, TEXT("  -> Familiar Slot %d: [%s]"), i, *SelectedFamiliarSquadIDs[i].ToString());
+		if (!SelectedFamiliarSquadIDs[i].IsNone())
+		{
+			ValidFamiliarCount++;
+		}
+	}
+
+	if (ValidFamiliarCount < 5)
+	{
+		OutErrorMessage = FString::Printf(TEXT("퍼밀리어 스쿼드를 전부 편성해주세요. (%d/5)"), ValidFamiliarCount);
+		//UE_LOG(LogTemp, Error, TEXT("❌ 검증 실패: 퍼밀리어 부족 (%d / 5)"), ValidFamiliarCount);
+		return false;
+	}
+
+	//UE_LOG(LogTemp, Warning, TEXT("✅ 검증 통과: 모든 스쿼드 조건 만족!"));
+	return true;
+}
+
 void USquadSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 {
 	if (!SaveGameObj) return;
@@ -203,7 +269,7 @@ void USquadSubsystem::LoadFromSaveGame(UParadiseSaveGame* SaveGameObj)
 		SelectedFamiliarSquadIDs = SaveGameObj->SavedFamiliarSquadIDs;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("✅ [SquadSubsystem] 세이브 파일에서 편성 정보를 성공적으로 불러왔습니다."));
+	//UE_LOG(LogParadiseSquad, Log, TEXT("✅ [SquadSubsystem] 세이브 파일에서 편성 정보를 성공적으로 불러왔습니다."));
 }
 
 void USquadSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
@@ -214,5 +280,5 @@ void USquadSubsystem::SaveToSaveGame(UParadiseSaveGame* SaveGameObj) const
 	SaveGameObj->SavedPlayerSquadIDs = SelectedPlayerSquadIDs;
 	SaveGameObj->SavedFamiliarSquadIDs = SelectedFamiliarSquadIDs;
 
-	UE_LOG(LogTemp, Log, TEXT("💾 [SquadSubsystem] 세이브 객체에 편성 정보를 기록했습니다."));
+	//UE_LOG(LogParadiseSquad, Log, TEXT("💾 [SquadSubsystem] 세이브 객체에 편성 정보를 기록했습니다."));
 }

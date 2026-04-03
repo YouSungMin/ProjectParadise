@@ -39,12 +39,16 @@ void UParadiseSquadInventoryWidget::UpdateList(int32 TabIndex, const TArray<FSqu
 		TargetWrap = Wrap_Unit;
 		TargetSlotClass = UnitSlotClass;
 		break;
+	case SquadTabs::Misc: // 기타 탭
+		TargetWrap = Wrap_Misc;
+		TargetSlotClass = MiscSlotClass;
+		break;
 	}
 
 	// 3. 방어 코드: WrapBox나 슬롯 클래스가 할당되지 않았으면 즉시 중단
 	if (!TargetWrap || !TargetSlotClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ [InventoryWidget] WrapBox 또는 슬롯 클래스가 누락되었습니다. BP 설정을 확인하세요."));
+		//UE_LOG(LogTemp, Error, TEXT("❌ [InventoryWidget] WrapBox 또는 슬롯 클래스가 누락되었습니다. BP 설정을 확인하세요."));
 		return;
 	}
 

@@ -6,6 +6,38 @@
 #include "StageStructs.generated.h"
 
 /**
+ * @struct FChapterData
+ * @brief 기획자가 엑셀에서 관리할 챕터(지역) 마스터 데이터
+ */
+USTRUCT(BlueprintType)
+struct FChapterData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** @brief 챕터 고유 번호 (예: 1, 2, 3) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
+	int32 ChapterID = 1;
+
+	/**
+	 * @brief 이 챕터가 열렸는지 확인하기 위한 '첫 번째 스테이지 ID'
+	 * @details 예: "Stage_2_1". StageSubsystem에서 이 스테이지가 Unlocked 상태면 해당 챕터를 엽니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
+	FName FirstStageID = NAME_None;
+
+	/** @brief 이 챕터 입장 시 3D 환경 맵(지도) 판넬에 입혀질 텍스처 이미지 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
+	TSoftObjectPtr<UTexture2D> ChapterMapTexture = nullptr;
+
+	/**
+	 * @brief 챕터 선택 슬롯의 버튼을 덮어씌울 포토샵 디자인 머티리얼
+	 * @details 폰트를 대체하여 화려한 타이포그래피와 배경을 렌더링합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Chapter")
+	TSoftObjectPtr<class UMaterialInterface> ChapterButtonMaterial = nullptr;
+};
+
+/**
  * @struct FStageStats
  * @brief 스테이지의 '규칙'과 '보상' 데이터 (기획 밸런싱용)
  * @details 리소스 경로 없이 순수 데이터만 포함합니다.
@@ -32,6 +64,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rule", meta = (ClampMin = "0.0"))
 	float TimeLimit;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rule")
+	float HomeBaseHPMultiplier;
+
 	// =========================================================
 	//  경제/보상 (Economy & Reward)
 	// =========================================================
@@ -47,6 +82,10 @@ public:
 	/** @brief 클리어 경험치 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward", meta = (ClampMin = "0"))
 	int32 ClearExp;
+
+	/** @brief 클리어 퍼밀리어 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	FName ClearFamiliar;
 
 	// =========================================================
 	//  텍스트 정보 (Text)
@@ -107,6 +146,13 @@ public:
 	/** @brief 환경음 (바람 소리 등, 선택 사항) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
 	TSoftObjectPtr<USoundBase> AmbienceSound;
+
+	/**
+	 * @brief 이 스테이지 진입 전 로딩 화면에서 미리 메모리(RAM)에 올릴 무거운 특수 에셋들
+	 * @details 보스 몬스터 클래스, 거대 파티클(Niagara) 이펙트 등을 여기에 등록하면 인게임 진입 렉(Hitch)을 방지합니다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|Optimization")
+	TArray<TSoftObjectPtr<UObject>> ExtraPreloadAssets;
 };
 
 /**

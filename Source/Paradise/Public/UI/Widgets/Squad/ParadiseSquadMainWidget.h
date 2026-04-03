@@ -12,9 +12,13 @@ class UParadiseSquadInventoryWidget;
 class UParadiseSquadFormationWidget;
 class UParadiseSquadDetailWidget;
 class UButton;
+class UWidgetAnimation;
+class UWidgetSwitcher;
 class UInventorySystem;
 class UParadiseGameInstance;
 class USquadSubsystem;
+class UAudioComponent;
+class AParadiseSquadSceneManager;
 #pragma endregion 전방 선언
 
 /** @brief 편성 화면에서 뒤로가기 요청 시 발생하는 델리게이트 */
@@ -40,6 +44,13 @@ protected:
 
 #pragma region UI 컴포넌트 바인딩
 protected:
+	/**
+	 * @brief [엔드필드 핵심] 전체 화면을 덮는 스위처
+	 * @details Index 0: 메인 3D 투명 화면 (사진 1번) / Index 1: 인벤토리 및 상세창 (사진 2~4번)
+	 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidgetSwitcher> Switcher_MainScreen = nullptr;
+
 	// --- 하위 패널 (Child Widgets) ---
 
 	/** @brief 우측 인벤토리 리스트 패널 */
@@ -61,18 +72,46 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Armor = nullptr;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Btn_Tab_Unit = nullptr;
 
+	/**
+	 * @brief 3D 캐릭터 모델링 위에 덮어씌울 투명 버튼들
+	 * @details 유저가 3D 캐릭터를 누른 것처럼 착각하게 만듭니다.
+	 */
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Btn_Hitbox_Main = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Btn_Hitbox_Sub1 = nullptr;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Btn_Hitbox_Sub2 = nullptr;
+
 	/** @brief 뒤로가기 버튼 (로비로 복귀 + 편성 자동 저장) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Back = nullptr;
+
+	//0324 김성현 경고 팝업 추가
+	/** @brief 진입 불가 시 띄워줄 통합 경고 팝업 */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UParadiseResourceWarningWidget> Widget_Warning = nullptr;
+
+	/**
+	 * @brief 터치 유도 텍스트(Touch)들이 깜빡거리는 애니메이션
+	 * @details 에디터에서 UMG 애니메이션을 만들고 이름을 반드시 'Anim_TouchBlink'로 맞춰야 합니다.
+	 */
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_TouchBlink = nullptr;
 #pragma endregion UI 컴포넌트 바인딩
 
 #pragma region 로직 - 탭 및 상태 제어
 private:
+	/** @brief 사진 1번(메인 3D 화면)으로 스위처를 되돌리고 상태를 초기화합니다. */
+	UFUNCTION()
+	void ReturnToOverviewScreen();
+
 	UFUNCTION() void OnClickCharTab();
 	UFUNCTION() void OnClickWpnTab();
 	UFUNCTION() void OnClickArmTab();
 	UFUNCTION() void OnClickUnitTab();
 
+	// 3D 캐릭터 터치용 래퍼 함수 (내부에서 HandleFormationSlotSelected 호출)
+	UFUNCTION() void OnTouch3DCharacter_Main();
+	UFUNCTION() void OnTouch3DCharacter_Sub1();
+	UFUNCTION() void OnTouch3DCharacter_Sub2();
 	/** 
 	 * @brief 탭을 전환하고 관련 UI를 갱신합니다.
 	 * @param NewTab 전환할 탭 인덱스 (SquadTabs 네임스페이스 참조)
@@ -102,6 +141,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Paradise|Squad")
 	void ResetPanelState();
 
+	/**
+	 * @brief 로비에서 편성 버튼을 눌러 진입할 때 매번 호출해야 하는 함수!
+	 * @details 패널을 초기화하고, 3D 카메라로 즉시 시점을 전환합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|Squad")
+	void OnEnterSquadUI();
 private:
 	/**
 	 * @brief SquadSubsystem의 현재 편성 데이터를 읽어 FormationWidget 슬롯을 초기화합니다.
@@ -170,6 +215,10 @@ private:
 	UFUNCTION()
 	void HandleConfirmAction();
 
+	/** @brief [판매] 버튼 클릭 시 -> 실제 교체 수행 */
+	UFUNCTION()
+	void HandleSellAction();
+
 	/** @brief [뒤로가기] 버튼 클릭 시 -> 상위 위젯(LobbyHUD)에 신호 전달 */
 	UFUNCTION()
 	void HandleBackClicked();
@@ -210,6 +259,14 @@ private:
 
 	/** @brief 데이터 테이블 접근용 (순환 참조 방지) */
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
+
+	/** @brief 맵에 배치된 3D 스튜디오(디오라마) 매니저. 편성 변경 시 모델링을 갱신합니다. */
+	UPROPERTY()
+	TObjectPtr<AParadiseSquadSceneManager> SceneManager = nullptr;
+
+	// 편성창 열기 직전에 보고 있던 원래 카메라(로비) 기억용
+	UPROPERTY()
+	TObjectPtr<AActor> OriginalViewTarget = nullptr;
 #pragma endregion 데이터 소스
 
 #pragma region 내부 상태
@@ -223,11 +280,25 @@ private:
 	/** @brief 현재 선택된 편성 슬롯 인덱스 (장비 교체 시 대상 식별용) */
 	int32 SelectedFormationSlotIndex = -1;
 
+	/** @brief 탭 전환 시 복구할 슬롯 메모리 (기본값: 첫 번째 슬롯) */
+	int32 LastSelectedCharacterSlot = 0; // 캐릭터(0~2) 중 마지막 선택
+	int32 LastSelectedUnitSlot = 3;      // 유닛(3~7) 중 마지막 선택
+
 	/** @brief 교체를 위해 인벤토리에서 선택한 아이템 (확인 버튼 누르기 전 대기 상태) */
 	FSquadItemUIData PendingSelection;
 
+	/** @brief 현재 선택된 슬롯을 기준으로 디테일 창을 싹 새로고침해 주는 전용 헬퍼 함수 */
+	void RefreshDetailPanelForCurrentSlot();
+
 	/** @brief 현재 편성에 장착된 ID 목록 (인벤토리 테두리 표시용) */
 	TArray<FName> CurrentEquippedIDs;
+
+	UPROPERTY()
+	bool bAutoSaveOnBack = true;
+
+	/** @brief 현재 재생 중인 캐릭터 교체 보이스 컴포넌트 (보이스 겹침 방지용) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CurrentVoiceComponent = nullptr;
 #pragma endregion 내부 상태
 
 #pragma region 델리게이트
@@ -236,9 +307,4 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnSquadBackRequested OnBackRequested;
 #pragma endregion 델리게이트
-
-private:
-	UPROPERTY()
-	bool bAutoSaveOnBack = true;
-
 };

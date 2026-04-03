@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Interfaces/ParadiseSaveInterface.h"
 #include "SquadSubsystem.generated.h"
 
 // 3개의 슬롯 중 특정 슬롯의 플레이어가 변경되었을 때 UI에 알리는 델리게이트
@@ -13,7 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFamiliarSlotChangedSignature, in
  * @brief 로비 편성 UI와 인게임(3인 플레이어 스폰 및 스위칭) 사이의 데이터를 관리하는 서브시스템
  */
 UCLASS()
-class PARADISE_API USquadSubsystem : public UGameInstanceSubsystem
+class PARADISE_API USquadSubsystem : public UGameInstanceSubsystem , public IParadiseSaveInterface
 {
 	GENERATED_BODY()
 
@@ -100,6 +101,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Squad")
 	bool IsPlayerAlreadyAssigned(FName PlayerID) const;
 
+	/** @brief 현재 편성된 스쿼드가 스테이지 진입 조건을 만족하는지 검사합니다. */
+	UFUNCTION(BlueprintPure, Category = "Squad|Validation")
+	bool IsSquadValidForBattle(FString& OutErrorMessage) const;
+
 private:
 	// 3명의 플레이어 ID를 담을 스쿼드 배열
 	UPROPERTY()
@@ -112,18 +117,19 @@ public:
 
 #pragma region 세이브 데이터 
 
+public:
 	/**
 	 * @brief 세이브 게임 객체에서 편성 데이터를 읽어와 복구합니다. (게임 실행 시 1회 호출)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Squad|Save")
-	void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj);
+	virtual void LoadFromSaveGame(class UParadiseSaveGame* SaveGameObj) override;
 
 
 	/**
 	 * @brief 현재 서브시스템의 편성 상태를 세이브 게임 객체에 기록합니다. (게임 저장 시 호출)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Squad|Save")
-	void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const;
+	virtual void SaveToSaveGame(class UParadiseSaveGame* SaveGameObj) const override;
 
 #pragma endregion 세이브 데이터 
 };

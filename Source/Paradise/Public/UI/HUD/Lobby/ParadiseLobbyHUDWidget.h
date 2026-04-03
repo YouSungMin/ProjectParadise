@@ -13,6 +13,9 @@ class UParadiseLobbyTopBarWidget;
 class UParadiseLobbyMenuPanelWidget;
 class ALobbyPlayerController;
 class UParadiseGameInstance;
+class UAudioManagementSubsystem;
+class UParadiseFXAudioData;
+class USettingsPopupWidget;
 #pragma endregion 전방 선언
 
 /**
@@ -29,7 +32,6 @@ class PARADISE_API UParadiseLobbyHUDWidget : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-
 #pragma region UI 컴포넌트
 protected:
 	/** @brief 상단 재화 및 설정 바 (WBP_TopBar) */
@@ -71,7 +73,7 @@ private:
 	TWeakObjectPtr<UParadiseGameInstance> CachedGI = nullptr;
 #pragma endregion 내부 캐싱
 
-#pragma region 외부 제어 (From Controller)
+#pragma region 외부 제어
 public:
 	/**
 	 * @brief 컨트롤러에 의해 호출되어 화면을 갱신합니다.
@@ -82,12 +84,36 @@ public:
 	/** @brief 카메라 이동 시작 시 호출 (모든 UI 페이드 아웃) */
 	void OnStartCameraMove();
 
+	/**
+	 * @brief 컨트롤러의 ESC 입력 또는 화면 설정 버튼 클릭 시 설정 팝업을 토글합니다.
+	 * @details 내부의 USettingsPopupWidget 인스턴스에 접근하여 열림/닫힘(Toggle)을 위임합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Paradise|UI")
+	void ToggleSettingsPopup();
+
+	/**
+	 * @brief 설정 팝업 인스턴스를 반환합니다.
+	 * @details LobbyController의 ESC 입력 처리 시 호출합니다.
+	 */
+	FORCEINLINE class USettingsPopupWidget* GetSettingsPopupInstance() const { return SettingsPopupInstance; }
+
 private:
 	/**
-	 * @brief [최적화] 여러 팝업의 뒤로가기 요청을 하나로 통합 처리합니다.
+	 * @brief 여러 팝업의 뒤로가기 요청을 하나로 통합 처리합니다.
 	 * (메뉴로 복귀하는 단일 책임)
 	 */
 	UFUNCTION()
 	void HandleBackToMainLobby();
 #pragma endregion 외부 제어
+
+protected:
+	/** @brief 기획자가 에디터에서 할당할 로비용 설정 팝업 위젯 클래스 (WBP_Settings_Lobby) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paradise|UI")
+	TSubclassOf<USettingsPopupWidget> SettingsPopupClass;
+
+private:
+	/** @brief 화면에 미리 생성해둘 설정 팝업 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<USettingsPopupWidget> SettingsPopupInstance = nullptr;
+
 };
