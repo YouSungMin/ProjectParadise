@@ -28,7 +28,10 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 	UObject* RawTarget = BB->GetValueAsObject(TargetActorKey.SelectedKeyName);
 	ACharacterBase* CurrentTarget = Cast<ACharacterBase>(RawTarget);
 
-	// [1단계] 현재 타겟이 유효한지 체크
+	ACharacterBase* ClosestEnemy = nullptr;
+	float MinDistance = SearchRadius;
+
+	// [1단계] 현재 타겟의 거리를 측정하여 비교의 '기준점'으로 삼습니다. (바로 return 하지 않음!)
 	if (IsValid(CurrentTarget) && !CurrentTarget->IsDead())
 	{
 		float CenterDist = FVector::Dist(SelfUnit->GetActorLocation(), CurrentTarget->GetActorLocation());
@@ -36,35 +39,22 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 		float TargetRadius = CurrentTarget->GetCapsuleComponent()->GetScaledCapsuleRadius();
 		float SurfaceDist = FMath::Max(0.0f, CenterDist - MyRadius - TargetRadius);
 
-		float MyAttackRange = SelfUnit->GetAttackRange();
-
 		if (SurfaceDist < SearchRadius)
 		{
-			BB->SetValueAsFloat(FName("DistanceToTarget"), SurfaceDist);
-
-			if (SurfaceDist <= MyAttackRange)
-			{
-				BB->SetValueAsVector(FName("TargetLocation"), SelfUnit->GetActorLocation());
-			}
-			else
-			{
-				// 사거리 밖이라면 적을 추적합니다.
-				BB->SetValueAsVector(FName("TargetLocation"), CurrentTarget->GetActorLocation());
-			}
-
-			return;
+			MinDistance = SurfaceDist;
+			ClosestEnemy = CurrentTarget; // 일단 현재 타겟을 가장 가까운 적으로 임시 지정
 		}
 	}
 
-	// [2단계] 새로운 적 탐색 (기존 코드와 동일)
-	ACharacterBase* ClosestEnemy = nullptr;
-	float MinDistance = SearchRadius;
-
+	// [2단계] 월드 내 모든 적을 탐색하며 '더 가까운 적'이 있는지 검사합니다.
 	for (TActorIterator<ACharacterBase> It(GetWorld()); It; ++It)
 	{
 		ACharacterBase* OtherChar = *It;
+
+		// 무시할 대상들
 		if (OtherChar->IsA<AHomeBase>()) continue;
 		if (!IsValid(OtherChar) || OtherChar == SelfUnit || OtherChar->IsDead()) continue;
+		if (OtherChar == ClosestEnemy) continue; // 이미 1단계에서 계산한 현재 타겟은 건너뜀
 
 		if (SelfUnit->IsHostile(OtherChar))
 		{
@@ -73,31 +63,57 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 			float TargetRadius = OtherChar->GetCapsuleComponent()->GetScaledCapsuleRadius();
 			float SurfaceDistance = FMath::Max(0.0f, CenterToCenterDistance - MyRadius - TargetRadius);
 
-			if (SurfaceDistance < MinDistance)
+			// 🚨 [핵심] 핑퐁(Ping-Pong) 방지 로직
+			// 타겟이 없는 상태였다면 그냥 갱신하고, 기존 타겟이 있었다면 기존 타겟보다 '50 유닛' 이상 더 가까워야만 타겟을 바꿉니다.
+			float SwitchThreshold = (ClosestEnemy == CurrentTarget && CurrentTarget != nullptr) ? (MinDistance - 50.0f) : MinDistance;
+
+			if (SurfaceDistance < SwitchThreshold)
 			{
 				MinDistance = SurfaceDistance;
-				ClosestEnemy = OtherChar;
+				ClosestEnemy = OtherChar; // 더 가까운 적으로 갱신!
 			}
 		}
 	}
 
-	// [3단계] 탐색 결과 반영
+	// [3단계] 탐색 결과 반영 (타겟이 유지되었거나 더 가까운 놈으로 변경됨)
 	if (ClosestEnemy)
 	{
+		// 타겟이 바뀌었는지 체크 (디버그 로그)
+		if (CurrentTarget != nullptr && CurrentTarget != ClosestEnemy)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("🔄 [타겟 변경] 나(%s) : 더 가까운 적(%s, 거리: %.1f)을 발견하여 타겟을 변경합니다!"),
+				*SelfUnit->GetName(), *ClosestEnemy->GetName(), MinDistance);
+		}
+
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestEnemy);
 		BB->SetValueAsFloat(FName("DistanceToTarget"), MinDistance);
 
-		// 🚀 [수정] 처음 발견했을 때도 사거리 체크를 해서 목적지를 결정합니다.
 		float MyAttackRange = SelfUnit->GetAttackRange();
+
 		if (MinDistance <= MyAttackRange)
 		{
-			// 이미 사거리 안이면 발견 즉시 그 자리에 멈춤
-			BB->SetValueAsVector(FName("TargetLocation"), SelfUnit->GetActorLocation());
+			// 🚨 [여기에 추가 1] 사거리 진입 감시 로그 추가!
+			UE_LOG(LogTemp, Error, TEXT("🟢 [서비스] %s ➔ %s : 사거리 진입 성공! (거리: %.1f / 사거리: %.1f) ➔ bIsInRange = TRUE 설정!"),
+				*SelfUnit->GetName(), *ClosestEnemy->GetName(), MinDistance, MyAttackRange);
+
+			BB->SetValueAsBool(FName("bIsInRange"), true);
+			BB->SetValueAsVector(FName("TargetLocation"), SelfUnit->GetActorLocation()); // 제자리 정지
 		}
 		else
 		{
-			// 사거리 밖이면 적을 향해 이동
-			BB->SetValueAsVector(FName("TargetLocation"), ClosestEnemy->GetActorLocation());
+			// 🚨 [여기에 추가 2] 사거리 밖 감시 로그 추가!
+			UE_LOG(LogTemp, Warning, TEXT("🔴 [서비스] %s ➔ %s : 아직 멉니다.. (거리: %.1f / 사거리: %.1f) ➔ bIsInRange = FALSE 설정!"),
+				*SelfUnit->GetName(), *ClosestEnemy->GetName(), MinDistance, MyAttackRange);
+
+			BB->SetValueAsBool(FName("bIsInRange"), false);
+
+			// 뭉침 방지 분산 로직 (Surround Logic)
+			FVector RandomOffset = FMath::VRand();
+			RandomOffset.Z = 0.0f;
+			RandomOffset.Normalize();
+
+			FVector SpreadLocation = ClosestEnemy->GetActorLocation() + (RandomOffset * FMath::RandRange(50.0f, 100.0f));
+			BB->SetValueAsVector(FName("TargetLocation"), SpreadLocation);
 		}
 	}
 	else
@@ -106,21 +122,21 @@ void UBTService_FindClosestTarget::TickNode(UBehaviorTreeComponent& OwnerComp, u
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, nullptr);
 		BB->ClearValue(FName("DistanceToTarget"));
 
+		// 🚨 [여기에 추가 3] 적이 아예 없으므로 공격 불가(false) 처리 (안전장치)
+		BB->SetValueAsBool(FName("bIsInRange"), false);
+
 		FVector CurrentTargetLoc = BB->GetValueAsVector(FName("TargetLocation"));
 		AActor* DestBase = Cast<AActor>(BB->GetValueAsObject(FName("EnemyBaseActor")));
-		
+
 		if (DestBase && CurrentTargetLoc != FVector::ZeroVector)
 		{
-			// 현재 찍힌 목적지와 기지 사이의 거리를 체크 (800~1000 유닛 이내면 이미 기지 근처임)
 			float DistToBase = FVector::Dist(CurrentTargetLoc, DestBase->GetActorLocation());
-			
 			if (DistToBase < 1000.0f)
 			{
 				return;
 			}
 		}
 
-		// 위 조건에 걸리지 않으면(목적지가 없거나 너무 멀면) 아래에서 새로 목적지를 잡습니다.
 		if (DestBase)
 		{
 			FVector BaseLocation = DestBase->GetActorLocation();
