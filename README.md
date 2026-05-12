@@ -34,6 +34,26 @@
 * **통합 연출 제어 (Gameplay Cue):** 수많은 타격/피격 FX 요청을 단일 마스터 큐(`UMasterCueNotifyStatic`)로 통제하여 클래스 폭발을 방지하고 결합도를 낮췄습니다.
 
 ## 핵심 구현 시스템
+### GAS 기반 전투 프레임 워크
+
+**공통 어트리뷰트 셋**
+
+**관련 클래스** :
+* [BaseAttributeSet.cpp](./Source/Paradise/Private/GAS/Attributes/BaseAttributeSet.cpp) 
+
+**설계 방향**
+
+코드의 중복을 줄이고 유지보수 효율을 높이기 위해 플레이어, 적(Enemy), 소환수(Familiar)가 하나의 어트리뷰트 셋 클래스를 사용하도록 설계했습니다.
+
+PreAttributeChange를 오버라이드 하여 스탯이 설계된 최소/최대 범위를 벗어나지 않도록 실시간 클램핑(Clamping) 처리를 적용했습니다.
+<img width="794" height="283" alt="화면 캡처 2026-05-12 165302" src="https://github.com/user-attachments/assets/8cbc28f4-317c-4e6e-a59a-ed74d172ef1b" />
+
+
+
+
+**커스텀 연산 클래스**
+
+**어빌리티 계층 구조**
 
 
 ## 🎮 조작 방법 (Controls)
