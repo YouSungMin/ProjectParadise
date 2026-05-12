@@ -1,11 +1,11 @@
 # Project Paradise (스쿼드 타워 디펜스 RPG)
 
 <kbd>
-  <img height="250" alt="화면 캡처 2026-05-06 141820" src="https://github.com/user-attachments/assets/40d71852-4fba-4088-8748-0ac3ecaad9e6" />
+  <img height="400" alt="화면 캡처 2026-05-06 141820" src="https://github.com/user-attachments/assets/40d71852-4fba-4088-8748-0ac3ecaad9e6" />
 </kbd>
 
 <kbd>
-  <img height="250" alt="화면 캡처 2026-05-06 141503" src="https://github.com/user-attachments/assets/decc9b3c-7b84-4157-b71a-872142cab942" />
+  <img height="400" alt="화면 캡처 2026-05-06 141503" src="https://github.com/user-attachments/assets/decc9b3c-7b84-4157-b71a-872142cab942" />
 </kbd>
 
 ![Unreal Engine](https://img.shields.io/badge/Unreal_Engine_5-000000?style=for-the-badge&logo=unrealengine&logoColor=white)
