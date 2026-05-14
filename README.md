@@ -19,12 +19,15 @@
     * 3.5. [전투 데이터 패키징](#5-전투-데이터-패키징)
     * 3.6. [정밀 타격/발사 판정](#6-정밀-타격발사-판정)
     * 3.7. [데이터 주도형 연출 시스템](#7-데이터-주도형-연출-시스템)
-
+4. [조작 방법](#조작-방법)
+   
 ## 프로젝트 개요
 * **개발 기간** : 2026.02.03 - 2026.04.03 
 * **개발 인원** : 5명 ( 클라이언트 4명, 기획 1명 ) 
 * **내 역할** : 클라이언트 프로그래머 ( 전투 시스템 및 데이터 아키텍처 설계)
 * **개발 환경** : Unreal Engine 5.5.4, C++, GitHub Desktop, Notion
+
+[API 문서 웹사이트 (Doxygen + GitHub Pages) 보러가기] https://paradiseproject.github.io/ParadiseProject_Docs/
 
 ## 기술적 하이라이트
 기획자와의 협업 효율을 높이는 데이터 주도 설계와 GAS를 활용한 확장성 높은 전투 프레임워크 구축에 집중했습니다.
@@ -188,9 +191,11 @@ ICombatInterface를 통해 마스터 큐와 타격/피격자 간의 결합도를
 
 <img width="364" height="517" alt="image" src="https://github.com/user-attachments/assets/555db5d6-3773-4817-b9e9-b905cd0e8105" />
 
-[API 문서 웹사이트 (Doxygen + GitHub Pages) 보러가기] https://paradiseproject.github.io/ParadiseProject_Docs/
+## 조작 방법 
 
-## 🎮 조작 방법 (Controls)
+<details>
+<summary><b>🕹️ PC 및 모바일 조작 방법 보기 (클릭)</b></summary>
+<div markdown="1">
 
 본 프로젝트는 Windows(PC) 및 Android(Mobile) 크로스 플랫폼 조작을 지원합니다.
 
@@ -202,3 +207,7 @@ ICombatInterface를 통해 마스터 큐와 타격/피격자 간의 결합도를
 | **무기 스킬** | <kbd>K</kbd> | 스킬 아이콘 (공격 버튼 좌측) | 장착된 무기로 콤보 공격 |
 | **궁극기 (필살기)** | <kbd>L</kbd> | 궁극기 아이콘 (공격 버튼 상단) | 캐릭터의 고유한 궁극기 사용 |
 | **퍼밀리어 소환** | <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> | 퍼밀리어 슬롯 5 (중앙 하단) | 슬롯에 등록된 유닛 소환 |
+
+</div>
+</details>
+
